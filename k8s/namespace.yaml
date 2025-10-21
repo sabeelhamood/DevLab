@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devlab
+  labels:
+    name: devlab
+    app: devlab-microservice
