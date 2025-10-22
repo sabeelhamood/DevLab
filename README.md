@@ -18,22 +18,23 @@ DEVLAB provides personalized, practical coding exercises and theoretical questio
 
 ## Architecture
 
-- **Frontend**: React 18 + TypeScript + Next.js 14
-- **Backend**: Node.js 20 + NestJS + TypeScript
-- **Database**: PostgreSQL + Redis + MongoDB
-- **Infrastructure**: Kubernetes + Docker + AWS
+- **Frontend**: React 18 + TypeScript + Tailwind CSS
+- **Backend**: Node.js 20 + Express + TypeScript
+- **Database**: PostgreSQL (Supabase) + MongoDB Atlas
+- **Infrastructure**: Vercel + Railway
 - **AI Integration**: Gemini API + SandBox API
-- **Monitoring**: Prometheus + Grafana + ELK Stack
+- **Monitoring**: Application monitoring and logging
 
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js 20+
-- Docker & Docker Compose
-- Kubernetes (minikube/Docker Desktop)
-- PostgreSQL 15+
-- Redis 7+
+- npm or yarn
+- Supabase account
+- MongoDB Atlas account
+- Vercel account
+- Railway account
 
 ### Development Setup
 
@@ -46,8 +47,8 @@ DEVLAB provides personalized, practical coding exercises and theoretical questio
 
 2. **Environment Configuration**
    ```bash
-   cp .env.example .env
-   # Configure environment variables
+   # Configure environment variables in Vercel and Railway
+   # No .env files needed - all secrets managed through cloud platforms
    ```
 
 3. **Start Development Environment**
@@ -60,27 +61,6 @@ DEVLAB provides personalized, practical coding exercises and theoretical questio
    npm run test
    npm run test:coverage
    ```
-
-### Docker Development
-
-```bash
-# Build and start all services
-npm run docker:build
-npm run docker:up
-
-# Stop services
-npm run docker:down
-```
-
-### Kubernetes Deployment
-
-```bash
-# Deploy to local Kubernetes
-npm run k8s:deploy
-
-# Remove deployment
-npm run k8s:delete
-```
 
 ## Project Structure
 
@@ -95,17 +75,18 @@ devlab-microservice/
 │   │   └── types/          # TypeScript type definitions
 │   ├── public/             # Static assets
 │   └── tests/              # Frontend tests
-├── backend/                 # NestJS backend application
+├── backend/                 # Express backend application
 │   ├── src/
-│   │   ├── modules/        # Feature modules
-│   │   ├── shared/         # Shared utilities
+│   │   ├── routes/         # Express routes
+│   │   ├── services/       # Business logic services
+│   │   ├── middleware/     # Express middleware
 │   │   └── config/         # Configuration files
 │   ├── tests/              # Backend tests
 │   └── migrations/         # Database migrations
-├── infrastructure/          # Infrastructure as Code
-│   ├── kubernetes/         # K8s manifests
-│   ├── terraform/          # Terraform configurations
-│   └── docker/             # Docker configurations
+├── tests/                   # Integration & E2E Tests
+│   ├── integration/        # Integration tests
+│   ├── e2e/               # End-to-end tests
+│   └── fixtures/          # Test data fixtures
 ├── docs/                   # Documentation
 └── scripts/                # Utility scripts
 ```
@@ -174,11 +155,10 @@ This project follows strict Test-Driven Development (TDD) principles:
 
 ## Monitoring & Observability
 
-- **Prometheus**: Metrics collection
-- **Grafana**: Visualization and dashboards
-- **ELK Stack**: Log aggregation and analysis
-- **Jaeger**: Distributed tracing
+- **Application Monitoring**: Performance and error tracking
+- **Logging**: Comprehensive logging with MongoDB Atlas
 - **Health Checks**: Automated health monitoring
+- **Analytics**: Learning analytics and reporting
 
 ## Security
 
@@ -192,9 +172,9 @@ This project follows strict Test-Driven Development (TDD) principles:
 
 - **Response Time**: < 2 seconds for code execution
 - **Concurrent Users**: 10,000+ supported
-- **Auto-scaling**: Kubernetes HPA
+- **Auto-scaling**: Railway auto-scaling
 - **Caching**: Redis for performance optimization
-- **CDN**: Global content delivery
+- **CDN**: Vercel global CDN
 
 ## Contributing
 
