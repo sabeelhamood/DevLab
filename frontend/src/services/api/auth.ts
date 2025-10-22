@@ -46,3 +46,4 @@ export const authApi = {
     return await apiClient.put<ApiResponse<User>>('/auth/profile', profileData)
   }
 }
+

@@ -56,3 +56,4 @@ describe('Card Components', () => {
     expect(screen.getByText('Content').closest('div')).toHaveClass('custom-card')
   })
 })
+

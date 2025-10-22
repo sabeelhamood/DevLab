@@ -42,3 +42,4 @@ export const sessionsApi = {
     return await apiClient.get<ApiResponse<any>>(`/sessions/${sessionId}/analytics`)
   }
 }
+

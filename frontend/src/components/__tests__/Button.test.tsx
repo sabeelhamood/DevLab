@@ -55,3 +55,4 @@ describe('Button Component', () => {
     expect(screen.getByRole('button')).toHaveClass('custom-class')
   })
 })
+
