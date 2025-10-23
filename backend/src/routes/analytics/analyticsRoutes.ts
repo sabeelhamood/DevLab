@@ -12,3 +12,7 @@ router.get('/course/:courseId', authenticateToken, analyticsController.getCourse
 router.get('/dashboard', authenticateToken, analyticsController.getDashboard)
 
 export default router
+
+
+
+

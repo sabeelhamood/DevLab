@@ -30,3 +30,7 @@ router.get('/profile', authenticateToken, authController.getProfile)
 router.put('/profile', authenticateToken, authController.updateProfile)
 
 export default router
+
+
+
+

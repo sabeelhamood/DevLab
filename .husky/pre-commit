@@ -18,3 +18,7 @@ echo "🧪 Running tests..."
 npm run test:ci
 
 echo "✅ All pre-commit checks passed!"
+
+
+
+

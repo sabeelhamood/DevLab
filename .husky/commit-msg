@@ -13,3 +13,7 @@ if ! grep -qE "$commit_regex" "$1"; then
 fi
 
 echo "✅ Commit message format is valid!"
+
+
+
+

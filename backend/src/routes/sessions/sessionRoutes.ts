@@ -30,3 +30,7 @@ router.get('/history/:learnerId', authenticateToken, sessionController.getSessio
 router.get('/:id/analytics', authenticateToken, sessionController.getSessionAnalytics)
 
 export default router
+
+
+
+

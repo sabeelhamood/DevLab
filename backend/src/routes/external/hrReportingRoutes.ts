@@ -10,3 +10,7 @@ router.post('/competencies', hrReportingController.sendCompetencies)
 router.get('/reports/:orgId', hrReportingController.getHRReports)
 
 export default router
+
+
+
+

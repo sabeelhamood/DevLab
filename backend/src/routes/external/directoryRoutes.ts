@@ -15,3 +15,7 @@ router.post('/:learnerId/quota', directoryController.updateLearnerQuota)
 router.get('/organizations/:orgId/mapping', directoryController.getOrganizationMapping)
 
 export default router
+
+
+
+
