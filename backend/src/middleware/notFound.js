@@ -4,3 +4,4 @@ export const notFound = (req, res) => {
     error: `Route ${req.originalUrl} not found`,
   })
 }
+

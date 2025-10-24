@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { geminiAPI } from '../services/api/gemini.js'
 
 export const useSessionStore = create((set, get) => ({
   currentSession: null,
@@ -62,11 +63,31 @@ export const useSessionStore = create((set, get) => ({
 
   requestHint: async (questionId, hintNumber) => {
     try {
-      // This would call the API to get a hint
-      const hint = `Hint ${hintNumber}: This is a sample hint for the question.`
+      set({ isLoading: true, error: null })
+      
+      // Get current question data
+      const currentQuestion = get().currentQuestion
+      if (!currentQuestion) {
+        throw new Error('No current question available')
+      }
+      
+      // Get user's current attempt (if any)
+      const userAttempt = currentQuestion.userAnswer || ''
+      const hintsUsed = hintNumber - 1
+      const allHints = currentQuestion.hintsUsed || []
+      
+      // Call real Gemini API for hint generation
+      const hint = await geminiAPI.generateHint(
+        currentQuestion.description || currentQuestion.title,
+        userAttempt,
+        hintsUsed,
+        allHints
+      )
+      
+      set({ isLoading: false })
       return hint
     } catch (error) {
-      set({ error: error.message })
+      set({ error: error.message, isLoading: false })
       throw error
     }
   },

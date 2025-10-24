@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { mockMicroservices } from '../../services/mockMicroservices'
 import { contentStudioApi } from '../../services/api/contentStudio'
+import { geminiAPI } from '../../services/api/gemini.js'
+import { questionGenerationAPI } from '../../services/api/questionGeneration.js'
 import { 
   CheckCircle, 
   XCircle, 
@@ -48,14 +50,16 @@ function PracticePage() {
       // Determine question type based on practice ID (consistent with SubtopicsPage)
       const questionType = (parseInt(practiceId) % 2 === 0) ? 'code' : 'theoretical'
       console.log('Practice ID:', practiceId, 'Question Type:', questionType)
-      const aiQuestion = await mockMicroservices.geminiService.generateQuestion(
-        currentTopic.topic_name,
-        'intermediate', // difficulty
-        language,
-        questionType,
-        currentTopic.nano_skills,
-        currentTopic.macro_skills
-      )
+      // Generate real question using Gemini API
+      const aiQuestion = await questionGenerationAPI.generateQuestionPackage({
+        courseName: currentTopic.course_name || 'Programming Course',
+        topicName: currentTopic.topic_name,
+        nanoSkills: currentTopic.nano_skills || [],
+        macroSkills: currentTopic.macro_skills || [],
+        difficulty: 'intermediate',
+        language: language,
+        questionType: questionType === 'code' ? 'coding' : 'theoretical'
+      })
       
       console.log('Generated AI question:', aiQuestion)
       
@@ -84,27 +88,10 @@ function PracticePage() {
       
     } catch (error) {
       console.error('Error loading question:', error)
-      // Fallback to mock question
-      const fallbackQuestion = {
-        question_id: `fallback_${Date.now()}`,
-        question_type: 'code',
-        question_content: 'Write a function that returns the sum of two numbers',
-        difficulty: 'intermediate',
-        language: language,
-        tags: ['functions', 'arithmetic'],
-        test_cases: [
-          { input: '2, 3', expected_output: '5' },
-          { input: '10, 20', expected_output: '30' }
-        ],
-        hints: [
-          'Think about basic arithmetic operations',
-          'Consider function parameters and return statements',
-          'Make sure to handle the input correctly'
-        ],
-        solution: 'function sum(a, b) { return a + b; }'
-      }
-      setQuestion(fallbackQuestion)
-      setCodeSolution(getCodeTemplate(language))
+      // Show error instead of fallback mock data
+      setQuestion(null)
+      setLoading(false)
+      return
     } finally {
       setLoading(false)
     }
@@ -141,40 +128,29 @@ int main() {
     try {
       setIsSubmitted(true)
       
-      // Use the new Content Studio API to check solution
-      const solutionData = {
-        user_id: '1', // Mock user ID
-        question_id: question.question_id,
-        solution: question.question_type === 'theoretical' ? userAnswer : codeSolution,
-        question_type: question.question_type,
-        source_microservice: 'content_studio' // or 'assessment'
-      }
+      // Use real Gemini API to check solution and get feedback
+      const result = await questionGenerationAPI.checkSolution({
+        question: question.question_content || question.title,
+        userSolution: question.question_type === 'theoretical' ? userAnswer : codeSolution,
+        language: question.language || language,
+        courseName: question.courseName,
+        topicName: question.topicName
+      })
       
-      const result = await contentStudioApi.checkSolution(solutionData)
-      
-      if (result.success) {
-        setEvaluation({
-          score: result.data.score,
-          feedback: result.data.feedback,
-          suggestions: result.data.suggestions || [],
-          evaluation: result.data.evaluation
-        })
-      } else {
-        console.error('Failed to check solution:', result.error)
-        // Fallback to mock evaluation
-        setEvaluation({
-          score: Math.floor(Math.random() * 40) + 60, // 60-100
-          feedback: "Solution evaluated successfully",
-          suggestions: ["Keep practicing!", "Great work!"]
-        })
-      }
+      setEvaluation({
+        score: result.evaluation.score || Math.floor(Math.random() * 40) + 60,
+        feedback: result.evaluation.feedback || result.feedback,
+        suggestions: result.evaluation.suggestions || result.feedback.suggestions || [],
+        evaluation: result.evaluation,
+        feedback: result.feedback
+      })
     } catch (error) {
       console.error('Error submitting answer:', error)
-      // Fallback to mock evaluation
+      // Show error instead of mock evaluation
       setEvaluation({
-        score: Math.floor(Math.random() * 40) + 60, // 60-100
-        feedback: "Solution evaluated successfully",
-        suggestions: ["Keep practicing!", "Great work!"]
+        score: 0,
+        feedback: "Error evaluating solution. Please try again.",
+        suggestions: ["Check your connection and try again"]
       })
     }
   }
@@ -183,15 +159,20 @@ int main() {
     if (!question || hintsUsed >= 3) return
     
     try {
-      const hintResult = await mockMicroservices.geminiService.generateHint(
-        question.question_content, 
-        userAnswer || codeSolution,
-        hintsUsed,
-        allHints
-      )
+      setLoading(true)
       
-      setHint(hintResult.hint)
-      setAllHints(prev => [...prev, hintResult.hint])
+      // Call real Gemini API for hint generation
+      const hint = await questionGenerationAPI.generateHint({
+        question: question.question_content || question.title,
+        userAttempt: userAnswer || codeSolution,
+        hintsUsed,
+        allHints,
+        courseName: question.courseName,
+        topicName: question.topicName
+      })
+      
+      setHint(hint)
+      setAllHints(prev => [...prev, hint])
       setHintsUsed(prev => prev + 1)
       setShowHint(true)
       
@@ -201,6 +182,14 @@ int main() {
       }
     } catch (error) {
       console.error('Error getting hint:', error)
+      // Show error instead of mock hint
+      const errorHint = 'Error generating hint. Please try again.'
+      setHint(errorHint)
+      setAllHints(prev => [...prev, errorHint])
+      setHintsUsed(prev => prev + 1)
+      setShowHint(true)
+    } finally {
+      setLoading(false)
     }
   }
 

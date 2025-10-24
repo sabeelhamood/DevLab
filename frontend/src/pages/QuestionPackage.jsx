@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { contentStudioApi } from '../services/api/contentStudio'
+import { geminiAPI } from '../services/api/gemini.js'
 import { 
   CheckCircle, 
   XCircle, 
@@ -170,15 +171,18 @@ int main() {
     if (!question || hintsUsed >= 3) return
     
     try {
-      // Use mock hints for now
-      const mockHints = question.hints || [
-        'Think about the basic concepts',
-        'Consider the specific approach',
-        'You\'re almost there!'
-      ]
+      setLoading(true)
       
-      setHint(mockHints[hintsUsed] || 'No more hints available')
-      setAllHints(prev => [...prev, mockHints[hintsUsed] || 'No more hints available'])
+      // Call real Gemini API for hint generation
+      const hint = await geminiAPI.generateHint(
+        question.description || question.title,
+        userAnswer,
+        hintsUsed,
+        allHints
+      )
+      
+      setHint(hint)
+      setAllHints(prev => [...prev, hint])
       setHintsUsed(prev => prev + 1)
       setShowHint(true)
       
@@ -188,6 +192,14 @@ int main() {
       }
     } catch (error) {
       console.error('Error getting hint:', error)
+      // Fallback to a generic hint if API fails
+      const fallbackHint = 'Try to break down the problem into smaller steps.'
+      setHint(fallbackHint)
+      setAllHints(prev => [...prev, fallbackHint])
+      setHintsUsed(prev => prev + 1)
+      setShowHint(true)
+    } finally {
+      setLoading(false)
     }
   }
 

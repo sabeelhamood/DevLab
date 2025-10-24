@@ -2,6 +2,7 @@
   "name": "devlab-backend",
   "version": "1.0.0",
   "description": "DEVLAB Backend - Express.js API for AI-powered learning platform",
+  "type": "module",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",

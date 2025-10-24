@@ -33,7 +33,7 @@ const getEnvironmentConfig = () => {
     security: {
       jwtSecret: process.env['SERVICE_JWT_SECRET'] || 'dev-secret-key',
       apiKeys: process.env['SERVICE_API_KEYS'] || '',
-      corsOrigins: process.env['CORS_ORIGINS']?.split(',') || ['http://localhost:3000'],
+      corsOrigins: process.env['CORS_ORIGINS']?.split(',') || ['http://localhost:3000', 'http://localhost:3003'],
     },
     rateLimitWindowMs: parseInt(process.env['RATE_LIMIT_WINDOW_MS'] || '900000'), // 15 minutes
     rateLimitMaxRequests: parseInt(process.env['RATE_LIMIT_MAX_REQUESTS'] || '100'),

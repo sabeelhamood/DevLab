@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button.jsx'
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx'
 import { BookOpen, Lightbulb, CheckCircle, Clock, Target } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { geminiAPI } from '../../services/api/gemini.js'
 
 // Mock question data
 const mockQuestion = {

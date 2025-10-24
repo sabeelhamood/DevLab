@@ -9,32 +9,37 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { notFound } from './middleware/notFound.js'
 
 // Import routes
-import authRoutes from '../dist/routes/auth/authRoutes.js'
-import questionRoutes from '../dist/routes/questions/questionRoutes.js'
-import sessionRoutes from '../dist/routes/sessions/sessionRoutes.js'
-import competitionRoutes from '../dist/routes/competitions/competitionRoutes.js'
-import analyticsRoutes from '../dist/routes/analytics/analyticsRoutes.js'
-import healthRoutes from '../dist/routes/health/healthRoutes.js'
+import authRoutes from './routes/auth/authRoutes.js'
+import questionRoutes from './routes/questions/questionRoutes.js'
+import sessionRoutes from './routes/sessions/sessionRoutes.js'
+import competitionRoutes from './routes/competitions/competitionRoutes.js'
+import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
+import healthRoutes from './routes/health/healthRoutes.js'
 
 // Gemini AI routes
 import geminiRoutes from './routes/gemini.js'
 import geminiTestRoutes from './routes/gemini-test.js'
+import geminiQuestionRoutes from './routes/gemini-question-generation.js'
 
 // External service routes
-import directoryRoutes from '../dist/routes/external/directoryRoutes.js'
-import assessmentRoutes from '../dist/routes/external/assessmentRoutes.js'
-import contentStudioRoutes from '../dist/routes/external/contentStudioRoutes.js'
-import learningAnalyticsRoutes from '../dist/routes/external/learningAnalyticsRoutes.js'
-import hrReportingRoutes from '../dist/routes/external/hrReportingRoutes.js'
-import assistantRoutes from '../dist/routes/external/assistantRoutes.js'
+import directoryRoutes from './routes/external/directoryRoutes.js'
+import assessmentRoutes from './routes/external/assessmentRoutes.js'
+import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
+import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
+import hrReportingRoutes from './routes/external/hrReportingRoutes.js'
+import assistantRoutes from './routes/external/assistantRoutes.js'
 
 const app = express()
 
 // Security middleware
 app.use(helmet())
 app.use(cors({
-  origin: config.corsOrigins,
-  credentials: true
+  origin: config.nodeEnv === 'development' 
+    ? ['http://localhost:3000', 'http://localhost:3003', 'http://localhost:5173']
+    : config.corsOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }))
 
 // Rate limiting
@@ -70,6 +75,7 @@ app.use('/api/analytics', analyticsRoutes)
 // Gemini AI routes
 app.use('/api/gemini', geminiRoutes)
 app.use('/api/gemini-test', geminiTestRoutes)
+app.use('/api/gemini-questions', geminiQuestionRoutes)
 
 // External service routes (for microservice communication)
 app.use('/api/external/learners', directoryRoutes)

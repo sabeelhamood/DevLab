@@ -5,38 +5,21 @@ const router = express.Router()
 // Simple test endpoint for Gemini API
 router.get('/test-simple', async (req, res) => {
   try {
-    // Check if the package is installed
-    let GoogleGenerativeAI
-    try {
-      const geminiModule = await import('@google/generative-ai')
-      GoogleGenerativeAI = geminiModule.GoogleGenerativeAI
-    } catch (error) {
-      // Return mock response if package not installed
-      return res.json({
-        success: true,
-        message: 'Gemini API setup ready (mock mode)',
-        generatedQuestion: 'Mock: Write a function that finds the largest number in an array',
-        note: 'Install @google/generative-ai package for real AI generation',
-        mock: true,
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    // Test with your API key
-    const API_KEY = 'AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw'
-    const genAI = new GoogleGenerativeAI(API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    // Import the Gemini service
+    const { geminiService } = await import('../services/gemini.js')
     
-    const prompt = "Generate a simple JavaScript coding question for beginners about arrays. Return only the question text."
-    
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
+    // Test basic question generation
+    const question = await geminiService.generateCodingQuestion(
+      'JavaScript Arrays', 
+      'beginner', 
+      'javascript'
+    )
     
     res.json({
       success: true,
-      message: 'Gemini API is working!',
-      generatedQuestion: text,
+      message: geminiService.isMockMode ? 'Gemini API is working in mock mode!' : 'Gemini API is working!',
+      generatedQuestion: question,
+      mockMode: geminiService.isMockMode,
       timestamp: new Date().toISOString()
     })
     

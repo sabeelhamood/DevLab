@@ -64,3 +64,4 @@ describe('API Client', () => {
     await expect(apiClient.get('/test')).rejects.toThrow('Network error')
   })
 })
+

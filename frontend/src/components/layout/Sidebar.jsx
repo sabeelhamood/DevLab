@@ -41,7 +41,13 @@ export default function Sidebar() {
   const userNavigation = navigation[user.role] || navigation.learner
 
   return (
-    <div className="w-64 bg-white shadow-sm border-r border-gray-200">
+    <div 
+      className="w-64 shadow-lg border-r transition-all duration-300"
+      style={{ 
+        background: 'var(--gradient-card)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }}
+    >
       <nav className="mt-6 px-3">
         <div className="space-y-1">
           {userNavigation.map((item) => (
@@ -50,32 +56,47 @@ export default function Sidebar() {
               to={item.href}
               className={({ isActive }) =>
                 cn(
-                  'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                  'group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 relative overflow-hidden',
                   isActive
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'text-white shadow-lg'
+                    : 'hover:scale-105'
                 )
               }
+              style={({ isActive }) => ({
+                background: isActive ? 'var(--gradient-primary)' : 'transparent',
+                color: isActive ? 'white' : 'var(--text-secondary)',
+                boxShadow: isActive ? 'var(--shadow-glow)' : 'none'
+              })}
             >
               {({ isActive }) => (
                 <>
                   <item.icon
                     className={cn(
-                      'mr-3 h-5 w-5 flex-shrink-0',
-                      isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                      'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
+                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary-cyan'
                     )}
                   />
                   {item.name}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
+                  )}
                 </>
               )}
             </NavLink>
           ))}
         </div>
         
-        <div className="mt-8 pt-6 border-t border-gray-200">
+        <div 
+          className="mt-8 pt-6"
+          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
+        >
           <NavLink
             to="/help"
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 hover:scale-105"
+            style={{ 
+              color: 'var(--text-secondary)',
+              background: 'transparent'
+            }}
           >
             <HelpCircle className="mr-3 h-5 w-5 text-gray-400" />
             Help & Support

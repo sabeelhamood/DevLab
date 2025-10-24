@@ -7,17 +7,42 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Dark Emerald Color Palette
+        'primary-blue': '#065f46',
+        'primary-purple': '#047857',
+        'primary-cyan': '#0f766e',
+        'accent-gold': '#d97706',
+        'accent-green': '#047857',
+        'accent-orange': '#f59e0b',
+        
+        // Neutral Colors
+        'bg-primary': '#f8fafc',
+        'bg-secondary': '#e2e8f0',
+        'bg-tertiary': '#cbd5e1',
+        'bg-card': '#ffffff',
+        'text-primary': '#1e293b',
+        'text-secondary': '#475569',
+        'text-muted': '#64748b',
+        'text-accent': '#334155',
+        
+        // Gamification Colors
+        'xp-color': '#f59e0b',
+        'level-color': '#047857',
+        'badge-color': '#10b981',
+        'streak-color': '#ef4444',
+        
+        // Legacy colors for compatibility
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
         },
         secondary: {
           50: '#f8fafc',
@@ -71,6 +96,26 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, #065f46, #047857)',
+        'gradient-secondary': 'linear-gradient(135deg, #0f766e, #047857)',
+        'gradient-accent': 'linear-gradient(135deg, #d97706, #f59e0b)',
+        'gradient-card': 'linear-gradient(145deg, #ffffff, #f0fdfa)',
+      },
+      boxShadow: {
+        'glow': '0 0 30px rgba(6, 95, 70, 0.3)',
+        'card': '0 10px 40px rgba(0, 0, 0, 0.1)',
+        'hover': '0 20px 60px rgba(6, 95, 70, 0.2)',
+      },
+      spacing: {
+        'xs': '0.5rem',
+        'sm': '1rem',
+        'md': '1.5rem',
+        'lg': '2rem',
+        'xl': '3rem',
+        '2xl': '4rem',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

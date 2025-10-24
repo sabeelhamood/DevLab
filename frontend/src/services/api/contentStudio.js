@@ -11,3 +11,4 @@ export const contentStudioApi = {
     return await apiClient.post('/content-studio/check-solution', data)
   }
 }
+
