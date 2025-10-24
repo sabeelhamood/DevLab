@@ -177,23 +177,32 @@ Create a practical coding question that:
 5. Has clear problem statement
 6. Includes 2-3 test cases with inputs and expected outputs
 7. Provides 2-3 progressive hints (don't give away the solution)
-8. Includes the complete solution
+8. Includes the complete solution that follows best practices and runs correctly
 
-Return ONLY a valid JSON object with this exact structure:
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+- The solution code must be syntactically correct and executable
+- Use proper ${language} syntax and best practices
+
+```json
 {
   "title": "Question title",
-  "description": "Clear problem statement",
+  "description": "Clear problem statement with specific requirements",
   "difficulty": "${difficulty}",
   "language": "${language}",
   "testCases": [
     {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
   ],
-  "hints": ["hint 1", "hint 2", "hint 3"],
-  "solution": "complete code solution",
-  "explanation": "explanation of the solution"
+  "hints": ["conceptual hint", "approach hint", "implementation hint"],
+  "solution": "complete, executable code solution following best practices",
+  "explanation": "detailed explanation of the solution approach and logic",
+  "summary": "Brief one-line summary of what this question tests"
 }
+```
 
-Return ONLY the JSON object, no additional text.
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
@@ -255,15 +264,22 @@ Create a theoretical question that:
 2. Relates to macro skills: ${macroSkills.join(", ")}
 3. Is appropriate for ${difficulty} level
 4. Is educational and thought-provoking
-5. Has 4 multiple choice options (A, B, C, D)
+5. Has 4 multiple choice options (A, B, C, D) with only ONE correct answer
 6. Includes detailed explanation
 7. Provides 2-3 progressive hints
 8. Includes the complete answer
 
-Return ONLY a valid JSON object with this exact structure:
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+- Ensure only ONE option is correct
+- Make incorrect options plausible but clearly wrong
+
+```json
 {
   "title": "Question title",
-  "description": "The question text",
+  "description": "The question text with clear context",
   "difficulty": "${difficulty}",
   "options": {
     "A": "option A text",
@@ -272,11 +288,13 @@ Return ONLY a valid JSON object with this exact structure:
     "D": "option D text"
   },
   "correctAnswer": "A",
-  "explanation": "detailed explanation of why this answer is correct",
-  "hints": ["hint 1", "hint 2", "hint 3"]
+  "explanation": "detailed explanation of why this answer is correct and why others are wrong",
+  "hints": ["conceptual hint", "thinking hint", "specific hint"],
+  "summary": "Brief one-line summary of what this question tests"
 }
+```
 
-Return ONLY the JSON object, no additional text.
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
@@ -312,23 +330,41 @@ Provide a comprehensive evaluation that:
 4. Provides constructive feedback
 5. Suggests specific improvements
 
-Return ONLY a valid JSON object with this exact structure:
+EVALUATION REQUIREMENTS:
+- If code is WRONG: Highlight the SPECIFIC mistake line or logic error
+- If code is CORRECT: Analyze efficiency and provide improvement tips
+- For correct code: Optionally suggest a more optimized version
+- Be specific about what's wrong and how to fix it
+- Provide actionable feedback
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+
+```json
 {
-  "isCorrect": true/false,
+  "isCorrect": true,
   "score": 85,
-  "feedback": "constructive feedback message",
-  "suggestions": ["suggestion 1", "suggestion 2"],
+  "feedback": "constructive feedback message with specific details",
+  "suggestions": ["specific suggestion 1", "specific suggestion 2"],
   "testResults": [
-    {"testCase": "test 1", "passed": true, "actual": "actual output", "expected": "expected output"}
+    {"testCase": "test 1", "passed": true, "actual": "actual output", "expected": "expected output", "error": "specific error if any"}
   ],
   "codeQuality": {
     "readability": "good",
     "efficiency": "excellent", 
-    "bestPractices": "mostly good"
-  }
+    "bestPractices": "mostly good",
+    "specificIssues": ["issue 1", "issue 2"]
+  },
+  "specificErrors": ["line X: specific error description", "logic error in function Y"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "optimizedVersion": "optional optimized code if applicable",
+  "summary": "Brief summary of the evaluation"
 }
+```
 
-Return ONLY the JSON object, no additional text.
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
@@ -356,25 +392,38 @@ User's current attempt: ${userAttempt}
 Hints already used: ${hintsUsed}/3
 Previous hints: ${allHints.join(" | ")}
 
-Generate a hint that:
-1. Is appropriate for hint level ${hintsUsed + 1} (1=general, 2=specific, 3=almost solution)
+Generate a structured hint based on the hint level:
+- Level 1 (${hintsUsed + 1}): Provide conceptual guidance and general approach
+- Level 2 (${hintsUsed + 1}): Give specific direction and methodology
+- Level 3 (${hintsUsed + 1}): Offer almost-solution guidance without revealing complete code
+
+Hint requirements:
+1. Is appropriate for hint level ${hintsUsed + 1}
 2. Doesn't give away the complete solution
 3. Builds on previous hints if any
 4. Guides the user in the right direction
 5. Is encouraging and educational
+6. Focuses on the specific concept being tested
 
-Return ONLY a valid JSON object with this exact structure:
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+
+```json
 {
-  "hint": "the actual hint text",
+  "hint": "the actual hint text appropriate for level ${hintsUsed + 1}",
   "hintLevel": ${hintsUsed + 1},
-  "encouragement": "encouraging message",
+  "encouragement": "encouraging and motivating message",
   "showSolution": false,
   "solution": null,
-  "nextSteps": ["step 1", "step 2"],
-  "concept": "key concept being tested"
+  "nextSteps": ["specific step 1", "specific step 2", "specific step 3"],
+  "concept": "key concept being tested",
+  "summary": "Brief summary of what this hint provides"
 }
+```
 
-Return ONLY the JSON object, no additional text.
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
@@ -407,16 +456,31 @@ Check for suspicious patterns that might indicate:
 3. Code that doesn't match the student's apparent skill level
 4. Unusual coding patterns or style
 
-Return ONLY a valid JSON object with this exact structure:
-{
-  "suspicious": true/false,
-  "confidence": 85,
-  "reasons": ["reason 1", "reason 2"],
-  "recommendations": ["recommendation 1", "recommendation 2"],
-  "analysis": "brief analysis of the code patterns"
-}
+ANALYSIS REQUIREMENTS:
+- Provide a SHORT rationale explaining WHY you suspect AI-generated code
+- Be specific about the patterns that indicate cheating
+- Consider the complexity vs. skill level mismatch
+- Look for overly perfect or generic solutions
 
-Return ONLY the JSON object, no additional text.
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+
+```json
+{
+  "suspicious": true,
+  "confidence": 85,
+  "reasons": ["specific reason 1", "specific reason 2"],
+  "recommendations": ["specific recommendation 1", "specific recommendation 2"],
+  "analysis": "brief analysis of the code patterns",
+  "rationale": "short explanation of why this appears to be AI-generated",
+  "specificPatterns": ["pattern 1", "pattern 2"],
+  "summary": "Brief summary of the cheating detection analysis"
+}
+```
+
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
@@ -449,18 +513,25 @@ Analyze the user's performance and provide:
 4. Encouraging feedback
 5. Suggested resources or topics
 
-Return ONLY a valid JSON object with this exact structure:
-{
-  "strengths": ["strength 1", "strength 2"],
-  "weaknesses": ["weakness 1", "weakness 2"],
-  "recommendations": ["recommendation 1", "recommendation 2"],
-  "nextSteps": ["next step 1", "next step 2"],
-  "encouragement": "encouraging message",
-  "suggestedResources": ["resource 1", "resource 2"],
-  "learningPath": "suggested learning path"
-}
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
 
-Return ONLY the JSON object, no additional text.
+```json
+{
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "weaknesses": ["specific weakness 1", "specific weakness 2"],
+  "recommendations": ["specific recommendation 1", "specific recommendation 2"],
+  "nextSteps": ["specific next step 1", "specific next step 2"],
+  "encouragement": "encouraging and motivating message",
+  "suggestedResources": ["specific resource 1", "specific resource 2"],
+  "learningPath": "suggested learning path with specific steps",
+  "summary": "Brief summary of the learning recommendations"
+}
+```
+
+Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
