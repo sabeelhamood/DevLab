@@ -135,45 +135,114 @@ router.post('/check-solution', async (req, res) => {
       })
     }
 
-    // First detect if solution is AI-generated
-    const cheatingDetection = await geminiService.detectCheating(
-      userSolution,
-      question.description || question.title,
-      language
-    )
-
-    // If AI-generated, return early with detection message
-    if (cheatingDetection.isAiGenerated) {
-      return res.json({
-        success: true,
-        evaluation: {
-          score: 0,
-          feedback: "AI-generated solution detected. Please try to solve it yourself.",
-          isAiGenerated: true,
-          suggestions: []
-        },
-        feedback: {
-          message: "AI-generated solution detected. Please try to solve it yourself.",
-          suggestions: ["Try to understand the problem step by step", "Write your own code from scratch", "Ask for hints if you're stuck"]
-        },
-        metadata: {
-          courseName,
-          topicName,
-          language,
-          checkedAt: new Date().toISOString(),
-          aiDetection: cheatingDetection
-        }
-      })
-    }
-
-    // Evaluate the code solution (only if not AI-generated)
+    // First, evaluate the code solution for correctness
+    console.log('🔍 Evaluating solution correctness...')
     const evaluation = await geminiService.evaluateCodeSubmission(
       userSolution,
       question,
       language
     )
 
-    // Generate detailed feedback
+    console.log('📊 Evaluation result:', evaluation)
+
+    // Only run AI detection if the solution is correct
+    let aiDetectionResult = null
+    if (evaluation.score >= 80) { // Consider solutions with 80%+ score as potentially correct
+      console.log('✅ Solution appears correct, running AI detection analysis...')
+      
+      try {
+        // Run simple pattern detection first (fast, no API calls)
+        const simpleDetection = geminiService.simpleAiDetection(userSolution)
+        console.log('🔍 Simple pattern detection result:', simpleDetection)
+
+        // If simple detection already flags it, use that result
+        if (simpleDetection.isAiGenerated) {
+          console.log('🚨 AI detected by simple pattern analysis, skipping advanced detection')
+          aiDetectionResult = {
+            isAiGenerated: true,
+            confidence: simpleDetection.confidence,
+            method: 'pattern-based',
+            simple: simpleDetection
+          }
+        } else {
+          // Run advanced detection methods for more thorough analysis
+          const [basicDetection, enhancedDetection] = await Promise.all([
+            geminiService.detectCheating(userSolution, question.description || question.title, language),
+            geminiService.enhancedAiDetection(userSolution, question.description || question.title, language)
+          ])
+
+          console.log('🔍 Basic detection result:', basicDetection)
+          console.log('🔍 Enhanced detection result:', enhancedDetection)
+
+          // Combine results - if any method detects AI, flag it
+          const isAiGenerated = basicDetection.isAiGenerated || enhancedDetection.isAiGenerated
+          const confidence = Math.max(
+            simpleDetection.confidence || 0,
+            basicDetection.confidence || 0, 
+            enhancedDetection.confidence || 0
+          )
+          
+          console.log('🔍 Combined AI detection result:', { isAiGenerated, confidence })
+
+          aiDetectionResult = {
+            isAiGenerated,
+            confidence,
+            simple: simpleDetection,
+            basic: basicDetection,
+            enhanced: enhancedDetection,
+            combined: { isAiGenerated, confidence }
+          }
+        }
+      } catch (detectionError) {
+        console.error('❌ AI detection error:', detectionError)
+        console.log('⚠️ AI detection failed, proceeding with normal evaluation...')
+        aiDetectionResult = null
+      }
+    } else {
+      console.log('❌ Solution is incorrect or incomplete, skipping AI detection')
+    }
+
+    // Handle AI detection results
+    if (aiDetectionResult && aiDetectionResult.isAiGenerated) {
+      console.log('🚨 AI-generated solution detected, returning detection result')
+      
+      const combinedReasons = [
+        ...(aiDetectionResult.simple?.reasons || []),
+        ...(aiDetectionResult.basic?.reasons || []),
+        ...(aiDetectionResult.enhanced?.reasons || [])
+      ].filter((reason, index, arr) => arr.indexOf(reason) === index) // Remove duplicates
+
+      const combinedPatterns = [
+        ...(aiDetectionResult.simple?.detectedPatterns || []),
+        ...(aiDetectionResult.basic?.specificPatterns || []),
+        ...(aiDetectionResult.enhanced?.detectedPatterns || [])
+      ].filter((pattern, index, arr) => arr.indexOf(pattern) === index) // Remove duplicates
+
+      return res.json({
+        success: true,
+        evaluation: {
+          score: 0,
+          feedback: `AI-generated solution detected (confidence: ${aiDetectionResult.confidence}%). Please try to solve it yourself.`,
+          isAiGenerated: true,
+          suggestions: []
+        },
+        feedback: {
+          message: `AI-generated solution detected (confidence: ${aiDetectionResult.confidence}%). Please try to solve it yourself.`,
+          suggestions: ["Try to understand the problem step by step", "Write your own code from scratch", "Ask for hints if you're stuck"],
+          reasons: combinedReasons,
+          patterns: combinedPatterns
+        },
+        metadata: {
+          courseName,
+          topicName,
+          language,
+          checkedAt: new Date().toISOString(),
+          aiDetection: aiDetectionResult
+        }
+      })
+    }
+
+    // Generate detailed feedback for non-AI solutions
     const feedback = await geminiService.generateLearningRecommendations(
       {
         courseName,
@@ -195,7 +264,7 @@ router.post('/check-solution', async (req, res) => {
         topicName,
         language,
         checkedAt: new Date().toISOString(),
-        aiDetection: cheatingDetection
+        aiDetection: aiDetectionResult
       }
     })
 

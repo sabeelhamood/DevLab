@@ -35,7 +35,7 @@ const app = express()
 app.use(helmet())
 app.use(cors({
   origin: config.nodeEnv === 'development' 
-    ? ['http://localhost:3000', 'http://localhost:3003', 'http://localhost:5173']
+    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://localhost:5173']
     : config.corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

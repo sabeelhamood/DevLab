@@ -186,7 +186,7 @@ Create a practical coding question that:
 4. Is practical and real-world relevant
 5. Has clear problem statement
 6. Includes 2-3 test cases with inputs and expected outputs
-7. Provides 2-3 progressive hints (don't give away the solution)
+7. Provides 2-3 short, direct hints (don't give away the solution)
 8. Includes the complete solution that follows best practices and runs correctly
 
 CRITICAL FORMATTING REQUIREMENTS:
@@ -205,7 +205,7 @@ CRITICAL FORMATTING REQUIREMENTS:
   "testCases": [
     {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
   ],
-  "hints": ["conceptual hint", "approach hint", "implementation hint"],
+  "hints": ["short concept hint", "specific approach hint", "implementation direction"],
   "solution": "complete, executable code solution following best practices",
   "explanation": "detailed explanation of the solution approach and logic",
   "summary": "Brief one-line summary of what this question tests"
@@ -276,7 +276,7 @@ Create a theoretical question that:
 4. Is educational and thought-provoking
 5. Has 4 multiple choice options (A, B, C, D) with only ONE correct answer
 6. Includes detailed explanation
-7. Provides 2-3 progressive hints
+7. Provides 2-3 short, direct hints
 8. Includes the complete answer
 
 CRITICAL FORMATTING REQUIREMENTS:
@@ -299,7 +299,7 @@ CRITICAL FORMATTING REQUIREMENTS:
   },
   "correctAnswer": "A",
   "explanation": "detailed explanation of why this answer is correct and why others are wrong",
-  "hints": ["conceptual hint", "thinking hint", "specific hint"],
+  "hints": ["basic concept", "thinking approach", "specific direction"],
   "summary": "Brief one-line summary of what this question tests"
 }
 \`\`\`
@@ -419,45 +419,37 @@ Return ONLY the JSON object in the specified format, no additional text.
     this._checkAvailability();
 
     const prompt = `
-You are an expert programming tutor. Generate a progressive hint for this coding question.
+Generate a concise, direct hint for this coding question.
 
 Question: ${question}
 User's current attempt: ${userAttempt}
 Hints already used: ${hintsUsed}/3
 Previous hints: ${allHints.join(" | ")}
 
-Generate a structured hint based on the hint level:
-- Level 1 (${hintsUsed + 1}): Provide conceptual guidance and general approach
-- Level 2 (${hintsUsed + 1}): Give specific direction and methodology
-- Level 3 (${hintsUsed + 1}): Offer almost-solution guidance without revealing complete code
+Generate a short, actionable hint for level ${hintsUsed + 1}:
+- Level 1: Basic concept or approach
+- Level 2: Specific implementation guidance  
+- Level 3: Near-solution direction
 
-Hint requirements:
-1. Is appropriate for hint level ${hintsUsed + 1}
-2. Doesn't give away the complete solution
-3. Builds on previous hints if any
-4. Guides the user in the right direction
-5. Is encouraging and educational
-6. Focuses on the specific concept being tested
-
-CRITICAL FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
-- NO extra text, explanations, or comments outside the JSON
-- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+Requirements:
+- Keep hint under 20 words
+- Be direct and actionable
+- No encouragement or extra text
+- Focus only on key guidance
+- Don't reveal the complete solution
+- Never automatically show solution - user must choose to see it
 
 \`\`\`json
 {
-  "hint": "the actual hint text appropriate for level ${hintsUsed + 1}",
+  "hint": "short, direct hint text",
   "hintLevel": ${hintsUsed + 1},
-  "encouragement": "encouraging and motivating message",
   "showSolution": false,
   "solution": null,
-  "nextSteps": ["specific step 1", "specific step 2", "specific step 3"],
-  "concept": "key concept being tested",
-  "summary": "Brief summary of what this hint provides"
+  "canShowSolution": ${hintsUsed >= 2}
 }
 \`\`\`
 
-Return ONLY the JSON object in the specified format, no additional text.
+Return ONLY the JSON object.
 `;
 
     try {
@@ -478,23 +470,50 @@ Return ONLY the JSON object in the specified format, no additional text.
     this._checkAvailability();
 
     const prompt = `
-Analyze this code submission for potential cheating or plagiarism.
+You are an expert code analysis AI specialized in detecting AI-generated code submissions. Analyze this code submission for signs of AI assistance.
 
-Question: ${question}
-Code:
+QUESTION CONTEXT:
+${question}
+
+SUBMITTED CODE:
 ${code}
 
-Check for suspicious patterns that might indicate:
-1. AI-generated code (overly perfect, generic patterns)
-2. Copied code from external sources
-3. Code that doesn't match the student's apparent skill level
-4. Unusual coding patterns or style
+DETECTION CRITERIA - Look for these specific AI-generated code patterns:
 
-ANALYSIS REQUIREMENTS:
-- Provide a SHORT rationale explaining WHY you suspect AI-generated code
-- Be specific about the patterns that indicate cheating
-- Consider the complexity vs. skill level mismatch
-- Look for overly perfect or generic solutions
+1. **PERFECT SYNTAX & STRUCTURE**:
+   - Flawless syntax with no typos or common student mistakes
+   - Overly consistent formatting and naming conventions
+   - Professional-level code organization
+
+2. **AI-CHARACTERISTIC PATTERNS**:
+   - Generic variable names (item, element, result, data)
+   - Overly descriptive comments that explain obvious things
+   - Perfect error handling that students typically miss
+   - Consistent use of modern JavaScript features without mistakes
+
+3. **COMPLEXITY MISMATCH**:
+   - Code complexity far exceeds typical student level for this question type
+   - Advanced algorithms or patterns not taught at this level
+   - Perfect implementation of edge cases students usually miss
+
+4. **CODING STYLE INDICATORS**:
+   - Consistent use of best practices throughout
+   - No personal coding quirks or learning mistakes
+   - Perfect variable naming conventions
+   - Overly clean and professional code structure
+
+5. **SOLUTION CHARACTERISTICS**:
+   - Solution is too optimal for a learning context
+   - Includes advanced techniques not typically used by students
+   - Perfect handling of edge cases
+   - Overly comprehensive error checking
+
+ANALYSIS INSTRUCTIONS:
+- Be STRICT in detection - err on the side of flagging suspicious code
+- Look for patterns that indicate AI assistance rather than student work
+- Consider if the code quality exceeds what a student would typically produce
+- Focus on consistency, perfection, and advanced patterns
+- Check for generic AI-generated variable names and comments
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
@@ -503,14 +522,14 @@ CRITICAL FORMATTING REQUIREMENTS:
 
 \`\`\`json
 {
-  "suspicious": true,
-  "confidence": 85,
-  "reasons": ["specific reason 1", "specific reason 2"],
-  "recommendations": ["specific recommendation 1", "specific recommendation 2"],
-  "analysis": "brief analysis of the code patterns",
-  "rationale": "short explanation of why this appears to be AI-generated",
-  "specificPatterns": ["pattern 1", "pattern 2"],
-  "summary": "Brief summary of the cheating detection analysis"
+  "isAiGenerated": true,
+  "confidence": 95,
+  "reasons": ["specific AI pattern 1", "specific AI pattern 2", "specific AI pattern 3"],
+  "recommendations": ["Write your own solution from scratch", "Try to understand the problem step by step", "Ask for hints if you're stuck"],
+  "analysis": "Detailed analysis of why this appears to be AI-generated",
+  "rationale": "Specific explanation of AI-generated patterns detected",
+  "specificPatterns": ["pattern 1", "pattern 2", "pattern 3"],
+  "summary": "AI-generated code detected - please solve independently"
 }
 \`\`\`
 
@@ -530,7 +549,7 @@ Return ONLY the JSON object in the specified format, no additional text.
       // Return fallback response when Gemini is unavailable
       if (err.message?.includes('overloaded') || err.message?.includes('503') || err.message?.includes('Service Unavailable')) {
         return {
-          suspicious: false,
+          isAiGenerated: false,
           confidence: 0,
           reasons: ["Analysis temporarily unavailable"],
           recommendations: ["Try again in a few moments for detailed analysis"],
@@ -542,6 +561,180 @@ Return ONLY the JSON object in the specified format, no additional text.
       }
       
       throw new Error(`Failed to detect cheating: ${err?.message || err}`);
+    }
+  }
+
+  // Simple pattern-based AI detection (no AI required)
+  simpleAiDetection(code) {
+    const patterns = {
+      aiVariableNames: /\b(item|element|result|data|value|temp|current|total|subtotal|finalTotal|discountPercentage|discountThreshold)\b/g,
+      perfectComments: /\/\/\s*(Calculate|Initialize|Check|Apply|Return|Handle|Process|Validate)/g,
+      genericFunctions: /\b(calculate|process|handle|validate|check|apply|initialize|compute)\w*/g,
+      perfectFormatting: /^\s*\/\/\s*[A-Z][a-z]+.*\.$/gm,
+      professionalStructure: /\{\s*\n\s*\/\/\s*[A-Z]/g
+    }
+
+    let score = 0
+    const detectedPatterns = []
+
+    // Check for AI-characteristic variable names
+    const aiVariableMatches = code.match(patterns.aiVariableNames)
+    if (aiVariableMatches && aiVariableMatches.length > 3) {
+      score += 20
+      detectedPatterns.push(`Generic AI variable names: ${aiVariableMatches.slice(0, 3).join(', ')}`)
+    }
+
+    // Check for overly perfect comments
+    const perfectCommentMatches = code.match(patterns.perfectComments)
+    if (perfectCommentMatches && perfectCommentMatches.length > 2) {
+      score += 15
+      detectedPatterns.push(`Overly perfect comments: ${perfectCommentMatches.length} instances`)
+    }
+
+    // Check for generic function names
+    const genericFunctionMatches = code.match(patterns.genericFunctions)
+    if (genericFunctionMatches && genericFunctionMatches.length > 2) {
+      score += 15
+      detectedPatterns.push(`Generic function names: ${genericFunctionMatches.slice(0, 2).join(', ')}`)
+    }
+
+    // Check for perfect formatting
+    const perfectFormattingMatches = code.match(patterns.perfectFormatting)
+    if (perfectFormattingMatches && perfectFormattingMatches.length > 1) {
+      score += 10
+      detectedPatterns.push(`Perfect comment formatting: ${perfectFormattingMatches.length} instances`)
+    }
+
+    // Check for professional structure
+    const professionalStructureMatches = code.match(patterns.professionalStructure)
+    if (professionalStructureMatches && professionalStructureMatches.length > 0) {
+      score += 10
+      detectedPatterns.push('Professional code structure detected')
+    }
+
+    // Check for zero syntax errors (perfect code)
+    try {
+      // Try to parse the code - if it's perfect, it might be AI-generated
+      if (language === 'javascript') {
+        new Function(code) // This will throw if there are syntax errors
+        score += 5
+        detectedPatterns.push('Perfect syntax with no errors')
+      }
+    } catch (e) {
+      // Code has syntax errors, likely student-written
+    }
+
+    const isAiGenerated = score >= 30
+    const confidence = Math.min(score, 95)
+
+    return {
+      isAiGenerated,
+      confidence,
+      detectedPatterns,
+      reasons: detectedPatterns,
+      analysis: `Pattern-based analysis detected ${score} points of AI characteristics`,
+      summary: isAiGenerated ? 'AI-generated code detected by pattern analysis' : 'No clear AI patterns detected'
+    }
+  }
+
+  // Enhanced AI detection with pattern analysis
+  async enhancedAiDetection(code, question, language = "javascript") {
+    this._checkAvailability();
+
+    const prompt = `
+You are an expert at detecting AI-generated code. Analyze this code for specific AI-generated patterns.
+
+CODE TO ANALYZE:
+${code}
+
+QUESTION CONTEXT:
+${question}
+
+DETECT THESE SPECIFIC AI PATTERNS:
+
+1. **VARIABLE NAMING PATTERNS**:
+   - Generic names: item, element, result, data, value, temp, current, total
+   - Overly descriptive names that AI loves: calculateOrderTotal, processUserInput
+   - Perfect camelCase without any inconsistencies
+
+2. **COMMENT PATTERNS**:
+   - Overly explanatory comments for obvious code
+   - Comments that explain what the code does rather than why
+   - Perfect comment formatting and placement
+
+3. **CODE STRUCTURE PATTERNS**:
+   - Perfect indentation and spacing
+   - Consistent bracket placement
+   - No personal coding style variations
+   - Professional-level organization
+
+4. **ALGORITHM PATTERNS**:
+   - Optimal solutions that students wouldn't naturally write
+   - Perfect edge case handling
+   - Advanced techniques used flawlessly
+   - No trial-and-error learning patterns
+
+5. **ERROR HANDLING PATTERNS**:
+   - Comprehensive error checking that students typically skip
+   - Perfect validation logic
+   - Professional-level defensive programming
+
+6. **SYNTAX PERFECTION**:
+   - Zero typos or syntax errors
+   - Perfect use of modern JavaScript features
+   - Consistent coding style throughout
+   - No learning mistakes or personal quirks
+
+ANALYSIS FOCUS:
+- Look for code that is TOO PERFECT for a student submission
+- Check for patterns that indicate AI generation rather than human learning
+- Consider the complexity vs. expected student level
+- Focus on consistency and perfection indicators
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+
+\`\`\`json
+{
+  "isAiGenerated": true,
+  "confidence": 90,
+  "detectedPatterns": ["pattern 1", "pattern 2", "pattern 3"],
+  "reasons": ["specific reason 1", "specific reason 2", "specific reason 3"],
+  "analysis": "Detailed analysis of AI-generated patterns found",
+  "recommendations": ["Write your own solution", "Try to understand the problem", "Ask for hints"],
+  "summary": "AI-generated code detected based on pattern analysis"
+}
+\`\`\`
+
+Return ONLY the JSON object in the specified format, no additional text.
+`;
+
+    try {
+      const text = await this._callModel(prompt);
+      try {
+        return JSON.parse(this._cleanJsonResponse(text));
+      } catch {
+        return this.parseStructuredResponse(text);
+      }
+    } catch (err) {
+      console.error("enhancedAiDetection error:", err?.message || err);
+      
+      // Return fallback response when Gemini is unavailable
+      if (err.message?.includes('overloaded') || err.message?.includes('503') || err.message?.includes('Service Unavailable')) {
+        return {
+          isAiGenerated: false,
+          confidence: 0,
+          detectedPatterns: ["Analysis unavailable"],
+          reasons: ["Analysis temporarily unavailable"],
+          analysis: "Enhanced AI detection temporarily unavailable",
+          recommendations: ["Try again in a few moments"],
+          summary: "Enhanced AI detection temporarily unavailable"
+        };
+      }
+      
+      throw new Error(`Failed to perform enhanced AI detection: ${err?.message || err}`);
     }
   }
 

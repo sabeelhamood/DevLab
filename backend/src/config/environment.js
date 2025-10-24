@@ -3,7 +3,7 @@ const getEnvironmentConfig = () => {
   
   return {
     nodeEnv,
-    port: parseInt(process.env['PORT'] || '3001'),
+    port: parseInt(process.env['PORT'] || '3000'),
     database: {
       supabase: {
         url: process.env['SUPABASE_URL'] || '',

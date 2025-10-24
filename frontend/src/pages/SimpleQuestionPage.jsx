@@ -27,6 +27,7 @@ function SimpleQuestionPage() {
   const [hints, setHints] = useState([]) // Array to store all hints
   const [hintsUsed, setHintsUsed] = useState(0)
   const [showSolution, setShowSolution] = useState(false)
+  const [solution, setSolution] = useState(null)
   const [language, setLanguage] = useState('javascript')
   const [error, setError] = useState(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -260,10 +261,7 @@ int sum(int a, int b) {
       setHintsUsed(prev => prev + 1)
       setShowHint(true)
       
-      // If this is the 3rd hint, show solution option
-      if (hintsUsed >= 2) {
-        setShowSolution(true)
-      }
+      // Note: Solution is never automatically shown - user must choose to see it
     } catch (error) {
       console.error('Error getting hint:', error)
       // Show error instead of mock hint
@@ -284,6 +282,7 @@ int sum(int a, int b) {
     setHints([]) // Clear hints array
     setHintsUsed(0)
     setShowSolution(false)
+    setSolution(null) // Clear solution
   }
 
   // Navigation functions
@@ -515,13 +514,40 @@ int sum(int a, int b) {
             </div>
 
             {/* Question Content Area */}
-            <div className="prose max-w-none mb-6">
-              <p 
-                className="leading-relaxed text-lg"
-                style={{ color: 'var(--text-primary)' }}
+            <div className="mb-6">
+              <div 
+                className="rounded-xl p-6 border-2"
+                style={{ 
+                  background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
+                  borderColor: 'rgba(6, 95, 70, 0.2)',
+                  boxShadow: '0 4px 20px rgba(6, 95, 70, 0.1)'
+                }}
               >
-                {question.question_content}
-              </p>
+                <div className="flex items-start space-x-3 mb-4">
+                  <div 
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                    style={{ background: 'var(--gradient-primary)' }}
+                  >
+                    Q
+                  </div>
+                  <div className="flex-1">
+                    <h3 
+                      className="text-lg font-semibold mb-2"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      Problem Statement
+                    </h3>
+                    <div 
+                      className="prose prose-lg max-w-none"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <p className="leading-relaxed text-base font-medium">
+                        {question.question_content}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -546,7 +572,7 @@ int sum(int a, int b) {
                 Get Hint ({hintsUsed}/3)
               </button>
               
-              {showSolution && (
+              {hintsUsed >= 3 && !showSolution && (
                 <button
                   onClick={handleShowSolution}
                   className="btn flex items-center text-sm rounded-lg hover:scale-105 transition-all duration-300"
@@ -555,10 +581,10 @@ int sum(int a, int b) {
                     color: 'white',
                     boxShadow: 'var(--shadow-glow)'
                   }}
-                  title={hintsUsed < 3 ? `Use ${3 - hintsUsed} more hints to unlock solution` : 'Click to reveal solution'}
+                  title="You've used all hints. Click to reveal the solution if you want to see it."
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  {hintsUsed < 3 ? `Show Solution (${3 - hintsUsed} hints needed)` : 'Show Solution'}
+                  Show Solution (Optional)
                 </button>
               )}
               
@@ -579,18 +605,87 @@ int sum(int a, int b) {
             {/* Test Cases for Code Questions */}
             {question.question_type === 'code' && question.test_cases && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Test Cases</h3>
-                <div className="space-y-2">
-                  {question.test_cases.map((testCase, index) => (
-                    <div key={index} className="bg-gray-50 p-3 rounded border">
-                      <div className="text-sm">
-                        <span className="font-medium">Input:</span> {testCase.input}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Expected Output:</span> {testCase.expected_output}
-                      </div>
+                <div 
+                  className="rounded-xl p-6 border-2"
+                  style={{ 
+                    background: 'linear-gradient(145deg, #fef3c7, #fde68a)',
+                    borderColor: 'rgba(245, 158, 11, 0.3)',
+                    boxShadow: '0 4px 20px rgba(245, 158, 11, 0.1)'
+                  }}
+                >
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div 
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{ background: 'var(--gradient-accent)' }}
+                    >
+                      🧪
                     </div>
-                  ))}
+                    <h3 
+                      className="text-lg font-semibold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      Test Cases
+                    </h3>
+                  </div>
+                  <div className="grid gap-4">
+                    {question.test_cases.map((testCase, index) => (
+                      <div 
+                        key={index} 
+                        className="rounded-lg p-4 border"
+                        style={{ 
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          borderColor: 'rgba(245, 158, 11, 0.2)'
+                        }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span 
+                              className="inline-block px-2 py-1 rounded text-xs font-semibold mb-2"
+                              style={{ 
+                                background: 'var(--gradient-primary)',
+                                color: 'white'
+                              }}
+                            >
+                              Input
+                            </span>
+                            <div 
+                              className="font-mono text-sm p-3 rounded"
+                              style={{ 
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)'
+                              }}
+                            >
+                              {typeof testCase.input === 'object' 
+                                ? JSON.stringify(testCase.input, null, 2)
+                                : testCase.input}
+                            </div>
+                          </div>
+                          <div>
+                            <span 
+                              className="inline-block px-2 py-1 rounded text-xs font-semibold mb-2"
+                              style={{ 
+                                background: 'var(--gradient-secondary)',
+                                color: 'white'
+                              }}
+                            >
+                              Expected Output
+                            </span>
+                            <div 
+                              className="font-mono text-sm p-3 rounded"
+                              style={{ 
+                                background: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)'
+                              }}
+                            >
+                              {typeof testCase.expected_output === 'object' 
+                                ? JSON.stringify(testCase.expected_output, null, 2)
+                                : testCase.expected_output}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -658,21 +753,46 @@ int sum(int a, int b) {
                 </div>
                 
                 <div 
-                  className="rounded-lg overflow-hidden border"
-                  style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}
+                  className="rounded-xl overflow-hidden border-2 shadow-lg"
+                  style={{ 
+                    borderColor: 'rgba(6, 95, 70, 0.2)',
+                    boxShadow: '0 8px 32px rgba(6, 95, 70, 0.1)'
+                  }}
                 >
+                  <div 
+                    className="px-4 py-3 border-b flex items-center justify-between"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                      </div>
+                      <span className="text-white text-sm font-medium ml-3">
+                        {language.toUpperCase()} Editor
+                      </span>
+                    </div>
+                    <div className="text-white text-xs">
+                      {codeSolution.split('\n').length} lines
+                    </div>
+                  </div>
                   <textarea
                     value={codeSolution}
                     onChange={(e) => setCodeSolution(e.target.value)}
-                    className="w-full h-96 p-4 font-mono text-sm border-0 focus:ring-0 resize-none"
+                    className="w-full h-96 p-6 font-mono text-sm border-0 focus:ring-0 resize-none focus:outline-none"
                     style={{
-                      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                      fontFamily: '"JetBrains Mono", "Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
                       fontSize: '14px',
-                      lineHeight: '1.5',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-primary)'
+                      lineHeight: '1.6',
+                      background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
+                      color: 'var(--text-primary)',
+                      letterSpacing: '0.025em'
                     }}
-                    placeholder="Write your code here..."
+                    placeholder="// Write your code here...&#10;// Use proper indentation and formatting&#10;// Test your solution with the provided test cases"
                     disabled={isSubmitted}
                   />
                 </div>
@@ -696,43 +816,85 @@ int sum(int a, int b) {
         {/* Hint Panel */}
         {showHint && hints.length > 0 && (
           <div 
-            className="mt-6 rounded-xl p-6 border"
+            className="mt-6 rounded-xl p-6 border-2 shadow-lg"
             style={{
-              background: 'var(--gradient-accent)',
-              borderColor: 'rgba(245, 158, 11, 0.3)',
-              boxShadow: 'var(--shadow-glow)'
+              background: 'linear-gradient(145deg, #fef3c7, #fde68a)',
+              borderColor: 'rgba(245, 158, 11, 0.4)',
+              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.2)'
             }}
           >
-            <div className="flex items-start">
-              <Lightbulb className="h-5 w-5 text-white mt-0.5 mr-3 flex-shrink-0" />
+            <div className="flex items-start space-x-4">
+              <div 
+                className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white"
+                style={{ background: 'var(--gradient-accent)' }}
+              >
+                <Lightbulb className="h-5 w-5" />
+              </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-white mb-2">Hints ({hintsUsed}/3)</h4>
-                <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 
+                    className="text-lg font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    💡 Hints & Guidance
+                  </h4>
+                  <span 
+                    className="px-3 py-1 rounded-full text-sm font-semibold"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      color: 'white'
+                    }}
+                  >
+                    {hintsUsed}/3 Used
+                  </span>
+                </div>
+                <div className="space-y-4">
                   {hints.map((hint, index) => (
                     <div 
                       key={index} 
-                      className="rounded-lg p-4"
-                      style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+                      className="rounded-lg p-4 border-2"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: 'rgba(245, 158, 11, 0.3)'
+                      }}
                     >
-                      <div className="flex items-start">
-                        <span 
-                          className="inline-flex items-center justify-center w-6 h-6 text-white text-xs font-semibold rounded-full mr-3 flex-shrink-0"
-                          style={{ background: 'rgba(255, 255, 255, 0.2)' }}
+                      <div className="flex items-start space-x-3">
+                        <div 
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                          style={{ background: 'var(--gradient-accent)' }}
                         >
                           {index + 1}
-                        </span>
-                        <p className="text-white text-sm">{hint}</p>
+                        </div>
+                        <div className="flex-1">
+                          <p 
+                            className="text-sm leading-relaxed"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {hint}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
                 {hintsUsed >= 3 && (
-                  <p 
-                    className="text-white text-sm mt-3 p-3 rounded-lg"
-                    style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+                  <div 
+                    className="mt-4 p-4 rounded-lg border-2"
+                    style={{ 
+                      background: 'rgba(6, 95, 70, 0.1)',
+                      borderColor: 'rgba(6, 95, 70, 0.3)'
+                    }}
                   >
-                    You've used all hints. You can now view the solution or try again.
-                  </p>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5" style={{ color: 'var(--primary-green)' }} />
+                      <p 
+                        className="text-sm font-medium"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        You've used all available hints. Try to solve it with your new knowledge, or optionally view the solution if you need help.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -740,57 +902,122 @@ int sum(int a, int b) {
         )}
 
         {/* Solution Panel */}
-        {showSolution && question.solution && (
+        {showSolution && solution && (
           <div 
-            className="mt-6 rounded-xl p-6 border"
+            className="mt-6 rounded-xl p-6 border-2 shadow-lg"
             style={{
-              background: 'var(--gradient-secondary)',
-              borderColor: 'rgba(4, 120, 87, 0.3)',
-              boxShadow: 'var(--shadow-glow)'
+              background: 'linear-gradient(145deg, #d1fae5, #a7f3d0)',
+              borderColor: 'rgba(4, 120, 87, 0.4)',
+              boxShadow: '0 8px 32px rgba(4, 120, 87, 0.2)'
             }}
           >
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-white mt-0.5 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-white mb-2">Solution</h4>
-                {question.question_type === 'code' ? (
-                  <div 
-                    className="p-4 rounded-lg font-mono text-sm"
+            <div className="flex items-start space-x-4">
+              <div 
+                className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white"
+                style={{ background: 'var(--gradient-secondary)' }}
+              >
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 
+                    className="text-lg font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    ✅ Complete Solution
+                  </h4>
+                  <span 
+                    className="px-3 py-1 rounded-full text-sm font-semibold"
                     style={{ 
-                      background: 'rgba(0, 0, 0, 0.2)',
+                      background: 'var(--gradient-secondary)',
                       color: 'white'
                     }}
                   >
-                    <pre>{question.solution}</pre>
+                    Reference
+                  </span>
+                </div>
+                {question.question_type === 'code' ? (
+                  <div 
+                    className="rounded-lg p-4 border-2"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderColor: 'rgba(4, 120, 87, 0.3)'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span 
+                        className="text-sm font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        💻 Code Solution
+                      </span>
+                      <span 
+                        className="text-xs px-2 py-1 rounded"
+                        style={{ 
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)'
+                        }}
+                      >
+                        {language.toUpperCase()}
+                      </span>
+                    </div>
+                    <div 
+                      className="font-mono text-sm p-4 rounded border"
+                      style={{ 
+                        background: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        borderColor: 'rgba(4, 120, 87, 0.2)'
+                      }}
+                    >
+                      <pre className="whitespace-pre-wrap">{typeof solution === 'object' && solution.code ? solution.code : solution}</pre>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-white">
-                    <p className="font-semibold mb-2">Answer:</p>
-                    <p>{question.solution}</p>
+                  <div 
+                    className="rounded-lg p-4 border-2"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderColor: 'rgba(4, 120, 87, 0.3)'
+                    }}
+                  >
+                    <div className="flex items-center space-x-2 mb-3">
+                      <span 
+                        className="text-sm font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        📝 Answer
+                      </span>
+                    </div>
+                    <p 
+                      className="text-sm leading-relaxed"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {typeof solution === 'object' && solution.explanation ? solution.explanation : solution}
+                    </p>
                   </div>
                 )}
-                <div className="mt-4 flex space-x-4">
+                <div className="mt-4 flex space-x-3">
                   <button
                     onClick={handleReset}
-                    className="btn text-sm"
+                    className="btn text-sm px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105"
                     style={{
                       background: 'var(--gradient-primary)',
                       color: 'white',
                       boxShadow: 'var(--shadow-glow)'
                     }}
                   >
-                    Try Again
+                    🔄 Try Again
                   </button>
                   <button
                     onClick={() => setShowSolution(false)}
-                    className="btn text-sm"
+                    className="btn text-sm px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      color: 'white',
-                      border: '1px solid rgba(255, 255, 255, 0.2)'
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      color: 'var(--text-primary)',
+                      border: '2px solid rgba(4, 120, 87, 0.3)'
                     }}
                   >
-                    Hide Solution
+                    👁️ Hide Solution
                   </button>
                 </div>
               </div>
@@ -801,22 +1028,52 @@ int sum(int a, int b) {
         {/* Evaluation Results */}
         {isSubmitted && evaluation && (
           <div 
-            className="mt-6 card p-6"
+            className="mt-6 rounded-xl p-6 border-2 shadow-lg"
             style={{ 
-              background: 'var(--gradient-card)',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              boxShadow: 'var(--shadow-card)'
+              background: evaluation.score >= 70 
+                ? 'linear-gradient(145deg, #d1fae5, #a7f3d0)'
+                : 'linear-gradient(145deg, #fef3c7, #fde68a)',
+              borderColor: evaluation.score >= 70 
+                ? 'rgba(4, 120, 87, 0.4)'
+                : 'rgba(245, 158, 11, 0.4)',
+              boxShadow: evaluation.score >= 70 
+                ? '0 8px 32px rgba(4, 120, 87, 0.2)'
+                : '0 8px 32px rgba(245, 158, 11, 0.2)'
             }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 
-                className="text-lg font-bold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Results
-              </h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white"
+                  style={{ 
+                    background: evaluation.score >= 70 
+                      ? 'var(--gradient-secondary)' 
+                      : 'var(--gradient-accent)'
+                  }}
+                >
+                  {evaluation.score >= 70 ? (
+                    <CheckCircle className="h-6 w-6" />
+                  ) : (
+                    <XCircle className="h-6 w-6" />
+                  )}
+                </div>
+                <div>
+                  <h3 
+                    className="text-xl font-bold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {evaluation.score >= 70 ? '🎉 Great Job!' : '📚 Keep Learning!'}
+                  </h3>
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {evaluation.score >= 70 ? 'Your solution looks good!' : 'Let\'s review and improve together.'}
+                  </p>
+                </div>
+              </div>
               <div 
-                className="flex items-center px-4 py-2 rounded-full text-sm font-semibold"
+                className="flex items-center px-6 py-3 rounded-full text-lg font-bold"
                 style={{
                   background: evaluation.score >= 70 
                     ? 'var(--gradient-secondary)' 
@@ -826,108 +1083,209 @@ int sum(int a, int b) {
                 }}
               >
                 {evaluation.score >= 70 ? (
-                  <CheckCircle className="h-4 w-4 mr-1" />
+                  <CheckCircle className="h-5 w-5 mr-2" />
                 ) : (
-                  <XCircle className="h-4 w-4 mr-1" />
+                  <XCircle className="h-5 w-5 mr-2" />
                 )}
-                Score: {evaluation.score}%
+                {evaluation.score}%
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h4 
-                  className="font-semibold mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Feedback
-                </h4>
+                <div className="flex items-center space-x-2 mb-3">
+                  <h4 
+                    className="text-lg font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    💬 Feedback
+                  </h4>
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ 
+                      background: evaluation.score >= 70 
+                        ? 'var(--primary-green)' 
+                        : 'var(--accent-orange)'
+                    }}
+                  ></div>
+                </div>
                 {evaluation.isAiGenerated ? (
                   <div 
-                    className="rounded-lg p-4 border"
+                    className="rounded-lg p-4 border-2"
                     style={{
-                      background: 'var(--gradient-accent)',
-                      borderColor: 'rgba(245, 158, 11, 0.3)',
-                      boxShadow: 'var(--shadow-glow)'
+                      background: 'linear-gradient(145deg, #fef2f2, #fee2e2)',
+                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                      boxShadow: '0 4px 20px rgba(239, 68, 68, 0.1)'
                     }}
                   >
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <XCircle className="h-5 w-5 text-white" />
+                    <div className="flex items-start space-x-3">
+                      <div 
+                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white"
+                        style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                      >
+                        <XCircle className="h-4 w-4" />
                       </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-semibold text-white">
-                          AI-Generated Solution Detected
+                      <div className="flex-1">
+                        <h3 
+                          className="text-sm font-semibold mb-2"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          🤖 AI-Generated Solution Detected
                         </h3>
-                        <div className="mt-2 text-sm text-white">
+                        <div 
+                          className="text-sm leading-relaxed"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
                           <p>{evaluation.feedback}</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <p style={{ color: 'var(--text-primary)' }}>{evaluation.feedback}</p>
+                  <div 
+                    className="rounded-lg p-4 border-2"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderColor: evaluation.score >= 70 
+                        ? 'rgba(4, 120, 87, 0.3)'
+                        : 'rgba(245, 158, 11, 0.3)'
+                    }}
+                  >
+                    <p 
+                      className="text-sm leading-relaxed"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {evaluation.feedback}
+                    </p>
+                  </div>
                 )}
               </div>
 
               {evaluation.suggestions && evaluation.suggestions.length > 0 && (
                 <div>
-                  <h4 
-                    className="font-semibold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <h4 
+                      className="text-lg font-semibold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      💡 Suggestions
+                    </h4>
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: 'var(--accent-orange)' }}
+                    ></div>
+                  </div>
+                  <div 
+                    className="rounded-lg p-4 border-2"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderColor: 'rgba(245, 158, 11, 0.3)'
+                    }}
                   >
-                    Suggestions
-                  </h4>
-                  <ul className="list-disc list-inside space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                    {evaluation.suggestions.map((suggestion, index) => (
-                      <li key={index}>{suggestion}</li>
-                    ))}
-                  </ul>
+                    <div className="space-y-3">
+                      {evaluation.suggestions.map((suggestion, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-start space-x-3 p-3 rounded-lg"
+                          style={{ background: 'rgba(245, 158, 11, 0.05)' }}
+                        >
+                          <div 
+                            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                            style={{ background: 'var(--gradient-accent)' }}
+                          >
+                            {index + 1}
+                          </div>
+                          <p 
+                            className="text-sm leading-relaxed"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {suggestion}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {evaluation.optimalSolution && (
                 <div>
-                  <h4 
-                    className="font-semibold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    Optimal Solution
-                  </h4>
-                  <div 
-                    className="rounded-lg p-4"
-                    style={{ 
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}
-                  >
-                    <pre 
-                      className="text-sm whitespace-pre-wrap font-mono"
+                  <div className="flex items-center space-x-2 mb-3">
+                    <h4 
+                      className="text-lg font-semibold"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {evaluation.optimalSolution}
-                    </pre>
+                      ⭐ Optimal Solution
+                    </h4>
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: 'var(--primary-green)' }}
+                    ></div>
+                  </div>
+                  <div 
+                    className="rounded-lg p-4 border-2"
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderColor: 'rgba(4, 120, 87, 0.3)'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span 
+                        className="text-sm font-semibold"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        💻 Recommended Code
+                      </span>
+                      <span 
+                        className="text-xs px-2 py-1 rounded"
+                        style={{ 
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)'
+                        }}
+                      >
+                        {language.toUpperCase()}
+                      </span>
+                    </div>
+                    <div 
+                      className="rounded-lg p-4 border"
+                      style={{ 
+                        background: 'var(--bg-primary)',
+                        borderColor: 'rgba(4, 120, 87, 0.2)'
+                      }}
+                    >
+                      <pre 
+                        className="text-sm whitespace-pre-wrap font-mono leading-relaxed"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {evaluation.optimalSolution}
+                      </pre>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex space-x-4 pt-4">
+              <div className="flex space-x-4 pt-6 border-t-2" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                 <button
                   onClick={loadQuestion}
-                  className="btn btn-primary"
+                  className="btn text-sm px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'var(--gradient-primary)',
+                    color: 'white',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
                 >
-                  Next Question
+                  🚀 Next Question
                 </button>
                 <button
                   onClick={handleReset}
-                  className="btn"
+                  className="btn text-sm px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105"
                   style={{
-                    background: 'var(--bg-tertiary)',
+                    background: 'rgba(255, 255, 255, 0.8)',
                     color: 'var(--text-primary)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                    border: '2px solid rgba(6, 95, 70, 0.3)'
                   }}
                 >
-                  Try Again
+                  🔄 Try Again
                 </button>
               </div>
             </div>

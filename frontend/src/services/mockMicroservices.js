@@ -380,7 +380,7 @@ export const mockMicroservices = {
       try {
         console.log('Calling Gemini API with:', { topic, difficulty, language, type, nanoSkills, macroSkills })
 
-        const response = await fetch(`http://localhost:3001/api/gemini/generate-question`, {
+        const response = await fetch(`http://localhost:3000/api/gemini/generate-question`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -409,7 +409,7 @@ export const mockMicroservices = {
 
     evaluateCode: async (code, question, language = 'javascript', testCases = []) => {
       try {
-        const response = await fetch(`http://localhost:3001/api/gemini/evaluate-code`, {
+        const response = await fetch(`http://localhost:3000/api/gemini/evaluate-code`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ export const mockMicroservices = {
 
     generateHint: async (question, userAttempt, hintsUsed = 0, allHints = []) => {
       try {
-        const response = await fetch(`http://localhost:3001/api/gemini/generate-hint`, {
+        const response = await fetch(`http://localhost:3000/api/gemini/generate-hint`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -455,7 +455,7 @@ export const mockMicroservices = {
 
     detectCheating: async (code, question) => {
       try {
-        const response = await fetch(`http://localhost:3001/api/gemini/detect-cheating`, {
+        const response = await fetch(`http://localhost:3000/api/gemini/detect-cheating`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
