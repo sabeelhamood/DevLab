@@ -12,7 +12,6 @@ restartPolicyType = "on_failure"
 variables = { 
   NODE_ENV = "production",
   PORT = "3001",
-  GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}",
   CORS_ORIGINS = "https://devlab-frontend.vercel.app,https://devlab-frontend-git-main.vercel.app"
 }
 
@@ -20,7 +19,6 @@ variables = {
 variables = { 
   NODE_ENV = "staging",
   PORT = "3001",
-  GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}",
   CORS_ORIGINS = "https://devlab-frontend-staging.vercel.app"
 }
 

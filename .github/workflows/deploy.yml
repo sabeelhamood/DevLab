@@ -28,10 +28,9 @@ jobs:
             exit 1
           fi
           if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "❌ VERCEL_ORG_ID is not set"
-            exit 1
+            echo "⚠️ VERCEL_ORG_ID is not set - will attempt deployment without it"
           fi
-          echo "✅ All Vercel secrets are available"
+          echo "✅ Vercel secrets validation completed"
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -42,12 +41,17 @@ jobs:
           
           # Set Vercel environment variables
           export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
-          export VERCEL_ORG_ID="${{ secrets.VERCEL_ORG_ID }}"
           export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
           
-          # Deploy to Vercel
+          # Deploy to Vercel (with or without ORG_ID)
           cd frontend
-          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+          if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "Using VERCEL_ORG_ID for deployment"
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+          else
+            echo "Deploying without ORG_ID (using default scope)"
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+          fi
           
           echo "✅ Frontend deployed to Vercel successfully"
 
@@ -79,14 +83,12 @@ jobs:
             exit 1
           fi
           if [ -z "${{ secrets.RAILWAY_SERVICE_ID }}" ]; then
-            echo "❌ RAILWAY_SERVICE_ID is not set"
-            exit 1
+            echo "⚠️ RAILWAY_SERVICE_ID is not set - will attempt to find service automatically"
           fi
           if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
-            echo "❌ GEMINI_API_KEY is not set"
-            exit 1
+            echo "⚠️ GEMINI_API_KEY is not set - will use Railway's existing environment variable"
           fi
-          echo "✅ All Railway secrets are available"
+          echo "✅ Railway secrets validation completed"
 
       - name: Install Railway CLI
         run: |
@@ -103,13 +105,25 @@ jobs:
         run: |
           echo "🚂 Deploying backend to Railway..."
           
-          # Set Railway environment variables
-          railway variables set GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
+          # Set Railway environment variables (only if secrets are available)
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "Setting GEMINI_API_KEY from GitHub secrets"
+            railway variables set GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
+          else
+            echo "Using existing GEMINI_API_KEY from Railway environment"
+          fi
+          
           railway variables set NODE_ENV="production" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
           railway variables set PORT="3001" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
           
           # Deploy the backend
-          railway up --service="${{ secrets.RAILWAY_SERVICE_ID }}" --detach
+          if [ -n "${{ secrets.RAILWAY_SERVICE_ID }}" ]; then
+            echo "Deploying to specific service: ${{ secrets.RAILWAY_SERVICE_ID }}"
+            railway up --service="${{ secrets.RAILWAY_SERVICE_ID }}" --detach
+          else
+            echo "Deploying to default service in project"
+            railway up --detach
+          fi
           
           echo "✅ Backend deployed to Railway successfully"
 

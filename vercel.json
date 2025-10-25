@@ -31,7 +31,12 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "frontend/dist/**": {
+      "maxDuration": 10
+    }
+  }
 }
 
 
