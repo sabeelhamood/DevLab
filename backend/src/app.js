@@ -37,19 +37,33 @@ const app = express()
 // Security middleware
 app.use(helmet())
 
-// Manual CORS headers for additional safety
+// Enhanced CORS headers for production
 app.use((req, res, next) => {
   const allowedOrigins = config.nodeEnv === 'development' 
     ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
     : config.corsOrigins
   
   const origin = req.headers.origin
+  
+  // Always set CORS headers for allowed origins
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin)
+  } else if (config.nodeEnv === 'production' && origin) {
+    // In production, allow specific Vercel domains
+    const vercelDomains = [
+      'https://dev-lab-phi.vercel.app',
+      'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+      'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app'
+    ]
+    if (vercelDomains.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+    }
   }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
+  res.setHeader('Access-Control-Max-Age', '86400') // 24 hours
   
   if (req.method === 'OPTIONS') {
     res.status(200).end()
