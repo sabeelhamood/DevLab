@@ -10,6 +10,8 @@
   },
   "environment": {
     "NODE_ENV": "production",
-    "CORS_ORIGINS": "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,healthcheck.railway.app"
+    "PORT": "3001",
+    "CORS_ORIGINS": "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,healthcheck.railway.app",
+    "GEMINI_API_KEY": "AIzaSyDgOreTpwU_3m5l4Q_r_7BnDjqHtbI5W3s"
   }
 }
