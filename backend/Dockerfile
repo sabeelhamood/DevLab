@@ -40,8 +40,8 @@ ENV PORT=$PORT
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
 
-# Copy build output and node_modules
-COPY --from=builder /app/dist ./dist
+# Copy source files and dependencies
+COPY --from=builder /app/src ./src
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
