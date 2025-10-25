@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && npm install --production && npm run build"
+buildCommand = "cd backend && npm install --omit=dev && npm run build"
 
 [deploy]
-startCommand = "cd backend && npm start"
+startCommand = "npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
@@ -12,7 +12,8 @@ restartPolicyType = "on_failure"
 variables = { 
   NODE_ENV = "production",
   PORT = "3001",
-  CORS_ORIGINS = "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,healthcheck.railway.app"
+  CORS_ORIGINS = "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,healthcheck.railway.app",
+  GEMINI_API_KEY = "AIzaSyDgOreTpwU_3m5l4Q_r_7BnDjqHtbI5W3s"
 }
 
 [environments.staging]
