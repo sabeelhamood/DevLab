@@ -56,6 +56,7 @@ app.use(cors({
         'https://dev-lab-phi.vercel.app',
         'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
         'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+        'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
         'healthcheck.railway.app',
         ...(config.security.corsOrigins || [])
       ],
