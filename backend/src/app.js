@@ -34,6 +34,9 @@ import assistantRoutes from './routes/external/assistantRoutes.js'
 
 const app = express()
 
+// Trust proxy for Railway deployment (required for express-rate-limit)
+app.set('trust proxy', 1)
+
 // Simple health check endpoint for Railway (before any middleware)
 app.get('/health', (req, res) => {
   res.status(200).json({
