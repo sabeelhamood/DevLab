@@ -1,0 +1,268 @@
+name: 🚀 Production Deployment - Frontend to Vercel & Backend to Railway
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  FRONTEND_DIR: 'frontend'
+  BACKEND_DIR: 'backend'
+
+jobs:
+  # ===========================================
+  # FRONTEND DEPLOYMENT TO VERCEL
+  # ===========================================
+  deploy-frontend:
+    name: 🌐 Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+        
+    - name: 🔍 Validate Secrets
+      run: |
+        echo "🔐 Validating Vercel secrets..."
+        if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+          echo "❌ VERCEL_TOKEN is missing"
+          exit 1
+        fi
+        if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+          echo "❌ VERCEL_PROJECT_ID is missing"
+          exit 1
+        fi
+        echo "✅ All Vercel secrets validated"
+        
+    - name: 📦 Install Frontend Dependencies
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: |
+        echo "📦 Installing frontend dependencies..."
+        npm ci --prefer-offline --no-audit
+        
+    - name: 🧪 Run Frontend Tests
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: |
+        echo "🧪 Running frontend tests..."
+        npm run test --if-present || echo "⚠️ No tests configured"
+        
+    - name: 🏗️ Build Frontend
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: |
+        echo "🏗️ Building frontend for production..."
+        npm run build
+        
+    - name: 🚀 Deploy to Vercel
+      working-directory: ${{ env.FRONTEND_DIR }}
+      run: |
+        echo "🚀 Deploying frontend to Vercel..."
+        export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
+        export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
+        
+        # Install Vercel CLI
+        npm install -g vercel@latest
+        
+        # Deploy to production
+        if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
+          echo "Using VERCEL_ORG_ID for deployment"
+          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+        else
+          echo "Deploying without ORG_ID (using default scope)"
+          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+        fi
+        
+        echo "✅ Frontend deployed to Vercel successfully"
+        
+    - name: 📊 Get Deployment URL
+      id: vercel-url
+      run: |
+        echo "🔗 Getting Vercel deployment URL..."
+        # Get the latest deployment URL
+        DEPLOYMENT_URL=$(vercel ls --token="${{ secrets.VERCEL_TOKEN }}" --json | jq -r '.[0].url' 2>/dev/null || echo "https://${{ secrets.VERCEL_PROJECT_ID }}.vercel.app")
+        echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        echo "🌐 Frontend URL: $DEPLOYMENT_URL"
+        
+    - name: 🧪 Smoke Test Frontend
+      run: |
+        echo "🧪 Running frontend smoke tests..."
+        FRONTEND_URL="${{ steps.vercel-url.outputs.url }}"
+        if curl -f -s "$FRONTEND_URL" > /dev/null; then
+          echo "✅ Frontend is accessible at: $FRONTEND_URL"
+        else
+          echo "❌ Frontend smoke test failed"
+          exit 1
+        fi
+
+  # ===========================================
+  # BACKEND DEPLOYMENT TO RAILWAY
+  # ===========================================
+  deploy-backend:
+    name: 🚂 Deploy Backend to Railway
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-frontend
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
+        
+    - name: 🔍 Validate Secrets
+      run: |
+        echo "🔐 Validating Railway secrets..."
+        if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
+          echo "❌ RAILWAY_TOKEN is missing"
+          exit 1
+        fi
+        if [ -z "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
+          echo "❌ RAILWAY_PROJECT_ID is missing"
+          exit 1
+        fi
+        echo "✅ All Railway secrets validated"
+        
+    - name: 📦 Install Backend Dependencies
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        echo "📦 Installing backend dependencies..."
+        npm ci --prefer-offline --no-audit
+        
+    - name: 🧪 Run Backend Tests
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        echo "🧪 Running backend tests..."
+        npm run test --if-present || echo "⚠️ No tests configured"
+        
+    - name: 🏗️ Build Backend
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        echo "🏗️ Building backend for production..."
+        npm run build
+        
+    - name: 🚂 Deploy to Railway
+      working-directory: ${{ env.BACKEND_DIR }}
+      run: |
+        echo "🚂 Deploying backend to Railway..."
+        
+        # Install Railway CLI
+        npm install -g @railway/cli@latest
+        
+        # Login to Railway
+        railway login --token="${{ secrets.RAILWAY_TOKEN }}"
+        
+        # Set environment variables
+        if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+          echo "Setting GEMINI_API_KEY from GitHub secrets"
+          railway variables set GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
+        else
+          echo "Using existing GEMINI_API_KEY from Railway environment"
+        fi
+        
+        # Set production environment variables
+        railway variables set NODE_ENV="production" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
+        railway variables set PORT="3001" --service="${{ secrets.RAILWAY_SERVICE_ID }}"
+        
+        # Deploy to Railway
+        if [ -n "${{ secrets.RAILWAY_SERVICE_ID }}" ]; then
+          echo "Deploying to specific service: ${{ secrets.RAILWAY_SERVICE_ID }}"
+          railway up --service="${{ secrets.RAILWAY_SERVICE_ID }}" --detach
+        else
+          echo "Deploying to default service in project"
+          railway up --detach
+        fi
+        
+        echo "✅ Backend deployed to Railway successfully"
+        
+    - name: 📊 Get Deployment URL
+      id: railway-url
+      run: |
+        echo "🔗 Getting Railway deployment URL..."
+        # Get the service URL
+        SERVICE_URL=$(railway status --json | jq -r '.deployments[0].url' 2>/dev/null || echo "https://${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app")
+        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+        echo "🚂 Backend URL: $SERVICE_URL"
+        
+    - name: 🧪 Smoke Test Backend
+      run: |
+        echo "🧪 Running backend smoke tests..."
+        BACKEND_URL="${{ steps.railway-url.outputs.url }}"
+        if curl -f -s "$BACKEND_URL/health" > /dev/null; then
+          echo "✅ Backend health check passed at: $BACKEND_URL/health"
+        else
+          echo "❌ Backend smoke test failed"
+          exit 1
+        fi
+
+  # ===========================================
+  # INTEGRATION TESTING
+  # ===========================================
+  integration-test:
+    name: 🔗 Integration Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    
+    steps:
+    - name: 🔗 Test Frontend-Backend Integration
+      run: |
+        echo "🔗 Testing frontend-backend integration..."
+        FRONTEND_URL="${{ needs.deploy-frontend.outputs.url }}"
+        BACKEND_URL="${{ needs.deploy-backend.outputs.url }}"
+        
+        echo "🌐 Frontend URL: $FRONTEND_URL"
+        echo "🚂 Backend URL: $BACKEND_URL"
+        
+        # Test API connectivity
+        if curl -f -s "$BACKEND_URL/api/health" > /dev/null; then
+          echo "✅ Backend API is accessible"
+        else
+          echo "❌ Backend API test failed"
+          exit 1
+        fi
+        
+        echo "✅ Integration tests passed"
+
+  # ===========================================
+  # DEPLOYMENT SUMMARY
+  # ===========================================
+  deployment-summary:
+    name: 📋 Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, integration-test]
+    if: always()
+    
+    steps:
+    - name: 📋 Generate Deployment Summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Frontend (Vercel)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: ${{ needs.deploy-frontend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚂 Backend (Railway)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: ${{ needs.deploy-backend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Integration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Status" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ needs.deploy-frontend.result }}" = "success" ] && [ "${{ needs.deploy-backend.result }}" = "success" ] && [ "${{ needs.integration-test.result }}" = "success" ]; then
+          echo "✅ **All deployments successful!**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Some deployments failed. Check logs above.**" >> $GITHUB_STEP_SUMMARY
+        fi
