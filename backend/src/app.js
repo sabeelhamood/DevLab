@@ -49,7 +49,7 @@ app.use(helmet())
 app.use((req, res, next) => {
   const allowedOrigins = config.nodeEnv === 'development' 
     ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
-    : config.corsOrigins || []
+    : config.security.corsOrigins || []
   
   const origin = req.headers.origin
   
@@ -84,7 +84,13 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: config.nodeEnv === 'development' 
     ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
-    : config.corsOrigins,
+    : [
+        'https://dev-lab-phi.vercel.app',
+        'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+        'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+        'healthcheck.railway.app',
+        ...(config.security.corsOrigins || [])
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
