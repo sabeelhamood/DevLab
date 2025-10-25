@@ -49,13 +49,14 @@ app.use((req, res, next) => {
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin)
   } else if (config.nodeEnv === 'production' && origin) {
-    // In production, allow specific Vercel domains
-    const vercelDomains = [
+    // In production, allow specific Vercel domains and Railway healthcheck
+    const allowedDomains = [
       'https://dev-lab-phi.vercel.app',
       'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
-      'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app'
+      'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+      'healthcheck.railway.app'
     ]
-    if (vercelDomains.includes(origin)) {
+    if (allowedDomains.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin)
     }
   }
@@ -105,14 +106,22 @@ app.use(morgan('combined'))
 
 // Health check - simple and reliable endpoint
 app.get('/health', (req, res) => {
-  console.log('🏥 Health check requested')
+  console.log('🏥 Health check requested from:', req.headers.host, req.headers.origin)
+  
+  // Set CORS headers specifically for Railway healthcheck
+  const origin = req.headers.origin
+  if (origin === 'healthcheck.railway.app' || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  }
+  
   try {
     const healthResponse = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: config.nodeEnv,
-      port: config.port
+      port: config.port,
+      host: req.headers.host
     }
     console.log('✅ Health check response:', healthResponse)
     res.status(200).json(healthResponse)

@@ -5,14 +5,14 @@ buildCommand = "cd backend && npm install --production && npm run build"
 [deploy]
 startCommand = "cd backend && npm start"
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 
 [environments.production]
 variables = { 
   NODE_ENV = "production",
   PORT = "3001",
-  CORS_ORIGINS = "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app"
+  CORS_ORIGINS = "https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,healthcheck.railway.app"
 }
 
 [environments.staging]
