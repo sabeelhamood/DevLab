@@ -103,7 +103,17 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
-// Health check
+// Health check - simple route first
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: config.nodeEnv
+  })
+})
+
+// Health check routes
 app.use('/health', healthRoutes)
 
 // API routes
@@ -135,10 +145,30 @@ app.use(errorHandler)
 
 // Start server
 const PORT = config.port || 3000
-app.listen(PORT, () => {
-  console.log(`🚀 DEVLAB Backend running on port ${PORT}`)
+const HOST = process.env.HOST || '0.0.0.0'
+
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
   console.log(`📊 Environment: ${config.nodeEnv}`)
-  console.log(`🔗 API Base URL: http://localhost:${PORT}/api`)
+  console.log(`🔗 API Base URL: http://${HOST}:${PORT}/api`)
+  console.log(`🏥 Health Check: http://${HOST}:${PORT}/health`)
+})
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ Server error:', error)
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`)
+  }
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully')
+  server.close(() => {
+    console.log('✅ Server closed')
+    process.exit(0)
+  })
 })
 
 export default app
