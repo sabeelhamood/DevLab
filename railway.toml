@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "cd backend && npm install --omit=dev && npm run build"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "cd backend && npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
