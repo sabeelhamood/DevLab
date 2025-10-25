@@ -147,8 +147,8 @@ app.use(notFound)
 app.use(errorHandler)
 
 // Start server
-const PORT = config.port || 3000
-const HOST = process.env.HOST || '0.0.0.0'
+const PORT = process.env.PORT || 3000
+const HOST = '0.0.0.0'
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
