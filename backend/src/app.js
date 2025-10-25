@@ -103,18 +103,27 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
-// Health check - simple route first
+// Health check - simple and reliable endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.nodeEnv
-  })
+  console.log('🏥 Health check requested')
+  try {
+    const healthResponse = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: config.nodeEnv,
+      port: config.port
+    }
+    console.log('✅ Health check response:', healthResponse)
+    res.status(200).json(healthResponse)
+  } catch (error) {
+    console.error('❌ Health check error:', error)
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message
+    })
+  }
 })
-
-// Health check routes
-app.use('/health', healthRoutes)
 
 // API routes
 app.use('/api/auth', authRoutes)
@@ -152,6 +161,8 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`📊 Environment: ${config.nodeEnv}`)
   console.log(`🔗 API Base URL: http://${HOST}:${PORT}/api`)
   console.log(`🏥 Health Check: http://${HOST}:${PORT}/health`)
+  console.log(`🔧 Process.env.PORT: ${process.env.PORT}`)
+  console.log(`🔧 Config.port: ${config.port}`)
 })
 
 // Handle server errors
