@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 class ApiClient {
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+      baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production.up.railway.app/api' : 'http://localhost:3000/api'),
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
