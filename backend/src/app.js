@@ -34,6 +34,14 @@ import assistantRoutes from './routes/external/assistantRoutes.js'
 
 const app = express()
 
+// Simple health check endpoint for Railway (before any middleware)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Security middleware
 app.use(helmet())
 
@@ -41,12 +49,12 @@ app.use(helmet())
 app.use((req, res, next) => {
   const allowedOrigins = config.nodeEnv === 'development' 
     ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
-    : config.corsOrigins
+    : config.corsOrigins || []
   
   const origin = req.headers.origin
   
   // Always set CORS headers for allowed origins
-  if (allowedOrigins.includes(origin)) {
+  if (allowedOrigins && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin)
   } else if (config.nodeEnv === 'production' && origin) {
     // In production, allow specific Vercel domains and Railway healthcheck
@@ -104,35 +112,6 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
-// Health check - simple and reliable endpoint
-app.get('/health', (req, res) => {
-  console.log('🏥 Health check requested from:', req.headers.host, req.headers.origin)
-  
-  // Set CORS headers specifically for Railway healthcheck
-  const origin = req.headers.origin
-  if (origin === 'healthcheck.railway.app' || !origin) {
-    res.setHeader('Access-Control-Allow-Origin', '*')
-  }
-  
-  try {
-    const healthResponse = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: config.nodeEnv,
-      port: config.port,
-      host: req.headers.host
-    }
-    console.log('✅ Health check response:', healthResponse)
-    res.status(200).json(healthResponse)
-  } catch (error) {
-    console.error('❌ Health check error:', error)
-    res.status(500).json({
-      status: 'unhealthy',
-      error: error.message
-    })
-  }
-})
 
 // API routes
 app.use('/api/auth', authRoutes)
