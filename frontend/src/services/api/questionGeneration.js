@@ -1,5 +1,5 @@
 // Frontend Question Generation API service
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production.up.railway.app/api' : 'http://localhost:3000/api')
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://[YOUR_RAILWAY_URL]/api' : 'http://localhost:3000/api')
 
 // Helper function to safely handle fetch requests
 const safeFetch = async (url, options = {}) => {
