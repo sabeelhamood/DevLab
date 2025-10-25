@@ -3,7 +3,7 @@
  * Handles code execution requests through backend API
  */
 
-const API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production.up.railway.app/api' : 'http://localhost:3000/api')
 
 // Language mapping for Judge0
 const LANGUAGE_MAPPING = {
