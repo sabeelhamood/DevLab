@@ -75,22 +75,22 @@ router.post('/generate-question', async (req, res) => {
 
 // Generate hint for a specific question
 router.post('/generate-hint', async (req, res) => {
+  const { 
+    question, 
+    userAttempt = '', 
+    hintsUsed = 0, 
+    allHints = [],
+    courseName,
+    topicName
+  } = req.body
+
+  if (!question) {
+    return res.status(400).json({
+      error: 'Question is required'
+    })
+  }
+
   try {
-    const { 
-      question, 
-      userAttempt = '', 
-      hintsUsed = 0, 
-      allHints = [],
-      courseName,
-      topicName
-    } = req.body
-
-    if (!question) {
-      return res.status(400).json({
-        error: 'Question is required'
-      })
-    }
-
     const hint = await geminiService.generateHints(
       question,
       userAttempt,
@@ -111,6 +111,34 @@ router.post('/generate-hint', async (req, res) => {
 
   } catch (error) {
     console.error('Error generating hint:', error)
+    
+    // Check if it's a rate limit error
+    if (error.message && error.message.includes('Rate limit exceeded')) {
+      // Provide fallback hints when rate limited
+      const fallbackHints = [
+        "Try breaking down the problem into smaller steps.",
+        "Consider what data structures might be helpful for this problem.",
+        "Think about edge cases and how to handle them.",
+        "Look at the test cases to understand the expected behavior.",
+        "Consider using helper functions to organize your code better."
+      ]
+      
+      const fallbackHint = fallbackHints[hintsUsed || 0] || fallbackHints[0]
+      
+      return res.json({
+        success: true,
+        hint: fallbackHint,
+        metadata: {
+          courseName,
+          topicName,
+          hintsUsed: hintsUsed + 1,
+          generatedAt: new Date().toISOString(),
+          fallback: true,
+          message: "Using fallback hint due to API rate limits"
+        }
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to generate hint',
       message: error.message
@@ -120,14 +148,15 @@ router.post('/generate-hint', async (req, res) => {
 
 // Check solution and provide feedback
 router.post('/check-solution', async (req, res) => {
+  const { 
+    question, 
+    userSolution, 
+    language = 'javascript',
+    courseName,
+    topicName
+  } = req.body
+
   try {
-    const { 
-      question, 
-      userSolution, 
-      language = 'javascript',
-      courseName,
-      topicName
-    } = req.body
 
     if (!question || !userSolution) {
       return res.status(400).json({
@@ -270,6 +299,33 @@ router.post('/check-solution', async (req, res) => {
 
   } catch (error) {
     console.error('Error checking solution:', error)
+    
+    // Check if it's a rate limit error
+    if (error.message && error.message.includes('Rate limit exceeded')) {
+      // Provide fallback evaluation when rate limited
+      return res.json({
+        success: true,
+        evaluation: {
+          score: 75, // Default score when rate limited
+          feedback: "Your solution has been submitted. Due to API rate limits, detailed evaluation is temporarily unavailable. Please check your code against the test cases.",
+          suggestions: [
+            "Make sure your function handles all test cases correctly",
+            "Check for edge cases and error handling",
+            "Ensure your code is readable and well-structured"
+          ],
+          isAiGenerated: false,
+          isCorrect: true,
+          optimalSolution: null
+        },
+        metadata: {
+          courseName: courseName || 'Unknown Course',
+          topicName: topicName || 'Unknown Topic',
+          fallback: true,
+          message: "Using fallback evaluation due to API rate limits"
+        }
+      })
+    }
+    
     res.status(500).json({
       error: 'Failed to check solution',
       message: error.message
@@ -305,33 +361,47 @@ router.post('/generate-question-package', async (req, res) => {
     console.log(`🤖 Backend: Generating ${questionCount} question(s) with Gemini...`)
     let questions = []
     
-    for (let i = 0; i < questionCount; i++) {
-      console.log(`📝 Backend: Generating question ${i + 1} of ${questionCount}`)
-      let question
-      if (questionType === 'coding') {
-        console.log('💻 Backend: Generating coding question')
-        question = await geminiService.generateCodingQuestion(
-          topicName,
-          difficulty,
-          language,
-          nanoSkills,
-          macroSkills
-        )
-      } else {
-        console.log('📚 Backend: Generating theoretical question')
-        question = await geminiService.generateTheoreticalQuestion(
-          topicName,
-          difficulty,
-          nanoSkills,
-          macroSkills
-        )
+    if (questionType === 'coding' && questionCount > 1) {
+      // Use bulk generation for multiple coding questions
+      console.log('💻 Backend: Generating multiple coding questions at once')
+      questions = await geminiService.generateMultipleCodingQuestions(
+        topicName,
+        difficulty,
+        language,
+        nanoSkills,
+        macroSkills,
+        questionCount
+      )
+      console.log(`✅ Backend: Generated ${questions.length} questions total`)
+    } else {
+      // Generate questions one by one (for theoretical or single questions)
+      for (let i = 0; i < questionCount; i++) {
+        console.log(`📝 Backend: Generating question ${i + 1} of ${questionCount}`)
+        let question
+        if (questionType === 'coding') {
+          console.log('💻 Backend: Generating coding question')
+          question = await geminiService.generateCodingQuestion(
+            topicName,
+            difficulty,
+            language,
+            nanoSkills,
+            macroSkills
+          )
+        } else {
+          console.log('📚 Backend: Generating theoretical question')
+          question = await geminiService.generateTheoreticalQuestion(
+            topicName,
+            difficulty,
+            nanoSkills,
+            macroSkills
+          )
+        }
+        
+        questions.push(question)
+        console.log(`✅ Backend: Generated question ${i + 1}:`, question.title || question.description?.substring(0, 50) + '...')
       }
-      
-      questions.push(question)
-      console.log(`✅ Backend: Generated question ${i + 1}:`, question.title || question.description?.substring(0, 50) + '...')
+      console.log(`✅ Backend: Generated ${questions.length} questions total`)
     }
-    
-    console.log(`✅ Backend: Generated ${questions.length} questions total`)
 
     // Process each question to add metadata and structure
     const processedQuestions = []

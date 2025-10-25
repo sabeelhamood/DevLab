@@ -16,7 +16,8 @@ router.post('/generate-questions', async (req, res) => {
       topic_id,
       nano_skills,
       macro_skills,
-      question_type
+      question_type,
+      trainer_id
     } = req.body
 
     // Validate required fields
@@ -26,6 +27,12 @@ router.post('/generate-questions', async (req, res) => {
         error: 'Missing required fields: user_id, course_name, course_level, course_id, topic_name, topic_id, question_type'
       })
     }
+
+    // Check if this is a trainer-created course (has trainerId)
+    const isTrainerCourse = trainer_id && trainer_id !== null && trainer_id !== undefined
+    
+    console.log(`🎓 Content Studio: Course type - ${isTrainerCourse ? 'Trainer-Created' : 'AI-Created'}`)
+    console.log(`👨‍🏫 Trainer ID: ${trainer_id || 'None (AI-Created)'}`)
 
     // Step 1: Get question amount from Directory Microservice
     const directoryResponse = await getQuestionAmountFromDirectory(user_id, course_id, topic_id)
@@ -43,26 +50,52 @@ router.post('/generate-questions', async (req, res) => {
     let questionsPackage
 
     if (question_type === 'theoretical') {
-      // Get theoretical questions from Assessment Microservice
-      questionsPackage = await getTheoreticalQuestionsFromAssessment({
-        topic_id,
-        topic_name,
-        course_name,
-        course_level,
-        nano_skills,
-        macro_skills,
-        amount: questionAmount
-      })
+      if (isTrainerCourse) {
+        // For trainer courses: Validation mode only (no question generation)
+        console.log('👨‍🏫 Trainer Course: Using validation mode for theoretical questions - no question generation')
+        questionsPackage = {
+          success: true,
+          questions: [],
+          message: 'Trainer course detected. Questions should be created by the trainer. Use validation endpoints for question review.',
+          course_type: 'trainer_created',
+          trainer_id: trainer_id
+        }
+      } else {
+        // For AI courses: Full generation mode
+        console.log('🤖 AI Course: Using full generation mode for theoretical questions')
+        questionsPackage = await getTheoreticalQuestionsFromAssessment({
+          topic_id,
+          topic_name,
+          course_name,
+          course_level,
+          nano_skills,
+          macro_skills,
+          amount: questionAmount
+        })
+      }
     } else if (question_type === 'code') {
-      // Generate code questions using Gemini
-      questionsPackage = await generateCodeQuestionsWithGemini({
-        course_name,
-        course_level,
-        topic_name,
-        nano_skills,
-        macro_skills,
-        amount: questionAmount
-      })
+      if (isTrainerCourse) {
+        // For trainer courses: Validation mode only (no question generation)
+        console.log('👨‍🏫 Trainer Course: Using validation mode - no question generation')
+        questionsPackage = {
+          success: true,
+          questions: [],
+          message: 'Trainer course detected. Questions should be created by the trainer. Use validation endpoints for question review.',
+          course_type: 'trainer_created',
+          trainer_id: trainer_id
+        }
+      } else {
+        // For AI courses: Full generation mode
+        console.log('🤖 AI Course: Using full generation mode')
+        questionsPackage = await generateCodeQuestionsWithGemini({
+          course_name,
+          course_level,
+          topic_name,
+          nano_skills,
+          macro_skills,
+          amount: questionAmount
+        })
+      }
     } else {
       return res.status(400).json({
         success: false,
@@ -192,7 +225,7 @@ async function getQuestionAmountFromDirectory(userId, courseId, topicId) {
     const directoryData = mockMicroservices.directoryService.getLearnerProfile(userId)
     
     // Simulate getting question amount based on user profile and course
-    const questionAmount = directoryData.question_quotas || 5
+    const questionAmount = directoryData.practice_questions_count || 5
     
     return {
       success: true,
@@ -250,10 +283,35 @@ async function generateCodeQuestionsWithGemini(params) {
   try {
     const { course_name, course_level, topic_name, nano_skills, macro_skills, amount } = params
     
-    const questions = []
+    let questions = []
     
-    // Generate multiple questions using Gemini
-    for (let i = 0; i < amount; i++) {
+    if (amount > 1) {
+      // Use bulk generation for multiple questions
+      const questionDataArray = await geminiService.generateMultipleCodingQuestions(
+        topic_name,
+        course_level,
+        'javascript',
+        nano_skills,
+        macro_skills,
+        amount
+      )
+
+      questions = questionDataArray.map((questionData, index) => ({
+        question_id: `code_${topic_name}_${index + 1}`,
+        topic_name,
+        course_name,
+        course_level,
+        question_type: 'code',
+        question_content: questionData.description || questionData.title,
+        test_cases: questionData.testCases || [],
+        hints: questionData.hints || [],
+        solution: questionData.solution,
+        nano_skills,
+        macro_skills,
+        difficulty: course_level
+      }))
+    } else {
+      // Generate single question
       const questionData = await geminiService.generateCodingQuestion(
         topic_name,
         course_level,
@@ -264,7 +322,7 @@ async function generateCodeQuestionsWithGemini(params) {
 
       if (questionData) {
         questions.push({
-          question_id: `code_${topic_name}_${i + 1}`,
+          question_id: `code_${topic_name}_1`,
           topic_name,
           course_name,
           course_level,
@@ -305,5 +363,139 @@ async function getQuestionById(questionId) {
     ]
   }
 }
+
+// Validation endpoints for trainer-created courses
+// These endpoints allow trainers to validate their questions and get feedback
+
+// Validate a trainer-created question
+router.post('/validate-question', async (req, res) => {
+  try {
+    const {
+      question_content,
+      question_type,
+      topic_name,
+      course_name,
+      course_level,
+      nano_skills,
+      macro_skills,
+      trainer_id
+    } = req.body
+
+    // Validate required fields
+    if (!question_content || !question_type || !trainer_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: question_content, question_type, trainer_id'
+      })
+    }
+
+    console.log(`👨‍🏫 Trainer Validation: Validating question for trainer ${trainer_id}`)
+
+    // Use Gemini to validate and provide feedback on the trainer's question
+    let validationResult
+    if (question_type === 'code') {
+      validationResult = await geminiService.validateCodingQuestion({
+        question: question_content,
+        topic: topic_name,
+        difficulty: course_level,
+        nanoSkills: nano_skills || [],
+        macroSkills: macro_skills || []
+      })
+    } else {
+      validationResult = await geminiService.validateTheoreticalQuestion({
+        question: question_content,
+        topic: topic_name,
+        difficulty: course_level,
+        nanoSkills: nano_skills || [],
+        macroSkills: macro_skills || []
+      })
+    }
+
+    res.json({
+      success: true,
+      validation: validationResult,
+      course_type: 'trainer_created',
+      trainer_id: trainer_id,
+      message: 'Question validation completed'
+    })
+
+  } catch (error) {
+    console.error('Error validating trainer question:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate question',
+      details: error.message
+    })
+  }
+})
+
+// Get hints and feedback for trainer-created questions
+router.post('/get-question-feedback', async (req, res) => {
+  try {
+    const {
+      question_content,
+      question_type,
+      user_solution,
+      language,
+      trainer_id
+    } = req.body
+
+    // Validate required fields
+    if (!question_content || !question_type || !trainer_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: question_content, question_type, trainer_id'
+      })
+    }
+
+    console.log(`👨‍🏫 Trainer Feedback: Getting feedback for trainer ${trainer_id}`)
+
+    // Use existing Gemini services to provide hints and feedback
+    let feedbackResult
+    if (question_type === 'code') {
+      // Get hints for coding questions
+      const hints = await geminiService.generateHints(question_content, user_solution || '', 0)
+      
+      // Get solution evaluation if user solution provided
+      let evaluation = null
+      if (user_solution) {
+        evaluation = await geminiService.evaluateCodeSubmission(
+          question_content,
+          user_solution,
+          language || 'javascript'
+        )
+      }
+
+      feedbackResult = {
+        hints: hints,
+        evaluation: evaluation,
+        canProvideSolution: true
+      }
+    } else {
+      // For theoretical questions, provide general feedback
+      feedbackResult = {
+        feedback: "Theoretical question feedback would be provided here",
+        suggestions: ["Consider adding more specific examples", "Ensure the question tests the intended learning objectives"],
+        canProvideSolution: false
+      }
+    }
+
+    res.json({
+      success: true,
+      feedback: feedbackResult,
+      course_type: 'trainer_created',
+      trainer_id: trainer_id,
+      message: 'Question feedback generated'
+    })
+
+  } catch (error) {
+    console.error('Error getting trainer question feedback:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get question feedback',
+      details: error.message
+    })
+  }
+})
 
 export default router

@@ -16,7 +16,7 @@ const navigation = {
   learner: [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Practice', href: '/practice', icon: BookOpen },
-    { name: 'Competition', href: '/competition', icon: Trophy },
+    { name: 'Competition', href: '/competitions', icon: Trophy },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ],
   trainer: [

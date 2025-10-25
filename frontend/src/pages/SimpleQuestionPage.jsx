@@ -13,6 +13,7 @@ import { questionGenerationAPI } from '../services/api/questionGeneration.js'
 import ErrorMessage from '../components/ErrorMessage.jsx'
 import LoadingSpinner from '../components/LoadingSpinner.jsx'
 import ConfirmationModal from '../components/ConfirmationModal.jsx'
+import Judge0Container from '../components/Judge0Container.jsx'
 
 function SimpleQuestionPage() {
   const [questions, setQuestions] = useState([]) // Array to store all questions
@@ -30,6 +31,8 @@ function SimpleQuestionPage() {
   const [solution, setSolution] = useState(null)
   const [language, setLanguage] = useState('javascript')
   const [error, setError] = useState(null)
+  const [useSandbox, setUseSandbox] = useState(true) // Toggle between sandbox and regular editor
+  const [sandboxCode, setSandboxCode] = useState('')
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [confirmationAction, setConfirmationAction] = useState(null)
   
@@ -104,10 +107,14 @@ function SimpleQuestionPage() {
       const transformedQuestions = questionsArray.map((q, index) => ({
         question_id: q.question_id || `demo_${Date.now()}_${index}`,
         question_type: 'code',
+        questionType: 'coding',
         question_content: q.description || q.title,
         difficulty: q.difficulty || 'intermediate',
         language: q.language || language,
-        test_cases: q.testCases || [],
+        test_cases: (() => {
+          console.log('Raw testCases from backend:', q.testCases);
+          return q.testCases || [];
+        })(),
         hints: q.hints || [],
         solution: q.solution?.code || q.solution || '',
         title: q.title,
@@ -120,6 +127,7 @@ function SimpleQuestionPage() {
       setCurrentQuestionIndex(0)
       setQuestion(transformedQuestions[0])
       setCodeSolution(getCodeTemplate(language))
+      setSandboxCode(getCodeTemplate(language))
       console.log('✅ Questions loaded successfully')
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -160,6 +168,7 @@ function SimpleQuestionPage() {
       setCurrentQuestionIndex(questionIndex)
       setQuestion(questions[questionIndex])
       setCodeSolution(getCodeTemplate(language))
+      setSandboxCode(getCodeTemplate(language))
       
       // Reset question-specific state
       setUserAnswer('')
@@ -208,7 +217,7 @@ int sum(int a, int b) {
       // Use real Gemini API to check solution and get feedback
       const result = await questionGenerationAPI.checkSolution({
         question: question.question_content || question.title,
-        userSolution: question.question_type === 'theoretical' ? userAnswer : codeSolution,
+        userSolution: (question.question_type === 'theoretical' || question.questionType === 'theoretical') ? userAnswer : codeSolution,
         language: question.language || language,
         courseName: question.courseName,
         topicName: question.topicName
@@ -264,8 +273,12 @@ int sum(int a, int b) {
       // Note: Solution is never automatically shown - user must choose to see it
     } catch (error) {
       console.error('Error getting hint:', error)
-      // Show error instead of mock hint
-      setHints(prevHints => [...prevHints, 'Error generating hint. Please try again.'])
+      // Check if it's a rate limit error and provide helpful message
+      if (error.message && error.message.includes('Rate limit exceeded')) {
+        setHints(prevHints => [...prevHints, 'AI service is temporarily busy. Here\'s a general hint: Try breaking down the problem into smaller steps and consider what data structures might help.'])
+      } else {
+        setHints(prevHints => [...prevHints, 'Error generating hint. Please try again.'])
+      }
       setHintsUsed(prev => prev + 1)
       setShowHint(true)
     } finally {
@@ -276,6 +289,7 @@ int sum(int a, int b) {
   const handleReset = () => {
     setUserAnswer('')
     setCodeSolution(getCodeTemplate(language))
+    setSandboxCode(getCodeTemplate(language))
     setIsSubmitted(false)
     setEvaluation(null)
     setShowHint(false)
@@ -477,6 +491,26 @@ int sum(int a, int b) {
           </div>
         )}
 
+        {/* Rate Limit Notice */}
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800">
+                AI Service Notice
+              </h3>
+              <p className="mt-1 text-sm text-yellow-700">
+                The AI service is currently experiencing high demand. Some features like hints and detailed feedback may use fallback responses. 
+                You can still use the Judge0 code execution and test cases normally.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Question Panel */}
           <div 
@@ -498,14 +532,14 @@ int sum(int a, int b) {
                 <span 
                   className="px-3 py-1 rounded-full text-xs font-semibold"
                   style={{
-                    background: question.question_type === 'code' 
+                    background: (question.question_type === 'code' || question.questionType === 'coding')
                       ? 'var(--gradient-primary)' 
                       : 'var(--gradient-secondary)',
                     color: 'white',
                     boxShadow: 'var(--shadow-glow)'
                   }}
                 >
-                  {question.question_type === 'code' ? '💻 CODE' : '🧠 THEORETICAL'}
+                  {(question.question_type === 'code' || question.questionType === 'coding') ? '💻 CODE' : '🧠 THEORETICAL'}
                 </span>
               </div>
               <div className="flex items-center space-x-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -541,9 +575,11 @@ int sum(int a, int b) {
                       className="prose prose-lg max-w-none"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      <p className="leading-relaxed text-base font-medium">
-                        {question.question_content}
-                      </p>
+                      <div className="leading-relaxed text-base font-medium whitespace-pre-wrap">
+                        {typeof question.question_content === 'string' 
+                          ? question.question_content 
+                          : JSON.stringify(question.question_content, null, 2)}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -603,56 +639,86 @@ int sum(int a, int b) {
             </div>
 
             {/* Test Cases for Code Questions */}
-            {question.question_type === 'code' && question.test_cases && (
+            {(() => {
+              console.log('Question object:', question);
+              console.log('Question type check:', question.question_type === 'code' || question.questionType === 'coding');
+              console.log('Test cases check:', question.test_cases && question.test_cases.length > 0);
+              return (question.question_type === 'code' || question.questionType === 'coding') && question.test_cases && question.test_cases.length > 0;
+            })() && (
               <div className="mt-6">
                 <div 
-                  className="rounded-xl p-6 border-2"
+                  className="rounded-xl p-6 border-2 shadow-lg"
                   style={{ 
-                    background: 'linear-gradient(145deg, #fef3c7, #fde68a)',
-                    borderColor: 'rgba(245, 158, 11, 0.3)',
-                    boxShadow: '0 4px 20px rgba(245, 158, 11, 0.1)'
+                    background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    boxShadow: '0 8px 32px rgba(59, 130, 246, 0.15)'
                   }}
                 >
-                  <div className="flex items-center space-x-3 mb-4">
+                  <div className="flex items-center space-x-3 mb-6">
                     <div 
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                      style={{ background: 'var(--gradient-accent)' }}
+                      className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+                      }}
                     >
                       🧪
                     </div>
-                    <h3 
-                      className="text-lg font-semibold"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      Test Cases
-                    </h3>
+                    <div>
+                      <h3 
+                        className="text-xl font-bold"
+                        style={{ color: '#1e40af' }}
+                      >
+                        Test Cases
+                      </h3>
+                      <p className="text-sm text-blue-600 font-medium">
+                        {question.test_cases.length} test case{question.test_cases.length !== 1 ? 's' : ''} • Run these to verify your solution
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid gap-4">
+                  <div className="grid gap-6">
                     {question.test_cases.map((testCase, index) => (
                       <div 
                         key={index} 
-                        className="rounded-lg p-4 border"
+                        className="rounded-xl p-5 border-2 shadow-md transition-all duration-200 hover:shadow-lg"
                         style={{ 
-                          background: 'rgba(255, 255, 255, 0.8)',
-                          borderColor: 'rgba(245, 158, 11, 0.2)'
+                          background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
+                          borderColor: 'rgba(59, 130, 246, 0.2)',
+                          boxShadow: '0 4px 16px rgba(59, 130, 246, 0.1)'
                         }}
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <span 
-                              className="inline-block px-2 py-1 rounded text-xs font-semibold mb-2"
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
                               style={{ 
-                                background: 'var(--gradient-primary)',
-                                color: 'white'
+                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
                               }}
                             >
-                              Input
-                            </span>
+                              {index + 1}
+                            </div>
+                            <span className="font-semibold text-gray-800 text-lg">Test Case {index + 1}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ background: '#3b82f6' }}
+                              ></div>
+                              <span 
+                                className="text-sm font-semibold text-gray-700"
+                              >
+                                Input
+                              </span>
+                            </div>
                             <div 
-                              className="font-mono text-sm p-3 rounded"
+                              className="font-mono text-sm p-4 rounded-lg border-2"
                               style={{ 
-                                background: 'var(--bg-secondary)',
-                                color: 'var(--text-primary)'
+                                background: '#f1f5f9',
+                                borderColor: 'rgba(59, 130, 246, 0.2)',
+                                color: '#1e293b'
                               }}
                             >
                               {typeof testCase.input === 'object' 
@@ -660,26 +726,54 @@ int sum(int a, int b) {
                                 : testCase.input}
                             </div>
                           </div>
-                          <div>
-                            <span 
-                              className="inline-block px-2 py-1 rounded text-xs font-semibold mb-2"
-                              style={{ 
-                                background: 'var(--gradient-secondary)',
-                                color: 'white'
-                              }}
-                            >
-                              Expected Output
-                            </span>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ background: '#10b981' }}
+                              ></div>
+                              <span 
+                                className="text-sm font-semibold text-gray-700"
+                              >
+                                Expected Output
+                              </span>
+                            </div>
                             <div 
-                              className="font-mono text-sm p-3 rounded"
+                              className="font-mono text-sm p-4 rounded-lg border-2"
                               style={{ 
-                                background: 'var(--bg-secondary)',
-                                color: 'var(--text-primary)'
+                                background: '#f0fdf4',
+                                borderColor: 'rgba(16, 185, 129, 0.2)',
+                                color: '#064e3b'
                               }}
                             >
-                              {typeof testCase.expected_output === 'object' 
-                                ? JSON.stringify(testCase.expected_output, null, 2)
-                                : testCase.expected_output}
+                              {(() => {
+                                console.log('Test case:', testCase);
+                                console.log('Test case keys:', Object.keys(testCase));
+                                console.log('expected_output:', testCase.expected_output);
+                                console.log('expected:', testCase.expected);
+                                console.log('output:', testCase.output);
+                                console.log('result:', testCase.result);
+                                
+                                if (testCase.expected_output !== undefined) {
+                                  return typeof testCase.expected_output === 'object' 
+                                    ? JSON.stringify(testCase.expected_output, null, 2)
+                                    : testCase.expected_output;
+                                } else if (testCase.expected !== undefined) {
+                                  return typeof testCase.expected === 'object' 
+                                    ? JSON.stringify(testCase.expected, null, 2)
+                                    : testCase.expected;
+                                } else if (testCase.output !== undefined) {
+                                  return typeof testCase.output === 'object' 
+                                    ? JSON.stringify(testCase.output, null, 2)
+                                    : testCase.output;
+                                } else if (testCase.result !== undefined) {
+                                  return typeof testCase.result === 'object' 
+                                    ? JSON.stringify(testCase.result, null, 2)
+                                    : testCase.result;
+                                } else {
+                                  return `No expected output found. Available fields: ${Object.keys(testCase).join(', ')}`;
+                                }
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -736,66 +830,104 @@ int sum(int a, int b) {
                   >
                     Code Solution
                   </label>
-                  <select
-                    value={language}
-                    onChange={(e) => {
-                      setLanguage(e.target.value)
-                      setCodeSolution(getCodeTemplate(e.target.value))
-                    }}
-                    className="input px-3 py-2 text-sm"
-                    disabled={isSubmitted}
-                  >
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python</option>
-                    <option value="java">Java</option>
-                    <option value="cpp">C++</option>
-                  </select>
-                </div>
-                
-                <div 
-                  className="rounded-xl overflow-hidden border-2 shadow-lg"
-                  style={{ 
-                    borderColor: 'rgba(6, 95, 70, 0.2)',
-                    boxShadow: '0 8px 32px rgba(6, 95, 70, 0.1)'
-                  }}
-                >
-                  <div 
-                    className="px-4 py-3 border-b flex items-center justify-between"
-                    style={{ 
-                      background: 'var(--gradient-primary)',
-                      borderColor: 'rgba(255, 255, 255, 0.1)'
-                    }}
-                  >
+                  <div className="flex items-center space-x-3">
+                    <select
+                      value={language}
+                      onChange={(e) => {
+                        setLanguage(e.target.value)
+                        setCodeSolution(getCodeTemplate(e.target.value))
+                        setSandboxCode(getCodeTemplate(e.target.value))
+                      }}
+                      className="input px-3 py-2 text-sm"
+                      disabled={isSubmitted}
+                    >
+                      <option value="javascript">JavaScript (Live Testing)</option>
+                      <option value="react">React</option>
+                      <option value="vue">Vue</option>
+                      <option value="svelte">Svelte</option>
+                      <option value="python">Python (Edit Only)</option>
+                      <option value="java">Java (Edit Only)</option>
+                      <option value="cpp">C++ (Edit Only)</option>
+                    </select>
                     <div className="flex items-center space-x-2">
-                      <div className="flex space-x-1">
-                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                      </div>
-                      <span className="text-white text-sm font-medium ml-3">
-                        {language.toUpperCase()} Editor
-                      </span>
-                    </div>
-                    <div className="text-white text-xs">
-                      {codeSolution.split('\n').length} lines
+                      <label className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={useSandbox}
+                          onChange={(e) => setUseSandbox(e.target.checked)}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          disabled={isSubmitted}
+                        />
+                        <span style={{ color: 'var(--text-primary)' }}>
+                          Live Sandbox
+                        </span>
+                      </label>
                     </div>
                   </div>
-                  <textarea
-                    value={codeSolution}
-                    onChange={(e) => setCodeSolution(e.target.value)}
-                    className="w-full h-96 p-6 font-mono text-sm border-0 focus:ring-0 resize-none focus:outline-none"
-                    style={{
-                      fontFamily: '"JetBrains Mono", "Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-                      fontSize: '14px',
-                      lineHeight: '1.6',
-                      background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
-                      color: 'var(--text-primary)',
-                      letterSpacing: '0.025em'
-                    }}
-                    placeholder="// Write your code here...&#10;// Use proper indentation and formatting&#10;// Test your solution with the provided test cases"
-                    disabled={isSubmitted}
-                  />
                 </div>
+                
+                {useSandbox ? (
+                  <Judge0Container
+                    question={question}
+                    userCode={sandboxCode}
+                    onCodeChange={(code) => {
+                      setSandboxCode(code)
+                      setCodeSolution(code)
+                    }}
+                    testCases={question?.test_cases || []}
+                    language={language}
+                    onReset={() => {
+                      const template = getCodeTemplate(language)
+                      setSandboxCode(template)
+                      setCodeSolution(template)
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="rounded-xl overflow-hidden border-2 shadow-lg"
+                    style={{ 
+                      borderColor: 'rgba(6, 95, 70, 0.2)',
+                      boxShadow: '0 8px 32px rgba(6, 95, 70, 0.1)'
+                    }}
+                  >
+                    <div 
+                      className="px-4 py-3 border-b flex items-center justify-between"
+                      style={{ 
+                        background: 'var(--gradient-primary)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <span className="text-white text-sm font-medium ml-3">
+                          {language.toUpperCase()} Editor
+                        </span>
+                      </div>
+                      <div className="text-white text-xs">
+                        {codeSolution.split('\n').length} lines
+                      </div>
+                    </div>
+                    <textarea
+                      value={codeSolution}
+                      onChange={(e) => setCodeSolution(e.target.value)}
+                      className="w-full h-96 p-6 font-mono text-sm border-0 focus:ring-0 resize-none focus:outline-none"
+                      style={{
+                        fontFamily: '"JetBrains Mono", "Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
+                        color: 'var(--text-primary)',
+                        letterSpacing: '0.025em'
+                      }}
+                      placeholder="// Write your code here...&#10;// Use proper indentation and formatting&#10;// Test your solution with the provided test cases"
+                      disabled={isSubmitted}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -803,7 +935,7 @@ int sum(int a, int b) {
             <div className="mt-6">
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitted || (question.question_type === 'theoretical' ? !userAnswer.trim() : !codeSolution.trim())}
+                disabled={isSubmitted || ((question.question_type === 'theoretical' || question.questionType === 'theoretical') ? !userAnswer.trim() : !codeSolution.trim())}
                 className="btn btn-primary w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-5 w-5 mr-2" />
@@ -870,7 +1002,7 @@ int sum(int a, int b) {
                             className="text-sm leading-relaxed"
                             style={{ color: 'var(--text-primary)' }}
                           >
-                            {hint}
+                            {typeof hint === 'string' ? hint : (typeof hint === 'object' ? hint.hint || hint.text || JSON.stringify(hint, null, 2) : String(hint))}
                           </p>
                         </div>
                       </div>
@@ -936,7 +1068,7 @@ int sum(int a, int b) {
                     Reference
                   </span>
                 </div>
-                {question.question_type === 'code' ? (
+                {(question.question_type === 'code' || question.questionType === 'coding') ? (
                   <div 
                     className="rounded-lg p-4 border-2"
                     style={{ 
@@ -969,7 +1101,20 @@ int sum(int a, int b) {
                         borderColor: 'rgba(4, 120, 87, 0.2)'
                       }}
                     >
-                      <pre className="whitespace-pre-wrap">{typeof solution === 'object' && solution.code ? solution.code : solution}</pre>
+                      <pre className="whitespace-pre-wrap">
+                        {(() => {
+                          if (typeof solution === 'string') {
+                            return solution;
+                          } else if (typeof solution === 'object' && solution !== null) {
+                            if (solution.code) return solution.code;
+                            if (solution.text) return solution.text;
+                            if (solution.explanation) return solution.explanation;
+                            return JSON.stringify(solution, null, 2);
+                          } else {
+                            return String(solution || 'No solution available');
+                          }
+                        })()}
+                      </pre>
                     </div>
                   </div>
                 ) : (
@@ -988,12 +1133,33 @@ int sum(int a, int b) {
                         📝 Answer
                       </span>
                     </div>
-                    <p 
-                      className="text-sm leading-relaxed"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {typeof solution === 'object' && solution.explanation ? solution.explanation : solution}
-                    </p>
+                    <div className="space-y-4">
+                      {typeof solution === 'object' && solution.code && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                            💻 Code Solution:
+                          </h4>
+                          <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                            <code>{typeof solution.code === 'string' ? solution.code : (typeof solution.code === 'object' ? JSON.stringify(solution.code, null, 2) : String(solution.code || ''))}</code>
+                          </pre>
+                        </div>
+                      )}
+                      {typeof solution === 'object' && solution.explanation && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                            📝 Explanation:
+                          </h4>
+                          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                            {typeof solution.explanation === 'string' ? solution.explanation : (typeof solution.explanation === 'object' ? solution.explanation.text || solution.explanation.message || JSON.stringify(solution.explanation, null, 2) : String(solution.explanation))}
+                          </p>
+                        </div>
+                      )}
+                      {typeof solution === 'string' && (
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                          {solution}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
                 <div className="mt-4 flex space-x-3">
@@ -1136,7 +1302,7 @@ int sum(int a, int b) {
                           className="text-sm leading-relaxed"
                           style={{ color: 'var(--text-primary)' }}
                         >
-                          <p>{evaluation.feedback}</p>
+                          <p>{typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}</p>
                         </div>
                       </div>
                     </div>
@@ -1155,7 +1321,7 @@ int sum(int a, int b) {
                       className="text-sm leading-relaxed"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {evaluation.feedback}
+                      {typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}
                     </p>
                   </div>
                 )}
@@ -1257,7 +1423,7 @@ int sum(int a, int b) {
                         className="text-sm whitespace-pre-wrap font-mono leading-relaxed"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        {evaluation.optimalSolution}
+                        {typeof evaluation.optimalSolution === 'string' ? evaluation.optimalSolution : (typeof evaluation.optimalSolution === 'object' ? evaluation.optimalSolution.code || evaluation.optimalSolution.text || JSON.stringify(evaluation.optimalSolution, null, 2) : String(evaluation.optimalSolution))}
                       </pre>
                     </div>
                   </div>

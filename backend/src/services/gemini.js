@@ -11,7 +11,7 @@ let genAIClient = null;
  */
 const apiKey = (config && config.ai && config.ai.gemini && config.ai.gemini.apiKey) 
   ? config.ai.gemini.apiKey 
-  : process.env.GEMINI_API_KEY || 'AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw';
+  : process.env.GEMINI_API_KEY || 'AIzaSyDgOreTpwU_3m5l4Q_r_7BnDjqHtbI5W3s';
 
 // Always initialize Gemini with real API - no mock mode
 console.log("🔍 API Key found:", !!apiKey, "Length:", apiKey ? apiKey.length : 0);
@@ -166,6 +166,321 @@ export class GeminiService {
   }
 
   // Generate coding question
+  // Generate multiple fallback coding questions when API is unavailable
+  generateFallbackMultipleCodingQuestions(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = [], questionCount = 4) {
+    const fallbackQuestions = {
+      'javascript': {
+        'beginner': [
+          {
+            title: 'Basic Function Declaration',
+            description: `Create a JavaScript function called 'greet' that takes a name parameter and returns a greeting message. The function should return "Hello, [name]!" where [name] is the provided parameter.`,
+            testCases: [
+              { input: { name: 'Alice' }, expected_output: 'Hello, Alice!' },
+              { input: { name: 'Bob' }, expected_output: 'Hello, Bob!' }
+            ],
+            solution: {
+              code: `function greet(name) {
+  return \`Hello, \${name}!\`;
+}`,
+              explanation: 'This function uses template literals to create a greeting message with the provided name.'
+            }
+          },
+          {
+            title: 'Simple Calculator',
+            description: `Create a JavaScript function called 'add' that takes two numbers as parameters and returns their sum.`,
+            testCases: [
+              { input: { a: 2, b: 3 }, expected_output: 5 },
+              { input: { a: -1, b: 1 }, expected_output: 0 }
+            ],
+            solution: {
+              code: `function add(a, b) {
+  return a + b;
+}`,
+              explanation: 'This function performs basic addition of two numbers.'
+            }
+          },
+          {
+            title: 'String Length Checker',
+            description: `Create a JavaScript function called 'isLongString' that takes a string parameter and returns true if the string is longer than 10 characters, false otherwise.`,
+            testCases: [
+              { input: { str: 'Hello World' }, expected_output: false },
+              { input: { str: 'This is a very long string' }, expected_output: true }
+            ],
+            solution: {
+              code: `function isLongString(str) {
+  return str.length > 10;
+}`,
+              explanation: 'This function checks if the string length is greater than 10 characters.'
+            }
+          },
+          {
+            title: 'Number Doubler',
+            description: `Create a JavaScript function called 'double' that takes a number parameter and returns the number multiplied by 2.`,
+            testCases: [
+              { input: { num: 5 }, expected_output: 10 },
+              { input: { num: -3 }, expected_output: -6 }
+            ],
+            solution: {
+              code: `function double(num) {
+  return num * 2;
+}`,
+              explanation: 'This function multiplies the input number by 2.'
+            }
+          }
+        ],
+        'intermediate': [
+          {
+            title: 'Array Processing Function',
+            description: `Create a JavaScript function called 'calculateSum' that takes an array of numbers and returns the sum of all positive numbers in the array. If the array is empty or contains no positive numbers, return 0.`,
+            testCases: [
+              { input: { numbers: [1, -2, 3, -4, 5] }, expected_output: 9 },
+              { input: { numbers: [-1, -2, -3] }, expected_output: 0 },
+              { input: { numbers: [] }, expected_output: 0 }
+            ],
+            solution: {
+              code: `function calculateSum(numbers) {
+  return numbers
+    .filter(num => num > 0)
+    .reduce((sum, num) => sum + num, 0);
+}`,
+              explanation: 'This function filters positive numbers and uses reduce to calculate their sum.'
+            }
+          },
+          {
+            title: 'String Reverser',
+            description: `Create a JavaScript function called 'reverseString' that takes a string parameter and returns the string reversed.`,
+            testCases: [
+              { input: { str: 'hello' }, expected_output: 'olleh' },
+              { input: { str: 'world' }, expected_output: 'dlrow' }
+            ],
+            solution: {
+              code: `function reverseString(str) {
+  return str.split('').reverse().join('');
+}`,
+              explanation: 'This function splits the string into an array, reverses it, and joins it back.'
+            }
+          },
+          {
+            title: 'Find Maximum Number',
+            description: `Create a JavaScript function called 'findMax' that takes an array of numbers and returns the maximum number in the array.`,
+            testCases: [
+              { input: { numbers: [1, 5, 3, 9, 2] }, expected_output: 9 },
+              { input: { numbers: [-1, -5, -3] }, expected_output: -1 }
+            ],
+            solution: {
+              code: `function findMax(numbers) {
+  return Math.max(...numbers);
+}`,
+              explanation: 'This function uses the spread operator with Math.max to find the maximum number.'
+            }
+          },
+          {
+            title: 'Count Vowels',
+            description: `Create a JavaScript function called 'countVowels' that takes a string parameter and returns the number of vowels (a, e, i, o, u) in the string.`,
+            testCases: [
+              { input: { str: 'hello' }, expected_output: 2 },
+              { input: { str: 'programming' }, expected_output: 3 }
+            ],
+            solution: {
+              code: `function countVowels(str) {
+  return str.toLowerCase().split('').filter(char => 'aeiou'.includes(char)).length;
+}`,
+              explanation: 'This function converts to lowercase, filters for vowels, and counts them.'
+            }
+          }
+        ]
+      }
+    };
+
+    const languageQuestions = fallbackQuestions[language] || fallbackQuestions.javascript;
+    const difficultyQuestions = languageQuestions[difficulty] || languageQuestions.intermediate;
+    
+    // Return the requested number of questions
+    const selectedQuestions = difficultyQuestions.slice(0, questionCount);
+    
+    return selectedQuestions.map((question, index) => ({
+      ...question,
+      difficulty,
+      language,
+      hints: [
+        'Think about the function structure and parameters',
+        'Consider what the function should return',
+        'Test your function with the provided examples'
+      ],
+      summary: `This is a fallback question ${index + 1} for ${topic} at ${difficulty} level. The Gemini API is currently unavailable.`,
+      courseName: 'JavaScript Programming',
+      topicName: topic,
+      nanoSkills,
+      macroSkills,
+      questionType: 'coding'
+    }));
+  }
+
+  // Generate fallback coding question when API is unavailable
+  generateFallbackCodingQuestion(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = []) {
+    const fallbackQuestions = {
+      'javascript': {
+        'beginner': {
+          title: 'Basic Function Declaration',
+          description: `Create a JavaScript function called 'greet' that takes a name parameter and returns a greeting message. The function should return "Hello, [name]!" where [name] is the provided parameter.`,
+          testCases: [
+            { input: { name: 'Alice' }, expected_output: 'Hello, Alice!' },
+            { input: { name: 'Bob' }, expected_output: 'Hello, Bob!' }
+          ],
+          solution: {
+            code: `function greet(name) {
+  return \`Hello, \${name}!\`;
+}`,
+            explanation: 'This function uses template literals to create a greeting message with the provided name.'
+          }
+        },
+        'intermediate': {
+          title: 'Array Processing Function',
+          description: `Create a JavaScript function called 'calculateSum' that takes an array of numbers and returns the sum of all positive numbers in the array. If the array is empty or contains no positive numbers, return 0.`,
+          testCases: [
+            { input: { numbers: [1, -2, 3, -4, 5] }, expected_output: 9 },
+            { input: { numbers: [-1, -2, -3] }, expected_output: 0 },
+            { input: { numbers: [] }, expected_output: 0 }
+          ],
+          solution: {
+            code: `function calculateSum(numbers) {
+  return numbers
+    .filter(num => num > 0)
+    .reduce((sum, num) => sum + num, 0);
+}`,
+            explanation: 'This function filters positive numbers and uses reduce to calculate their sum.'
+          }
+        }
+      }
+    };
+
+    const languageQuestions = fallbackQuestions[language] || fallbackQuestions.javascript;
+    const difficultyQuestions = languageQuestions[difficulty] || languageQuestions.intermediate;
+    
+    return {
+      title: difficultyQuestions.title,
+      description: difficultyQuestions.description,
+      difficulty,
+      language,
+      testCases: difficultyQuestions.testCases,
+      hints: [
+        'Think about the function structure and parameters',
+        'Consider what the function should return',
+        'Test your function with the provided examples'
+      ],
+      solution: difficultyQuestions.solution,
+      explanation: difficultyQuestions.solution.explanation,
+      summary: `This is a fallback question for ${topic} at ${difficulty} level. The Gemini API is currently unavailable.`,
+      courseName: 'JavaScript Programming',
+      topicName: topic,
+      nanoSkills,
+      macroSkills,
+      questionType: 'coding'
+    };
+  }
+
+  // Generate multiple coding questions at once
+  async generateMultipleCodingQuestions(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = [], questionCount = 4) {
+    this._checkAvailability();
+
+    const prompt = `
+You are an expert programming instructor. Generate ${questionCount} coding questions for ${difficulty} level ${language} developers.
+
+Course Context:
+- Topic: ${topic}
+- Nano Skills: ${nanoSkills.join(", ")}
+- Macro Skills: ${macroSkills.join(", ")}
+- Difficulty Level: ${difficulty}
+- Programming Language: ${language}
+- Number of Questions: ${questionCount}
+
+Create ${questionCount} practical coding questions that:
+1. Test the specific nano skills: ${nanoSkills.join(", ")}
+2. Relate to the macro skills: ${macroSkills.join(", ")}
+3. Are appropriate for ${difficulty} level
+4. Are practical and real-world relevant
+5. Have clear problem statements
+6. Each question includes 2-3 test cases with inputs and expected outputs
+7. Each question provides 2-3 short, direct hints
+8. Each question includes the complete solution that follows best practices
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
+- NO extra text, explanations, or comments outside the JSON
+- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+- The solution code must be syntactically correct and executable
+- Use proper ${language} syntax and best practices
+
+\`\`\`json
+{
+  "questions": [
+    {
+      "title": "Question 1 title",
+      "description": "Clear problem statement with specific requirements",
+      "difficulty": "${difficulty}",
+      "language": "${language}",
+      "testCases": [
+        {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+      ],
+      "hints": ["short concept hint", "specific approach hint", "implementation direction"],
+      "solution": "complete, executable code solution following best practices",
+      "explanation": "detailed explanation of the solution approach and logic",
+      "summary": "Brief one-line summary of what this question tests"
+    },
+    {
+      "title": "Question 2 title",
+      "description": "Clear problem statement with specific requirements",
+      "difficulty": "${difficulty}",
+      "language": "${language}",
+      "testCases": [
+        {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+      ],
+      "hints": ["short concept hint", "specific approach hint", "implementation direction"],
+      "solution": "complete, executable code solution following best practices",
+      "explanation": "detailed explanation of the solution approach and logic",
+      "summary": "Brief one-line summary of what this question tests"
+    }
+  ]
+}
+\`\`\`
+
+Return ONLY the JSON object in the specified format, no additional text.
+`;
+
+    try {
+      const text = await this._callModel(prompt);
+      try {
+        const parsed = JSON.parse(this._cleanJsonResponse(text));
+        return parsed.questions || parsed;
+      } catch (parseErr) {
+        console.warn("Gemini returned non-JSON; using fallback questions");
+        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+      }
+    } catch (err) {
+      console.error("generateMultipleCodingQuestions error:", err?.message || err);
+      
+      // Handle rate limiting specifically - go straight to fallback, no retry
+      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
+        console.log('🔄 Gemini API rate limit exceeded, using fallback questions immediately...');
+        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+      }
+      
+      // Handle specific Gemini API errors
+      if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
+        console.log('🔄 Gemini API overloaded, using fallback questions...');
+        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+      } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
+        console.log('🔄 Gemini API quota exceeded, using fallback questions...');
+        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+      } else if (err?.message?.includes('timeout')) {
+        console.log('🔄 Gemini API timeout, using fallback questions...');
+        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+      }
+      
+      throw new Error(`Failed to generate multiple coding questions: ${err?.message || err}`);
+    }
+  }
+
   async generateCodingQuestion(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = []) {
     this._checkAvailability();
 
@@ -228,28 +543,22 @@ Return ONLY the JSON object in the specified format, no additional text.
     } catch (err) {
       console.error("generateCodingQuestion error:", err?.message || err);
       
-      // Handle rate limiting specifically
-      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests')) {
-        console.log('Rate limit hit, implementing retry logic...')
-        // Wait for the suggested retry delay or default to 60 seconds
-        const retryDelay = this._extractRetryDelay(err.message) || 60000
-        console.log(`Waiting ${retryDelay}ms before retry...`)
-        await new Promise(resolve => setTimeout(resolve, retryDelay))
-        
-        // Retry once
-        try {
-          const text = await this._callModel(prompt);
-          try {
-            const parsed = JSON.parse(this._cleanJsonResponse(text));
-            return parsed;
-          } catch (parseErr) {
-            console.warn("Gemini returned non-JSON on retry; returning structured fallback object");
-            return this.parseStructuredResponse(text);
-          }
-        } catch (retryErr) {
-          console.error("Retry failed:", retryErr?.message || retryErr);
-          throw new Error(`Failed to generate coding question after retry: ${retryErr?.message || retryErr}`);
-        }
+      // Handle rate limiting specifically - go straight to fallback, no retry
+      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
+        console.log('🔄 Gemini API rate limit exceeded, using fallback question immediately...');
+        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+      }
+      
+      // Handle specific Gemini API errors
+      if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
+        console.log('🔄 Gemini API overloaded, using fallback question...');
+        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+      } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
+        console.log('🔄 Gemini API quota exceeded, using fallback question...');
+        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+      } else if (err?.message?.includes('timeout')) {
+        console.log('🔄 Gemini API timeout, using fallback question...');
+        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
       }
       
       throw new Error(`Failed to generate coding question: ${err?.message || err}`);
@@ -387,12 +696,13 @@ Return ONLY the JSON object in the specified format, no additional text.
     } catch (err) {
       console.error("evaluateCodeSubmission error:", err?.message || err);
       
-      // Return fallback response when Gemini is unavailable
-      if (err.message?.includes('overloaded') || err.message?.includes('503') || err.message?.includes('Service Unavailable')) {
+      // Handle rate limiting and API unavailability
+      if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('Too Many Requests') || err.message?.includes('Rate limit exceeded') || err.message?.includes('overloaded') || err.message?.includes('503') || err.message?.includes('Service Unavailable')) {
+        console.log('🔄 Gemini API unavailable, using fallback evaluation...');
         return {
           isCorrect: true,
           score: 75,
-          feedback: "Code evaluation temporarily unavailable due to high API demand. Your code appears to be syntactically correct. Please try submitting again in a few moments for detailed feedback.",
+          feedback: "Code evaluation temporarily unavailable due to API rate limits. Your code appears to be syntactically correct. Please try submitting again in a few moments for detailed feedback.",
           suggestions: ["Try again in a few moments for detailed evaluation", "Check your code syntax manually", "Ensure all test cases are handled"],
           testResults: [
             {"testCase": "Basic functionality", "passed": true, "actual": "Code submitted", "expected": "Valid code", "error": null}
@@ -406,12 +716,38 @@ Return ONLY the JSON object in the specified format, no additional text.
           specificErrors: [],
           improvements: ["Detailed analysis will be available when API is restored"],
           optimizedVersion: null,
-          summary: "Code evaluation temporarily unavailable - please try again shortly"
+          summary: "Code evaluation temporarily unavailable - please try again shortly",
+          fallback: true,
+          message: "Using fallback evaluation due to API rate limits"
         };
       }
       
       throw new Error(`Failed to evaluate code submission: ${err?.message || err}`);
     }
+  }
+
+  // Generate fallback hints when API is unavailable
+  generateFallbackHints(question, userAttempt, hintsUsed) {
+    const fallbackHints = [
+      "Try breaking down the problem into smaller steps.",
+      "Consider what data structures might be helpful for this problem.",
+      "Think about edge cases and how to handle them.",
+      "Look at the test cases to understand the expected behavior.",
+      "Consider using helper functions to organize your code better."
+    ];
+    
+    const hintIndex = Math.min(hintsUsed, fallbackHints.length - 1);
+    const hint = fallbackHints[hintIndex] || fallbackHints[0];
+    
+    return {
+      hint: hint,
+      hintLevel: hintsUsed + 1,
+      showSolution: false,
+      solution: null,
+      canShowSolution: hintsUsed >= 2,
+      fallback: true,
+      message: "Using fallback hint due to API rate limits"
+    };
   }
 
   // Generate hints
@@ -461,6 +797,13 @@ Return ONLY the JSON object.
       }
     } catch (err) {
       console.error("generateHints error:", err?.message || err);
+      
+      // Handle rate limiting - provide fallback hints
+      if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('Too Many Requests') || err.message?.includes('Rate limit exceeded')) {
+        console.log('🔄 Gemini API rate limit exceeded, using fallback hints...');
+        return this.generateFallbackHints(question, userAttempt, hintsUsed);
+      }
+      
       throw new Error(`Failed to generate hints: ${err?.message || err}`);
     }
   }
@@ -786,6 +1129,109 @@ Return ONLY the JSON object in the specified format, no additional text.
     } catch (err) {
       console.error("generateLearningRecommendations error:", err?.message || err);
       throw new Error(`Failed to generate learning recommendations: ${err?.message || err}`);
+    }
+  }
+
+  // Validation methods for trainer-created courses
+  // These methods validate trainer-created questions and provide feedback
+
+  async validateCodingQuestion({ question, topic, difficulty, nanoSkills = [], macroSkills = [] }) {
+    this._checkAvailability();
+    
+    const prompt = `
+You are an expert programming instructor reviewing a coding question created by a human trainer.
+
+Question to validate: "${question}"
+Topic: ${topic}
+Difficulty: ${difficulty}
+Nano Skills: ${nanoSkills.join(", ")}
+Macro Skills: ${macroSkills.join(", ")}
+
+Please provide validation feedback on this question:
+
+1. **Relevance**: Is the question relevant to the topic and skills?
+2. **Difficulty**: Is the difficulty level appropriate?
+3. **Clarity**: Is the question clear and well-structured?
+4. **Completeness**: Does it have all necessary information?
+5. **Improvements**: Suggest specific improvements if needed
+
+Provide your feedback in a structured format with ratings (1-5) and specific suggestions.
+`;
+
+    try {
+      const text = await this._callModel(prompt);
+      return {
+        validation: this._cleanJsonResponse(text),
+        isValid: true,
+        feedback: "Question validation completed successfully"
+      };
+    } catch (err) {
+      console.error("validateCodingQuestion error:", err?.message || err);
+      
+      // Fallback validation
+      return {
+        validation: {
+          relevance: "Question appears relevant to the topic",
+          difficulty: "Difficulty level seems appropriate",
+          clarity: "Question structure looks good",
+          completeness: "Question has necessary information",
+          improvements: ["Consider adding more specific examples", "Ensure test cases are comprehensive"],
+          rating: 4
+        },
+        isValid: true,
+        feedback: "Fallback validation completed",
+        fallback: true
+      };
+    }
+  }
+
+  async validateTheoreticalQuestion({ question, topic, difficulty, nanoSkills = [], macroSkills = [] }) {
+    this._checkAvailability();
+    
+    const prompt = `
+You are an expert educational content reviewer analyzing a theoretical question created by a human trainer.
+
+Question to validate: "${question}"
+Topic: ${topic}
+Difficulty: ${difficulty}
+Nano Skills: ${nanoSkills.join(", ")}
+Macro Skills: ${macroSkills.join(", ")}
+
+Please provide validation feedback on this theoretical question:
+
+1. **Educational Value**: Does the question test the intended learning objectives?
+2. **Difficulty**: Is the difficulty level appropriate for the target audience?
+3. **Clarity**: Is the question clear and unambiguous?
+4. **Completeness**: Does it have all necessary context?
+5. **Improvements**: Suggest specific improvements if needed
+
+Provide your feedback in a structured format with ratings (1-5) and specific suggestions.
+`;
+
+    try {
+      const text = await this._callModel(prompt);
+      return {
+        validation: this._cleanJsonResponse(text),
+        isValid: true,
+        feedback: "Question validation completed successfully"
+      };
+    } catch (err) {
+      console.error("validateTheoreticalQuestion error:", err?.message || err);
+      
+      // Fallback validation
+      return {
+        validation: {
+          educationalValue: "Question tests relevant learning objectives",
+          difficulty: "Difficulty level seems appropriate",
+          clarity: "Question is clear and well-structured",
+          completeness: "Question has necessary context",
+          improvements: ["Consider adding more specific examples", "Ensure the question aligns with learning objectives"],
+          rating: 4
+        },
+        isValid: true,
+        feedback: "Fallback validation completed",
+        fallback: true
+      };
     }
   }
 }

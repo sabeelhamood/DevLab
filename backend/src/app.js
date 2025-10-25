@@ -12,7 +12,6 @@ import { notFound } from './middleware/notFound.js'
 import authRoutes from './routes/auth/authRoutes.js'
 import questionRoutes from './routes/questions/questionRoutes.js'
 import sessionRoutes from './routes/sessions/sessionRoutes.js'
-import competitionRoutes from './routes/competitions/competitionRoutes.js'
 import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
 import healthRoutes from './routes/health/healthRoutes.js'
 
@@ -20,6 +19,10 @@ import healthRoutes from './routes/health/healthRoutes.js'
 import geminiRoutes from './routes/gemini.js'
 import geminiTestRoutes from './routes/gemini-test.js'
 import geminiQuestionRoutes from './routes/gemini-question-generation.js'
+
+// Judge0 routes
+import judge0Routes from './routes/judge0.js'
+// import competitionRoutes from './routes/competitions.js'
 
 // External service routes
 import directoryRoutes from './routes/external/directoryRoutes.js'
@@ -35,7 +38,7 @@ const app = express()
 app.use(helmet())
 app.use(cors({
   origin: config.nodeEnv === 'development' 
-    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3003', 'http://localhost:5173']
+    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
     : config.corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -69,13 +72,16 @@ app.use('/health', healthRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
-app.use('/api/competitions', competitionRoutes)
+// app.use('/api/competitions', competitionRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
 // Gemini AI routes
 app.use('/api/gemini', geminiRoutes)
 app.use('/api/gemini-test', geminiTestRoutes)
 app.use('/api/gemini-questions', geminiQuestionRoutes)
+
+// Judge0 routes
+app.use('/api/judge0', judge0Routes)
 
 // External service routes (for microservice communication)
 app.use('/api/external/learners', directoryRoutes)
@@ -90,7 +96,7 @@ app.use(notFound)
 app.use(errorHandler)
 
 // Start server
-const PORT = config.port || 3001
+const PORT = config.port || 3000
 app.listen(PORT, () => {
   console.log(`🚀 DEVLAB Backend running on port ${PORT}`)
   console.log(`📊 Environment: ${config.nodeEnv}`)

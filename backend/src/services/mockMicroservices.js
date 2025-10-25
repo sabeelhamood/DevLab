@@ -10,14 +10,15 @@ export const mockMicroservices = {
       email: "learner@devlab.com",
       role: "learner",
       organizationId: 1,
-      completed_courses: [1, 2],
-      active_courses: [3, 4],
-      question_quotas: 4,
-      learning_preferences: {
-        difficulty_preference: "intermediate",
-        preferred_languages: ["JavaScript", "Python"],
-        learning_style: "hands-on"
-      }
+      completed_courses: [
+        { id: 1, name: "JavaScript Fundamentals" },
+        { id: 2, name: "Advanced JavaScript Functions" }
+      ],
+      active_courses: [
+        { id: 3, name: "Data Structures & Algorithms" },
+        { id: 4, name: "React Development" }
+      ],
+      practice_questions_count: 4
     }),
 
     getTrainerProfile: (userId) => ({
@@ -27,20 +28,13 @@ export const mockMicroservices = {
       role: "trainer",
       organizationId: 1,
       courses_created: [1, 2, 3, 4],
-      expertise_areas: ["JavaScript", "Python", "Data Structures"],
-      teaching_experience: "5 years"
+      expertise_areas: ["JavaScript", "Python", "Data Structures"]
     }),
 
     getOrganizationSettings: (orgId) => ({
       organization_id: orgId,
       name: "TechCorp Learning",
-      question_quotas: 4,
-      learning_paths: ["Frontend Development", "Backend Development", "Data Science"],
-      assessment_settings: {
-        passing_score: 70,
-        retry_limit: 3,
-        time_limit: 30
-      }
+      practice_questions_count: 4
     })
   },
 
@@ -53,11 +47,7 @@ export const mockMicroservices = {
         level: "beginner",
         description: "Learn the basics of JavaScript programming",
         trainer_id: 2,
-        topics: [101, 102, 103],
-        ai_feedback: {
-          difficulty_analysis: "Suitable for beginners",
-          recommendations: ["Add more examples", "Include practical exercises"]
-        }
+        topics: [101, 102, 103]
       },
       {
         course_id: 2,
@@ -65,11 +55,7 @@ export const mockMicroservices = {
         level: "intermediate",
         description: "Master advanced JavaScript function concepts",
         trainer_id: 2,
-        topics: [201, 202, 203],
-        ai_feedback: {
-          difficulty_analysis: "Intermediate level with complex concepts",
-          recommendations: ["Add more real-world examples"]
-        }
+        topics: [201, 202, 203]
       },
       {
         course_id: 3,
@@ -77,11 +63,7 @@ export const mockMicroservices = {
         level: "advanced",
         description: "Comprehensive guide to data structures and algorithms",
         trainer_id: 2,
-        topics: [301, 302, 303],
-        ai_feedback: {
-          difficulty_analysis: "Advanced level requiring strong foundation",
-          recommendations: ["Include more algorithm explanations"]
-        }
+        topics: [301, 302, 303]
       }
     ],
 
@@ -184,7 +166,369 @@ export const mockMicroservices = {
       }))
     },
 
-    evaluateCode: (code, testCases) => {
+    submitPracticeSession: (sessionData) => {
+      return {
+        session_id: `session_${Date.now()}`,
+        status: "submitted",
+        received_at: new Date().toISOString(),
+        assessment_data: {
+          question: sessionData.question,
+          test_cases: sessionData.testCases,
+          judge0_sandbox: sessionData.judge0Sandbox,
+          gemini_integration: sessionData.geminiIntegration,
+          user_code: sessionData.userCode,
+          execution_results: sessionData.executionResults
+        },
+        feedback: {
+          overall_score: Math.floor(Math.random() * 40) + 60, // 60-100
+          code_quality: Math.floor(Math.random() * 30) + 70, // 70-100
+          test_passing_rate: Math.floor(Math.random() * 30) + 70, // 70-100
+          suggestions: [
+            "Consider adding error handling",
+            "Try to optimize your algorithm",
+            "Good use of JavaScript features"
+          ]
+        }
+      }
+    },
+
+    // Content Studio Integration - Generate questions based on user quotas
+    generateQuestionsForContentStudio: async (contentStudioRequest) => {
+      const { user_id, course_id, topic_id, difficulty } = contentStudioRequest;
+      
+      // Step 1: Get user data from Directory Service
+      const userProfile = mockMicroservices.directoryService.getLearnerProfile(user_id);
+      const questionCount = userProfile.practice_questions_count;
+      
+      // Step 2: Generate questions using Gemini (simulated)
+      const questions = Array.from({ length: questionCount }, (_, i) => ({
+        question_id: `q_${topic_id}_${i + 1}`,
+        course_id: course_id,
+        topic_id: topic_id,
+        title: `Practice Question ${i + 1}`,
+        description: `Create a JavaScript function for topic ${topic_id}`,
+        difficulty: difficulty || "intermediate",
+        language: "javascript",
+        test_cases: [
+          { input: [1, 2, 3], expected_output: 6 },
+          { input: [-1, 2, 3], expected_output: 4 }
+        ],
+        hints: [
+          "Consider using array methods",
+          "Think about edge cases"
+        ],
+        solution: {
+          code: "function solution(arr) { return arr.reduce((sum, num) => sum + num, 0); }",
+          explanation: "This solution uses reduce to sum all numbers in the array"
+        }
+      }));
+
+      // Step 3: Return complete question package to Content Studio
+      return {
+        success: true,
+        user_id: user_id,
+        question_count: questionCount,
+        questions: questions,
+        user_quota: {
+          practice_questions_count: userProfile.practice_questions_count
+        },
+        generated_at: new Date().toISOString(),
+        content_studio_request: contentStudioRequest
+      }
+    },
+
+    // Competition Service - Handle competitions between learners
+    competitionService: {
+      // Create a new competition invitation
+      createCompetitionInvitation: (courseId, topicId, difficulty = "intermediate") => {
+        const invitationId = `inv_${Date.now()}`;
+        return {
+          invitation_id: invitationId,
+          course_id: courseId,
+          topic_id: topicId,
+          difficulty: difficulty,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+          eligible_learners: [], // Will be populated with learners who completed the course
+          accepted_by: [],
+          competition_id: null
+        }
+      },
+
+      // Get learners who completed a specific course
+      getEligibleLearners: (courseId) => {
+        // Mock data - in real system, this would query the database
+        return [
+          { user_id: 1, name: "John Doe", email: "john@devlab.com", completed_at: "2024-01-15" },
+          { user_id: 2, name: "Jane Smith", email: "jane@devlab.com", completed_at: "2024-01-20" },
+          { user_id: 3, name: "Bob Wilson", email: "bob@devlab.com", completed_at: "2024-01-18" }
+        ];
+      },
+
+      // Accept competition invitation
+      acceptInvitation: (invitationId, userId) => {
+        return {
+          success: true,
+          invitation_id: invitationId,
+          user_id: userId,
+          accepted_at: new Date().toISOString(),
+          message: "Successfully joined the competition!"
+        }
+      },
+
+      // Create competition between two learners
+      createCompetition: (invitationId, learner1Id, learner2Id) => {
+        const competitionId = `comp_${Date.now()}`;
+        return {
+          competition_id: competitionId,
+          invitation_id: invitationId,
+          learner1: {
+            user_id: learner1Id,
+            name: "John Doe",
+            score: 0,
+            answers: [],
+            completed_at: null
+          },
+          learner2: {
+            user_id: learner2Id,
+            name: "Jane Smith", 
+            score: 0,
+            answers: [],
+            completed_at: null
+          },
+          status: "active",
+          questions: [],
+          started_at: new Date().toISOString(),
+          ended_at: null,
+          winner: null
+        }
+      },
+
+      // Generate competition questions
+      generateCompetitionQuestions: (courseId, topicId, difficulty) => {
+        return [
+          {
+            question_id: "comp_q1",
+            title: "Array Sum Challenge",
+            description: "Write a function that returns the sum of all numbers in an array.",
+            difficulty: difficulty,
+            language: "javascript",
+            time_limit: 300, // 5 minutes
+            test_cases: [
+              { input: [1, 2, 3], expected_output: 6 },
+              { input: [-1, 2, 3], expected_output: 4 },
+              { input: [], expected_output: 0 }
+            ],
+            points: 100
+          },
+          {
+            question_id: "comp_q2", 
+            title: "String Reversal",
+            description: "Write a function that reverses a string.",
+            difficulty: difficulty,
+            language: "javascript",
+            time_limit: 240, // 4 minutes
+            test_cases: [
+              { input: "hello", expected_output: "olleh" },
+              { input: "world", expected_output: "dlrow" },
+              { input: "", expected_output: "" }
+            ],
+            points: 100
+          },
+          {
+            question_id: "comp_q3",
+            title: "Find Maximum",
+            description: "Write a function that finds the maximum number in an array.",
+            difficulty: difficulty,
+            language: "javascript", 
+            time_limit: 180, // 3 minutes
+            test_cases: [
+              { input: [1, 5, 3, 9, 2], expected_output: 9 },
+              { input: [-1, -5, -3], expected_output: -1 },
+              { input: [42], expected_output: 42 }
+            ],
+            points: 100
+          }
+        ];
+      },
+
+      // Submit answer for a competition question
+      submitAnswer: (competitionId, userId, questionId, answer) => {
+        return {
+          success: true,
+          competition_id: competitionId,
+          user_id: userId,
+          question_id: questionId,
+          answer: answer,
+          submitted_at: new Date().toISOString(),
+          time_taken: Math.floor(Math.random() * 300) // Mock time taken
+        }
+      },
+
+      // End competition and calculate results
+      endCompetition: async (competitionId) => {
+        // Mock scoring - in real system, this would use Gemini
+        const learner1Score = Math.floor(Math.random() * 300) + 200; // 200-500
+        const learner2Score = Math.floor(Math.random() * 300) + 200; // 200-500
+        
+        const winner = learner1Score > learner2Score ? 1 : 2;
+        
+        return {
+          competition_id: competitionId,
+          ended_at: new Date().toISOString(),
+          results: {
+            learner1: {
+              user_id: 1,
+              name: "John Doe",
+              score: learner1Score,
+              questions_correct: Math.floor(learner1Score / 100),
+              time_taken: Math.floor(Math.random() * 900) + 300
+            },
+            learner2: {
+              user_id: 2, 
+              name: "Jane Smith",
+              score: learner2Score,
+              questions_correct: Math.floor(learner2Score / 100),
+              time_taken: Math.floor(Math.random() * 900) + 300
+            }
+          },
+          winner: {
+            user_id: winner,
+            name: winner === 1 ? "John Doe" : "Jane Smith",
+            score: winner === 1 ? learner1Score : learner2Score
+          },
+          gemini_evaluation: {
+            used: true,
+            evaluation_time: "2.3s",
+            confidence_score: 0.95
+          }
+        }
+      },
+
+      // Get user's competition history
+      getUserCompetitionHistory: (userId) => {
+        return [
+          {
+            competition_id: "comp_123",
+            opponent: "Jane Smith",
+            result: "won",
+            score: 280,
+            opponent_score: 250,
+            date: "2024-01-20",
+            course: "JavaScript Fundamentals"
+          },
+          {
+            competition_id: "comp_124", 
+            opponent: "Bob Wilson",
+            result: "lost",
+            score: 220,
+            opponent_score: 300,
+            date: "2024-01-18",
+            course: "Data Structures"
+          }
+        ];
+      },
+
+      // Get leaderboard
+      getLeaderboard: (courseId = null, timeRange = "all") => {
+        return [
+          { rank: 1, user_id: 1, name: "John Doe", wins: 5, total_score: 1250, win_rate: 0.83 },
+          { rank: 2, user_id: 2, name: "Jane Smith", wins: 4, total_score: 1100, win_rate: 0.67 },
+          { rank: 3, user_id: 3, name: "Bob Wilson", wins: 3, total_score: 950, win_rate: 0.60 },
+          { rank: 4, user_id: 4, name: "Alice Johnson", wins: 2, total_score: 800, win_rate: 0.50 }
+        ];
+      },
+
+      // Save competition results for analytics
+      saveCompetitionResults: (competitionId, results) => {
+        return {
+          success: true,
+          competition_id: competitionId,
+          saved_at: new Date().toISOString(),
+          analytics_data: {
+            winner_id: results.winner.user_id,
+            winner_score: results.winner.score,
+            total_participants: 2,
+            average_score: (results.results.learner1.score + results.results.learner2.score) / 2,
+            competition_duration: Math.floor(Math.random() * 1800) + 300, // 5-35 minutes
+            gemini_evaluation_used: results.gemini_evaluation?.used || false,
+            difficulty_level: "intermediate",
+            course_id: 1,
+            topic_id: "functions"
+          }
+        };
+      }
+    },
+
+    // Analytics Service - Track competition metrics
+    analyticsService: {
+      // Track competition completion
+      trackCompetitionCompletion: (competitionData) => {
+        return {
+          event: "competition_completed",
+          user_id: competitionData.user_id,
+          competition_id: competitionData.competition_id,
+          result: competitionData.result, // won/lost
+          score: competitionData.score,
+          opponent_score: competitionData.opponent_score,
+          time_taken: competitionData.time_taken,
+          questions_correct: competitionData.questions_correct,
+          timestamp: new Date().toISOString(),
+          analytics_metadata: {
+            course_id: competitionData.course_id,
+            topic_id: competitionData.topic_id,
+            difficulty: competitionData.difficulty,
+            gemini_evaluation: competitionData.gemini_evaluation
+          }
+        };
+      },
+
+      // Track user wins for leaderboard
+      trackUserWin: (userId, competitionId, score) => {
+        return {
+          event: "user_win",
+          user_id: userId,
+          competition_id: competitionId,
+          score: score,
+          timestamp: new Date().toISOString(),
+          leaderboard_impact: {
+            wins_increment: 1,
+            total_score_increment: score,
+            win_rate_update: true
+          }
+        };
+      },
+
+      // Get competition analytics
+      getCompetitionAnalytics: (timeRange = "all", courseId = null) => {
+        return {
+          total_competitions: 156,
+          total_participants: 89,
+          average_competition_duration: 1247, // seconds
+          most_popular_course: "JavaScript Fundamentals",
+          win_rate_by_difficulty: {
+            beginner: 0.65,
+            intermediate: 0.52,
+            advanced: 0.38
+          },
+          gemini_evaluation_usage: 0.87, // 87% of competitions use Gemini
+          top_performers: [
+            { user_id: 1, name: "John Doe", win_rate: 0.83, total_wins: 5 },
+            { user_id: 2, name: "Jane Smith", win_rate: 0.67, total_wins: 4 },
+            { user_id: 3, name: "Bob Wilson", win_rate: 0.60, total_wins: 3 }
+          ],
+          engagement_metrics: {
+            daily_active_competitors: 23,
+            weekly_competition_count: 45,
+            average_questions_per_competition: 3,
+            completion_rate: 0.94
+          }
+        };
+      }
+    },
+
+  evaluateCode: (code, testCases) => {
       const results = testCases.map(testCase => ({
         input: testCase.input,
         expected: testCase.expected_output,
@@ -203,13 +547,12 @@ export const mockMicroservices = {
       }
     },
 
-    evaluateTheoretical: (answer, expectedAnswer) => {
-      const similarity = Math.random() * 100 // Simulate AI evaluation
-      return {
-        score: Math.round(similarity),
-        feedback: similarity >= 70 ? "Good understanding!" : "Consider reviewing the concepts",
-        suggestions: similarity < 70 ? ["Read more about the topic", "Ask for clarification"] : []
-      }
+  evaluateTheoretical: (answer, expectedAnswer) => {
+    const similarity = Math.random() * 100 // Simulate AI evaluation
+    return {
+      score: Math.round(similarity),
+      feedback: similarity >= 70 ? "Good understanding!" : "Consider reviewing the concepts",
+      suggestions: similarity < 70 ? ["Read more about the topic", "Ask for clarification"] : []
     }
   },
 
@@ -217,13 +560,6 @@ export const mockMicroservices = {
   learningAnalytics: {
     getUserProgress: (userId) => ({
       user_id: userId,
-      total_courses: 5,
-      completed_courses: 2,
-      in_progress_courses: 2,
-      total_practice_sessions: 15,
-      average_score: 78,
-      learning_streak: 7,
-      time_spent: "24 hours",
       skill_levels: {
         "JavaScript": "Intermediate",
         "Python": "Beginner",
@@ -372,11 +708,12 @@ export const mockMicroservices = {
         ]
       }
     }
+  }
   },
 
   // NOTE: Gemini AI functionality is now handled directly by the backend
   // This mock service only handles microservice communication
   // All question generation, hints, solutions, and feedback now use real Gemini AI
-}
+};
 
-export default mockMicroservices
+export default mockMicroservices;

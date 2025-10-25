@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
+    "build": "echo 'Backend build completed - no compilation needed for Node.js'",
     "test": "jest",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:watch": "jest --watch",
@@ -32,6 +33,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.3.0",
     "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
