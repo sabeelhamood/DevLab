@@ -17,19 +17,35 @@ jobs:
       - name: Trigger Vercel Deployment
         run: |
           echo "🚀 Triggering Vercel deployment..."
+          echo "Project ID: ${{ secrets.VERCEL_PROJECT_ID }}"
           
-          # Get GitHub repository information
-          REPO_ID="${{ github.repository_id }}"
-          echo "Repository ID: $REPO_ID"
+          # Check if secrets are available
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "❌ VERCEL_TOKEN is not set"
+            exit 1
+          fi
           
-          # Trigger Vercel deployment using REST API
-          curl -X POST "https://api.vercel.com/v13/deployments?projectId=${{ secrets.VERCEL_PROJECT_ID }}" \
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "❌ VERCEL_PROJECT_ID is not set"
+            exit 1
+          fi
+          
+          # Trigger Vercel deployment using REST API (simplified payload)
+          RESPONSE=$(curl -X POST "https://api.vercel.com/v13/deployments" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"gitSource\": {\"type\": \"github\", \"repoId\": \"$REPO_ID\"}}" \
-            -w "\nHTTP Status: %{http_code}\n"
+            -d "{\"projectId\": \"${{ secrets.VERCEL_PROJECT_ID }}\"}" \
+            -w "\nHTTP Status: %{http_code}\n" \
+            -s)
           
-          echo "✅ Vercel deployment triggered successfully"
+          echo "Response: $RESPONSE"
+          
+          if echo "$RESPONSE" | grep -q "HTTP Status: 200"; then
+            echo "✅ Vercel deployment triggered successfully"
+          else
+            echo "❌ Vercel deployment failed"
+            exit 1
+          fi
 
   # Job 2: Trigger Railway deployment  
   railway-trigger:
@@ -42,15 +58,41 @@ jobs:
       - name: Trigger Railway Deployment
         run: |
           echo "🚂 Triggering Railway deployment..."
+          echo "Project ID: ${{ secrets.RAILWAY_PROJECT_ID }}"
+          echo "Service ID: ${{ secrets.RAILWAY_SERVICE_ID }}"
+          
+          # Check if secrets are available
+          if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
+            echo "❌ RAILWAY_TOKEN is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
+            echo "❌ RAILWAY_PROJECT_ID is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.RAILWAY_SERVICE_ID }}" ]; then
+            echo "❌ RAILWAY_SERVICE_ID is not set"
+            exit 1
+          fi
           
           # Trigger Railway deployment using GraphQL API
-          curl -X POST "https://backboard.railway.app/graphql/v2" \
+          RESPONSE=$(curl -X POST "https://backboard.railway.app/graphql/v2" \
             -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"query\":\"mutation { deploymentCreate(input: { projectId: \\\"${{ secrets.RAILWAY_PROJECT_ID }}\\\", serviceId: \\\"${{ secrets.RAILWAY_SERVICE_ID }}\\\" }) { id } }\"}" \
-            -w "\nHTTP Status: %{http_code}\n"
+            -w "\nHTTP Status: %{http_code}\n" \
+            -s)
           
-          echo "✅ Railway deployment triggered successfully"
+          echo "Response: $RESPONSE"
+          
+          if echo "$RESPONSE" | grep -q "HTTP Status: 200"; then
+            echo "✅ Railway deployment triggered successfully"
+          else
+            echo "❌ Railway deployment failed"
+            exit 1
+          fi
 
   # Job 3: Deployment Status Summary
   deployment-summary:
