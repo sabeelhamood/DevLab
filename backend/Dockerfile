@@ -1,42 +1,55 @@
+# Base image
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for native modules
 RUN apk add --no-cache libc6-compat
-WORKDIR /app
 
+# ---- Dependencies stage ----
+FROM base AS deps
+
+# Copy only package files
 COPY package*.json ./
-RUN npm ci --omit=dev
 
-# Rebuild the source code only when needed
+# Install dependencies (omit dev)
+RUN npm install --omit=dev
+
+# ---- Builder stage ----
 FROM base AS builder
-WORKDIR /app
+
+# Copy installed dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
 COPY . .
 
+# Build the app
 RUN npm run build
 
-# Production image, copy all the files and run the app
+# ---- Runner / Production stage ----
 FROM base AS runner
+
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV PORT=$PORT
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create user for running app
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
 
+# Copy build output and node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# Switch to non-root user
 USER nextjs
 
-EXPOSE 3001
+# Expose port (for local testing only)
+EXPOSE 3000
 
-ENV PORT 3001
-
+# Start the app
 CMD ["npm", "start"]
-
-
-
-
