@@ -128,6 +128,67 @@ const Judge0Container = ({
     if (onReset) onReset()
   }
 
+  // Helper function to safely format values for display
+  const formatValue = (value) => {
+    if (value === null || value === undefined) {
+      return 'null'
+    }
+    
+    if (typeof value === 'string') {
+      // Trim whitespace and newlines
+      const trimmed = value.trim()
+      // If it's an empty string after trimming, show as empty
+      if (trimmed === '') {
+        return '""'
+      }
+      return JSON.stringify(trimmed)
+    }
+    
+    if (typeof value === 'number') {
+      return value.toString()
+    }
+    
+    if (typeof value === 'boolean') {
+      return value.toString()
+    }
+    
+    if (Array.isArray(value)) {
+      return JSON.stringify(value)
+    }
+    
+    if (typeof value === 'object') {
+      return JSON.stringify(value)
+    }
+    
+    return String(value)
+  }
+
+  // Helper function to safely get test result values
+  const getTestResultValue = (result, field) => {
+    if (!result) return null
+    
+    // Handle different possible field names
+    const possibleFields = {
+      expected: ['expected', 'expectedOutput', 'expected_output'],
+      actual: ['result', 'actual', 'actualOutput', 'actual_output', 'output'],
+      input: ['input', 'testInput', 'test_input'],
+      status: ['status', 'executionStatus'],
+      passed: ['passed', 'isPassed', 'success'],
+      error: ['stderr', 'error', 'errorMessage'],
+      time: ['time', 'executionTime', 'execution_time']
+    }
+    
+    const fieldNames = possibleFields[field] || [field]
+    
+    for (const fieldName of fieldNames) {
+      if (result.hasOwnProperty(fieldName)) {
+        return result[fieldName]
+      }
+    }
+    
+    return null
+  }
+
   // Run test cases using Judge0
   const runTestCases = async () => {
     if (!testCases || testCases.length === 0) {
@@ -146,6 +207,12 @@ const Judge0Container = ({
     try {
       const judge0Language = getJudge0Language(language)
       
+      console.log('🚀 Executing test cases:', {
+        language: judge0Language,
+        testCasesCount: testCases.length,
+        userCodeLength: userCode.length
+      })
+      
       // Execute test cases with fallback
       const result = await judge0API.executeTestCasesWithFallback(
         userCode,
@@ -156,17 +223,37 @@ const Judge0Container = ({
       const endTime = Date.now()
       setExecutionTime(`${(endTime - startTime) / 1000}s`)
 
-      if (result.success) {
-        setTestResults(result.results)
+      console.log('📊 Test execution result:', result)
+
+      if (result.success && result.results) {
+        // Process and validate results
+        const processedResults = result.results.map((testResult, index) => {
+          const processed = {
+            testNumber: testResult.testNumber || index + 1,
+            input: getTestResultValue(testResult, 'input'),
+            expected: getTestResultValue(testResult, 'expected'),
+            result: getTestResultValue(testResult, 'actual'),
+            passed: getTestResultValue(testResult, 'passed') || false,
+            status: getTestResultValue(testResult, 'status') || 'Unknown',
+            error: getTestResultValue(testResult, 'error') || false,
+            stderr: getTestResultValue(testResult, 'error') || '',
+            time: getTestResultValue(testResult, 'time') || '0.000'
+          }
+          
+          console.log(`📋 Processed test ${processed.testNumber}:`, processed)
+          return processed
+        })
+        
+        setTestResults(processedResults)
         
         // Update console output with results
         const output = []
-        result.results.forEach((testResult, index) => {
+        processedResults.forEach((testResult) => {
           const status = testResult.passed ? '✅ PASSED' : '❌ FAILED'
           output.push(`Test ${testResult.testNumber}: ${status}`)
-          output.push(`  Input: ${JSON.stringify(testResult.input)}`)
-          output.push(`  Expected: ${JSON.stringify(testResult.expected)}`)
-          output.push(`  Got: ${JSON.stringify(testResult.result)}`)
+          output.push(`  Input: ${formatValue(testResult.input)}`)
+          output.push(`  Expected: ${formatValue(testResult.expected)}`)
+          output.push(`  Got: ${formatValue(testResult.result)}`)
           if (testResult.stderr) {
             output.push(`  Error: ${testResult.stderr}`)
           }
@@ -174,17 +261,19 @@ const Judge0Container = ({
         })
         
         output.push('')
-        output.push(`📊 Test Results: ${result.passedTests}/${result.totalTests} tests passed`)
+        output.push(`📊 Test Results: ${result.passedTests || processedResults.filter(r => r.passed).length}/${result.totalTests || processedResults.length} tests passed`)
         output.push(`⏱️ Execution Time: ${executionTime}`)
         
         setConsoleOutput(output)
         
         // Update execution stats
+        const passedCount = processedResults.filter(r => r.passed).length
+        const totalCount = processedResults.length
         setExecutionStats({
-          totalTests: result.totalTests,
-          passedTests: result.passedTests,
-          failedTests: result.totalTests - result.passedTests,
-          passRate: ((result.passedTests / result.totalTests) * 100).toFixed(1)
+          totalTests: totalCount,
+          passedTests: passedCount,
+          failedTests: totalCount - passedCount,
+          passRate: totalCount > 0 ? ((passedCount / totalCount) * 100).toFixed(1) : '0.0'
         })
       } else {
         throw new Error(result.error || 'Test execution failed')
@@ -294,15 +383,14 @@ const Judge0Container = ({
             {isExecuting ? 'Executing...' : 'Run Code'}
           </button>
 
-
           {/* Test Connectivity Button */}
-            <button
+          <button
             onClick={checkJudge0Availability}
             className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
           >
             <Zap className="h-4 w-4 mr-2" />
             Test Connection
-            </button>
+          </button>
 
           {/* Reset Button */}
           <button
@@ -330,17 +418,17 @@ const Judge0Container = ({
           </div>
           <div className="text-gray-500 text-xs">
             {userCode.split('\n').length} lines
-              </div>
-            </div>
-            <textarea
-              value={userCode}
+          </div>
+        </div>
+        <textarea
+          value={userCode}
           onChange={(e) => onCodeChange && onCodeChange(e.target.value)}
           className="w-full h-96 p-4 font-mono text-sm border-0 focus:ring-0 resize-none focus:outline-none"
-              style={{
-                fontFamily: '"JetBrains Mono", "Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-                fontSize: '14px',
-                lineHeight: '1.6'
-              }}
+          style={{
+            fontFamily: '"JetBrains Mono", "Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+            fontSize: '14px',
+            lineHeight: '1.6'
+          }}
           placeholder={`// Write your ${language} code here...\n// Use proper syntax and formatting\n// Test your solution with the provided test cases`}
         />
       </div>
@@ -394,8 +482,8 @@ const Judge0Container = ({
                   <div className="text-sm text-gray-600">Result</div>
                 </div>
               </>
-        )}
-      </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -411,7 +499,7 @@ const Judge0Container = ({
             </div>
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <span>
-              {testResults.filter(r => r.passed).length}/{testResults.length} passed
+                {testResults.filter(r => r.passed).length}/{testResults.length} passed
               </span>
               {executionTime && (
                 <div className="flex items-center space-x-1">
@@ -423,61 +511,71 @@ const Judge0Container = ({
           </div>
           
           <div className="p-4 space-y-3">
-            {testResults.map((result, index) => (
-              <div key={index} className={`p-3 rounded-lg border ${
-                result.passed 
-                  ? 'bg-green-50 border-green-200' 
-                  : 'bg-red-50 border-red-200'
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full ${
-                      result.passed ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <span className={`font-semibold ${
-                      result.passed ? 'text-green-800' : 'text-red-800'
-                    }`}>
-                      Test {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+            {testResults.map((result, index) => {
+              const expectedValue = formatValue(result.expected)
+              const actualValue = formatValue(result.result)
+              const inputValue = formatValue(result.input)
+              
+              return (
+                <div key={index} className={`p-3 rounded-lg border ${
+                  result.passed 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-4 h-4 rounded-full ${
+                        result.passed ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <span className={`font-semibold ${
+                        result.passed ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        Test {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {result.time}s
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {result.time}s
-                  </span>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Input:</span>
-                    <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                      {JSON.stringify(result.input)}
-                    </div>
-                  </div>
                   
-                  <div>
-                    <span className="font-medium text-gray-700">Expected:</span>
-                    <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                      {JSON.stringify(result.expected)}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <span className="font-medium text-gray-700">Got:</span>
-                    <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                      {JSON.stringify(result.result)}
-                    </div>
-                  </div>
-                  
-                  {result.stderr && (
+                  <div className="space-y-2 text-sm">
                     <div>
-                      <span className="font-medium text-red-700">Error:</span>
-                      <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
-                        {result.stderr}
+                      <span className="font-medium text-gray-700">Input:</span>
+                      <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
+                        {inputValue}
                       </div>
                     </div>
-                  )}
+                    
+                    <div>
+                      <span className="font-medium text-gray-700">Expected:</span>
+                      <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
+                        {expectedValue}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="font-medium text-gray-700">Got:</span>
+                      <div className={`mt-1 p-2 rounded font-mono text-xs ${
+                        result.passed 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {actualValue}
+                      </div>
+                    </div>
+                    
+                    {result.stderr && (
+                      <div>
+                        <span className="font-medium text-red-700">Error:</span>
+                        <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
+                          {result.stderr}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -529,60 +627,65 @@ const Judge0Container = ({
           {/* Test Results Display */}
           {testResults.length > 0 && (
             <div className="p-4 space-y-4">
-              {testResults.map((result, index) => (
-                <div key={index} className={`p-4 rounded-lg border ${
-                  result.passed 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      {result.passed ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600" />
-                      )}
-                      <span className={`font-semibold ${
-                        result.passed ? 'text-green-800' : 'text-red-800'
-                      }`}>
-                        Test Case {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+              {testResults.map((result, index) => {
+                const expectedValue = formatValue(result.expected)
+                const actualValue = formatValue(result.result)
+                
+                return (
+                  <div key={index} className={`p-4 rounded-lg border ${
+                    result.passed 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        {result.passed ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
+                        <span className={`font-semibold ${
+                          result.passed ? 'text-green-800' : 'text-red-800'
+                        }`}>
+                          Test Case {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {result.time}s
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {result.time}s
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Your Output:</span>
-                      <div className={`mt-1 p-2 rounded font-mono text-xs ${
-                        result.passed 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {JSON.stringify(result.result)}
-                      </div>
-                    </div>
                     
-                    <div>
-                      <span className="font-medium text-gray-700">Expected:</span>
-                      <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                        {JSON.stringify(result.expected)}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Your Output:</span>
+                        <div className={`mt-1 p-2 rounded font-mono text-xs ${
+                          result.passed 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {actualValue}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="font-medium text-gray-700">Expected:</span>
+                        <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
+                          {expectedValue}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {result.stderr && (
-                    <div className="mt-3">
-                      <span className="font-medium text-red-700">Error:</span>
-                      <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
-                        {result.stderr}
+                    {result.stderr && (
+                      <div className="mt-3">
+                        <span className="font-medium text-red-700">Error:</span>
+                        <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
+                          {result.stderr}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                )
+              })}
 
               {/* Test Summary */}
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
