@@ -59,30 +59,30 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    console.log('🌐 CORS: Request from origin:', origin);
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('✅ CORS: No origin (mobile/curl), allowing');
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      console.log('✅ CORS: Origin allowed:', origin);
-      return callback(null, true);
-    } else {
-      console.log('❌ CORS: Origin not allowed:', origin);
-      console.log('📋 CORS: Allowed origins:', allowedOrigins);
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   optionsSuccessStatus: 200
 }));
+
+// Add CORS logging middleware
+app.use((req, res, next) => {
+  const origin = req.header('Origin');
+  console.log('🌐 CORS: Request from origin:', origin);
+  console.log('🌐 CORS: Request method:', req.method);
+  console.log('🌐 CORS: Request path:', req.path);
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    console.log('✅ CORS: Origin allowed:', origin);
+  } else {
+    console.log('❌ CORS: Origin not allowed:', origin);
+    console.log('📋 CORS: Allowed origins:', allowedOrigins);
+  }
+  
+  next();
+});
 
 // Trust proxy for Railway deployment (required for express-rate-limit)
 app.set('trust proxy', 1)

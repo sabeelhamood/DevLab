@@ -4,6 +4,17 @@ import { mockMicroservices } from '../services/mockMicroservices.js'
 
 const router = express.Router()
 
+// Test endpoint to verify CORS is working
+router.get('/test-cors', (req, res) => {
+  console.log('🧪 CORS Test: Request received from origin:', req.header('Origin'))
+  res.json({
+    success: true,
+    message: 'CORS test successful',
+    origin: req.header('Origin'),
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Generate question based on course, topic, and skills
 router.post('/generate-question', async (req, res) => {
   try {
