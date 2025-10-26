@@ -643,7 +643,8 @@ int sum(int a, int b) {
               console.log('Question object:', question);
               console.log('Question type check:', question.question_type === 'code' || question.questionType === 'coding');
               console.log('Test cases check:', question.test_cases && question.test_cases.length > 0);
-              return (question.question_type === 'code' || question.questionType === 'coding') && question.test_cases && question.test_cases.length > 0;
+              console.log('TestCases check:', question.testCases && question.testCases.length > 0);
+              return (question.question_type === 'code' || question.questionType === 'coding') && (question.test_cases || question.testCases) && (question.test_cases || question.testCases).length > 0;
             })() && (
               <div className="mt-6">
                 <div 
@@ -672,12 +673,12 @@ int sum(int a, int b) {
                         Test Cases
                       </h3>
                       <p className="text-sm text-blue-600 font-medium">
-                        {question.test_cases.length} test case{question.test_cases.length !== 1 ? 's' : ''} • Run these to verify your solution
+                        {(question.test_cases || question.testCases).length} test case{(question.test_cases || question.testCases).length !== 1 ? 's' : ''} • Run these to verify your solution
                       </p>
                     </div>
                   </div>
                   <div className="grid gap-6">
-                    {question.test_cases.map((testCase, index) => (
+                    {(question.test_cases || question.testCases).map((testCase, index) => (
                       <div 
                         key={index} 
                         className="rounded-xl p-5 border-2 shadow-md transition-all duration-200 hover:shadow-lg"
@@ -740,6 +741,10 @@ int sum(int a, int b) {
                                     return typeof testCase.expected_output === 'object' 
                                       ? JSON.stringify(testCase.expected_output, null, 2)
                                       : String(testCase.expected_output);
+                                  } else if (testCase.expectedOutput !== undefined) {
+                                    return typeof testCase.expectedOutput === 'object' 
+                                      ? JSON.stringify(testCase.expectedOutput, null, 2)
+                                      : String(testCase.expectedOutput);
                                   } else if (testCase.expected !== undefined) {
                                     return typeof testCase.expected === 'object' 
                                       ? JSON.stringify(testCase.expected, null, 2)
