@@ -735,45 +735,24 @@ int sum(int a, int b) {
                               <span 
                                 className="text-sm font-semibold text-gray-700"
                               >
-                                Expected Output
+                                Expected Output: {(() => {
+                                  if (testCase.expected_output !== undefined) {
+                                    return typeof testCase.expected_output === 'object' 
+                                      ? JSON.stringify(testCase.expected_output, null, 2)
+                                      : String(testCase.expected_output);
+                                  } else if (testCase.expected !== undefined) {
+                                    return typeof testCase.expected === 'object' 
+                                      ? JSON.stringify(testCase.expected, null, 2)
+                                      : String(testCase.expected);
+                                  } else if (testCase.result !== undefined) {
+                                    return typeof testCase.result === 'object' 
+                                      ? JSON.stringify(testCase.result, null, 2)
+                                      : String(testCase.result);
+                                  } else {
+                                    return 'No expected output found';
+                                  }
+                                })()}
                               </span>
-                            </div>
-                            <div 
-                              className="font-mono text-sm p-4 rounded-lg border-2"
-                              style={{ 
-                                background: '#f0fdf4',
-                                borderColor: 'rgba(16, 185, 129, 0.2)',
-                                color: '#064e3b'
-                              }}
-                            >
-                              {(() => {
-                                console.log('Test case:', testCase);
-                                console.log('Test case keys:', Object.keys(testCase));
-                                console.log('expected_output:', testCase.expected_output);
-                                console.log('expected:', testCase.expected);
-                                console.log('output:', testCase.output);
-                                console.log('result:', testCase.result);
-                                
-                                if (testCase.expected_output !== undefined) {
-                                  return typeof testCase.expected_output === 'object' 
-                                    ? JSON.stringify(testCase.expected_output, null, 2)
-                                    : testCase.expected_output;
-                                } else if (testCase.expected !== undefined) {
-                                  return typeof testCase.expected === 'object' 
-                                    ? JSON.stringify(testCase.expected, null, 2)
-                                    : testCase.expected;
-                                } else if (testCase.output !== undefined) {
-                                  return typeof testCase.output === 'object' 
-                                    ? JSON.stringify(testCase.output, null, 2)
-                                    : testCase.output;
-                                } else if (testCase.result !== undefined) {
-                                  return typeof testCase.result === 'object' 
-                                    ? JSON.stringify(testCase.result, null, 2)
-                                    : testCase.result;
-                                } else {
-                                  return `No expected output found. Available fields: ${Object.keys(testCase).join(', ')}`;
-                                }
-                              })()}
                             </div>
                           </div>
                         </div>
