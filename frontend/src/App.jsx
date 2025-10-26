@@ -6,6 +6,7 @@ import CompetitionDetail from './pages/competition/CompetitionDetail'
 import CompetitionQuestionEnhanced from './components/CompetitionQuestionEnhanced'
 import CompetitionInvitation from './components/CompetitionInvitation'
 import CompetitionResultsEnhanced from './components/CompetitionResultsEnhanced'
+import MockCompetitionGameplay from './pages/MockCompetitionGameplay'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/competition/:id" element={<CompetitionDetail />} />
           <Route path="/competition/:id/question/:questionId" element={<CompetitionQuestionEnhanced />} />
           <Route path="/competition/:id/results" element={<CompetitionResultsEnhanced />} />
+          <Route path="/mock-competition/:competitionId/question/:questionId" element={<MockCompetitionGameplay />} />
         </Routes>
       </Layout>
     </Router>

@@ -12,7 +12,9 @@ import {
   XCircle,
   Timer,
   Star,
-  TrendingUp
+  TrendingUp,
+  Rocket,
+  Plus
 } from 'lucide-react';
 
 const CompetitionPage = () => {
@@ -69,108 +71,91 @@ const CompetitionPage = () => {
       {/* Animated Background */}
       <div className="bg-animation"></div>
       
-      {/* Floating Shapes */}
+      {/* Floating Motivational Icons */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Floating Circles */}
-        <div className="floating-shape" style={{
+        {/* Trophy Icons */}
+        <div className="floating-icon" style={{
           position: 'absolute',
-          top: '10%',
-          left: '5%',
-          width: '60px',
-          height: '60px',
-          background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.1), rgba(4, 120, 87, 0.1))',
-          borderRadius: '50%',
-          animation: 'floatUpDown 8s ease-in-out infinite',
+          top: '8%',
+          left: '8%',
+          fontSize: '48px',
+          color: 'rgba(6, 95, 70, 0.3)',
+          animation: 'floatUpDown 4s ease-in-out infinite',
           animationDelay: '0s'
-        }}></div>
+        }}>🏆</div>
         
-        <div className="floating-shape" style={{
+        <div className="floating-icon" style={{
           position: 'absolute',
-          top: '20%',
-          right: '8%',
-          width: '40px',
-          height: '40px',
-          background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.1))',
-          borderRadius: '50%',
-          animation: 'floatUpDown 6s ease-in-out infinite',
+          top: '25%',
+          right: '12%',
+          fontSize: '40px',
+          color: 'rgba(217, 119, 6, 0.3)',
+          animation: 'floatUpDown 5s ease-in-out infinite',
           animationDelay: '2s'
-        }}></div>
+        }}>🥇</div>
         
-        <div className="floating-shape" style={{
+        {/* Rocket Icons */}
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '45%',
+          left: '5%',
+          fontSize: '36px',
+          color: 'rgba(15, 118, 110, 0.3)',
+          animation: 'floatUpDown 6s ease-in-out infinite',
+          animationDelay: '4s'
+        }}>🚀</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '8%',
+          fontSize: '44px',
+          color: 'rgba(4, 120, 87, 0.3)',
+          animation: 'floatUpDown 4.5s ease-in-out infinite',
+          animationDelay: '1s'
+        }}>⚡</div>
+        
+        {/* Lightbulb Icons */}
+        <div className="floating-icon" style={{
           position: 'absolute',
           top: '60%',
-          left: '3%',
-          width: '80px',
-          height: '80px',
-          background: 'linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(6, 95, 70, 0.1))',
-          borderRadius: '50%',
-          animation: 'floatUpDown 10s ease-in-out infinite',
-          animationDelay: '4s'
-        }}></div>
+          right: '20%',
+          fontSize: '32px',
+          color: 'rgba(6, 95, 70, 0.3)',
+          animation: 'floatUpDown 5.5s ease-in-out infinite',
+          animationDelay: '3s'
+        }}>💡</div>
         
-        <div className="floating-shape" style={{
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '35%',
+          left: '15%',
+          fontSize: '38px',
+          color: 'rgba(217, 119, 6, 0.3)',
+          animation: 'floatUpDown 4.8s ease-in-out infinite',
+          animationDelay: '2.5s'
+        }}>⭐</div>
+        
+        {/* Target Icons */}
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '15%',
+          left: '25%',
+          fontSize: '34px',
+          color: 'rgba(15, 118, 110, 0.3)',
+          animation: 'floatUpDown 5.2s ease-in-out infinite',
+          animationDelay: '1.5s'
+        }}>🎯</div>
+        
+        <div className="floating-icon" style={{
           position: 'absolute',
           bottom: '15%',
-          right: '5%',
-          width: '50px',
-          height: '50px',
-          background: 'linear-gradient(135deg, rgba(4, 120, 87, 0.1), rgba(15, 118, 110, 0.1))',
-          borderRadius: '50%',
-          animation: 'floatUpDown 7s ease-in-out infinite',
-          animationDelay: '1s'
-        }}></div>
-        
-        {/* Floating Squares */}
-        <div className="floating-shape" style={{
-          position: 'absolute',
-          top: '30%',
-          left: '15%',
-          width: '30px',
-          height: '30px',
-          background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.08), rgba(217, 119, 6, 0.08))',
-          borderRadius: '8px',
-          animation: 'floatRotate 12s linear infinite',
-          animationDelay: '0s'
-        }}></div>
-        
-        <div className="floating-shape" style={{
-          position: 'absolute',
-          top: '70%',
-          right: '12%',
-          width: '25px',
-          height: '25px',
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(4, 120, 87, 0.08))',
-          borderRadius: '6px',
-          animation: 'floatRotate 9s linear infinite',
-          animationDelay: '3s'
-        }}></div>
-        
-        {/* Floating Triangles */}
-        <div className="floating-shape" style={{
-          position: 'absolute',
-          top: '40%',
-          right: '20%',
-          width: '0',
-          height: '0',
-          borderLeft: '15px solid transparent',
-          borderRight: '15px solid transparent',
-          borderBottom: '25px solid rgba(6, 95, 70, 0.1)',
-          animation: 'floatUpDown 11s ease-in-out infinite',
-          animationDelay: '5s'
-        }}></div>
-        
-        <div className="floating-shape" style={{
-          position: 'absolute',
-          bottom: '25%',
-          left: '10%',
-          width: '0',
-          height: '0',
-          borderLeft: '12px solid transparent',
-          borderRight: '12px solid transparent',
-          borderBottom: '20px solid rgba(217, 119, 6, 0.1)',
-          animation: 'floatUpDown 8s ease-in-out infinite',
-          animationDelay: '2.5s'
-        }}></div>
+          left: '8%',
+          fontSize: '42px',
+          color: 'rgba(4, 120, 87, 0.3)',
+          animation: 'floatUpDown 4.2s ease-in-out infinite',
+          animationDelay: '3.5s'
+        }}>🔥</div>
       </div>
       
       {/* Moving Gradient Orbs */}
@@ -215,38 +200,74 @@ const CompetitionPage = () => {
       {/* CSS Animations */}
       <style jsx>{`
         @keyframes floatUpDown {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-20px) rotate(5deg); }
-          50% { transform: translateY(-10px) rotate(-3deg); }
-          75% { transform: translateY(-25px) rotate(2deg); }
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg) scale(1);
+            opacity: 0.3;
+          }
+          25% { 
+            transform: translateY(-30px) rotate(8deg) scale(1.1);
+            opacity: 0.5;
+          }
+          50% { 
+            transform: translateY(-15px) rotate(-5deg) scale(0.9);
+            opacity: 0.4;
+          }
+          75% { 
+            transform: translateY(-35px) rotate(3deg) scale(1.05);
+            opacity: 0.6;
+          }
         }
         
         @keyframes floatRotate {
-          0% { transform: rotate(0deg) translateY(0px); }
-          25% { transform: rotate(90deg) translateY(-15px); }
-          50% { transform: rotate(180deg) translateY(-5px); }
-          75% { transform: rotate(270deg) translateY(-20px); }
-          100% { transform: rotate(360deg) translateY(0px); }
+          0% { transform: rotate(0deg) translateY(0px) scale(1); }
+          25% { transform: rotate(90deg) translateY(-20px) scale(1.1); }
+          50% { transform: rotate(180deg) translateY(-10px) scale(0.9); }
+          75% { transform: rotate(270deg) translateY(-25px) scale(1.05); }
+          100% { transform: rotate(360deg) translateY(0px) scale(1); }
         }
         
         @keyframes moveOrb {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(30px, -20px) scale(1.1); }
-          50% { transform: translate(-20px, -40px) scale(0.9); }
-          75% { transform: translate(-30px, 20px) scale(1.05); }
+          0%, 100% { 
+            transform: translate(0, 0) scale(1);
+            opacity: 0.1;
+          }
+          25% { 
+            transform: translate(40px, -30px) scale(1.2);
+            opacity: 0.2;
+          }
+          50% { 
+            transform: translate(-30px, -50px) scale(0.8);
+            opacity: 0.15;
+          }
+          75% { 
+            transform: translate(-40px, 30px) scale(1.1);
+            opacity: 0.18;
+          }
+        }
+        
+        @keyframes pulseGlow {
+          0%, 100% { 
+            box-shadow: 0 0 20px rgba(6, 95, 70, 0.2);
+            transform: scale(1);
+          }
+          50% { 
+            box-shadow: 0 0 40px rgba(6, 95, 70, 0.4);
+            transform: scale(1.05);
+          }
         }
         
         @media (max-width: 768px) {
-          .floating-shape {
-            animation-duration: 12s !important;
+          .floating-icon {
+            font-size: 24px !important;
+            animation-duration: 6s !important;
           }
           .gradient-orb {
-            animation-duration: 30s !important;
+            animation-duration: 25s !important;
           }
         }
         
         @media (prefers-reduced-motion: reduce) {
-          .floating-shape,
+          .floating-icon,
           .gradient-orb {
             animation: none !important;
           }
@@ -345,16 +366,30 @@ const CompetitionPage = () => {
                   >
                     Competition Invitations
                   </h2>
-                  <button
-                    onClick={handleCreateCompetition}
-                    className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'var(--gradient-accent)',
-                      boxShadow: 'var(--shadow-glow)'
-                    }}
-                  >
-                    Create Competition
-                  </button>
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={handleCreateCompetition}
+                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
+                      style={{
+                        background: 'var(--gradient-accent)',
+                        boxShadow: 'var(--shadow-glow)'
+                      }}
+                    >
+                      Create Competition
+                    </button>
+                    
+                    <button
+                      onClick={() => navigate('/mock-competition/demo/question/1')}
+                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 flex items-center space-x-2"
+                      style={{
+                        background: 'var(--gradient-primary)',
+                        boxShadow: 'var(--shadow-glow)'
+                      }}
+                    >
+                      <Rocket className="w-4 h-4" />
+                      <span>Try Demo Game</span>
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="grid gap-6">

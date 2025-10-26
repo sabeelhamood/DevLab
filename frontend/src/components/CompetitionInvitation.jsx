@@ -233,87 +233,87 @@ function CompetitionInvitation() {
       {/* Animated Background */}
       <div className="bg-animation"></div>
       
-      {/* Particle System */}
+      {/* Enhanced Particle System */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Floating Particles */}
-        {[...Array(15)].map((_, i) => (
+        {/* Floating Motivational Icons */}
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '10%',
+          left: '8%',
+          fontSize: '40px',
+          color: 'rgba(6, 95, 70, 0.4)',
+          animation: 'floatUpDown 4s ease-in-out infinite',
+          animationDelay: '0s'
+        }}>🏆</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '20%',
+          right: '10%',
+          fontSize: '36px',
+          color: 'rgba(217, 119, 6, 0.4)',
+          animation: 'floatUpDown 5s ease-in-out infinite',
+          animationDelay: '2s'
+        }}>🚀</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '60%',
+          left: '5%',
+          fontSize: '32px',
+          color: 'rgba(15, 118, 110, 0.4)',
+          animation: 'floatUpDown 6s ease-in-out infinite',
+          animationDelay: '4s'
+        }}>⚡</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '8%',
+          fontSize: '38px',
+          color: 'rgba(4, 120, 87, 0.4)',
+          animation: 'floatUpDown 4.5s ease-in-out infinite',
+          animationDelay: '1s'
+        }}>💡</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '45%',
+          left: '15%',
+          fontSize: '34px',
+          color: 'rgba(6, 95, 70, 0.4)',
+          animation: 'floatUpDown 5.5s ease-in-out infinite',
+          animationDelay: '3s'
+        }}>🎯</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '35%',
+          right: '15%',
+          fontSize: '30px',
+          color: 'rgba(217, 119, 6, 0.4)',
+          animation: 'floatUpDown 4.8s ease-in-out infinite',
+          animationDelay: '2.5s'
+        }}>⭐</div>
+        
+        {/* Enhanced Floating Particles */}
+        {[...Array(20)].map((_, i) => (
           <div
             key={i}
             className="particle"
             style={{
               position: 'absolute',
-              width: `${Math.random() * 4 + 2}px`,
-              height: `${Math.random() * 4 + 2}px`,
-              background: `rgba(${Math.random() > 0.5 ? '6, 95, 70' : '217, 119, 6'}, ${Math.random() * 0.3 + 0.1})`,
+              width: `${Math.random() * 6 + 3}px`,
+              height: `${Math.random() * 6 + 3}px`,
+              background: `rgba(${Math.random() > 0.5 ? '6, 95, 70' : '217, 119, 6'}, ${Math.random() * 0.4 + 0.2})`,
               borderRadius: '50%',
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animation: `particleFloat ${Math.random() * 10 + 15}s linear infinite`,
+              animation: `particleFloat ${Math.random() * 8 + 12}s linear infinite`,
               animationDelay: `${Math.random() * 5}s`
             }}
           />
         ))}
-        
-        {/* Floating Code Symbols */}
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          top: '15%',
-          left: '8%',
-          fontSize: '24px',
-          color: 'rgba(6, 95, 70, 0.1)',
-          animation: 'symbolFloat 12s ease-in-out infinite',
-          animationDelay: '0s'
-        }}>{'{'}</div>
-        
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          top: '25%',
-          right: '12%',
-          fontSize: '20px',
-          color: 'rgba(217, 119, 6, 0.1)',
-          animation: 'symbolFloat 10s ease-in-out infinite',
-          animationDelay: '2s'
-        }}>{'}'}</div>
-        
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          top: '60%',
-          left: '5%',
-          fontSize: '18px',
-          color: 'rgba(15, 118, 110, 0.1)',
-          animation: 'symbolFloat 14s ease-in-out infinite',
-          animationDelay: '4s'
-        }}>{'<'}</div>
-        
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          bottom: '20%',
-          right: '8%',
-          fontSize: '22px',
-          color: 'rgba(4, 120, 87, 0.1)',
-          animation: 'symbolFloat 11s ease-in-out infinite',
-          animationDelay: '1s'
-        }}>{'>'}</div>
-        
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          top: '45%',
-          left: '15%',
-          fontSize: '16px',
-          color: 'rgba(6, 95, 70, 0.1)',
-          animation: 'symbolFloat 13s ease-in-out infinite',
-          animationDelay: '3s'
-        }}>{'['}</div>
-        
-        <div className="code-symbol" style={{
-          position: 'absolute',
-          top: '70%',
-          right: '15%',
-          fontSize: '16px',
-          color: 'rgba(217, 119, 6, 0.1)',
-          animation: 'symbolFloat 9s ease-in-out infinite',
-          animationDelay: '5s'
-        }}>{']'}</div>
       </div>
       
       {/* Moving Gradient Waves */}
@@ -343,16 +343,35 @@ function CompetitionInvitation() {
       
       {/* CSS Animations */}
       <style jsx>{`
+        @keyframes floatUpDown {
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg) scale(1);
+            opacity: 0.4;
+          }
+          25% { 
+            transform: translateY(-25px) rotate(6deg) scale(1.1);
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateY(-12px) rotate(-4deg) scale(0.9);
+            opacity: 0.5;
+          }
+          75% { 
+            transform: translateY(-28px) rotate(2deg) scale(1.05);
+            opacity: 0.7;
+          }
+        }
+        
         @keyframes particleFloat {
           0% { 
             transform: translateY(100vh) translateX(0px) rotate(0deg);
             opacity: 0;
           }
           10% { 
-            opacity: 1;
+            opacity: 0.6;
           }
           90% { 
-            opacity: 1;
+            opacity: 0.6;
           }
           100% { 
             transform: translateY(-100px) translateX(${Math.random() * 200 - 100}px) rotate(360deg);
@@ -360,51 +379,43 @@ function CompetitionInvitation() {
           }
         }
         
-        @keyframes symbolFloat {
-          0%, 100% { 
-            transform: translateY(0px) rotate(0deg) scale(1);
-            opacity: 0.1;
-          }
-          25% { 
-            transform: translateY(-15px) rotate(5deg) scale(1.1);
-            opacity: 0.2;
-          }
-          50% { 
-            transform: translateY(-8px) rotate(-3deg) scale(0.9);
-            opacity: 0.15;
-          }
-          75% { 
-            transform: translateY(-20px) rotate(2deg) scale(1.05);
-            opacity: 0.25;
-          }
-        }
-        
         @keyframes waveMove {
           0%, 100% { 
             transform: translateX(-100%) translateY(0px);
-            opacity: 0.02;
+            opacity: 0.05;
           }
           25% { 
             transform: translateX(-50%) translateY(-20px);
-            opacity: 0.05;
+            opacity: 0.1;
           }
           50% { 
             transform: translateX(0%) translateY(-10px);
-            opacity: 0.03;
+            opacity: 0.08;
           }
           75% { 
             transform: translateX(50%) translateY(-30px);
-            opacity: 0.04;
+            opacity: 0.12;
+          }
+        }
+        
+        @keyframes loadingPulse {
+          0%, 100% { 
+            transform: scale(1);
+            opacity: 0.4;
+          }
+          50% { 
+            transform: scale(1.8);
+            opacity: 0.9;
           }
         }
         
         @media (max-width: 768px) {
-          .particle {
-            animation-duration: 20s !important;
+          .floating-icon {
+            font-size: 24px !important;
+            animation-duration: 6s !important;
           }
-          .code-symbol {
-            font-size: 14px !important;
-            animation-duration: 15s !important;
+          .particle {
+            animation-duration: 18s !important;
           }
           .gradient-wave {
             animation-duration: 30s !important;
@@ -412,8 +423,8 @@ function CompetitionInvitation() {
         }
         
         @media (prefers-reduced-motion: reduce) {
+          .floating-icon,
           .particle,
-          .code-symbol,
           .gradient-wave {
             animation: none !important;
           }
