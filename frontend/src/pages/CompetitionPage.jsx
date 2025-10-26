@@ -65,21 +65,57 @@ const CompetitionPage = () => {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      {/* Animated Background */}
+      <div className="bg-animation"></div>
+      
+      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Trophy className="w-8 h-8 text-yellow-500" />
-            <h1 className="text-3xl font-bold text-white">Competitions</h1>
+          <div 
+            className="rounded-2xl p-8 shadow-2xl border-2 mb-6"
+            style={{ 
+              background: 'var(--gradient-card)',
+              borderColor: 'rgba(6, 95, 70, 0.2)',
+              boxShadow: '0 20px 60px rgba(6, 95, 70, 0.3)'
+            }}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                style={{ 
+                  background: 'var(--gradient-primary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <Trophy className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 
+                  className="text-4xl font-bold font-display"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Competitions
+                </h1>
+                <p 
+                  className="text-lg mt-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Challenge yourself and compete with other learners in coding competitions!
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-300 text-lg">
-            Challenge yourself and compete with other learners in coding competitions!
-          </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8">
+        <div 
+          className="flex gap-3 mb-8 p-2 rounded-2xl"
+          style={{ 
+            background: 'var(--bg-secondary)',
+            border: '1px solid rgba(6, 95, 70, 0.1)'
+          }}
+        >
           {[
             { id: 'invitations', label: 'Invitations', icon: Users },
             { id: 'active', label: 'Active', icon: Play },
@@ -89,13 +125,24 @@ const CompetitionPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
                 activeTab === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'text-white shadow-lg transform scale-105'
+                  : 'hover:scale-105'
               }`}
+              style={{
+                background: activeTab === tab.id 
+                  ? 'var(--gradient-primary)' 
+                  : 'transparent',
+                color: activeTab === tab.id 
+                  ? 'white' 
+                  : 'var(--text-secondary)',
+                boxShadow: activeTab === tab.id 
+                  ? 'var(--shadow-glow)' 
+                  : 'none'
+              }}
             >
-              <tab.icon className="w-4 h-4" />
+              <tab.icon className="w-5 h-5" />
               {tab.label}
             </button>
           ))}
@@ -108,56 +155,111 @@ const CompetitionPage = () => {
             {activeTab === 'invitations' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-white">Competition Invitations</h2>
+                  <h2 
+                    className="text-3xl font-bold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Competition Invitations
+                  </h2>
                   <button
                     onClick={handleCreateCompetition}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'var(--gradient-accent)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
                   >
                     Create Competition
                   </button>
                 </div>
                 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {competitions.map(competition => (
                     <div
                       key={competition.id}
-                      className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors"
+                      className="rounded-2xl p-8 border-2 transition-all duration-300 hover:scale-105 cursor-pointer"
+                      style={{ 
+                        background: 'var(--gradient-card)',
+                        borderColor: 'rgba(6, 95, 70, 0.2)',
+                        boxShadow: 'var(--shadow-card)'
+                      }}
                     >
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex justify-between items-start mb-6">
                         <div>
-                          <h3 className="text-xl font-bold text-white mb-2">{competition.title}</h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-300">
-                            <span className="flex items-center gap-1">
+                          <h3 
+                            className="text-2xl font-bold mb-3"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {competition.title}
+                          </h3>
+                          <div className="flex items-center gap-6 text-sm">
+                            <span 
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                              style={{ 
+                                background: 'rgba(6, 95, 70, 0.1)',
+                                color: 'var(--text-secondary)'
+                              }}
+                            >
                               <Users className="w-4 h-4" />
                               {competition.participants} participants
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span 
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                              style={{ 
+                                background: 'rgba(6, 95, 70, 0.1)',
+                                color: 'var(--text-secondary)'
+                              }}
+                            >
                               <Target className="w-4 h-4" />
                               {competition.difficulty}
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span 
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                              style={{ 
+                                background: 'rgba(6, 95, 70, 0.1)',
+                                color: 'var(--text-secondary)'
+                              }}
+                            >
                               <Timer className="w-4 h-4" />
                               {competition.timeLimit} min
                             </span>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          competition.status === 'active' 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-yellow-600 text-white'
-                        }`}>
+                        <span 
+                          className="px-4 py-2 rounded-xl text-sm font-semibold"
+                          style={{
+                            background: competition.status === 'active' 
+                              ? 'var(--gradient-secondary)' 
+                              : 'var(--gradient-accent)',
+                            color: 'white',
+                            boxShadow: 'var(--shadow-glow)'
+                          }}
+                        >
                           {competition.status}
                         </span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-300">
-                          <p>🏆 Prize: {competition.prize}</p>
-                          <p>📝 {competition.questions} questions</p>
+                        <div className="text-sm">
+                          <p 
+                            className="mb-2"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            🏆 Prize: {competition.prize}
+                          </p>
+                          <p 
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            📝 {competition.questions} questions
+                          </p>
                         </div>
                         <button
                           onClick={() => handleJoinCompetition(competition.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                          className="px-8 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
+                          style={{
+                            background: 'var(--gradient-primary)',
+                            boxShadow: 'var(--shadow-glow)'
+                          }}
                         >
                           Join Competition
                         </button>
@@ -170,10 +272,28 @@ const CompetitionPage = () => {
 
             {activeTab === 'leaderboard' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
+                <h2 
+                  className="text-3xl font-bold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Leaderboard
+                </h2>
                 
-                <div className="bg-gray-800 rounded-lg overflow-hidden">
-                  <div className="grid grid-cols-4 gap-4 p-4 bg-gray-700 font-medium text-gray-300">
+                <div 
+                  className="rounded-2xl overflow-hidden border-2"
+                  style={{ 
+                    background: 'var(--gradient-card)',
+                    borderColor: 'rgba(6, 95, 70, 0.2)',
+                    boxShadow: 'var(--shadow-card)'
+                  }}
+                >
+                  <div 
+                    className="grid grid-cols-4 gap-4 p-6 font-semibold"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      color: 'white'
+                    }}
+                  >
                     <div>Rank</div>
                     <div>Player</div>
                     <div>Score</div>
@@ -183,26 +303,59 @@ const CompetitionPage = () => {
                   {leaderboard.map((player, index) => (
                     <div
                       key={player.rank}
-                      className={`grid grid-cols-4 gap-4 p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors ${
-                        index < 3 ? 'bg-gradient-to-r from-yellow-900/20 to-yellow-800/20' : ''
+                      className={`grid grid-cols-4 gap-4 p-6 border-b transition-all duration-300 hover:scale-105 ${
+                        index < 3 
+                          ? 'bg-gradient-to-r from-yellow-50 to-orange-50' 
+                          : 'hover:bg-gray-50'
                       }`}
+                      style={{ 
+                        borderColor: 'rgba(6, 95, 70, 0.1)'
+                      }}
                     >
-                      <div className="flex items-center gap-2">
-                        {index < 3 && (
-                          <Trophy className={`w-5 h-5 ${
-                            index === 0 ? 'text-yellow-500' : 
-                            index === 1 ? 'text-gray-400' : 
-                            'text-orange-600'
-                          }`} />
-                        )}
-                        <span className="font-bold text-white">#{player.rank}</span>
-                      </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{player.avatar}</span>
-                        <span className="text-white font-medium">{player.name}</span>
+                        {index < 3 && (
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{
+                              background: index === 0 
+                                ? 'var(--gradient-accent)' 
+                                : index === 1 
+                                ? 'linear-gradient(135deg, #64748b, #475569)'
+                                : 'linear-gradient(135deg, #d97706, #f59e0b)',
+                              boxShadow: 'var(--shadow-glow)'
+                            }}
+                          >
+                            <Trophy className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        <span 
+                          className="font-bold text-lg"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          #{player.rank}
+                        </span>
                       </div>
-                      <div className="text-white font-bold">{player.score}</div>
-                      <div className="text-green-400 font-medium">{player.wins}</div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-3xl">{player.avatar}</span>
+                        <span 
+                          className="font-semibold text-lg"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {player.name}
+                        </span>
+                      </div>
+                      <div 
+                        className="font-bold text-xl"
+                        style={{ color: 'var(--primary-green)' }}
+                      >
+                        {player.score}
+                      </div>
+                      <div 
+                        className="font-semibold text-lg"
+                        style={{ color: 'var(--accent-green)' }}
+                      >
+                        {player.wins}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -211,22 +364,80 @@ const CompetitionPage = () => {
 
             {activeTab === 'active' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white">Active Competitions</h2>
-                <div className="text-center py-12">
-                  <Trophy className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No active competitions at the moment</p>
-                  <p className="text-gray-500">Join a competition to start competing!</p>
+                <h2 
+                  className="text-3xl font-bold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Active Competitions
+                </h2>
+                <div 
+                  className="text-center py-16 rounded-2xl border-2"
+                  style={{ 
+                    background: 'var(--gradient-card)',
+                    borderColor: 'rgba(6, 95, 70, 0.2)',
+                    boxShadow: 'var(--shadow-card)'
+                  }}
+                >
+                  <div 
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <Trophy className="w-10 h-10 text-white" />
+                  </div>
+                  <p 
+                    className="text-xl font-semibold mb-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    No active competitions at the moment
+                  </p>
+                  <p 
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Join a competition to start competing!
+                  </p>
                 </div>
               </div>
             )}
 
             {activeTab === 'history' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white">Competition History</h2>
-                <div className="text-center py-12">
-                  <Clock className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No competition history yet</p>
-                  <p className="text-gray-500">Participate in competitions to build your history!</p>
+                <h2 
+                  className="text-3xl font-bold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Competition History
+                </h2>
+                <div 
+                  className="text-center py-16 rounded-2xl border-2"
+                  style={{ 
+                    background: 'var(--gradient-card)',
+                    borderColor: 'rgba(6, 95, 70, 0.2)',
+                    boxShadow: 'var(--shadow-card)'
+                  }}
+                >
+                  <div 
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <Clock className="w-10 h-10 text-white" />
+                  </div>
+                  <p 
+                    className="text-xl font-semibold mb-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    No competition history yet
+                  </p>
+                  <p 
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Participate in competitions to build your history!
+                  </p>
                 </div>
               </div>
             )}
@@ -235,43 +446,126 @@ const CompetitionPage = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Your Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Competitions Won</span>
-                  <span className="text-green-400 font-bold">5</span>
+            <div 
+              className="rounded-2xl p-8 border-2"
+              style={{ 
+                background: 'var(--gradient-card)',
+                borderColor: 'rgba(6, 95, 70, 0.2)',
+                boxShadow: 'var(--shadow-card)'
+              }}
+            >
+              <h3 
+                className="text-xl font-bold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Your Stats
+              </h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Competitions Won</span>
+                  <span 
+                    className="font-bold text-lg"
+                    style={{ color: 'var(--accent-green)' }}
+                  >
+                    5
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Total Score</span>
-                  <span className="text-blue-400 font-bold">1,250</span>
+                <div className="flex justify-between items-center p-3 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Total Score</span>
+                  <span 
+                    className="font-bold text-lg"
+                    style={{ color: 'var(--primary-green)' }}
+                  >
+                    1,250
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Rank</span>
-                  <span className="text-yellow-400 font-bold">#12</span>
+                <div className="flex justify-between items-center p-3 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Rank</span>
+                  <span 
+                    className="font-bold text-lg"
+                    style={{ color: 'var(--accent-gold)' }}
+                  >
+                    #12
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Win Rate</span>
-                  <span className="text-purple-400 font-bold">75%</span>
+                <div className="flex justify-between items-center p-3 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Win Rate</span>
+                  <span 
+                    className="font-bold text-lg"
+                    style={{ color: 'var(--primary-purple)' }}
+                  >
+                    75%
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Recent Achievements */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Recent Achievements</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Award className="w-5 h-5 text-yellow-500" />
-                  <span className="text-gray-300 text-sm">First Win!</span>
+            <div 
+              className="rounded-2xl p-8 border-2"
+              style={{ 
+                background: 'var(--gradient-card)',
+                borderColor: 'rgba(6, 95, 70, 0.2)',
+                boxShadow: 'var(--shadow-card)'
+              }}
+            >
+              <h3 
+                className="text-xl font-bold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Recent Achievements
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-3 rounded-xl transition-all duration-300 hover:scale-105" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ 
+                      background: 'var(--gradient-accent)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <Award className="w-5 h-5 text-white" />
+                  </div>
+                  <span 
+                    className="font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    First Win!
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Star className="w-5 h-5 text-blue-500" />
-                  <span className="text-gray-300 text-sm">Perfect Score</span>
+                <div className="flex items-center gap-4 p-3 rounded-xl transition-all duration-300 hover:scale-105" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ 
+                      background: 'var(--gradient-primary)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <span 
+                    className="font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Perfect Score
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Zap className="w-5 h-5 text-purple-500" />
-                  <span className="text-gray-300 text-sm">Speed Master</span>
+                <div className="flex items-center gap-4 p-3 rounded-xl transition-all duration-300 hover:scale-105" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ 
+                      background: 'var(--gradient-secondary)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                  <span 
+                    className="font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Speed Master
+                  </span>
                 </div>
               </div>
             </div>

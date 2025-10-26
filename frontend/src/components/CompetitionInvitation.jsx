@@ -140,96 +140,283 @@ function CompetitionInvitation() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="flex justify-center items-center min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+        <div 
+          className="w-32 h-32 rounded-2xl flex items-center justify-center"
+          style={{ 
+            background: 'var(--gradient-primary)',
+            boxShadow: 'var(--shadow-glow)'
+          }}
+        >
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent"></div>
+        </div>
       </div>
     )
   }
 
   if (!invitation) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Invitation Found</h2>
-          <p className="text-gray-600">You don't have any pending competition invitations.</p>
+      <div className="flex justify-center items-center min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+        <div 
+          className="text-center rounded-2xl p-12 border-2"
+          style={{ 
+            background: 'var(--gradient-card)',
+            borderColor: 'rgba(6, 95, 70, 0.2)',
+            boxShadow: 'var(--shadow-card)'
+          }}
+        >
+          <div 
+            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            style={{ 
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              boxShadow: 'var(--shadow-glow)'
+            }}
+          >
+            <AlertCircle className="w-10 h-10 text-white" />
+          </div>
+          <h2 
+            className="text-3xl font-bold mb-4"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            No Invitation Found
+          </h2>
+          <p 
+            className="text-xl"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            You don't have any pending competition invitations.
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      {/* Animated Background */}
+      <div className="bg-animation"></div>
+      
+      <div className="max-w-4xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
-            <div className="flex items-center space-x-3 mb-4">
-              <Trophy className="w-8 h-8" />
-              <h1 className="text-3xl font-bold">Competition Invitation</h1>
+          <div 
+            className="rounded-2xl p-8 shadow-2xl border-2"
+            style={{ 
+              background: 'var(--gradient-card)',
+              borderColor: 'rgba(6, 95, 70, 0.2)',
+              boxShadow: '0 20px 60px rgba(6, 95, 70, 0.3)'
+            }}
+          >
+            <div className="flex items-center space-x-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                style={{ 
+                  background: 'var(--gradient-primary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <Trophy className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 
+                  className="text-4xl font-bold font-display"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Competition Invitation
+                </h1>
+                <p 
+                  className="text-lg mt-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  You've been invited to compete in a 2-player anonymous coding challenge!
+                </p>
+              </div>
             </div>
-            <p className="text-indigo-100 text-lg">
-              You've been invited to compete in a 2-player anonymous coding challenge!
-            </p>
           </div>
         </div>
 
         {/* Competition Details */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <Target className="w-6 h-6 text-indigo-600 mr-2" />
+        <div 
+          className="rounded-2xl p-8 border-2 mb-8"
+          style={{ 
+            background: 'var(--gradient-card)',
+            borderColor: 'rgba(6, 95, 70, 0.2)',
+            boxShadow: 'var(--shadow-card)'
+          }}
+        >
+          <h2 
+            className="text-3xl font-bold mb-8 flex items-center"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center mr-4"
+              style={{ 
+                background: 'var(--gradient-primary)',
+                boxShadow: 'var(--shadow-glow)'
+              }}
+            >
+              <Target className="w-5 h-5 text-white" />
+            </div>
             Competition Details
           </h2>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Star className="w-5 h-5 text-yellow-500" />
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-accent)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Star className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Course</div>
-                  <div className="text-gray-600">{invitation.courseName}</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Course
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {invitation.courseName}
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Users className="w-5 h-5 text-blue-500" />
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-primary)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Users className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Players</div>
-                  <div className="text-gray-600">2 players (anonymous)</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Players
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    2 players (anonymous)
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Target className="w-5 h-5 text-green-500" />
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-secondary)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Target className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Questions</div>
-                  <div className="text-gray-600">3 coding challenges</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Questions
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    3 coding challenges
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Clock className="w-5 h-5 text-purple-500" />
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-primary)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Duration</div>
-                  <div className="text-gray-600">30 minutes total</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Duration
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    30 minutes total
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Zap className="w-5 h-5 text-orange-500" />
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-accent)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Difficulty</div>
-                  <div className="text-gray-600">Medium level</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Difficulty
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Medium level
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Crown className="w-5 h-5 text-yellow-500" />
+              <div className="flex items-center space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ 
+                    background: 'var(--gradient-accent)',
+                    boxShadow: 'var(--shadow-glow)'
+                  }}
+                >
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Prize</div>
-                  <div className="text-gray-600">Bragging rights & XP</div>
+                  <div 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Prize
+                  </div>
+                  <div 
+                    className="text-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Bragging rights & XP
+                  </div>
                 </div>
               </div>
             </div>
@@ -237,35 +424,95 @@ function CompetitionInvitation() {
         </div>
 
         {/* Available Competitors */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-            <Users className="w-5 h-5 text-indigo-600 mr-2" />
+        <div 
+          className="rounded-2xl p-8 border-2 mb-8"
+          style={{ 
+            background: 'var(--gradient-card)',
+            borderColor: 'rgba(6, 95, 70, 0.2)',
+            boxShadow: 'var(--shadow-card)'
+          }}
+        >
+          <h3 
+            className="text-2xl font-bold mb-6 flex items-center"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center mr-4"
+              style={{ 
+                background: 'var(--gradient-primary)',
+                boxShadow: 'var(--shadow-glow)'
+              }}
+            >
+              <Users className="w-5 h-5 text-white" />
+            </div>
             Choose Your Opponent
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p 
+            className="text-lg mb-8"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             Select one of the learners who completed the same course to compete against. 
             Both players will remain anonymous during the competition.
           </p>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             {invitation.eligibleLearners.map((learner, index) => (
-              <div key={learner.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div 
+                key={learner.id} 
+                className="border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 cursor-pointer"
+                style={{ 
+                  background: 'var(--gradient-card)',
+                  borderColor: 'rgba(6, 95, 70, 0.2)',
+                  boxShadow: 'var(--shadow-card)'
+                }}
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <span className="text-indigo-600 font-bold text-lg">
-                        Player {String.fromCharCode(65 + index)}
-                      </span>
+                  <div className="flex items-center space-x-6">
+                    <div 
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                      style={{ 
+                        background: 'var(--gradient-primary)',
+                        boxShadow: 'var(--shadow-glow)'
+                      }}
+                    >
+                      Player {String.fromCharCode(65 + index)}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">
+                      <div 
+                        className="font-bold text-xl mb-2"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
                         Anonymous Player {String.fromCharCode(65 + index)}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div 
+                        className="text-lg mb-2"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
                         Completed course {formatTimeAgo(learner.completedAt)}
                       </div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getSkillLevelColor(learner.skillLevel)}`}>
+                      <div className="flex items-center space-x-2">
+                        <span 
+                          className="px-4 py-2 text-sm rounded-xl font-semibold"
+                          style={{
+                            background: learner.skillLevel === 'beginner' 
+                              ? 'rgba(34, 197, 94, 0.1)' 
+                              : learner.skillLevel === 'intermediate'
+                              ? 'rgba(245, 158, 11, 0.1)'
+                              : 'rgba(239, 68, 68, 0.1)',
+                            color: learner.skillLevel === 'beginner' 
+                              ? 'var(--accent-green)' 
+                              : learner.skillLevel === 'intermediate'
+                              ? 'var(--accent-gold)'
+                              : '#ef4444',
+                            border: `1px solid ${
+                              learner.skillLevel === 'beginner' 
+                                ? 'rgba(34, 197, 94, 0.2)' 
+                                : learner.skillLevel === 'intermediate'
+                                ? 'rgba(245, 158, 11, 0.2)'
+                                : 'rgba(239, 68, 68, 0.2)'
+                            }`
+                          }}
+                        >
                           {learner.skillLevel}
                         </span>
                       </div>
@@ -275,9 +522,13 @@ function CompetitionInvitation() {
                   <button
                     onClick={() => handleAcceptInvitation(learner.id)}
                     disabled={responding}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="px-8 py-4 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3"
+                    style={{
+                      background: 'var(--gradient-primary)',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-5 h-5" />
                     <span>Challenge</span>
                   </button>
                 </div>
@@ -287,42 +538,131 @@ function CompetitionInvitation() {
         </div>
 
         {/* Rules */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-            <AlertCircle className="w-5 h-5 text-indigo-600 mr-2" />
+        <div 
+          className="rounded-2xl p-8 border-2 mb-8"
+          style={{ 
+            background: 'var(--gradient-card)',
+            borderColor: 'rgba(6, 95, 70, 0.2)',
+            boxShadow: 'var(--shadow-card)'
+          }}
+        >
+          <h3 
+            className="text-2xl font-bold mb-6 flex items-center"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center mr-4"
+              style={{ 
+                background: 'var(--gradient-primary)',
+                boxShadow: 'var(--shadow-glow)'
+              }}
+            >
+              <AlertCircle className="w-5 h-5 text-white" />
+            </div>
             Competition Rules
           </h3>
           
-          <ul className="space-y-3">
-            <li className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">Both players remain anonymous throughout the competition</span>
+          <ul className="space-y-4">
+            <li className="flex items-start space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ 
+                  background: 'var(--gradient-secondary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span 
+                className="text-lg font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Both players remain anonymous throughout the competition
+              </span>
             </li>
-            <li className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">3 coding questions with 10 minutes each</span>
+            <li className="flex items-start space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ 
+                  background: 'var(--gradient-secondary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span 
+                className="text-lg font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                3 coding questions with 10 minutes each
+              </span>
             </li>
-            <li className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">Timer automatically submits your answer when time runs out</span>
+            <li className="flex items-start space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ 
+                  background: 'var(--gradient-secondary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span 
+                className="text-lg font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Timer automatically submits your answer when time runs out
+              </span>
             </li>
-            <li className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">Winner determined by correct answers and completion time</span>
+            <li className="flex items-start space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ 
+                  background: 'var(--gradient-secondary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span 
+                className="text-lg font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Winner determined by correct answers and completion time
+              </span>
             </li>
-            <li className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <span className="text-gray-700">No external help or collaboration allowed</span>
+            <li className="flex items-start space-x-4 p-4 rounded-xl" style={{ background: 'rgba(6, 95, 70, 0.05)' }}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ 
+                  background: 'var(--gradient-secondary)',
+                  boxShadow: 'var(--shadow-glow)'
+                }}
+              >
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span 
+                className="text-lg font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                No external help or collaboration allowed
+              </span>
             </li>
           </ul>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center space-x-6">
           <button
             onClick={handleDeclineInvitation}
             disabled={responding}
-            className="bg-gray-600 text-white px-8 py-3 rounded-lg hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-10 py-4 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3"
+            style={{
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              border: '2px solid rgba(6, 95, 70, 0.2)',
+              boxShadow: 'var(--shadow-card)'
+            }}
           >
             <XCircle className="w-5 h-5" />
             <span>Decline Invitation</span>
@@ -331,7 +671,10 @@ function CompetitionInvitation() {
 
         {/* Expiration Notice */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p 
+            className="text-lg"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             This invitation expires in 24 hours. Choose your opponent soon!
           </p>
         </div>
