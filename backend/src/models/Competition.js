@@ -135,5 +135,103 @@ export class CompetitionModel {
     if (error) throw error
     return data
   }
+
+  // Find eligible learners for competition (completed same course)
+  static async findEligibleLearners(courseId, excludeLearnerId) {
+    // This would integrate with your course completion system
+    // For now, return mock data
+    const { data, error } = await supabase
+      .from('course_completions') // Assuming this table exists
+      .select('learner_id, completed_at')
+      .eq('course_id', courseId)
+      .neq('learner_id', excludeLearnerId)
+      .order('completed_at', { ascending: false })
+      .limit(10)
+    
+    if (error) {
+      // If table doesn't exist, return mock data
+      return [
+        { id: 'learner-1', completedAt: new Date().toISOString() },
+        { id: 'learner-2', completedAt: new Date().toISOString() },
+        { id: 'learner-3', completedAt: new Date().toISOString() }
+      ]
+    }
+    
+    return data.map(item => ({
+      id: item.learner_id,
+      completedAt: item.completed_at
+    }))
+  }
+
+  // Update answer for a specific learner and question
+  static async updateAnswer(competitionId, learnerId, questionId, answerData) {
+    const { data, error } = await supabase
+      .from(competitions)
+      .update({
+        [`learner${learnerId === 'learner1_id' ? '1' : '2'}_answers`]: answerData
+      })
+      .eq('competition_id', competitionId)
+      .select()
+    
+    if (error) throw error
+    return data[0]
+  }
+
+  // Check if both players submitted answers for current question
+  static async checkBothAnswersSubmitted(competitionId, questionId) {
+    const { data, error } = await supabase
+      .from(competitions)
+      .select('learner1_answers, learner2_answers')
+      .eq('competition_id', competitionId)
+      .single()
+    
+    if (error) throw error
+    
+    // Check if both learners have submitted answers for the current question
+    const learner1Submitted = data.learner1_answers?.some(answer => answer.questionId === questionId)
+    const learner2Submitted = data.learner2_answers?.some(answer => answer.questionId === questionId)
+    
+    return learner1Submitted && learner2Submitted
+  }
+
+  // Update current question number
+  static async updateCurrentQuestion(competitionId, questionNumber) {
+    const { data, error } = await supabase
+      .from(competitions)
+      .update({ current_question: questionNumber })
+      .eq('competition_id', competitionId)
+      .select()
+    
+    if (error) throw error
+    return data[0]
+  }
+
+  // Determine winner based on scores
+  static async determineWinner(competitionId) {
+    const { data, error } = await supabase
+      .from(competitions)
+      .select('learner1_id, learner2_id, learner1_answers, learner2_answers')
+      .eq('competition_id', competitionId)
+      .single()
+    
+    if (error) throw error
+    
+    // Calculate scores
+    const learner1Score = data.learner1_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+    const learner2Score = data.learner2_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+    
+    const winner = learner1Score > learner2Score ? 'Player A' : 
+                   learner2Score > learner1Score ? 'Player B' : 'Tie'
+    
+    return {
+      winner,
+      player1Score: learner1Score,
+      player2Score: learner2Score,
+      player1Rank: learner1Score > learner2Score ? 1 : 2,
+      player2Rank: learner2Score > learner1Score ? 1 : 2,
+      player1Time: data.learner1_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0,
+      player2Time: data.learner2_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
+    }
+  }
 }
 

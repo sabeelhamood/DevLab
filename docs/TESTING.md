@@ -206,14 +206,14 @@ describe('MongoDB Integration', () => {
 ```typescript
 test('complete learning session flow', async ({ page }) => {
   // Login
-  await page.goto('http://localhost:3000/login')
+  await page.goto('http://localhost:3001/login')
   await page.fill('[data-testid="email-input"]', 'test@example.com')
   await page.fill('[data-testid="password-input"]', 'password123')
   await page.click('[data-testid="login-button"]')
 
   // Navigate to practice
   await page.click('[data-testid="start-practice-button"]')
-  await expect(page).toHaveURL('http://localhost:3000/practice')
+  await expect(page).toHaveURL('http://localhost:3001/practice')
 
   // Complete question
   await page.fill('[data-testid="code-editor"]', 'print("Hello, World!")')
@@ -381,7 +381,7 @@ describe('API Load Tests', () => {
 ```typescript
 test('page load performance', async ({ page }) => {
   const startTime = Date.now()
-  await page.goto('http://localhost:3000/')
+  await page.goto('http://localhost:3001/')
   const loadTime = Date.now() - startTime
   
   expect(loadTime).toBeLessThan(2000) // < 2 seconds

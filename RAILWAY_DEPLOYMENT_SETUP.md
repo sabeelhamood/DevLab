@@ -23,7 +23,7 @@ In Railway Dashboard → Your Service → Settings → Networking:
 
 After deployment, your Railway backend URL will be:
 - Format: `https://[service-name].up.railway.app`
-- Example: `https://devlab-backend-production.up.railway.app`
+- Example: `https://devlab-production.up.railway.app`
 
 ## 🔧 **Frontend Configuration**
 

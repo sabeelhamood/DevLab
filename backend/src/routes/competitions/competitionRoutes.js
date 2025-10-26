@@ -25,6 +25,8 @@ const updateResultValidation = [
 ]
 
 // Routes
+router.post('/invite', authenticateToken, competitionController.createInvitation)
+router.post('/invitation/:invitationId/respond', authenticateToken, competitionController.respondToInvitation)
 router.post('/join', authenticateToken, joinCompetitionValidation, validateRequest, competitionController.joinCompetition)
 router.get('/:id', authenticateToken, competitionController.getCompetition)
 router.post('/:id/submit', authenticateToken, submitAnswerValidation, validateRequest, competitionController.submitAnswer)

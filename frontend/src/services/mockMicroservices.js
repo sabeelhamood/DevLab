@@ -1,7 +1,7 @@
 // Mock Microservices Data for Frontend
 // This file simulates data from various microservices in the DEVLAB ecosystem
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production.up.railway.app/api' : 'http://localhost:3000/api')
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production-0bcb.up.railway.app/api' : 'http://localhost:3001/api')
 
 export const mockMicroservices = {
   // Directory Service - User profiles, organizations, quotas

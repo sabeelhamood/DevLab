@@ -22,7 +22,7 @@ import geminiQuestionRoutes from './routes/gemini-question-generation.js'
 
 // Judge0 routes
 import judge0Routes from './routes/judge0.js'
-// import competitionRoutes from './routes/competitions.js'
+import competitionRoutes from './routes/competitions.js'
 
 // External service routes
 import directoryRoutes from './routes/external/directoryRoutes.js'
@@ -57,6 +57,7 @@ app.use(cors({
         'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
         'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
         'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
+        'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
         'healthcheck.railway.app',
         ...(config.security.corsOrigins || [])
       ],
@@ -92,7 +93,7 @@ app.use(morgan('combined'))
 app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
-// app.use('/api/competitions', competitionRoutes)
+app.use('/api/competitions', competitionRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
 // Gemini AI routes

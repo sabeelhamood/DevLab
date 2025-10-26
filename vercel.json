@@ -5,7 +5,7 @@
   "installCommand": "npm install",
   "devCommand": "cd frontend && npm run dev",
   "env": {
-    "VITE_API_URL": "https://devlab-backend-production.up.railway.app/api"
+    "VITE_API_URL": "https://devlab-production.up.railway.app/api"
   },
   "rewrites": [
     {

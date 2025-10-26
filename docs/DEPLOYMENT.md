@@ -189,7 +189,7 @@ SANDBOX_TEST_API_KEY=your-test-sandbox-api-key
 ## Deployment Environments
 
 ### Development
-- **Frontend**: `http://localhost:3000`
+- **Frontend**: `http://localhost:3001`
 - **Backend**: `http://localhost:3001`
 - **Database**: Local Supabase and MongoDB
 
