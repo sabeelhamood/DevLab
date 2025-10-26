@@ -148,7 +148,8 @@ export class Judge0Service {
         expected_output: expectedOutput,
         cpu_time_limit: '2.0',
         memory_limit: '128000',
-        wall_time_limit: '5.0'
+        wall_time_limit: '5.0',
+        base64_encoded: false  // Get plain text output instead of Base64
       };
 
       const response = await fetch(`${this.baseUrl}/submissions`, {
@@ -236,8 +237,33 @@ export class Judge0Service {
       13: 'Exec Format Error'
     };
 
-    const actualOutput = result.stdout || '';
+    // Judge0 returns stdout as Base64 encoded by default
+    let actualOutput = result.stdout || '';
+    
+    // Decode Base64 if it's encoded
+    try {
+      // Check if the output looks like Base64 (contains only Base64 characters and is not empty)
+      if (actualOutput && actualOutput.length > 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(actualOutput)) {
+        const decoded = Buffer.from(actualOutput, 'base64').toString('utf-8');
+        // Only use decoded if it produces readable text (not binary)
+        if (decoded && decoded.length > 0 && !decoded.includes('\0')) {
+          actualOutput = decoded;
+          console.log('🔓 Judge0: Decoded Base64 stdout:', actualOutput);
+        }
+      }
+    } catch (error) {
+      console.log('🔍 Judge0: stdout is not Base64 encoded, using as-is:', actualOutput);
+    }
+    
     const trimmedOutput = actualOutput.trim();
+    
+    console.log('🔍 Judge0: Raw response:', {
+      statusId: result.status?.id,
+      rawStdout: result.stdout,
+      rawStderr: result.stderr,
+      rawCompileOutput: result.compile_output,
+      rawMessage: result.message
+    });
     
     console.log('🔍 Judge0: Formatting result:', {
       statusId: result.status?.id,
@@ -373,7 +399,8 @@ export class Judge0Service {
           expected_output: expectedOutput,
           cpu_time_limit: '2.0',
           memory_limit: '128000',
-          wall_time_limit: '5.0'
+          wall_time_limit: '5.0',
+          base64_encoded: false  // Get plain text output instead of Base64
         };
       });
 
