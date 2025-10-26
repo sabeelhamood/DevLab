@@ -6,7 +6,8 @@ import {
   Send,
   RotateCcw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Rocket
 } from 'lucide-react'
 import { geminiAPI } from '../services/api/gemini.js'
 import { questionGenerationAPI } from '../services/api/questionGeneration.js'
@@ -27,9 +28,7 @@ function SimpleQuestionPage() {
   const [showHint, setShowHint] = useState(false)
   const [hints, setHints] = useState([]) // Array to store all hints
   const [hintsUsed, setHintsUsed] = useState(0)
-  const [showSolution, setShowSolution] = useState(false)
-  const [solution, setSolution] = useState(null)
-  const [language, setLanguage] = useState('javascript')
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false)
   const [error, setError] = useState(null)
   const [useSandbox, setUseSandbox] = useState(true) // Toggle between sandbox and regular editor
   const [sandboxCode, setSandboxCode] = useState('')
@@ -232,6 +231,9 @@ int sum(int a, int b) {
         isCorrect: result.evaluation.isCorrect || false,
         optimalSolution: result.evaluation.optimalSolution || result.feedback.optimalSolution || null
       })
+      
+      // Show the submission modal
+      setShowSubmissionModal(true)
     } catch (error) {
       console.error('Error submitting answer:', error)
       // Show error instead of mock evaluation
@@ -241,6 +243,9 @@ int sum(int a, int b) {
         suggestions: ["Check your connection and try again"],
         isAiGenerated: false
       })
+      
+      // Show the submission modal even for errors
+      setShowSubmissionModal(true)
     } finally {
       setLoading(false)
     }
@@ -1177,269 +1182,259 @@ int sum(int a, int b) {
           </div>
         )}
 
-        {/* Evaluation Results */}
-        {isSubmitted && evaluation && (
-          <div 
-            className="mt-6 rounded-xl p-6 border-2 shadow-lg"
-            style={{ 
-              background: evaluation.score >= 70 
-                ? 'linear-gradient(145deg, #d1fae5, #a7f3d0)'
-                : 'linear-gradient(145deg, #fef3c7, #fde68a)',
-              borderColor: evaluation.score >= 70 
-                ? 'rgba(4, 120, 87, 0.4)'
-                : 'rgba(245, 158, 11, 0.4)',
-              boxShadow: evaluation.score >= 70 
-                ? '0 8px 32px rgba(4, 120, 87, 0.2)'
-                : '0 8px 32px rgba(245, 158, 11, 0.2)'
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
+        {/* Submission Modal */}
+        {showSubmissionModal && evaluation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div 
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              style={{
+                background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
+                border: '2px solid rgba(6, 95, 70, 0.2)',
+                boxShadow: '0 20px 60px rgba(6, 95, 70, 0.3)'
+              }}
+            >
+              {/* Modal Header */}
+              <div 
+                className="flex items-center justify-between p-6 border-b-2"
+                style={{ 
+                  background: evaluation.score >= 70 
+                    ? 'linear-gradient(145deg, #d1fae5, #a7f3d0)'
+                    : 'linear-gradient(145deg, #fef3c7, #fde68a)',
+                  borderColor: evaluation.score >= 70 
+                    ? 'rgba(4, 120, 87, 0.4)'
+                    : 'rgba(245, 158, 11, 0.4)'
+                }}
+              >
+                <div className="flex items-center space-x-4">
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white"
+                    style={{ 
+                      background: evaluation.score >= 70 
+                        ? 'linear-gradient(135deg, #065f46, #047857)'
+                        : 'linear-gradient(135deg, #d97706, #f59e0b)'
+                    }}
+                  >
+                    {evaluation.score >= 70 ? (
+                      <CheckCircle className="h-6 w-6" />
+                    ) : (
+                      <XCircle className="h-6 w-6" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">
+                      {evaluation.score >= 70 ? '🎉 Excellent Work!' : '📚 Keep Learning!'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {evaluation.score >= 70 ? 'Your solution is correct!' : 'Let\'s review and improve together.'}
+                    </p>
+                  </div>
+                </div>
                 <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white"
-                  style={{ 
+                  className="flex items-center px-4 py-2 rounded-full text-lg font-bold"
+                  style={{
                     background: evaluation.score >= 70 
-                      ? 'var(--gradient-secondary)' 
-                      : 'var(--gradient-accent)'
+                      ? 'linear-gradient(135deg, #065f46, #047857)'
+                      : 'linear-gradient(135deg, #d97706, #f59e0b)',
+                    color: 'white'
                   }}
                 >
                   {evaluation.score >= 70 ? (
-                    <CheckCircle className="h-6 w-6" />
+                    <CheckCircle className="h-5 w-5 mr-2" />
                   ) : (
-                    <XCircle className="h-6 w-6" />
+                    <XCircle className="h-5 w-5 mr-2" />
                   )}
-                </div>
-                <div>
-                  <h3 
-                    className="text-xl font-bold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {evaluation.score >= 70 ? '🎉 Great Job!' : '📚 Keep Learning!'}
-                  </h3>
-                  <p 
-                    className="text-sm"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {evaluation.score >= 70 ? 'Your solution looks good!' : 'Let\'s review and improve together.'}
-                  </p>
+                  {evaluation.score}%
                 </div>
               </div>
-              <div 
-                className="flex items-center px-6 py-3 rounded-full text-lg font-bold"
-                style={{
-                  background: evaluation.score >= 70 
-                    ? 'var(--gradient-secondary)' 
-                    : 'var(--gradient-accent)',
-                  color: 'white',
-                  boxShadow: 'var(--shadow-glow)'
-                }}
-              >
-                {evaluation.score >= 70 ? (
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                ) : (
-                  <XCircle className="h-5 w-5 mr-2" />
-                )}
-                {evaluation.score}%
-              </div>
-            </div>
 
-
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center space-x-2 mb-3">
-                  <h4 
-                    className="text-lg font-semibold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    💬 Feedback
-                  </h4>
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ 
-                      background: evaluation.score >= 70 
-                        ? 'var(--primary-green)' 
-                        : 'var(--accent-orange)'
-                    }}
-                  ></div>
-                </div>
-                {evaluation.isAiGenerated ? (
-                  <div 
-                    className="rounded-lg p-4 border-2"
-                    style={{
-                      background: 'linear-gradient(145deg, #fef2f2, #fee2e2)',
-                      borderColor: 'rgba(239, 68, 68, 0.3)',
-                      boxShadow: '0 4px 20px rgba(239, 68, 68, 0.1)'
-                    }}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div 
-                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white"
-                        style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 
-                          className="text-sm font-semibold mb-2"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          🤖 AI-Generated Solution Detected
-                        </h3>
-                        <div 
-                          className="text-sm leading-relaxed"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          <p>{typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    className="rounded-lg p-4 border-2"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      borderColor: evaluation.score >= 70 
-                        ? 'rgba(4, 120, 87, 0.3)'
-                        : 'rgba(245, 158, 11, 0.3)'
-                    }}
-                  >
-                    <p 
-                      className="text-sm leading-relaxed"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {evaluation.suggestions && evaluation.suggestions.length > 0 && (
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Feedback Section */}
                 <div>
                   <div className="flex items-center space-x-2 mb-3">
-                    <h4 
-                      className="text-lg font-semibold"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      💡 Suggestions
-                    </h4>
+                    <h4 className="text-lg font-semibold text-gray-800">💬 Feedback</h4>
                     <div 
                       className="w-2 h-2 rounded-full"
-                      style={{ background: 'var(--accent-orange)' }}
-                    ></div>
-                  </div>
-                  <div 
-                    className="rounded-lg p-4 border-2"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      borderColor: 'rgba(245, 158, 11, 0.3)'
-                    }}
-                  >
-                    <div className="space-y-3">
-                      {evaluation.suggestions.map((suggestion, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-start space-x-3 p-3 rounded-lg"
-                          style={{ background: 'rgba(245, 158, 11, 0.05)' }}
-                        >
-                          <div 
-                            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                            style={{ background: 'var(--gradient-accent)' }}
-                          >
-                            {index + 1}
-                          </div>
-                          <p 
-                            className="text-sm leading-relaxed"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {suggestion}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {evaluation.optimalSolution && (
-                <div>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <h4 
-                      className="text-lg font-semibold"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      ⭐ Optimal Solution
-                    </h4>
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: 'var(--primary-green)' }}
-                    ></div>
-                  </div>
-                  <div 
-                    className="rounded-lg p-4 border-2"
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      borderColor: 'rgba(4, 120, 87, 0.3)'
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span 
-                        className="text-sm font-semibold"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        💻 Recommended Code
-                      </span>
-                      <span 
-                        className="text-xs px-2 py-1 rounded"
-                        style={{ 
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-secondary)'
-                        }}
-                      >
-                        {language.toUpperCase()}
-                      </span>
-                    </div>
-                    <div 
-                      className="rounded-lg p-4 border"
                       style={{ 
-                        background: 'var(--bg-primary)',
-                        borderColor: 'rgba(4, 120, 87, 0.2)'
+                        background: evaluation.score >= 70 
+                          ? '#047857' 
+                          : '#f59e0b'
+                      }}
+                    ></div>
+                  </div>
+                  {evaluation.isAiGenerated ? (
+                    <div 
+                      className="rounded-lg p-4 border-2"
+                      style={{
+                        background: 'linear-gradient(145deg, #fef2f2, #fee2e2)',
+                        borderColor: 'rgba(239, 68, 68, 0.3)'
                       }}
                     >
-                      <pre 
-                        className="text-sm whitespace-pre-wrap font-mono leading-relaxed"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {typeof evaluation.optimalSolution === 'string' ? evaluation.optimalSolution : (typeof evaluation.optimalSolution === 'object' ? evaluation.optimalSolution.code || evaluation.optimalSolution.text || JSON.stringify(evaluation.optimalSolution, null, 2) : String(evaluation.optimalSolution))}
-                      </pre>
+                      <div className="flex items-start space-x-3">
+                        <div 
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white"
+                          style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold mb-2 text-gray-800">
+                            🤖 AI-Generated Solution Detected
+                          </h3>
+                          <p className="text-sm leading-relaxed text-gray-700">
+                            {typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      className="rounded-lg p-4 border-2"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: evaluation.score >= 70 
+                          ? 'rgba(4, 120, 87, 0.3)'
+                          : 'rgba(245, 158, 11, 0.3)'
+                      }}
+                    >
+                      <p className="text-sm leading-relaxed text-gray-700">
+                        {typeof evaluation.feedback === 'string' ? evaluation.feedback : (typeof evaluation.feedback === 'object' ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2) : String(evaluation.feedback))}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Suggestions Section */}
+                {evaluation.suggestions && evaluation.suggestions.length > 0 && (
+                  <div>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <h4 className="text-lg font-semibold text-gray-800">💡 Suggestions</h4>
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: '#f59e0b' }}
+                      ></div>
+                    </div>
+                    <div 
+                      className="rounded-lg p-4 border-2"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: 'rgba(245, 158, 11, 0.3)'
+                      }}
+                    >
+                      <div className="space-y-3">
+                        {evaluation.suggestions.map((suggestion, index) => (
+                          <div 
+                            key={index} 
+                            className="flex items-start space-x-3 p-3 rounded-lg"
+                            style={{ background: 'rgba(245, 158, 11, 0.05)' }}
+                          >
+                            <div 
+                              className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)' }}
+                            >
+                              {index + 1}
+                            </div>
+                            <p className="text-sm leading-relaxed text-gray-700">
+                              {suggestion}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex space-x-4 pt-6 border-t-2" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                <button
-                  onClick={loadQuestion}
-                  className="btn text-sm px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'var(--gradient-primary)',
-                    color: 'white',
-                    boxShadow: 'var(--shadow-glow)'
-                  }}
-                >
-                  🚀 Next Question
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="btn text-sm px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    color: 'var(--text-primary)',
-                    border: '2px solid rgba(6, 95, 70, 0.3)'
-                  }}
-                >
-                  🔄 Try Again
-                </button>
+                {/* Optimal Solution Section */}
+                {evaluation.optimalSolution && (
+                  <div>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <h4 className="text-lg font-semibold text-gray-800">⭐ Optimal Solution</h4>
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: '#047857' }}
+                      ></div>
+                    </div>
+                    <div 
+                      className="rounded-lg p-4 border-2"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: 'rgba(4, 120, 87, 0.3)'
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-gray-800">
+                          💻 Recommended Code
+                        </span>
+                        <span 
+                          className="text-xs px-2 py-1 rounded"
+                          style={{ 
+                            background: '#f1f5f9',
+                            color: '#64748b'
+                          }}
+                        >
+                          {language.toUpperCase()}
+                        </span>
+                      </div>
+                      <div 
+                        className="rounded-lg p-4 border"
+                        style={{ 
+                          background: '#f8fafc',
+                          borderColor: 'rgba(4, 120, 87, 0.2)'
+                        }}
+                      >
+                        <pre className="text-sm whitespace-pre-wrap font-mono leading-relaxed text-gray-800">
+                          {typeof evaluation.optimalSolution === 'string' ? evaluation.optimalSolution : (typeof evaluation.optimalSolution === 'object' ? evaluation.optimalSolution.code || evaluation.optimalSolution.text || JSON.stringify(evaluation.optimalSolution, null, 2) : String(evaluation.optimalSolution))}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal Actions */}
+                <div className="flex space-x-4 pt-6 border-t-2 border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowSubmissionModal(false)
+                      handleNextQuestion()
+                    }}
+                    disabled={currentQuestionIndex === questions.length - 1}
+                    className="flex items-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, #065f46, #047857)',
+                      color: 'white',
+                      boxShadow: '0 4px 20px rgba(6, 95, 70, 0.3)'
+                    }}
+                  >
+                    <Rocket className="h-4 w-4 mr-2" />
+                    Next Question
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSubmissionModal(false)
+                      handleReset()
+                    }}
+                    className="flex items-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      color: '#1e293b',
+                      border: '2px solid rgba(6, 95, 70, 0.3)'
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => setShowSubmissionModal(false)}
+                    className="flex items-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'rgba(107, 114, 128, 0.1)',
+                      color: '#6b7280',
+                      border: '2px solid rgba(107, 114, 128, 0.2)'
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
