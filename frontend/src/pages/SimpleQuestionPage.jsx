@@ -35,6 +35,8 @@ function SimpleQuestionPage() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [confirmationAction, setConfirmationAction] = useState(null)
   const [language, setLanguage] = useState('javascript')
+  const [showSolution, setShowSolution] = useState(false)
+  const [solution, setSolution] = useState(null)
   
   useEffect(() => {
     let isMounted = true
@@ -1198,10 +1200,10 @@ int sum(int a, int b) {
               <div 
                 className="flex items-center justify-between p-6 border-b-2"
                 style={{ 
-                  background: evaluation.score >= 70 
+                  background: evaluation.score >= 70 && evaluation.isCorrect !== false
                     ? 'linear-gradient(145deg, #d1fae5, #a7f3d0)'
                     : 'linear-gradient(145deg, #fef3c7, #fde68a)',
-                  borderColor: evaluation.score >= 70 
+                  borderColor: evaluation.score >= 70 && evaluation.isCorrect !== false
                     ? 'rgba(4, 120, 87, 0.4)'
                     : 'rgba(245, 158, 11, 0.4)'
                 }}
@@ -1210,12 +1212,12 @@ int sum(int a, int b) {
                   <div 
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white"
                     style={{ 
-                      background: evaluation.score >= 70 
+                      background: evaluation.score >= 70 && evaluation.isCorrect !== false
                         ? 'linear-gradient(135deg, #065f46, #047857)'
                         : 'linear-gradient(135deg, #d97706, #f59e0b)'
                     }}
                   >
-                    {evaluation.score >= 70 ? (
+                    {evaluation.score >= 70 && evaluation.isCorrect !== false ? (
                       <CheckCircle className="h-6 w-6" />
                     ) : (
                       <XCircle className="h-6 w-6" />
@@ -1223,23 +1225,23 @@ int sum(int a, int b) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">
-                      {evaluation.score >= 70 ? '🎉 Excellent Work!' : '📚 Keep Learning!'}
+                      {evaluation.score >= 70 && evaluation.isCorrect !== false ? '🎉 Excellent Work!' : '📚 Keep Learning!'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {evaluation.score >= 70 ? 'Your solution is correct!' : 'Let\'s review and improve together.'}
+                      {evaluation.score >= 70 && evaluation.isCorrect !== false ? 'Your solution is correct!' : 'Let\'s review and improve together.'}
                     </p>
                   </div>
                 </div>
                 <div 
                   className="flex items-center px-4 py-2 rounded-full text-lg font-bold"
                   style={{
-                    background: evaluation.score >= 70 
+                    background: evaluation.score >= 70 && evaluation.isCorrect !== false
                       ? 'linear-gradient(135deg, #065f46, #047857)'
                       : 'linear-gradient(135deg, #d97706, #f59e0b)',
                     color: 'white'
                   }}
                 >
-                  {evaluation.score >= 70 ? (
+                  {evaluation.score >= 70 && evaluation.isCorrect !== false ? (
                     <CheckCircle className="h-5 w-5 mr-2" />
                   ) : (
                     <XCircle className="h-5 w-5 mr-2" />
@@ -1257,7 +1259,7 @@ int sum(int a, int b) {
                     <div 
                       className="w-2 h-2 rounded-full"
                       style={{ 
-                        background: evaluation.score >= 70 
+                        background: evaluation.score >= 70 && evaluation.isCorrect !== false
                           ? '#047857' 
                           : '#f59e0b'
                       }}
@@ -1293,7 +1295,7 @@ int sum(int a, int b) {
                       className="rounded-lg p-4 border-2"
                       style={{ 
                         background: 'rgba(255, 255, 255, 0.9)',
-                        borderColor: evaluation.score >= 70 
+                        borderColor: evaluation.score >= 70 && evaluation.isCorrect !== false
                           ? 'rgba(4, 120, 87, 0.3)'
                           : 'rgba(245, 158, 11, 0.3)'
                       }}
