@@ -681,17 +681,17 @@ int main() {
   }
 
   /**
-   * Check if input contains assignment expressions
+   * Check if input contains assignment expressions or parameter patterns
    */
   containsAssignmentExpressions(input) {
-    // Look for patterns like "variable = value" or "variable = [...], other = value"
-    const assignmentPattern = /^\s*\w+\s*=\s*.+/;
+    // Look for patterns like "variable = value" or "variable: value" or "variable: [...], other: value"
+    const assignmentPattern = /^\s*\w+\s*[=:]\s*.+/;
     return assignmentPattern.test(input.trim());
   }
 
   /**
-   * Extract function arguments from assignment expressions
-   * Converts "products = [...], taxRate = 0.10" to [[...], 0.10]
+   * Extract function arguments from assignment expressions or parameter patterns
+   * Converts "products = [...], taxRate = 0.10" or "items: [...], taxRate: 0.08" to [[...], 0.10]
    */
   extractFunctionArguments(input) {
     console.log('🔧 Judge0: Extracting function arguments from:', input);
@@ -707,14 +707,17 @@ int main() {
         const trimmed = assignment.trim();
         if (!trimmed) continue;
         
-        // Find the '=' sign and extract the value part
+        // Find the '=' or ':' sign and extract the value part
         const equalIndex = trimmed.indexOf('=');
-        if (equalIndex === -1) {
+        const colonIndex = trimmed.indexOf(':');
+        const separatorIndex = equalIndex !== -1 ? equalIndex : colonIndex;
+        
+        if (separatorIndex === -1) {
           console.log('⚠️ Judge0: No assignment operator found in:', trimmed);
           continue;
         }
         
-        const valuePart = trimmed.substring(equalIndex + 1).trim();
+        const valuePart = trimmed.substring(separatorIndex + 1).trim();
         console.log('📥 Judge0: Extracting value from:', valuePart);
         
         // Try to parse the value
