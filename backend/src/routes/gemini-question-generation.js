@@ -340,6 +340,8 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('📋 Backend: Request body:', req.body)
   console.log('🌐 Backend: Request origin:', req.header('Origin'))
   console.log('🌐 Backend: Request headers:', req.headers)
+  console.log('🔗 Backend: Request URL:', req.url)
+  console.log('🔗 Backend: Request method:', req.method)
   
   try {
     const { 

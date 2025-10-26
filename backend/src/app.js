@@ -43,7 +43,7 @@ import assistantRoutes from './routes/external/assistantRoutes.js'
 
 const app = express()
 
-// Robust CORS middleware - MUST be first and only CORS handler
+// CORS configuration - MUST be first middleware
 const allowedOrigins = [
   'https://dev-lab-phi.vercel.app', // production frontend
   'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
@@ -58,32 +58,31 @@ const allowedOrigins = [
   ...(config.security?.corsOrigins || [])
 ];
 
-app.use((req, res, next) => {
-  const origin = req.header('Origin');
-  console.log('🌐 CORS: Request from origin:', origin);
-  console.log('🌐 CORS: Request method:', req.method);
-  console.log('🌐 CORS: Request path:', req.path);
-  
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Vary', 'Origin'); // advises caches the response varies by Origin
-    console.log('✅ CORS: Origin allowed:', origin);
-  } else {
-    console.log('❌ CORS: Origin not allowed:', origin);
-    console.log('📋 CORS: Allowed origins:', allowedOrigins);
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // short-circuit preflight
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 CORS: Handling preflight OPTIONS request');
-    return res.sendStatus(200);
-  }
-  next();
-});
+app.use(cors({
+  origin: function (origin, callback) {
+    console.log('🌐 CORS: Request from origin:', origin);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ CORS: No origin (mobile/curl), allowing');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS: Origin allowed:', origin);
+      return callback(null, true);
+    } else {
+      console.log('❌ CORS: Origin not allowed:', origin);
+      console.log('📋 CORS: Allowed origins:', allowedOrigins);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  optionsSuccessStatus: 200
+}));
 
 // Trust proxy for Railway deployment (required for express-rate-limit)
 app.set('trust proxy', 1)
