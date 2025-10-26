@@ -650,17 +650,17 @@ int sum(int a, int b) {
                 <div 
                   className="rounded-xl p-6 border-2 shadow-lg"
                   style={{ 
-                    background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)',
-                    borderColor: 'rgba(59, 130, 246, 0.3)',
-                    boxShadow: '0 8px 32px rgba(59, 130, 246, 0.15)'
+                    background: 'linear-gradient(145deg, #f0fdfa, #ecfdf5)',
+                    borderColor: 'rgba(6, 95, 70, 0.2)',
+                    boxShadow: '0 8px 32px rgba(6, 95, 70, 0.15)'
                   }}
                 >
                   <div className="flex items-center space-x-3 mb-6">
                     <div 
                       className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
                       style={{ 
-                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+                        background: 'linear-gradient(135deg, #065f46, #047857)',
+                        boxShadow: '0 4px 12px rgba(6, 95, 70, 0.4)'
                       }}
                     >
                       🧪
@@ -668,11 +668,11 @@ int sum(int a, int b) {
                     <div>
                       <h3 
                         className="text-xl font-bold"
-                        style={{ color: '#1e40af' }}
+                        style={{ color: '#065f46' }}
                       >
                         Test Cases
                       </h3>
-                      <p className="text-sm text-blue-600 font-medium">
+                      <p className="text-sm font-medium" style={{ color: '#047857' }}>
                         {(question.test_cases || question.testCases).length} test case{(question.test_cases || question.testCases).length !== 1 ? 's' : ''} • Run these to verify your solution
                       </p>
                     </div>
@@ -683,9 +683,9 @@ int sum(int a, int b) {
                         key={index} 
                         className="rounded-xl p-5 border-2 shadow-md transition-all duration-200 hover:shadow-lg"
                         style={{ 
-                          background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
-                          borderColor: 'rgba(59, 130, 246, 0.2)',
-                          boxShadow: '0 4px 16px rgba(59, 130, 246, 0.1)'
+                          background: 'linear-gradient(145deg, #ffffff, #f0fdfa)',
+                          borderColor: 'rgba(6, 95, 70, 0.2)',
+                          boxShadow: '0 4px 16px rgba(6, 95, 70, 0.1)'
                         }}
                       >
                         <div className="flex items-center justify-between mb-4">
@@ -693,12 +693,12 @@ int sum(int a, int b) {
                             <div 
                               className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
                               style={{ 
-                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                                background: 'linear-gradient(135deg, #065f46, #047857)'
                               }}
                             >
                               {index + 1}
                             </div>
-                            <span className="font-semibold text-gray-800 text-lg">Test Case {index + 1}</span>
+                            <span className="font-semibold text-lg" style={{ color: '#1e293b' }}>Test Case {index + 1}</span>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -706,10 +706,11 @@ int sum(int a, int b) {
                             <div className="flex items-center space-x-2">
                               <div 
                                 className="w-3 h-3 rounded-full"
-                                style={{ background: '#3b82f6' }}
+                                style={{ background: '#065f46' }}
                               ></div>
                               <span 
-                                className="text-sm font-semibold text-gray-700"
+                                className="text-sm font-semibold"
+                                style={{ color: '#1e293b' }}
                               >
                                 Input
                               </span>
@@ -717,8 +718,8 @@ int sum(int a, int b) {
                             <div 
                               className="font-mono text-sm p-4 rounded-lg border-2"
                               style={{ 
-                                background: '#f1f5f9',
-                                borderColor: 'rgba(59, 130, 246, 0.2)',
+                                background: '#f8fafc',
+                                borderColor: 'rgba(6, 95, 70, 0.2)',
                                 color: '#1e293b'
                               }}
                             >
@@ -731,10 +732,11 @@ int sum(int a, int b) {
                             <div className="flex items-center space-x-2">
                               <div 
                                 className="w-3 h-3 rounded-full"
-                                style={{ background: '#10b981' }}
+                                style={{ background: '#047857' }}
                               ></div>
                               <span 
-                                className="text-sm font-semibold text-gray-700"
+                                className="text-sm font-semibold"
+                                style={{ color: '#1e293b' }}
                               >
                                 Expected Output: {(() => {
                                   if (testCase.expected_output !== undefined) {
@@ -1240,6 +1242,7 @@ int sum(int a, int b) {
                 {evaluation.score}%
               </div>
             </div>
+
 
             <div className="space-y-6">
               <div>
