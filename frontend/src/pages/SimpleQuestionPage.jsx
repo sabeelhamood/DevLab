@@ -34,6 +34,7 @@ function SimpleQuestionPage() {
   const [sandboxCode, setSandboxCode] = useState('')
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [confirmationAction, setConfirmationAction] = useState(null)
+  const [language, setLanguage] = useState('javascript')
   
   useEffect(() => {
     let isMounted = true
