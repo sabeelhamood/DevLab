@@ -60,15 +60,28 @@ const allowedOrigins = [
 
 app.use((req, res, next) => {
   const origin = req.header('Origin');
+  console.log('🌐 CORS: Request from origin:', origin);
+  console.log('🌐 CORS: Request method:', req.method);
+  console.log('🌐 CORS: Request path:', req.path);
+  
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin'); // advises caches the response varies by Origin
+    console.log('✅ CORS: Origin allowed:', origin);
+  } else {
+    console.log('❌ CORS: Origin not allowed:', origin);
+    console.log('📋 CORS: Allowed origins:', allowedOrigins);
   }
+  
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
+  
   // short-circuit preflight
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  if (req.method === 'OPTIONS') {
+    console.log('🔄 CORS: Handling preflight OPTIONS request');
+    return res.sendStatus(200);
+  }
   next();
 });
 

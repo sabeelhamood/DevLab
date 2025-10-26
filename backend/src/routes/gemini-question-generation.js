@@ -338,6 +338,8 @@ router.post('/check-solution', async (req, res) => {
 router.post('/generate-question-package', async (req, res) => {
   console.log('🚀 Backend: Received generate-question-package request')
   console.log('📋 Backend: Request body:', req.body)
+  console.log('🌐 Backend: Request origin:', req.header('Origin'))
+  console.log('🌐 Backend: Request headers:', req.headers)
   
   try {
     const { 
