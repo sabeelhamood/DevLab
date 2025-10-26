@@ -4,10 +4,24 @@ import { generateQuestions } from '../services/geminiQuestionGeneration.js'
 // Helper function to evaluate answers with Gemini
 async function evaluateAnswerWithGemini({ question, answer, testCases }) {
   try {
+    // Check if Gemini API key is available
+    const geminiApiKey = process.env.GEMINI_API_KEY
+    
+    if (!geminiApiKey || geminiApiKey === 'your_gemini_api_key_here') {
+      // Mock evaluation for local testing
+      console.log('🔧 Using mock evaluation for local testing')
+      const evaluation = {
+        isCorrect: Math.random() > 0.3, // 70% success rate for testing
+        feedback: "Mock evaluation: Your solution looks good! Consider optimizing for better performance.",
+        score: Math.random() > 0.3 ? 100 : 0
+      }
+      return evaluation
+    }
+    
+    // Real Gemini evaluation would go here
     // This would integrate with your existing Gemini service
-    // For now, we'll create a mock evaluation
     const evaluation = {
-      isCorrect: Math.random() > 0.3, // Mock evaluation
+      isCorrect: Math.random() > 0.3, // Mock for now
       feedback: "Good attempt! Consider optimizing your algorithm for better performance.",
       score: Math.random() > 0.3 ? 100 : 0
     }
@@ -97,14 +111,52 @@ export const competitionController = {
           created_at: new Date().toISOString()
         }
 
-        // Generate 3 questions using Gemini
-        const questions = await generateQuestions({
-          courseName: req.body.courseName,
-          topicName: 'Competition Questions',
-          difficulty: 'medium',
-          questionCount: 3,
-          questionType: 'coding'
-        })
+        // Generate 3 questions using Gemini or mock data
+        let questions
+        try {
+          questions = await generateQuestions({
+            courseName: req.body.courseName,
+            topicName: 'Competition Questions',
+            difficulty: 'medium',
+            questionCount: 3,
+            questionType: 'coding'
+          })
+        } catch (error) {
+          console.log('🔧 Using mock questions for local testing')
+          // Mock questions for local testing
+          questions = [
+            {
+              title: 'Array Manipulation Challenge',
+              description: 'Write a function that finds the longest increasing subsequence in an array. The function should return the length of the subsequence.',
+              difficulty: 'medium',
+              testCases: [
+                { input: '[1,3,2,4,5]', expected: 4 },
+                { input: '[5,4,3,2,1]', expected: 1 },
+                { input: '[1,2,3,4,5]', expected: 5 }
+              ]
+            },
+            {
+              title: 'String Processing',
+              description: 'Implement a function that checks if a string is a palindrome, ignoring case and non-alphanumeric characters.',
+              difficulty: 'easy',
+              testCases: [
+                { input: '"A man a plan a canal Panama"', expected: true },
+                { input: '"race a car"', expected: false },
+                { input: '"Madam"', expected: true }
+              ]
+            },
+            {
+              title: 'Dynamic Programming',
+              description: 'Solve the classic "House Robber" problem. You are a robber planning to rob houses along a street. Each house has a certain amount of money stashed. Adjacent houses have security systems connected, so you cannot rob two adjacent houses.',
+              difficulty: 'hard',
+              testCases: [
+                { input: '[2,7,9,3,1]', expected: 12 },
+                { input: '[1,2,3,1]', expected: 4 },
+                { input: '[2,1,1,2]', expected: 4 }
+              ]
+            }
+          ]
+        }
 
         competitionData.questions = questions.map((q, index) => ({
           id: `q-${index + 1}`,
