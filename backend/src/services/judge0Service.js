@@ -94,14 +94,208 @@ export class Judge0Service {
   }
 
   /**
-   * Get language ID for a given language name
+   * Get language ID for Judge0 API
    */
   getLanguageId(language) {
-    const langId = this.supportedLanguages[language.toLowerCase()];
-    if (!langId) {
+    const languageId = this.supportedLanguages[language.toLowerCase()];
+    if (!languageId) {
       throw new Error(`Unsupported language: ${language}`);
     }
-    return langId;
+    return languageId;
+  }
+
+  /**
+   * Wrap JavaScript code to execute and capture output
+   */
+  wrapJavaScriptCode(sourceCode, input) {
+    console.log('🔧 Judge0: Wrapping JavaScript code');
+    console.log('📝 Judge0: Original code:', sourceCode);
+    console.log('📥 Judge0: Input:', input);
+    
+    // Try to detect different function patterns with more precise matching
+    const functionPatterns = [
+      // Standard function declaration: function name(...) { ... }
+      { pattern: /^function\s+(\w+)\s*\([^)]*\)\s*\{/m, type: 'declaration' },
+      // Arrow function with parentheses: const name = (...) => ...
+      { pattern: /^(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/m, type: 'arrow' },
+      // Arrow function without parentheses: const name = x => ...
+      { pattern: /^(?:const|let|var)\s+(\w+)\s*=\s*(\w+)\s*=>/m, type: 'arrow-simple' },
+      // Function expression: const name = function(...) { ... }
+      { pattern: /^(?:const|let|var)\s+(\w+)\s*=\s*function\s*\([^)]*\)\s*\{/m, type: 'expression' },
+      // Class method: methodName(...) { ... } (but not constructor)
+      { pattern: /^(\w+)\s*\([^)]*\)\s*\{/m, type: 'method', exclude: ['constructor'] }
+    ];
+    
+    let functionName = null;
+    let functionType = null;
+    
+    // Find the first matching pattern
+    for (const { pattern, type, exclude } of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) {
+        const candidateName = match[1];
+        // Skip excluded names
+        if (exclude && exclude.includes(candidateName)) {
+          continue;
+        }
+        functionName = candidateName;
+        functionType = type;
+        console.log('✅ Judge0: Found function pattern:', type, 'Function name:', functionName);
+        break;
+      }
+    }
+    
+    if (!functionName) {
+      console.log('⚠️ Judge0: No function pattern detected, executing code as-is');
+      return sourceCode;
+    }
+    
+    // Parse input safely
+    let parsedInput = this.parseInputSafely(input);
+    console.log('📥 Judge0: Parsed input:', parsedInput, 'Type:', typeof parsedInput);
+    
+    // Create function call based on input type
+    let functionCall;
+    if (Array.isArray(parsedInput)) {
+      // For arrays, pass as single argument (not spread)
+      functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      // Single argument
+      if (typeof parsedInput === 'string') {
+        functionCall = `${functionName}("${parsedInput.replace(/"/g, '\\"')}")`;
+      } else {
+        functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
+      }
+    } else {
+      // No arguments
+      functionCall = `${functionName}()`;
+    }
+    
+    // Create wrapped code that executes the function and prints the result
+    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nconsole.log(result);`;
+    
+    console.log('🔧 Judge0: Wrapped code:', wrappedCode);
+    return wrappedCode;
+  }
+
+  /**
+   * Safely parse input for JavaScript function calls
+   */
+  parseInputSafely(input) {
+    // Handle empty string explicitly
+    if (input === '') {
+      return '';
+    }
+    
+    if (!input || input === null || input === undefined) {
+      return null;
+    }
+    
+    // If input is already an object or array, return as-is
+    if (typeof input === 'object') {
+      return input;
+    }
+    
+    // Handle string input
+    if (typeof input === 'string') {
+      // Try to parse as JSON first
+      try {
+        const parsed = JSON.parse(input);
+        console.log('✅ Judge0: Successfully parsed JSON input:', parsed);
+        return parsed;
+      } catch (e) {
+        // If JSON parsing fails, check if it's a single value that should be parsed
+        const trimmed = input.trim();
+        
+        // Try to parse as number
+        if (!isNaN(trimmed) && trimmed !== '') {
+          const num = parseFloat(trimmed);
+          console.log('🔢 Judge0: Parsed as number:', num);
+          return num;
+        }
+        
+        // Try to parse as boolean
+        if (trimmed.toLowerCase() === 'true' || trimmed.toLowerCase() === 'false') {
+          const bool = trimmed.toLowerCase() === 'true';
+          console.log('🔘 Judge0: Parsed as boolean:', bool);
+          return bool;
+        }
+        
+        // Try to parse as null
+        if (trimmed.toLowerCase() === 'null') {
+          console.log('🔘 Judge0: Parsed as null');
+          return null;
+        }
+        
+        // Return as string (including empty string)
+        console.log('📝 Judge0: Input treated as string:', input);
+        return input;
+      }
+    }
+    
+    // Return as-is for other types
+    console.log('📝 Judge0: Input returned as-is:', input, 'Type:', typeof input);
+    return input;
+  }
+
+  /**
+   * Compare actual output with expected output, handling different data types
+   */
+  compareOutputs(actualOutput, expectedOutput) {
+    console.log('🔍 Judge0: Comparing outputs - Actual:', actualOutput, 'Expected:', expectedOutput);
+    
+    // Handle null/undefined cases
+    if (actualOutput === null || actualOutput === undefined) {
+      return expectedOutput === null || expectedOutput === undefined;
+    }
+    
+    if (expectedOutput === null || expectedOutput === undefined) {
+      return actualOutput === null || actualOutput === undefined;
+    }
+    
+    // Convert both to strings for comparison
+    const actualStr = String(actualOutput).trim();
+    const expectedStr = String(expectedOutput).trim();
+    
+    // Direct string comparison first
+    if (actualStr === expectedStr) {
+      console.log('✅ Judge0: Direct string match');
+      return true;
+    }
+    
+    // Try numeric comparison if both look like numbers
+    const actualNum = parseFloat(actualStr);
+    const expectedNum = parseFloat(expectedStr);
+    
+    if (!isNaN(actualNum) && !isNaN(expectedNum)) {
+      const numericMatch = actualNum === expectedNum;
+      console.log('🔢 Judge0: Numeric comparison:', actualNum, '===', expectedNum, '=', numericMatch);
+      return numericMatch;
+    }
+    
+    // Try boolean comparison
+    const actualBool = actualStr.toLowerCase();
+    const expectedBool = expectedStr.toLowerCase();
+    
+    if ((actualBool === 'true' || actualBool === 'false') && 
+        (expectedBool === 'true' || expectedBool === 'false')) {
+      const boolMatch = actualBool === expectedBool;
+      console.log('🔘 Judge0: Boolean comparison:', actualBool, '===', expectedBool, '=', boolMatch);
+      return boolMatch;
+    }
+    
+    // Try JSON comparison for objects/arrays
+    try {
+      const actualParsed = JSON.parse(actualStr);
+      const expectedParsed = JSON.parse(expectedStr);
+      const jsonMatch = JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
+      console.log('📦 Judge0: JSON comparison:', jsonMatch);
+      return jsonMatch;
+    } catch (e) {
+      // Not valid JSON, fall back to string comparison
+      console.log('📝 Judge0: Fallback to string comparison:', actualStr, '===', expectedStr, '=', false);
+      return false;
+    }
   }
 
   /**
@@ -118,26 +312,7 @@ export class Judge0Service {
       // Wrap the code to capture function output for JavaScript
       let wrappedCode = sourceCode;
       if (language.toLowerCase() === 'javascript') {
-        // Extract function name from the code (simple regex)
-        const functionMatch = sourceCode.match(/function\s+(\w+)\s*\(/);
-        if (functionMatch) {
-          const functionName = functionMatch[1];
-          // Parse input as JSON if it's a string representation of an array/object
-          let parsedInput = input;
-          try {
-            parsedInput = JSON.parse(input);
-          } catch (e) {
-            // If not JSON, use as string
-            parsedInput = input;
-          }
-          
-          // Create a wrapper that calls the function and prints the result
-          if (Array.isArray(parsedInput)) {
-            wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionName}(${parsedInput.map(arg => JSON.stringify(arg)).join(', ')});\nconsole.log(result);`;
-          } else {
-            wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionName}(${JSON.stringify(parsedInput)});\nconsole.log(result);`;
-          }
-        }
+        wrappedCode = this.wrapJavaScriptCode(sourceCode, input);
       }
       
       // Create submission
@@ -237,22 +412,39 @@ export class Judge0Service {
       13: 'Exec Format Error'
     };
 
-    // Judge0 returns stdout as Base64 encoded by default
+    // Judge0 returns stdout - since we set base64_encoded: false, we get plain text
     let actualOutput = result.stdout || '';
     
-    // Decode Base64 if it's encoded
-    try {
-      // Check if the output looks like Base64 (contains only Base64 characters and is not empty)
-      if (actualOutput && actualOutput.length > 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(actualOutput)) {
-        const decoded = Buffer.from(actualOutput, 'base64').toString('utf-8');
-        // Only use decoded if it produces readable text (not binary)
-        if (decoded && decoded.length > 0 && !decoded.includes('\0')) {
-          actualOutput = decoded;
-          console.log('🔓 Judge0: Decoded Base64 stdout:', actualOutput);
+    console.log('🔍 Judge0: Raw stdout:', actualOutput, 'Length:', actualOutput.length);
+    
+    // Since we're using base64_encoded: false, we should get plain text output
+    // Only attempt Base64 decoding if the output looks suspiciously like Base64
+    // and we're not getting readable text
+    if (actualOutput && actualOutput.length > 0) {
+      // Check if it looks like Base64 AND doesn't contain readable characters
+      const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(actualOutput) && 
+                       actualOutput.length % 4 === 0 && 
+                       actualOutput.length > 4;
+      
+      // Only decode if it's Base64 AND doesn't contain readable ASCII characters
+      const hasReadableChars = /[a-zA-Z0-9\s.,!?;:'"(){}[\]-]/.test(actualOutput);
+      
+      if (isBase64 && !hasReadableChars) {
+        try {
+          const decoded = Buffer.from(actualOutput, 'base64').toString('utf-8');
+          // Only use decoded if it produces readable text and doesn't contain null bytes
+          if (decoded && decoded.length > 0 && !decoded.includes('\0') && decoded !== actualOutput) {
+            actualOutput = decoded;
+            console.log('🔓 Judge0: Successfully decoded Base64 stdout:', actualOutput);
+          } else {
+            console.log('🔍 Judge0: Base64 decode produced same or invalid result, using original');
+          }
+        } catch (error) {
+          console.log('🔍 Judge0: Base64 decode failed, using original output:', error.message);
         }
+      } else {
+        console.log('🔍 Judge0: Output appears to be plain text, using as-is');
       }
-    } catch (error) {
-      console.log('🔍 Judge0: stdout is not Base64 encoded, using as-is:', actualOutput);
     }
     
     const trimmedOutput = actualOutput.trim();
@@ -277,11 +469,10 @@ export class Judge0Service {
     let passed = false;
     if (result.status?.id === 3 && expectedOutput !== null) {
       // Code executed successfully, now compare outputs
-      const expectedStr = String(expectedOutput).trim();
-      passed = trimmedOutput === expectedStr;
+      passed = this.compareOutputs(trimmedOutput, expectedOutput);
       console.log('🔍 Judge0: Output comparison:', {
         actual: `"${trimmedOutput}"`,
-        expected: `"${expectedStr}"`,
+        expected: `"${expectedOutput}"`,
         passed: passed
       });
     } else if (result.status?.id === 3 && expectedOutput === null) {
@@ -335,7 +526,7 @@ export class Judge0Service {
           testNumber: i + 1,
           input: testCase.input,
           expected: testCase.expected_output,
-          result: result.stdout.trim(),
+          result: result.actualOutput,
           passed: result.passed,
           status: result.status,
           error: result.error,
@@ -392,10 +583,16 @@ export class Judge0Service {
           expectedType: typeof testCase.expected_output
         });
 
+        // Wrap JavaScript code for each test case if needed
+        let wrappedSourceCode = sourceCode;
+        if (language.toLowerCase() === 'javascript') {
+          wrappedSourceCode = this.wrapJavaScriptCode(sourceCode, input);
+        }
+
         return {
-          source_code: sourceCode,
+          source_code: wrappedSourceCode,
           language_id: languageId,
-          stdin: input,
+          stdin: '', // Input is handled in the wrapped code for JavaScript
           expected_output: expectedOutput,
           cpu_time_limit: '2.0',
           memory_limit: '128000',
