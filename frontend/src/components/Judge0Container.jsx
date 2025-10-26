@@ -196,11 +196,16 @@ const Judge0Container = ({
       return
     }
 
-    setIsRunningTests(true)
+    // Clear previous results before running new tests
     setTestResults([])
+    setConsoleOutput([])
+    setExecutionError(null)
+    setExecutionStats({})
+    setExecutionTime('')
+
+    setIsRunningTests(true)
     setConsoleOutput(['🧪 Running test cases with Judge0...'])
     setShowTestResults(true)
-    setExecutionError(null)
 
     const startTime = Date.now()
 
