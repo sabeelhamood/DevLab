@@ -1168,7 +1168,7 @@ int main() {
         results.push({
           testNumber: i + 1,
           input: testCase.input,
-          expected: testCase.expected_output,
+          expected: expectedOutput,
           result: result.actualOutput,
           passed: result.passed,
           status: result.status,
@@ -1180,7 +1180,7 @@ int main() {
         results.push({
           testNumber: i + 1,
           input: testCase.input,
-          expected: testCase.expected_output,
+          expected: expectedOutput,
           result: error.message,
           passed: false,
           status: 'Error',
@@ -1274,16 +1274,23 @@ int main() {
         const token = tokens[i];
         const testCase = testCases[i];
         
+        // Process expected output for this test case
+        const expectedOutput = testCase.expected_output !== undefined 
+          ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+          : (testCase.expectedOutput !== undefined 
+              ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+              : null);
+        
         console.log(`🔄 Judge0: Polling submission ${i + 1}/${tokens.length} (token: ${token})`);
         
         try {
-          const executionResult = await this.pollSubmission(token, testCase.expected_output);
+          const executionResult = await this.pollSubmission(token, expectedOutput);
           console.log(`✅ Judge0: Submission ${i + 1} result:`, executionResult);
           
           results.push({
             testNumber: i + 1,
             input: testCase.input,
-            expected: testCase.expected_output,
+            expected: expectedOutput,
             result: executionResult.actualOutput,
             passed: executionResult.passed,
             status: executionResult.status,
@@ -1296,7 +1303,7 @@ int main() {
           results.push({
             testNumber: i + 1,
             input: testCase.input,
-            expected: testCase.expected_output,
+            expected: expectedOutput,
             result: error.message,
             passed: false,
             status: 'Error',
