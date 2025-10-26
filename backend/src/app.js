@@ -58,18 +58,26 @@ app.get('/health', (req, res) => {
 app.use(helmet())
 
 // CORS configuration
+const allowedOrigins = [
+  // Production Vercel domains
+  'https://dev-lab-phi.vercel.app',
+  'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+  'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+  'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
+  'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
+  'healthcheck.railway.app',
+  // Development localhost domains
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'http://localhost:3002',
+  'http://localhost:3003',
+  'http://localhost:5173',
+  // Additional origins from config
+  ...(config.security.corsOrigins || [])
+]
+
 app.use(cors({
-  origin: config.nodeEnv === 'development' 
-    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:5173']
-    : [
-        'https://dev-lab-phi.vercel.app',
-        'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
-        'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
-        'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
-        'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
-        'healthcheck.railway.app',
-        ...(config.security.corsOrigins || [])
-      ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
