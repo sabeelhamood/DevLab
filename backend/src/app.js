@@ -43,6 +43,37 @@ import assistantRoutes from './routes/external/assistantRoutes.js'
 
 const app = express()
 
+// Explicit CORS middleware for Vercel frontend - MUST be first
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://dev-lab-phi.vercel.app',
+    'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+    'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+    'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
+    'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:5173'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Expose-Headers", "Content-Length, X-Foo, X-Bar");
+  
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Trust proxy for Railway deployment (required for express-rate-limit)
 app.set('trust proxy', 1)
 
