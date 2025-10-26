@@ -7,6 +7,7 @@ import CompetitionQuestionEnhanced from './components/CompetitionQuestionEnhance
 import CompetitionInvitation from './components/CompetitionInvitation'
 import CompetitionResultsEnhanced from './components/CompetitionResultsEnhanced'
 import MockCompetitionGameplay from './pages/MockCompetitionGameplay'
+import './styles/theme-transitions.css'
 
 function App() {
   return (

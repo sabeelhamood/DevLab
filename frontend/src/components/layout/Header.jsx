@@ -1,24 +1,18 @@
 import { useAuthStore } from '../../store/authStore.js'
-import { Bell, User, LogOut, Sun, Moon } from 'lucide-react'
+import { Bell, User, LogOut } from 'lucide-react'
 import Button from '../ui/Button.jsx'
-import { useState } from 'react'
+import ThemeToggle from '../ThemeToggle.jsx'
 
 export default function Header() {
   const { user, logout } = useAuthStore()
-  const [isDarkMode, setIsDarkMode] = useState(false)
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode)
-    document.documentElement.classList.toggle('night-mode')
-    document.documentElement.classList.toggle('day-mode')
-  }
 
   return (
     <header 
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-all duration-300"
       style={{ 
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderColor: 'rgba(0, 0, 0, 0.1)'
+        background: 'var(--bg-primary)',
+        borderColor: 'rgba(6, 95, 70, 0.2)',
+        boxShadow: 'var(--shadow-card)'
       }}
     >
       <div className="max-w-7xl mx-auto px-6 py-4">
@@ -42,17 +36,7 @@ export default function Header() {
           
           <div className="flex items-center space-x-4">
             {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-              style={{ 
-                background: 'var(--bg-tertiary)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
+            <ThemeToggle />
             
             <button 
               className="p-2 transition-colors hover:scale-110"

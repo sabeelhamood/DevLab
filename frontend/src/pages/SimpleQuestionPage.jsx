@@ -386,11 +386,26 @@ int sum(int a, int b) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load Question</h2>
-          <p className="text-gray-600 mb-6">There was an error loading the question from Gemini AI. Please check your connection and try again.</p>
+          <h2 
+            className="text-2xl font-bold mb-4"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Unable to Load Question
+          </h2>
+          <p 
+            className="mb-6"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            There was an error loading the question from Gemini AI. Please check your connection and try again.
+          </p>
           <button 
             onClick={handleReloadQuestions}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+            className="px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'var(--gradient-primary)',
+              color: 'white',
+              boxShadow: 'var(--shadow-glow)'
+            }}
           >
             Retry Loading Questions
           </button>
