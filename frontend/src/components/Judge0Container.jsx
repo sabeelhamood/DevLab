@@ -492,133 +492,6 @@ const Judge0Container = ({
         </div>
       )}
 
-      {/* Test Results Section */}
-      {showTestResults && testResults.length > 0 && (
-        <div className="mt-6 bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-lg backdrop-blur-sm">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/40 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-2xl">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-md">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-semibold text-slate-800 text-lg">Test Results</span>
-            </div>
-            <div className="flex items-center space-x-6 text-sm text-slate-600">
-              <div className="flex items-center space-x-2 px-3 py-1 bg-white/60 rounded-lg">
-                <span className="font-medium">
-                  {testResults.filter(r => r.passed).length}/{testResults.length} passed
-                </span>
-              </div>
-              {executionTime && (
-                <div className="flex items-center space-x-2 px-3 py-1 bg-white/60 rounded-lg">
-                  <Clock className="h-4 w-4 text-emerald-600" />
-                  <span className="font-medium">{executionTime}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="p-6 space-y-4">
-            {testResults.map((result, index) => {
-              const expectedValue = formatValue(result.expected)
-              const actualValue = formatValue(result.result)
-              const inputValue = formatValue(result.input)
-              
-              return (
-                <div key={index} className={`group relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                  result.passed 
-                    ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200/60 shadow-emerald-100/50' 
-                    : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200/60 shadow-red-100/50'
-                }`}>
-                  <div className="relative p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full shadow-sm ${
-                          result.passed ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-red-500 shadow-red-500/50'
-                        }`}></div>
-                        <span className={`font-semibold text-sm ${
-                          result.passed ? 'text-emerald-800' : 'text-red-800'
-                        }`}>
-                          Test {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 px-3 py-1 bg-white/70 rounded-lg shadow-sm">
-                        <Clock className="h-3 w-3 text-slate-500" />
-                        <span className="text-xs font-medium text-slate-600">
-                          {result.time}s
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Input */}
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-                          <span className="font-medium text-slate-700 text-sm">Input</span>
-                        </div>
-                        <div className="p-3 rounded-lg bg-white/80 border border-slate-200/60 shadow-sm">
-                          <code className="text-xs text-slate-800 font-mono break-all">
-                            {inputValue}
-                          </code>
-                        </div>
-                      </div>
-                      
-                      {/* Expected */}
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span className="font-medium text-slate-700 text-sm">Expected</span>
-                        </div>
-                        <div className="p-3 rounded-lg bg-white/80 border border-slate-200/60 shadow-sm">
-                          <code className="text-xs text-slate-800 font-mono break-all">
-                            {expectedValue}
-                          </code>
-                        </div>
-                      </div>
-                      
-                      {/* Got */}
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            result.passed ? 'bg-emerald-500' : 'bg-red-500'
-                          }`}></div>
-                          <span className="font-medium text-slate-700 text-sm">Got</span>
-                        </div>
-                        <div className={`p-3 rounded-lg border shadow-sm ${
-                          result.passed 
-                            ? 'bg-emerald-50/80 border-emerald-200/60' 
-                            : 'bg-red-50/80 border-red-200/60'
-                        }`}>
-                          <code className={`text-xs font-mono break-all ${
-                            result.passed ? 'text-emerald-800' : 'text-red-800'
-                          }`}>
-                            {actualValue}
-                          </code>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {result.stderr && (
-                      <div className="mt-4 space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                          <span className="font-medium text-red-700 text-sm">Error</span>
-                        </div>
-                        <div className="p-3 rounded-lg bg-red-50/80 border border-red-200/60 shadow-sm">
-                          <code className="text-xs text-red-800 font-mono break-all">
-                            {result.stderr}
-                          </code>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Console Output */}
       {consoleOutput.length > 0 && (
         <div className="mt-6 bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-lg backdrop-blur-sm">
@@ -656,7 +529,7 @@ const Judge0Container = ({
             <button
               onClick={runTestCases}
               disabled={isRunningTests}
-              className="flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-violet-600 rounded-xl hover:from-purple-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               {isRunningTests ? (
                 <Loader className="h-4 w-4 mr-2 animate-spin" />
