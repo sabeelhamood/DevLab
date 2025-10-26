@@ -58,9 +58,11 @@ const allowedOrigins = [
   ...(config.security?.corsOrigins || [])
 ];
 
-app.use(cors({
+// Enhanced CORS configuration
+const corsOptions = {
   origin: function(origin, callback) {
     console.log('🌐 CORS: Request from origin:', origin);
+    console.log('🌐 CORS: Request method:', 'OPTIONS' || 'GET' || 'POST');
     
     // Allow requests with no origin (like Postman, mobile apps, curl)
     if (!origin) {
@@ -79,13 +81,38 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
 
-// Handle preflight requests explicitly
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly for all routes
+app.options('*', (req, res) => {
+  console.log('🔄 CORS: Handling preflight request for:', req.url);
+  console.log('🌐 CORS: Preflight origin:', req.header('Origin'));
+  
+  const origin = req.header('Origin');
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.status(200).end();
+  } else {
+    res.status(403).json({ error: 'CORS not allowed' });
+  }
+});
 
 
 // Trust proxy for Railway deployment (required for express-rate-limit)
@@ -99,8 +126,33 @@ app.get('/health', (req, res) => {
   })
 })
 
-// Security middleware
-app.use(helmet())
+// CORS test endpoint
+app.get('/cors-test', (req, res) => {
+  console.log('🧪 CORS Test: Request received');
+  console.log('🌐 CORS Test: Origin:', req.header('Origin'));
+  console.log('🌐 CORS Test: Headers:', req.headers);
+  
+  res.status(200).json({
+    success: true,
+    message: 'CORS test successful',
+    origin: req.header('Origin'),
+    timestamp: new Date().toISOString(),
+    headers: req.headers
+  })
+})
+
+// Security middleware with CORS-friendly configuration
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}))
 
 // Rate limiting
 const limiter = rateLimit({
