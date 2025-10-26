@@ -126,7 +126,7 @@ app.use(notFound)
 app.use(errorHandler)
 
 // Start server
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 const HOST = '0.0.0.0'
 
 const server = app.listen(PORT, HOST, () => {
