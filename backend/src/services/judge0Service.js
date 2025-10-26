@@ -634,12 +634,18 @@ int main() {
     
     // Handle string input
     if (typeof input === 'string') {
-    // Try to parse as JSON first
-    try {
-      const parsed = JSON.parse(input);
-      console.log('✅ Judge0: Successfully parsed JSON input:', parsed);
-      return parsed;
-    } catch (e) {
+      // Check if input contains assignment expressions (e.g., "products = [...], taxRate = 0.10")
+      if (this.containsAssignmentExpressions(input)) {
+        console.log('🔧 Judge0: Detected assignment expressions, extracting function arguments');
+        return this.extractFunctionArguments(input);
+      }
+      
+      // Try to parse as JSON first
+      try {
+        const parsed = JSON.parse(input);
+        console.log('✅ Judge0: Successfully parsed JSON input:', parsed);
+        return parsed;
+      } catch (e) {
         // If JSON parsing fails, check if it's a single value that should be parsed
         const trimmed = input.trim();
         
@@ -665,13 +671,124 @@ int main() {
         
         // Return as string (including empty string)
         console.log('📝 Judge0: Input treated as string:', input);
-      return input;
-    }
+        return input;
+      }
     }
     
     // Return as-is for other types
     console.log('📝 Judge0: Input returned as-is:', input, 'Type:', typeof input);
     return input;
+  }
+
+  /**
+   * Check if input contains assignment expressions
+   */
+  containsAssignmentExpressions(input) {
+    // Look for patterns like "variable = value" or "variable = [...], other = value"
+    const assignmentPattern = /^\s*\w+\s*=\s*.+/;
+    return assignmentPattern.test(input.trim());
+  }
+
+  /**
+   * Extract function arguments from assignment expressions
+   * Converts "products = [...], taxRate = 0.10" to [[...], 0.10]
+   */
+  extractFunctionArguments(input) {
+    console.log('🔧 Judge0: Extracting function arguments from:', input);
+    
+    try {
+      // Split by comma, but be careful with nested structures
+      const assignments = this.splitAssignments(input);
+      console.log('📋 Judge0: Split assignments:', assignments);
+      
+      const functionArgs = [];
+      
+      for (const assignment of assignments) {
+        const trimmed = assignment.trim();
+        if (!trimmed) continue;
+        
+        // Find the '=' sign and extract the value part
+        const equalIndex = trimmed.indexOf('=');
+        if (equalIndex === -1) {
+          console.log('⚠️ Judge0: No assignment operator found in:', trimmed);
+          continue;
+        }
+        
+        const valuePart = trimmed.substring(equalIndex + 1).trim();
+        console.log('📥 Judge0: Extracting value from:', valuePart);
+        
+        // Try to parse the value
+        let parsedValue;
+        try {
+          parsedValue = JSON.parse(valuePart);
+        } catch (e) {
+          // If JSON parsing fails, try other types
+          if (!isNaN(valuePart) && !isNaN(parseFloat(valuePart))) {
+            parsedValue = parseFloat(valuePart);
+          } else if (valuePart.toLowerCase() === 'true') {
+            parsedValue = true;
+          } else if (valuePart.toLowerCase() === 'false') {
+            parsedValue = false;
+          } else if (valuePart.toLowerCase() === 'null') {
+            parsedValue = null;
+          } else {
+            // Remove quotes if present
+            parsedValue = valuePart.replace(/^["']|["']$/g, '');
+          }
+        }
+        
+        functionArgs.push(parsedValue);
+        console.log('✅ Judge0: Parsed argument:', parsedValue, 'Type:', typeof parsedValue);
+      }
+      
+      console.log('📤 Judge0: Final function arguments:', functionArgs);
+      return functionArgs;
+    } catch (error) {
+      console.error('❌ Judge0: Error extracting function arguments:', error);
+      // Fallback to original input
+      return input;
+    }
+  }
+
+  /**
+   * Split assignment expressions by comma, handling nested structures
+   */
+  splitAssignments(input) {
+    const assignments = [];
+    let current = '';
+    let depth = 0;
+    let inString = false;
+    let stringChar = '';
+    
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i];
+      
+      if (!inString && (char === '"' || char === "'")) {
+        inString = true;
+        stringChar = char;
+      } else if (inString && char === stringChar) {
+        inString = false;
+        stringChar = '';
+      } else if (!inString) {
+        if (char === '[' || char === '{') {
+          depth++;
+        } else if (char === ']' || char === '}') {
+          depth--;
+        } else if (char === ',' && depth === 0) {
+          assignments.push(current.trim());
+          current = '';
+          continue;
+        }
+      }
+      
+      current += char;
+    }
+    
+    if (current.trim()) {
+      assignments.push(current.trim());
+    }
+    
+    return assignments;
   }
 
   /**
