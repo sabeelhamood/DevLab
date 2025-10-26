@@ -67,18 +67,35 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Add CORS logging middleware
+// Add explicit CORS headers middleware (backup to cors package)
 app.use((req, res, next) => {
   const origin = req.header('Origin');
   console.log('🌐 CORS: Request from origin:', origin);
   console.log('🌐 CORS: Request method:', req.method);
   console.log('🌐 CORS: Request path:', req.path);
   
+  // Explicitly set CORS headers
   if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
     console.log('✅ CORS: Origin allowed:', origin);
+  } else if (!origin) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    res.header('Access-Control-Allow-Origin', '*');
+    console.log('✅ CORS: No origin, allowing with *');
   } else {
     console.log('❌ CORS: Origin not allowed:', origin);
     console.log('📋 CORS: Allowed origins:', allowedOrigins);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Vary', 'Origin');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('🔄 CORS: Handling preflight OPTIONS request');
+    return res.sendStatus(200);
   }
   
   next();
