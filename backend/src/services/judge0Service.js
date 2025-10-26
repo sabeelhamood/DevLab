@@ -640,6 +640,12 @@ int main() {
         return this.extractFunctionArguments(input);
       }
       
+      // Check if input is a function call string (e.g., "calculateProductFinalPrice(120, 10, 8)")
+      if (this.containsFunctionCall(input)) {
+        console.log('🔧 Judge0: Detected function call, extracting arguments');
+        return this.extractFunctionCallArguments(input);
+      }
+      
       // Try to parse as JSON first
       try {
         const parsed = JSON.parse(input);
@@ -754,10 +760,90 @@ int main() {
   }
 
   /**
-   * Split assignment expressions by comma, handling nested structures
+   * Check if input is a function call string
    */
-  splitAssignments(input) {
-    const assignments = [];
+  containsFunctionCall(input) {
+    // Look for patterns like "functionName(arg1, arg2, arg3)"
+    const functionCallPattern = /^\s*\w+\s*\([^)]*\)\s*$/;
+    return functionCallPattern.test(input.trim());
+  }
+
+  /**
+   * Extract function arguments from function call string
+   * Converts "calculateProductFinalPrice(120, 10, 8)" to [120, 10, 8]
+   */
+  extractFunctionCallArguments(input) {
+    console.log('🔧 Judge0: Extracting function call arguments from:', input);
+    
+    try {
+      // Find the opening parenthesis
+      const openParenIndex = input.indexOf('(');
+      const closeParenIndex = input.lastIndexOf(')');
+      
+      if (openParenIndex === -1 || closeParenIndex === -1 || openParenIndex >= closeParenIndex) {
+        console.log('⚠️ Judge0: No valid parentheses found in function call');
+        return input;
+      }
+      
+      // Extract the arguments string
+      const argsString = input.substring(openParenIndex + 1, closeParenIndex).trim();
+      console.log('📥 Judge0: Arguments string:', argsString);
+      
+      if (!argsString) {
+        console.log('📤 Judge0: No arguments found, returning empty array');
+        return [];
+      }
+      
+      // Split arguments by comma, handling nested structures
+      const functionArgs = this.splitFunctionArguments(argsString);
+      console.log('📋 Judge0: Split arguments:', functionArgs);
+      
+      const parsedArguments = [];
+      
+      for (const arg of functionArgs) {
+        const trimmed = arg.trim();
+        if (!trimmed) continue;
+        
+        console.log('📥 Judge0: Parsing argument:', trimmed);
+        
+        // Try to parse the argument
+        let parsedValue;
+        try {
+          parsedValue = JSON.parse(trimmed);
+        } catch (e) {
+          // If JSON parsing fails, try other types
+          if (!isNaN(trimmed) && !isNaN(parseFloat(trimmed))) {
+            parsedValue = parseFloat(trimmed);
+          } else if (trimmed.toLowerCase() === 'true') {
+            parsedValue = true;
+          } else if (trimmed.toLowerCase() === 'false') {
+            parsedValue = false;
+          } else if (trimmed.toLowerCase() === 'null') {
+            parsedValue = null;
+          } else {
+            // Remove quotes if present
+            parsedValue = trimmed.replace(/^["']|["']$/g, '');
+          }
+        }
+        
+        parsedArguments.push(parsedValue);
+        console.log('✅ Judge0: Parsed argument:', parsedValue, 'Type:', typeof parsedValue);
+      }
+      
+      console.log('📤 Judge0: Final function call arguments:', parsedArguments);
+      return parsedArguments;
+    } catch (error) {
+      console.error('❌ Judge0: Error extracting function call arguments:', error);
+      // Fallback to original input
+      return input;
+    }
+  }
+
+  /**
+   * Split function arguments by comma, handling nested structures
+   */
+  splitFunctionArguments(input) {
+    const functionArgs = [];
     let current = '';
     let depth = 0;
     let inString = false;
@@ -773,12 +859,12 @@ int main() {
         inString = false;
         stringChar = '';
       } else if (!inString) {
-        if (char === '[' || char === '{') {
+        if (char === '[' || char === '{' || char === '(') {
           depth++;
-        } else if (char === ']' || char === '}') {
+        } else if (char === ']' || char === '}' || char === ')') {
           depth--;
         } else if (char === ',' && depth === 0) {
-          assignments.push(current.trim());
+          functionArgs.push(current.trim());
           current = '';
           continue;
         }
@@ -788,10 +874,10 @@ int main() {
     }
     
     if (current.trim()) {
-      assignments.push(current.trim());
+      functionArgs.push(current.trim());
     }
     
-    return assignments;
+    return functionArgs;
   }
 
   /**
@@ -1069,9 +1155,13 @@ int main() {
         const input = typeof testCase.input === 'object' 
           ? JSON.stringify(testCase.input) 
           : testCase.input;
-        const expectedOutput = typeof testCase.expected_output === 'object'
-          ? JSON.stringify(testCase.expected_output)
-          : testCase.expected_output;
+        
+        // Handle both camelCase and snake_case field names
+        const expectedOutput = testCase.expected_output !== undefined 
+          ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+          : (testCase.expectedOutput !== undefined 
+              ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+              : null);
 
         const result = await this.executeCode(sourceCode, language, input, expectedOutput);
         
@@ -1125,9 +1215,13 @@ int main() {
         const input = typeof testCase.input === 'object' 
           ? JSON.stringify(testCase.input) 
           : testCase.input;
-        const expectedOutput = typeof testCase.expected_output === 'object'
-          ? JSON.stringify(testCase.expected_output)
-          : testCase.expected_output;
+        
+        // Handle both camelCase and snake_case field names
+        const expectedOutput = testCase.expected_output !== undefined 
+          ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+          : (testCase.expectedOutput !== undefined 
+              ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+              : null);
 
         console.log(`📋 Judge0: Test case ${index + 1}:`, {
           input,
