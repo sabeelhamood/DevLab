@@ -494,86 +494,123 @@ const Judge0Container = ({
 
       {/* Test Results Section */}
       {showTestResults && testResults.length > 0 && (
-        <div className="mt-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center space-x-2">
-              <div className="p-1 bg-green-100 rounded-lg">
-                <CheckCircle className="h-4 w-4 text-green-600" />
+        <div className="mt-6 bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-lg backdrop-blur-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/40 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-2xl">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-md">
+                <CheckCircle className="h-5 w-5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900">Test Results</span>
+              <span className="font-semibold text-slate-800 text-lg">Test Results</span>
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>
-                {testResults.filter(r => r.passed).length}/{testResults.length} passed
-              </span>
+            <div className="flex items-center space-x-6 text-sm text-slate-600">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-white/60 rounded-lg">
+                <span className="font-medium">
+                  {testResults.filter(r => r.passed).length}/{testResults.length} passed
+                </span>
+              </div>
               {executionTime && (
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{executionTime}</span>
+                <div className="flex items-center space-x-2 px-3 py-1 bg-white/60 rounded-lg">
+                  <Clock className="h-4 w-4 text-emerald-600" />
+                  <span className="font-medium">{executionTime}</span>
                 </div>
               )}
             </div>
           </div>
           
-          <div className="p-4 space-y-3">
+          <div className="p-6 space-y-4">
             {testResults.map((result, index) => {
               const expectedValue = formatValue(result.expected)
               const actualValue = formatValue(result.result)
               const inputValue = formatValue(result.input)
               
               return (
-                <div key={index} className={`p-3 rounded-lg border ${
+                <div key={index} className={`group relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                   result.passed 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200/60 shadow-emerald-100/50' 
+                    : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200/60 shadow-red-100/50'
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-4 h-4 rounded-full ${
-                        result.passed ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                      <span className={`font-semibold ${
-                        result.passed ? 'text-green-800' : 'text-red-800'
-                      }`}>
-                        Test {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {result.time}s
-                    </span>
-                  </div>
+                  {/* Subtle shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Input:</span>
-                      <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                        {inputValue}
+                  <div className="relative p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full shadow-sm ${
+                          result.passed ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-red-500 shadow-red-500/50'
+                        }`}></div>
+                        <span className={`font-semibold text-sm ${
+                          result.passed ? 'text-emerald-800' : 'text-red-800'
+                        }`}>
+                          Test {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 px-3 py-1 bg-white/70 rounded-lg shadow-sm">
+                        <Clock className="h-3 w-3 text-slate-500" />
+                        <span className="text-xs font-medium text-slate-600">
+                          {result.time}s
+                        </span>
                       </div>
                     </div>
                     
-                    <div>
-                      <span className="font-medium text-gray-700">Expected:</span>
-                      <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                        {expectedValue}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Input */}
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                          <span className="font-medium text-slate-700 text-sm">Input</span>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/80 border border-slate-200/60 shadow-sm">
+                          <code className="text-xs text-slate-800 font-mono break-all">
+                            {inputValue}
+                          </code>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <span className="font-medium text-gray-700">Got:</span>
-                      <div className={`mt-1 p-2 rounded font-mono text-xs ${
-                        result.passed 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {actualValue}
+                      
+                      {/* Expected */}
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="font-medium text-slate-700 text-sm">Expected</span>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/80 border border-slate-200/60 shadow-sm">
+                          <code className="text-xs text-slate-800 font-mono break-all">
+                            {expectedValue}
+                          </code>
+                        </div>
+                      </div>
+                      
+                      {/* Got */}
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            result.passed ? 'bg-emerald-500' : 'bg-red-500'
+                          }`}></div>
+                          <span className="font-medium text-slate-700 text-sm">Got</span>
+                        </div>
+                        <div className={`p-3 rounded-lg border shadow-sm ${
+                          result.passed 
+                            ? 'bg-emerald-50/80 border-emerald-200/60' 
+                            : 'bg-red-50/80 border-red-200/60'
+                        }`}>
+                          <code className={`text-xs font-mono break-all ${
+                            result.passed ? 'text-emerald-800' : 'text-red-800'
+                          }`}>
+                            {actualValue}
+                          </code>
+                        </div>
                       </div>
                     </div>
                     
                     {result.stderr && (
-                      <div>
-                        <span className="font-medium text-red-700">Error:</span>
-                        <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
-                          {result.stderr}
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                          <span className="font-medium text-red-700 text-sm">Error</span>
+                        </div>
+                        <div className="p-3 rounded-lg bg-red-50/80 border border-red-200/60 shadow-sm">
+                          <code className="text-xs text-red-800 font-mono break-all">
+                            {result.stderr}
+                          </code>
                         </div>
                       </div>
                     )}
@@ -587,16 +624,16 @@ const Judge0Container = ({
 
       {/* Console Output */}
       {consoleOutput.length > 0 && (
-        <div className="mt-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-gray-50">
-            <div className="p-1 bg-blue-100 rounded-lg">
-              <Terminal className="h-4 w-4 text-blue-600" />
+        <div className="mt-6 bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-lg backdrop-blur-sm">
+          <div className="flex items-center px-6 py-4 border-b border-slate-200/40 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md">
+              <Terminal className="h-5 w-5 text-white" />
             </div>
-            <span className="font-semibold text-gray-900 ml-2">Console Output</span>
+            <span className="font-semibold text-slate-800 text-lg ml-3">Console Output</span>
           </div>
-          <div className="p-4 text-gray-800 font-mono text-xs max-h-60 overflow-y-auto bg-gray-50">
+          <div className="p-6 text-slate-800 font-mono text-sm max-h-60 overflow-y-auto bg-gradient-to-br from-slate-50 to-gray-50 rounded-b-2xl">
             {consoleOutput.map((output, index) => (
-              <div key={index} className="mb-1">
+              <div key={index} className="mb-1 leading-relaxed">
                 {output}
               </div>
             ))}
@@ -606,19 +643,23 @@ const Judge0Container = ({
 
       {/* Test Execution Section */}
       {testCases && testCases.length > 0 && (
-        <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center space-x-2">
-              <TestTube className="h-5 w-5 text-gray-600" />
-              <span className="font-medium text-gray-900">Test Execution</span>
-              <span className="text-sm text-gray-500">
-                ({testCases.length} test case{testCases.length !== 1 ? 's' : ''})
-              </span>
+        <div className="mt-6 bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/60 shadow-lg backdrop-blur-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/40 bg-gradient-to-r from-purple-50 to-violet-50 rounded-t-2xl">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl shadow-md">
+                <TestTube className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-semibold text-slate-800 text-lg">Test Execution</span>
+              <div className="px-3 py-1 bg-white/60 rounded-lg">
+                <span className="text-sm font-medium text-slate-600">
+                  {testCases.length} test case{testCases.length !== 1 ? 's' : ''}
+                </span>
+              </div>
             </div>
             <button
               onClick={runTestCases}
               disabled={isRunningTests}
-              className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-violet-600 rounded-xl hover:from-purple-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               {isRunningTests ? (
                 <Loader className="h-4 w-4 mr-2 animate-spin" />
@@ -631,84 +672,121 @@ const Judge0Container = ({
 
           {/* Test Results Display */}
           {testResults.length > 0 && (
-            <div className="p-4 space-y-4">
+            <div className="p-6 space-y-4">
               {testResults.map((result, index) => {
                 const expectedValue = formatValue(result.expected)
                 const actualValue = formatValue(result.result)
                 
                 return (
-                  <div key={index} className={`p-4 rounded-lg border ${
+                  <div key={index} className={`group relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                     result.passed 
-                      ? 'bg-green-50 border-green-200' 
-                      : 'bg-red-50 border-red-200'
+                      ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200/60 shadow-emerald-100/50' 
+                      : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200/60 shadow-red-100/50'
                   }`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        {result.passed ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-600" />
-                        )}
-                        <span className={`font-semibold ${
-                          result.passed ? 'text-green-800' : 'text-red-800'
-                        }`}>
-                          Test Case {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {result.time}s
-                      </span>
-                    </div>
+                    {/* Subtle shimmer effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">Your Output:</span>
-                        <div className={`mt-1 p-2 rounded font-mono text-xs ${
-                          result.passed 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {actualValue}
+                    <div className="relative p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          {result.passed ? (
+                            <div className="p-1 bg-emerald-500 rounded-lg shadow-sm">
+                              <CheckCircle className="h-4 w-4 text-white" />
+                            </div>
+                          ) : (
+                            <div className="p-1 bg-red-500 rounded-lg shadow-sm">
+                              <XCircle className="h-4 w-4 text-white" />
+                            </div>
+                          )}
+                          <span className={`font-semibold text-sm ${
+                            result.passed ? 'text-emerald-800' : 'text-red-800'
+                          }`}>
+                            Test Case {result.testNumber}: {result.passed ? 'PASSED' : 'FAILED'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 px-3 py-1 bg-white/70 rounded-lg shadow-sm">
+                          <Clock className="h-3 w-3 text-slate-500" />
+                          <span className="text-xs font-medium text-slate-600">
+                            {result.time}s
+                          </span>
                         </div>
                       </div>
                       
-                      <div>
-                        <span className="font-medium text-gray-700">Expected:</span>
-                        <div className="mt-1 p-2 rounded bg-gray-100 font-mono text-xs">
-                          {expectedValue}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              result.passed ? 'bg-emerald-500' : 'bg-red-500'
+                            }`}></div>
+                            <span className="font-medium text-slate-700 text-sm">Your Output</span>
+                          </div>
+                          <div className={`p-3 rounded-lg border shadow-sm ${
+                            result.passed 
+                              ? 'bg-emerald-50/80 border-emerald-200/60' 
+                              : 'bg-red-50/80 border-red-200/60'
+                          }`}>
+                            <code className={`text-xs font-mono break-all ${
+                              result.passed ? 'text-emerald-800' : 'text-red-800'
+                            }`}>
+                              {actualValue}
+                            </code>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                            <span className="font-medium text-slate-700 text-sm">Expected</span>
+                          </div>
+                          <div className="p-3 rounded-lg bg-white/80 border border-slate-200/60 shadow-sm">
+                            <code className="text-xs text-slate-800 font-mono break-all">
+                              {expectedValue}
+                            </code>
+                          </div>
                         </div>
                       </div>
+                      
+                      {result.stderr && (
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                            <span className="font-medium text-red-700 text-sm">Error</span>
+                          </div>
+                          <div className="p-3 rounded-lg bg-red-50/80 border border-red-200/60 shadow-sm">
+                            <code className="text-xs text-red-800 font-mono break-all">
+                              {result.stderr}
+                            </code>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {result.stderr && (
-                      <div className="mt-3">
-                        <span className="font-medium text-red-700">Error:</span>
-                        <div className="mt-1 p-2 rounded bg-red-100 font-mono text-xs text-red-800">
-                          {result.stderr}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )
               })}
 
               {/* Test Summary */}
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                <div className="flex items-center justify-center space-x-6">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-green-800">
+              <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-gray-50 border-t border-slate-200/40 rounded-b-2xl">
+                <div className="flex items-center justify-center space-x-8">
+                  <div className="flex items-center space-x-3 px-4 py-2 bg-emerald-100/80 rounded-lg">
+                    <div className="p-1 bg-emerald-500 rounded-lg">
+                      <CheckCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-emerald-800">
                       {testResults.filter(r => r.passed).length} Passed
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <XCircle className="h-5 w-5 text-red-600" />
-                    <span className="font-medium text-red-800">
+                  <div className="flex items-center space-x-3 px-4 py-2 bg-red-100/80 rounded-lg">
+                    <div className="p-1 bg-red-500 rounded-lg">
+                      <XCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-red-800">
                       {testResults.filter(r => !r.passed).length} Failed
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {testResults.filter(r => r.passed).length}/{testResults.length} tests passed
+                  <div className="px-4 py-2 bg-white/80 rounded-lg shadow-sm">
+                    <span className="text-sm font-medium text-slate-600">
+                      {testResults.filter(r => r.passed).length}/{testResults.length} tests passed
+                    </span>
                   </div>
                 </div>
               </div>
@@ -719,12 +797,14 @@ const Judge0Container = ({
 
       {/* Error Display */}
       {executionError && (
-        <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
-          <div className="flex items-start space-x-2">
-            <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+        <div className="mt-6 p-5 bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl border border-red-200/60 shadow-lg backdrop-blur-sm">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-md">
+              <XCircle className="h-5 w-5 text-white" />
+            </div>
             <div>
-              <h4 className="text-sm font-medium text-red-900">Execution Error</h4>
-              <p className="mt-1 text-sm text-red-800">
+              <h4 className="text-lg font-semibold text-red-900 mb-2">Execution Error</h4>
+              <p className="text-sm text-red-800 leading-relaxed">
                 {executionError}
               </p>
             </div>
@@ -734,22 +814,22 @@ const Judge0Container = ({
 
       {/* Service Status */}
       {!judge0Available && (
-        <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <div className="flex items-start space-x-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+        <div className="mt-6 p-5 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl border border-yellow-200/60 shadow-lg backdrop-blur-sm">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl shadow-md">
+              <AlertTriangle className="h-5 w-5 text-white" />
+            </div>
             <div>
-              <h4 className="text-sm font-medium text-yellow-900">Judge0 Unavailable</h4>
-              <p className="mt-1 text-sm text-yellow-800">
+              <h4 className="text-lg font-semibold text-yellow-900 mb-2">Judge0 Unavailable</h4>
+              <p className="text-sm text-yellow-800 leading-relaxed mb-3">
                 Code execution is running in mock mode. Test results are simulated for demonstration purposes.
               </p>
-              <div className="mt-2">
-                <button
-                  onClick={checkJudge0Availability}
-                  className="text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 transition-colors"
-                >
-                  Retry Connection
-                </button>
-              </div>
+              <button
+                onClick={checkJudge0Availability}
+                className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-white text-sm font-semibold rounded-lg hover:from-yellow-600 hover:to-amber-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+              >
+                Retry Connection
+              </button>
             </div>
           </div>
         </div>
