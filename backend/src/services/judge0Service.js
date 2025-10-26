@@ -169,7 +169,7 @@ export class Judge0Service {
       const token = result.token;
 
       // Poll for result
-      return await this.pollSubmission(token);
+      return await this.pollSubmission(token, expectedOutput);
     } catch (error) {
       console.error('Judge0 execution error:', error);
       throw error;
@@ -179,7 +179,7 @@ export class Judge0Service {
   /**
    * Poll submission result
    */
-  async pollSubmission(token, maxAttempts = 30, delay = 1000) {
+  async pollSubmission(token, expectedOutput = null, maxAttempts = 30, delay = 1000) {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const response = await fetch(`${this.baseUrl}/submissions/${token}`, {
@@ -199,7 +199,7 @@ export class Judge0Service {
         
         // Check if processing is complete
         if (result.status && result.status.id !== 1 && result.status.id !== 2) {
-          return this.formatResult(result);
+          return this.formatResult(result, expectedOutput);
         }
 
         // Wait before next poll
@@ -219,7 +219,7 @@ export class Judge0Service {
   /**
    * Format Judge0 result for our application
    */
-  formatResult(result) {
+  formatResult(result, expectedOutput = null) {
     const statusMap = {
       1: 'In Queue',
       2: 'Processing',
@@ -236,16 +236,50 @@ export class Judge0Service {
       13: 'Exec Format Error'
     };
 
+    const actualOutput = result.stdout || '';
+    const trimmedOutput = actualOutput.trim();
+    
+    console.log('🔍 Judge0: Formatting result:', {
+      statusId: result.status?.id,
+      actualOutput: trimmedOutput,
+      expectedOutput: expectedOutput,
+      actualType: typeof trimmedOutput,
+      expectedType: typeof expectedOutput
+    });
+    
+    // Determine if test passed based on output comparison
+    let passed = false;
+    if (result.status?.id === 3 && expectedOutput !== null) {
+      // Code executed successfully, now compare outputs
+      const expectedStr = String(expectedOutput).trim();
+      passed = trimmedOutput === expectedStr;
+      console.log('🔍 Judge0: Output comparison:', {
+        actual: `"${trimmedOutput}"`,
+        expected: `"${expectedStr}"`,
+        passed: passed
+      });
+    } else if (result.status?.id === 3 && expectedOutput === null) {
+      // No expected output to compare, just check if code ran successfully
+      passed = true;
+      console.log('🔍 Judge0: No expected output, marking as passed');
+    } else {
+      // Code failed to execute or had errors
+      passed = false;
+      console.log('🔍 Judge0: Code execution failed, marking as failed');
+    }
+
     return {
       status: statusMap[result.status?.id] || 'Unknown',
       statusId: result.status?.id,
-      stdout: result.stdout || '',
+      stdout: actualOutput,
       stderr: result.stderr || '',
       compile_output: result.compile_output || '',
       time: result.time || '0.000',
       memory: result.memory || 0,
-      passed: result.status?.id === 3,
-      error: result.status?.id > 3
+      passed: passed,
+      error: result.status?.id > 3,
+      expectedOutput: expectedOutput,
+      actualOutput: trimmedOutput
     };
   }
 
@@ -311,6 +345,11 @@ export class Judge0Service {
     try {
       const languageId = this.getLanguageId(language);
       
+      console.log('🔧 Judge0: Starting batch execution');
+      console.log('📝 Judge0: Source code:', sourceCode);
+      console.log('🌐 Judge0: Language:', language, '(ID:', languageId, ')');
+      console.log('🧪 Judge0: Test cases:', testCases);
+      
       // Prepare batch submissions
       const submissions = testCases.map((testCase, index) => {
         const input = typeof testCase.input === 'object' 
@@ -319,6 +358,13 @@ export class Judge0Service {
         const expectedOutput = typeof testCase.expected_output === 'object'
           ? JSON.stringify(testCase.expected_output)
           : testCase.expected_output;
+
+        console.log(`📋 Judge0: Test case ${index + 1}:`, {
+          input,
+          expectedOutput,
+          inputType: typeof testCase.input,
+          expectedType: typeof testCase.expected_output
+        });
 
         return {
           source_code: sourceCode,
@@ -330,6 +376,8 @@ export class Judge0Service {
           wall_time_limit: '5.0'
         };
       });
+
+      console.log('📤 Judge0: Submitting batch:', submissions);
 
       // Submit batch
       const response = await fetch(`${this.baseUrl}/submissions/batch`, {
@@ -347,7 +395,10 @@ export class Judge0Service {
       }
 
       const result = await response.json();
+      console.log('📨 Judge0: Batch submission response:', result);
+
       const tokens = result.map(sub => sub.token);
+      console.log('🎫 Judge0: Received tokens:', tokens);
 
       // Poll all submissions
       const results = [];
@@ -355,13 +406,17 @@ export class Judge0Service {
         const token = tokens[i];
         const testCase = testCases[i];
         
+        console.log(`🔄 Judge0: Polling submission ${i + 1}/${tokens.length} (token: ${token})`);
+        
         try {
-          const executionResult = await this.pollSubmission(token);
+          const executionResult = await this.pollSubmission(token, testCase.expected_output);
+          console.log(`✅ Judge0: Submission ${i + 1} result:`, executionResult);
+          
           results.push({
             testNumber: i + 1,
             input: testCase.input,
             expected: testCase.expected_output,
-            result: executionResult.stdout.trim(),
+            result: executionResult.actualOutput,
             passed: executionResult.passed,
             status: executionResult.status,
             error: executionResult.error,
@@ -369,6 +424,7 @@ export class Judge0Service {
             time: executionResult.time
           });
         } catch (error) {
+          console.error(`❌ Judge0: Submission ${i + 1} failed:`, error);
           results.push({
             testNumber: i + 1,
             input: testCase.input,
@@ -383,6 +439,7 @@ export class Judge0Service {
         }
       }
 
+      console.log('📊 Judge0: Final results:', results);
       return results;
     } catch (error) {
       console.error('Judge0 batch execution error:', error);
