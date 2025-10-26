@@ -237,7 +237,7 @@ const Judge0Container = ({
             testNumber: testResult.testNumber || index + 1,
             input: getTestResultValue(testResult, 'input'),
             expected: getTestResultValue(testResult, 'expected'),
-            result: getTestResultValue(testResult, 'actual'),
+            result: getTestResultValue(testResult, 'result'),
             passed: getTestResultValue(testResult, 'passed') || false,
             status: getTestResultValue(testResult, 'status') || 'Unknown',
             error: getTestResultValue(testResult, 'error') || false,
@@ -529,9 +529,6 @@ const Judge0Container = ({
                     ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200/60 shadow-emerald-100/50' 
                     : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200/60 shadow-red-100/50'
                 }`}>
-                  {/* Subtle shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  
                   <div className="relative p-5">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -683,9 +680,6 @@ const Judge0Container = ({
                       ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200/60 shadow-emerald-100/50' 
                       : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200/60 shadow-red-100/50'
                   }`}>
-                    {/* Subtle shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    
                     <div className="relative p-5">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
