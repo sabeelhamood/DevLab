@@ -140,9 +140,33 @@ function CompetitionInvitation() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      <div className="flex justify-center items-center min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+        {/* Animated Background */}
+        <div className="bg-animation"></div>
+        
+        {/* Loading Particles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="loading-particle"
+              style={{
+                position: 'absolute',
+                width: '6px',
+                height: '6px',
+                background: `rgba(${Math.random() > 0.5 ? '6, 95, 70' : '217, 119, 6'}, 0.3)`,
+                borderRadius: '50%',
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `loadingPulse ${Math.random() * 2 + 1}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+        
         <div 
-          className="w-32 h-32 rounded-2xl flex items-center justify-center"
+          className="w-32 h-32 rounded-2xl flex items-center justify-center relative z-10"
           style={{ 
             background: 'var(--gradient-primary)',
             boxShadow: 'var(--shadow-glow)'
@@ -150,6 +174,19 @@ function CompetitionInvitation() {
         >
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent"></div>
         </div>
+        
+        <style jsx>{`
+          @keyframes loadingPulse {
+            0%, 100% { 
+              transform: scale(1);
+              opacity: 0.3;
+            }
+            50% { 
+              transform: scale(1.5);
+              opacity: 0.8;
+            }
+          }
+        `}</style>
       </div>
     )
   }
@@ -192,9 +229,196 @@ function CompetitionInvitation() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       {/* Animated Background */}
       <div className="bg-animation"></div>
+      
+      {/* Particle System */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Floating Particles */}
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="particle"
+            style={{
+              position: 'absolute',
+              width: `${Math.random() * 4 + 2}px`,
+              height: `${Math.random() * 4 + 2}px`,
+              background: `rgba(${Math.random() > 0.5 ? '6, 95, 70' : '217, 119, 6'}, ${Math.random() * 0.3 + 0.1})`,
+              borderRadius: '50%',
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `particleFloat ${Math.random() * 10 + 15}s linear infinite`,
+              animationDelay: `${Math.random() * 5}s`
+            }}
+          />
+        ))}
+        
+        {/* Floating Code Symbols */}
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          top: '15%',
+          left: '8%',
+          fontSize: '24px',
+          color: 'rgba(6, 95, 70, 0.1)',
+          animation: 'symbolFloat 12s ease-in-out infinite',
+          animationDelay: '0s'
+        }}>{'{'}</div>
+        
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          top: '25%',
+          right: '12%',
+          fontSize: '20px',
+          color: 'rgba(217, 119, 6, 0.1)',
+          animation: 'symbolFloat 10s ease-in-out infinite',
+          animationDelay: '2s'
+        }}>{'}'}</div>
+        
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          top: '60%',
+          left: '5%',
+          fontSize: '18px',
+          color: 'rgba(15, 118, 110, 0.1)',
+          animation: 'symbolFloat 14s ease-in-out infinite',
+          animationDelay: '4s'
+        }}>{'<'}</div>
+        
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '8%',
+          fontSize: '22px',
+          color: 'rgba(4, 120, 87, 0.1)',
+          animation: 'symbolFloat 11s ease-in-out infinite',
+          animationDelay: '1s'
+        }}>{'>'}</div>
+        
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          top: '45%',
+          left: '15%',
+          fontSize: '16px',
+          color: 'rgba(6, 95, 70, 0.1)',
+          animation: 'symbolFloat 13s ease-in-out infinite',
+          animationDelay: '3s'
+        }}>{'['}</div>
+        
+        <div className="code-symbol" style={{
+          position: 'absolute',
+          top: '70%',
+          right: '15%',
+          fontSize: '16px',
+          color: 'rgba(217, 119, 6, 0.1)',
+          animation: 'symbolFloat 9s ease-in-out infinite',
+          animationDelay: '5s'
+        }}>{']'}</div>
+      </div>
+      
+      {/* Moving Gradient Waves */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="gradient-wave" style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(45deg, transparent 30%, rgba(6, 95, 70, 0.02) 50%, transparent 70%)',
+          animation: 'waveMove 20s ease-in-out infinite',
+          animationDelay: '0s'
+        }}></div>
+        
+        <div className="gradient-wave" style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(-45deg, transparent 30%, rgba(217, 119, 6, 0.02) 50%, transparent 70%)',
+          animation: 'waveMove 25s ease-in-out infinite reverse',
+          animationDelay: '5s'
+        }}></div>
+      </div>
+      
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes particleFloat {
+          0% { 
+            transform: translateY(100vh) translateX(0px) rotate(0deg);
+            opacity: 0;
+          }
+          10% { 
+            opacity: 1;
+          }
+          90% { 
+            opacity: 1;
+          }
+          100% { 
+            transform: translateY(-100px) translateX(${Math.random() * 200 - 100}px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes symbolFloat {
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg) scale(1);
+            opacity: 0.1;
+          }
+          25% { 
+            transform: translateY(-15px) rotate(5deg) scale(1.1);
+            opacity: 0.2;
+          }
+          50% { 
+            transform: translateY(-8px) rotate(-3deg) scale(0.9);
+            opacity: 0.15;
+          }
+          75% { 
+            transform: translateY(-20px) rotate(2deg) scale(1.05);
+            opacity: 0.25;
+          }
+        }
+        
+        @keyframes waveMove {
+          0%, 100% { 
+            transform: translateX(-100%) translateY(0px);
+            opacity: 0.02;
+          }
+          25% { 
+            transform: translateX(-50%) translateY(-20px);
+            opacity: 0.05;
+          }
+          50% { 
+            transform: translateX(0%) translateY(-10px);
+            opacity: 0.03;
+          }
+          75% { 
+            transform: translateX(50%) translateY(-30px);
+            opacity: 0.04;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .particle {
+            animation-duration: 20s !important;
+          }
+          .code-symbol {
+            font-size: 14px !important;
+            animation-duration: 15s !important;
+          }
+          .gradient-wave {
+            animation-duration: 30s !important;
+          }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          .particle,
+          .code-symbol,
+          .gradient-wave {
+            animation: none !important;
+          }
+        }
+      `}</style>
       
       <div className="max-w-4xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}

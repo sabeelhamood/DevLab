@@ -65,9 +65,193 @@ const CompetitionPage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       {/* Animated Background */}
       <div className="bg-animation"></div>
+      
+      {/* Floating Shapes */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Floating Circles */}
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '10%',
+          left: '5%',
+          width: '60px',
+          height: '60px',
+          background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.1), rgba(4, 120, 87, 0.1))',
+          borderRadius: '50%',
+          animation: 'floatUpDown 8s ease-in-out infinite',
+          animationDelay: '0s'
+        }}></div>
+        
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '20%',
+          right: '8%',
+          width: '40px',
+          height: '40px',
+          background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.1))',
+          borderRadius: '50%',
+          animation: 'floatUpDown 6s ease-in-out infinite',
+          animationDelay: '2s'
+        }}></div>
+        
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '60%',
+          left: '3%',
+          width: '80px',
+          height: '80px',
+          background: 'linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(6, 95, 70, 0.1))',
+          borderRadius: '50%',
+          animation: 'floatUpDown 10s ease-in-out infinite',
+          animationDelay: '4s'
+        }}></div>
+        
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          bottom: '15%',
+          right: '5%',
+          width: '50px',
+          height: '50px',
+          background: 'linear-gradient(135deg, rgba(4, 120, 87, 0.1), rgba(15, 118, 110, 0.1))',
+          borderRadius: '50%',
+          animation: 'floatUpDown 7s ease-in-out infinite',
+          animationDelay: '1s'
+        }}></div>
+        
+        {/* Floating Squares */}
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '30%',
+          left: '15%',
+          width: '30px',
+          height: '30px',
+          background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.08), rgba(217, 119, 6, 0.08))',
+          borderRadius: '8px',
+          animation: 'floatRotate 12s linear infinite',
+          animationDelay: '0s'
+        }}></div>
+        
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '70%',
+          right: '12%',
+          width: '25px',
+          height: '25px',
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(4, 120, 87, 0.08))',
+          borderRadius: '6px',
+          animation: 'floatRotate 9s linear infinite',
+          animationDelay: '3s'
+        }}></div>
+        
+        {/* Floating Triangles */}
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          top: '40%',
+          right: '20%',
+          width: '0',
+          height: '0',
+          borderLeft: '15px solid transparent',
+          borderRight: '15px solid transparent',
+          borderBottom: '25px solid rgba(6, 95, 70, 0.1)',
+          animation: 'floatUpDown 11s ease-in-out infinite',
+          animationDelay: '5s'
+        }}></div>
+        
+        <div className="floating-shape" style={{
+          position: 'absolute',
+          bottom: '25%',
+          left: '10%',
+          width: '0',
+          height: '0',
+          borderLeft: '12px solid transparent',
+          borderRight: '12px solid transparent',
+          borderBottom: '20px solid rgba(217, 119, 6, 0.1)',
+          animation: 'floatUpDown 8s ease-in-out infinite',
+          animationDelay: '2.5s'
+        }}></div>
+      </div>
+      
+      {/* Moving Gradient Orbs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="gradient-orb" style={{
+          position: 'absolute',
+          top: '20%',
+          left: '10%',
+          width: '200px',
+          height: '200px',
+          background: 'radial-gradient(circle, rgba(6, 95, 70, 0.05) 0%, transparent 70%)',
+          borderRadius: '50%',
+          animation: 'moveOrb 20s ease-in-out infinite',
+          animationDelay: '0s'
+        }}></div>
+        
+        <div className="gradient-orb" style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '10%',
+          width: '150px',
+          height: '150px',
+          background: 'radial-gradient(circle, rgba(217, 119, 6, 0.05) 0%, transparent 70%)',
+          borderRadius: '50%',
+          animation: 'moveOrb 25s ease-in-out infinite reverse',
+          animationDelay: '5s'
+        }}></div>
+        
+        <div className="gradient-orb" style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          width: '100px',
+          height: '100px',
+          background: 'radial-gradient(circle, rgba(15, 118, 110, 0.05) 0%, transparent 70%)',
+          borderRadius: '50%',
+          animation: 'moveOrb 18s ease-in-out infinite',
+          animationDelay: '10s'
+        }}></div>
+      </div>
+      
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes floatUpDown {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-20px) rotate(5deg); }
+          50% { transform: translateY(-10px) rotate(-3deg); }
+          75% { transform: translateY(-25px) rotate(2deg); }
+        }
+        
+        @keyframes floatRotate {
+          0% { transform: rotate(0deg) translateY(0px); }
+          25% { transform: rotate(90deg) translateY(-15px); }
+          50% { transform: rotate(180deg) translateY(-5px); }
+          75% { transform: rotate(270deg) translateY(-20px); }
+          100% { transform: rotate(360deg) translateY(0px); }
+        }
+        
+        @keyframes moveOrb {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(30px, -20px) scale(1.1); }
+          50% { transform: translate(-20px, -40px) scale(0.9); }
+          75% { transform: translate(-30px, 20px) scale(1.05); }
+        }
+        
+        @media (max-width: 768px) {
+          .floating-shape {
+            animation-duration: 12s !important;
+          }
+          .gradient-orb {
+            animation-duration: 30s !important;
+          }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          .floating-shape,
+          .gradient-orb {
+            animation: none !important;
+          }
+        }
+      `}</style>
       
       <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}
