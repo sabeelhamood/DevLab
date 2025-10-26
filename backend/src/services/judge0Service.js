@@ -105,6 +105,304 @@ export class Judge0Service {
   }
 
   /**
+   * Universal code wrapping function for all programming languages
+   */
+  wrapCodeForLanguage(sourceCode, language, testInput) {
+    console.log('🔧 Judge0: Wrapping code for language:', language);
+    console.log('📝 Judge0: Original code:', sourceCode);
+    console.log('📥 Judge0: Test input:', testInput);
+    
+    const lang = language.toLowerCase();
+    
+    // Parse input safely
+    const parsedInput = this.parseInputSafely(testInput);
+    console.log('📥 Judge0: Parsed input:', parsedInput, 'Type:', typeof parsedInput);
+    
+    // Language-specific wrapping patterns
+    const languagePatterns = {
+      // Scripting languages - direct function calls
+      'javascript': () => this.wrapJavaScriptCode(sourceCode, testInput),
+      'typescript': () => this.wrapJavaScriptCode(sourceCode, testInput),
+      'python': () => this.wrapPythonCode(sourceCode, parsedInput),
+      'ruby': () => this.wrapRubyCode(sourceCode, parsedInput),
+      'php': () => this.wrapPHPCode(sourceCode, parsedInput),
+      'perl': () => this.wrapPerlCode(sourceCode, parsedInput),
+      'lua': () => this.wrapLuaCode(sourceCode, parsedInput),
+      'r': () => this.wrapRCode(sourceCode, parsedInput),
+      'julia': () => this.wrapJuliaCode(sourceCode, parsedInput),
+      
+      // Compiled languages - main function wrapper
+      'java': () => this.wrapJavaCode(sourceCode, parsedInput),
+      'cpp': () => this.wrapCppCode(sourceCode, parsedInput),
+      'c': () => this.wrapCCode(sourceCode, parsedInput),
+      'csharp': () => this.wrapCSharpCode(sourceCode, parsedInput),
+      'go': () => this.wrapGoCode(sourceCode, parsedInput),
+      'rust': () => this.wrapRustCode(sourceCode, parsedInput),
+      'swift': () => this.wrapSwiftCode(sourceCode, parsedInput),
+      'kotlin': () => this.wrapKotlinCode(sourceCode, parsedInput),
+      'scala': () => this.wrapScalaCode(sourceCode, parsedInput),
+      'dart': () => this.wrapDartCode(sourceCode, parsedInput),
+      'haskell': () => this.wrapHaskellCode(sourceCode, parsedInput),
+      'ocaml': () => this.wrapOCamlCode(sourceCode, parsedInput),
+      'fsharp': () => this.wrapFSharpCode(sourceCode, parsedInput),
+      'pascal': () => this.wrapPascalCode(sourceCode, parsedInput),
+      'fortran': () => this.wrapFortranCode(sourceCode, parsedInput),
+      'zig': () => this.wrapZigCode(sourceCode, parsedInput),
+      'nim': () => this.wrapNimCode(sourceCode, parsedInput),
+      
+      // Functional languages
+      'clojure': () => this.wrapClojureCode(sourceCode, parsedInput),
+      'elixir': () => this.wrapElixirCode(sourceCode, parsedInput),
+      'erlang': () => this.wrapErlangCode(sourceCode, parsedInput),
+      'scheme': () => this.wrapSchemeCode(sourceCode, parsedInput),
+      'lisp': () => this.wrapLispCode(sourceCode, parsedInput),
+      
+      // Other languages
+      'bash': () => this.wrapBashCode(sourceCode, parsedInput),
+      'sql': () => this.wrapSQLCode(sourceCode, parsedInput),
+      'prolog': () => this.wrapPrologCode(sourceCode, parsedInput),
+      'smalltalk': () => this.wrapSmalltalkCode(sourceCode, parsedInput),
+      'vbnet': () => this.wrapVBNetCode(sourceCode, parsedInput),
+      'basic': () => this.wrapBasicCode(sourceCode, parsedInput),
+      'cobol': () => this.wrapCobolCode(sourceCode, parsedInput),
+      'octave': () => this.wrapOctaveCode(sourceCode, parsedInput),
+      'tcl': () => this.wrapTclCode(sourceCode, parsedInput)
+    };
+    
+    const wrapper = languagePatterns[lang];
+    if (wrapper) {
+      return wrapper();
+    } else {
+      console.log('⚠️ Judge0: No wrapper found for language:', language, '- executing as-is');
+      return sourceCode;
+    }
+  }
+
+  /**
+   * Wrap Python code to execute and capture output
+   */
+  wrapPythonCode(sourceCode, parsedInput) {
+    console.log('🐍 Judge0: Wrapping Python code');
+    
+    // Try to detect function patterns
+    const functionPatterns = [
+      /^def\s+(\w+)\s*\([^)]*\)\s*:/m,
+      /^async\s+def\s+(\w+)\s*\([^)]*\)\s*:/m,
+      /^class\s+(\w+).*:\s*$/m
+    ];
+    
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) {
+        functionName = match[1];
+        console.log('✅ Judge0: Found Python function/class:', functionName);
+        break;
+      }
+    }
+    
+    if (!functionName) {
+      console.log('⚠️ Judge0: No Python function detected, executing as-is');
+      return sourceCode;
+    }
+    
+    // Create function call
+    let functionCall;
+    if (Array.isArray(parsedInput)) {
+      const args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+      functionCall = `${functionName}(${args})`;
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
+    } else {
+      functionCall = `${functionName}()`;
+    }
+    
+    const wrappedCode = `${sourceCode}\n\n# Test execution\nresult = ${functionCall}\nprint(result)`;
+    console.log('🔧 Judge0: Wrapped Python code:', wrappedCode);
+    return wrappedCode;
+  }
+
+  /**
+   * Wrap Java code to execute and capture output
+   */
+  wrapJavaCode(sourceCode, parsedInput) {
+    console.log('☕ Judge0: Wrapping Java code');
+    
+    // Try to detect method patterns
+    const methodPatterns = [
+      /public\s+static\s+(\w+)\s+(\w+)\s*\([^)]*\)/m,
+      /public\s+(\w+)\s+(\w+)\s*\([^)]*\)/m,
+      /static\s+(\w+)\s+(\w+)\s*\([^)]*\)/m
+    ];
+    
+    let methodName = null;
+    let returnType = null;
+    for (const pattern of methodPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) {
+        returnType = match[1];
+        methodName = match[2];
+        console.log('✅ Judge0: Found Java method:', methodName, 'Return type:', returnType);
+        break;
+      }
+    }
+    
+    if (!methodName) {
+      console.log('⚠️ Judge0: No Java method detected, executing as-is');
+      return sourceCode;
+    }
+    
+    // Create main method wrapper
+    let argsString = '';
+    if (Array.isArray(parsedInput)) {
+      argsString = parsedInput.map(arg => {
+        if (typeof arg === 'string') return `"${arg}"`;
+        return String(arg);
+      }).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      if (typeof parsedInput === 'string') {
+        argsString = `"${parsedInput}"`;
+      } else {
+        argsString = String(parsedInput);
+      }
+    }
+    
+    const mainMethod = `
+    public static void main(String[] args) {
+        ${returnType} result = ${methodName}(${argsString});
+        System.out.println(result);
+    }`;
+    
+    // Remove 'public' modifier from class declaration for Judge0 compatibility
+    const modifiedSourceCode = sourceCode.replace(/public\s+class\s+(\w+)/, 'class $1');
+    
+    // Insert main method before the closing brace of the class
+    const wrappedCode = modifiedSourceCode.replace(/\}\s*$/, `${mainMethod}\n}`);
+    console.log('🔧 Judge0: Wrapped Java code:', wrappedCode);
+    return wrappedCode;
+  }
+
+  /**
+   * Wrap C++ code to execute and capture output
+   */
+  wrapCppCode(sourceCode, parsedInput) {
+    console.log('⚡ Judge0: Wrapping C++ code');
+    
+    // Try to detect function patterns - prioritize function name over return type
+    const functionPatterns = [
+      /(\w+)\s+(\w+)\s*\([^)]*\)\s*\{/m,  // return_type function_name(...)
+      /int\s+(\w+)\s*\([^)]*\)\s*\{/m,    // int function_name(...)
+      /void\s+(\w+)\s*\([^)]*\)\s*\{/m,   // void function_name(...)
+      /string\s+(\w+)\s*\([^)]*\)\s*\{/m, // string function_name(...)
+      /double\s+(\w+)\s*\([^)]*\)\s*\{/m, // double function_name(...)
+      /bool\s+(\w+)\s*\([^)]*\)\s*\{/m    // bool function_name(...)
+    ];
+    
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) {
+        // For patterns with two groups, use the second one (function name)
+        // For patterns with one group, use that one
+        functionName = match[2] || match[1];
+        console.log('✅ Judge0: Found C++ function:', functionName);
+        break;
+      }
+    }
+    
+    if (!functionName) {
+      console.log('⚠️ Judge0: No C++ function detected, executing as-is');
+      return sourceCode;
+    }
+    
+    // Create main function wrapper
+    let argsString = '';
+    if (Array.isArray(parsedInput)) {
+      argsString = parsedInput.map(arg => {
+        if (typeof arg === 'string') return `"${arg}"`;
+        return String(arg);
+      }).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      if (typeof parsedInput === 'string') {
+        argsString = `"${parsedInput}"`;
+      } else {
+        argsString = String(parsedInput);
+      }
+    }
+    
+    const mainFunction = `
+int main() {
+    auto result = ${functionName}(${argsString});
+    std::cout << result << std::endl;
+    return 0;
+}`;
+    
+    const wrappedCode = `${sourceCode}\n${mainFunction}`;
+    console.log('🔧 Judge0: Wrapped C++ code:', wrappedCode);
+    return wrappedCode;
+  }
+
+  /**
+   * Wrap C code to execute and capture output
+   */
+  wrapCCode(sourceCode, parsedInput) {
+    console.log('🔧 Judge0: Wrapping C code');
+    
+    // Try to detect function patterns - prioritize function name over return type
+    const functionPatterns = [
+      /(\w+)\s+(\w+)\s*\([^)]*\)\s*\{/m,  // return_type function_name(...)
+      /int\s+(\w+)\s*\([^)]*\)\s*\{/m,    // int function_name(...)
+      /void\s+(\w+)\s*\([^)]*\)\s*\{/m,   // void function_name(...)
+      /char\s+(\w+)\s*\([^)]*\)\s*\{/m,   // char function_name(...)
+      /double\s+(\w+)\s*\([^)]*\)\s*\{/m, // double function_name(...)
+      /float\s+(\w+)\s*\([^)]*\)\s*\{/m   // float function_name(...)
+    ];
+    
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) {
+        // For patterns with two groups, use the second one (function name)
+        // For patterns with one group, use that one
+        functionName = match[2] || match[1];
+        console.log('✅ Judge0: Found C function:', functionName);
+        break;
+      }
+    }
+    
+    if (!functionName) {
+      console.log('⚠️ Judge0: No C function detected, executing as-is');
+      return sourceCode;
+    }
+    
+    // Create main function wrapper
+    let argsString = '';
+    if (Array.isArray(parsedInput)) {
+      argsString = parsedInput.map(arg => {
+        if (typeof arg === 'string') return `"${arg}"`;
+        return String(arg);
+      }).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      if (typeof parsedInput === 'string') {
+        argsString = `"${parsedInput}"`;
+      } else {
+        argsString = String(parsedInput);
+      }
+    }
+    
+    const mainFunction = `
+int main() {
+    int result = ${functionName}(${argsString});
+    printf("%d\\n", result);
+    return 0;
+}`;
+    
+    const wrappedCode = `${sourceCode}\n${mainFunction}`;
+    console.log('🔧 Judge0: Wrapped C code:', wrappedCode);
+    return wrappedCode;
+  }
+
+  /**
    * Wrap JavaScript code to execute and capture output
    */
   wrapJavaScriptCode(sourceCode, input) {
@@ -157,8 +455,14 @@ export class Judge0Service {
     // Create function call based on input type
     let functionCall;
     if (Array.isArray(parsedInput)) {
-      // For arrays, pass as single argument (not spread)
-      functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
+      // For arrays, spread the arguments
+      const args = parsedInput.map(arg => {
+        if (typeof arg === 'string') {
+          return `"${arg.replace(/"/g, '\\"')}"`;
+        }
+        return JSON.stringify(arg);
+      }).join(', ');
+      functionCall = `${functionName}(${args})`;
     } else if (parsedInput !== null && parsedInput !== undefined) {
       // Single argument
       if (typeof parsedInput === 'string') {
@@ -178,8 +482,140 @@ export class Judge0Service {
     return wrappedCode;
   }
 
+  // Additional language wrappers
+  wrapRubyCode(sourceCode, parsedInput) {
+    console.log('💎 Judge0: Wrapping Ruby code');
+    const functionPatterns = [/^def\s+(\w+)/m, /^class\s+(\w+)/m];
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) { functionName = match[1]; break; }
+    }
+    if (!functionName) return sourceCode;
+    
+    let args = '';
+    if (Array.isArray(parsedInput)) {
+      args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      args = JSON.stringify(parsedInput);
+    }
+    
+    return `${sourceCode}\n\n# Test execution\nresult = ${functionName}(${args})\nputs result`;
+  }
+
+  wrapPHPCode(sourceCode, parsedInput) {
+    console.log('🐘 Judge0: Wrapping PHP code');
+    const functionPatterns = [/function\s+(\w+)/m, /class\s+(\w+)/m];
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) { functionName = match[1]; break; }
+    }
+    if (!functionName) return sourceCode;
+    
+    let args = '';
+    if (Array.isArray(parsedInput)) {
+      args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      args = JSON.stringify(parsedInput);
+    }
+    
+    return `${sourceCode}\n\n<?php\n// Test execution\n$result = ${functionName}(${args});\necho $result;\n?>`;
+  }
+
+  wrapGoCode(sourceCode, parsedInput) {
+    console.log('🐹 Judge0: Wrapping Go code');
+    const functionPatterns = [/func\s+(\w+)/m];
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) { functionName = match[1]; break; }
+    }
+    if (!functionName) return sourceCode;
+    
+    let args = '';
+    if (Array.isArray(parsedInput)) {
+      args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      args = JSON.stringify(parsedInput);
+    }
+    
+    return `${sourceCode}\n\nfunc main() {\n    result := ${functionName}(${args})\n    fmt.Println(result)\n}`;
+  }
+
+  wrapRustCode(sourceCode, parsedInput) {
+    console.log('🦀 Judge0: Wrapping Rust code');
+    const functionPatterns = [/fn\s+(\w+)/m];
+    let functionName = null;
+    for (const pattern of functionPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) { functionName = match[1]; break; }
+    }
+    if (!functionName) return sourceCode;
+    
+    let args = '';
+    if (Array.isArray(parsedInput)) {
+      args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      args = JSON.stringify(parsedInput);
+    }
+    
+    return `${sourceCode}\n\nfn main() {\n    let result = ${functionName}(${args});\n    println!("{}", result);\n}`;
+  }
+
+  wrapCSharpCode(sourceCode, parsedInput) {
+    console.log('🔷 Judge0: Wrapping C# code');
+    const methodPatterns = [/public\s+static\s+(\w+)\s+(\w+)/m, /static\s+(\w+)\s+(\w+)/m];
+    let methodName = null;
+    for (const pattern of methodPatterns) {
+      const match = sourceCode.match(pattern);
+      if (match) { methodName = match[2]; break; }
+    }
+    if (!methodName) return sourceCode;
+    
+    let args = '';
+    if (Array.isArray(parsedInput)) {
+      args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
+    } else if (parsedInput !== null && parsedInput !== undefined) {
+      args = JSON.stringify(parsedInput);
+    }
+    
+    return `${sourceCode}\n\nclass Program {\n    public static void Main() {\n        var result = ${methodName}(${args});\n        System.Console.WriteLine(result);\n    }\n}`;
+  }
+
+  // Placeholder wrappers for other languages
+  wrapPerlCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapLuaCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapRCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapJuliaCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapSwiftCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapKotlinCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapScalaCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapDartCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapHaskellCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapOCamlCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapFSharpCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapPascalCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapFortranCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapZigCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapNimCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapClojureCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapElixirCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapErlangCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapSchemeCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapLispCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapBashCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapSQLCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapPrologCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapSmalltalkCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapVBNetCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapBasicCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapCobolCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapOctaveCode(sourceCode, parsedInput) { return sourceCode; }
+  wrapTclCode(sourceCode, parsedInput) { return sourceCode; }
+
   /**
-   * Safely parse input for JavaScript function calls
+   * Safely parse input for function calls
    */
   parseInputSafely(input) {
     // Handle empty string explicitly
@@ -198,12 +634,12 @@ export class Judge0Service {
     
     // Handle string input
     if (typeof input === 'string') {
-      // Try to parse as JSON first
-      try {
-        const parsed = JSON.parse(input);
-        console.log('✅ Judge0: Successfully parsed JSON input:', parsed);
-        return parsed;
-      } catch (e) {
+    // Try to parse as JSON first
+    try {
+      const parsed = JSON.parse(input);
+      console.log('✅ Judge0: Successfully parsed JSON input:', parsed);
+      return parsed;
+    } catch (e) {
         // If JSON parsing fails, check if it's a single value that should be parsed
         const trimmed = input.trim();
         
@@ -229,8 +665,8 @@ export class Judge0Service {
         
         // Return as string (including empty string)
         console.log('📝 Judge0: Input treated as string:', input);
-        return input;
-      }
+      return input;
+    }
     }
     
     // Return as-is for other types
@@ -309,11 +745,8 @@ export class Judge0Service {
     try {
       const languageId = this.getLanguageId(language);
       
-      // Wrap the code to capture function output for JavaScript
-      let wrappedCode = sourceCode;
-      if (language.toLowerCase() === 'javascript') {
-        wrappedCode = this.wrapJavaScriptCode(sourceCode, input);
-      }
+      // Wrap the code to capture function output for all languages
+      const wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
       
       // Create submission
       const submissionData = {
@@ -583,16 +1016,13 @@ export class Judge0Service {
           expectedType: typeof testCase.expected_output
         });
 
-        // Wrap JavaScript code for each test case if needed
-        let wrappedSourceCode = sourceCode;
-        if (language.toLowerCase() === 'javascript') {
-          wrappedSourceCode = this.wrapJavaScriptCode(sourceCode, input);
-        }
+        // Wrap code for each test case for all languages
+        const wrappedSourceCode = this.wrapCodeForLanguage(sourceCode, language, input);
 
         return {
           source_code: wrappedSourceCode,
           language_id: languageId,
-          stdin: '', // Input is handled in the wrapped code for JavaScript
+          stdin: '', // Input is handled in the wrapped code for all languages
           expected_output: expectedOutput,
           cpu_time_limit: '2.0',
           memory_limit: '128000',
