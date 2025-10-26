@@ -6,10 +6,14 @@ import {
   XCircle, 
   Lightbulb,
   Send,
-  RotateCcw
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 function QuestionPackage() {
+  const [questions, setQuestions] = useState([])
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [question, setQuestion] = useState(null)
   const [loading, setLoading] = useState(true)
   const [userAnswer, setUserAnswer] = useState('')
@@ -47,13 +51,77 @@ function QuestionPackage() {
       const result = await contentStudioApi.generateQuestions(questionData)
       
       if (result.success && result.data.questions.length > 0) {
-        setQuestion(result.data.questions[0]) // Take first question
+        setQuestions(result.data.questions) // Store all questions
+        setQuestion(result.data.questions[0]) // Set first question as current
+        setCurrentQuestionIndex(0)
         if (result.data.questions[0].question_type === 'code') {
           setCodeSolution(getCodeTemplate(language))
         }
       } else {
-        // Fallback to mock question
-        setQuestion({
+        // Fallback to mock questions (multiple)
+        const mockQuestions = [
+          {
+            question_id: 'demo_1',
+            question_type: 'code',
+            question_content: 'Write a function that returns the sum of two numbers',
+            difficulty: 'intermediate',
+            language: 'javascript',
+            test_cases: [
+              { input: '2, 3', expected_output: '5' },
+              { input: '10, 20', expected_output: '30' }
+            ],
+            hints: [
+              'Think about basic arithmetic operations',
+              'Consider function parameters and return statements',
+              'Make sure to handle the input correctly'
+            ],
+            solution: 'function sum(a, b) { return a + b; }'
+          },
+          {
+            question_id: 'demo_2',
+            question_type: 'code',
+            question_content: 'Write a function that checks if a number is even',
+            difficulty: 'beginner',
+            language: 'javascript',
+            test_cases: [
+              { input: '4', expected_output: 'true' },
+              { input: '7', expected_output: 'false' }
+            ],
+            hints: [
+              'Use the modulo operator (%)',
+              'Return true if remainder is 0',
+              'Consider edge cases like 0'
+            ],
+            solution: 'function isEven(num) { return num % 2 === 0; }'
+          },
+          {
+            question_id: 'demo_3',
+            question_type: 'code',
+            question_content: 'Write a function that finds the maximum of two numbers',
+            difficulty: 'beginner',
+            language: 'javascript',
+            test_cases: [
+              { input: '5, 3', expected_output: '5' },
+              { input: '2, 8', expected_output: '8' }
+            ],
+            hints: [
+              'Use conditional statements',
+              'Compare the two numbers',
+              'Return the larger one'
+            ],
+            solution: 'function max(a, b) { return a > b ? a : b; }'
+          }
+        ]
+        setQuestions(mockQuestions)
+        setQuestion(mockQuestions[0])
+        setCurrentQuestionIndex(0)
+        setCodeSolution(getCodeTemplate(language))
+      }
+    } catch (error) {
+      console.error('Error loading question package:', error)
+      // Fallback to mock questions (multiple)
+      const mockQuestions = [
+        {
           question_id: 'demo_1',
           question_type: 'code',
           question_content: 'Write a function that returns the sum of two numbers',
@@ -69,29 +137,28 @@ function QuestionPackage() {
             'Make sure to handle the input correctly'
           ],
           solution: 'function sum(a, b) { return a + b; }'
-        })
-        setCodeSolution(getCodeTemplate(language))
-      }
-    } catch (error) {
-      console.error('Error loading question package:', error)
-      // Fallback to mock question
-      setQuestion({
-        question_id: 'demo_1',
-        question_type: 'code',
-        question_content: 'Write a function that returns the sum of two numbers',
-        difficulty: 'intermediate',
-        language: 'javascript',
-        test_cases: [
-          { input: '2, 3', expected_output: '5' },
-          { input: '10, 20', expected_output: '30' }
-        ],
-        hints: [
-          'Think about basic arithmetic operations',
-          'Consider function parameters and return statements',
-          'Make sure to handle the input correctly'
-        ],
-        solution: 'function sum(a, b) { return a + b; }'
-      })
+        },
+        {
+          question_id: 'demo_2',
+          question_type: 'code',
+          question_content: 'Write a function that checks if a number is even',
+          difficulty: 'beginner',
+          language: 'javascript',
+          test_cases: [
+            { input: '4', expected_output: 'true' },
+            { input: '7', expected_output: 'false' }
+          ],
+          hints: [
+            'Use the modulo operator (%)',
+            'Return true if remainder is 0',
+            'Consider edge cases like 0'
+          ],
+          solution: 'function isEven(num) { return num % 2 === 0; }'
+        }
+      ]
+      setQuestions(mockQuestions)
+      setQuestion(mockQuestions[0])
+      setCurrentQuestionIndex(0)
       setCodeSolution(getCodeTemplate(language))
     } finally {
       setLoading(false)
@@ -121,6 +188,37 @@ int main() {
 }`
     }
     return templates[lang] || templates.javascript
+  }
+
+  // Navigation functions
+  const goToPreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      const newIndex = currentQuestionIndex - 1
+      setCurrentQuestionIndex(newIndex)
+      setQuestion(questions[newIndex])
+      resetQuestionState()
+    }
+  }
+
+  const goToNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      const newIndex = currentQuestionIndex + 1
+      setCurrentQuestionIndex(newIndex)
+      setQuestion(questions[newIndex])
+      resetQuestionState()
+    }
+  }
+
+  const resetQuestionState = () => {
+    setUserAnswer('')
+    setCodeSolution(getCodeTemplate(language))
+    setIsSubmitted(false)
+    setEvaluation(null)
+    setShowHint(false)
+    setHint('')
+    setHintsUsed(0)
+    setAllHints([])
+    setShowSolution(false)
   }
 
   const handleSubmit = async () => {
@@ -204,15 +302,7 @@ int main() {
   }
 
   const handleReset = () => {
-    setUserAnswer('')
-    setCodeSolution(getCodeTemplate(language))
-    setIsSubmitted(false)
-    setEvaluation(null)
-    setShowHint(false)
-    setHint('')
-    setHintsUsed(0)
-    setAllHints([])
-    setShowSolution(false)
+    resetQuestionState()
   }
 
   const handleShowSolution = () => {
@@ -251,7 +341,9 @@ int main() {
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-gray-900">Question</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </h2>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   question.question_type === 'code' 
                     ? 'bg-blue-100 text-blue-800' 
@@ -313,6 +405,41 @@ int main() {
                 Reset
               </button>
             </div>
+
+            {/* Navigation Buttons */}
+            {questions.length > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <button
+                  onClick={goToPreviousQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className={`flex items-center px-4 py-2 text-sm rounded-lg ${
+                    currentQuestionIndex === 0
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                  }`}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Previous Question
+                </button>
+                
+                <span className="text-sm text-gray-600">
+                  {currentQuestionIndex + 1} of {questions.length}
+                </span>
+                
+                <button
+                  onClick={goToNextQuestion}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className={`flex items-center px-4 py-2 text-sm rounded-lg ${
+                    currentQuestionIndex === questions.length - 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                  }`}
+                >
+                  Next Question
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+            )}
 
             {/* Test Cases for Code Questions */}
             {question.question_type === 'code' && question.test_cases && (

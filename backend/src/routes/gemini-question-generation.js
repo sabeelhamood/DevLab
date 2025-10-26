@@ -1,5 +1,6 @@
 import express from 'express'
 import { geminiService } from '../services/gemini.js'
+import { mockMicroservices } from '../services/mockMicroservices.js'
 
 const router = express.Router()
 
@@ -347,7 +348,8 @@ router.post('/generate-question-package', async (req, res) => {
       difficulty = 'beginner',
       language = 'javascript',
       questionType = 'coding',
-      questionCount = 1
+      questionCount = 1,
+      userId = 'learner_1' // Default user ID for mock
     } = req.body
 
     if (!courseName || !topicName) {
@@ -357,11 +359,28 @@ router.post('/generate-question-package', async (req, res) => {
       })
     }
 
+    // Get practice_questions_count from Directory Microservice
+    let finalQuestionCount = questionCount
+    try {
+      const userProfile = mockMicroservices.directoryService.getLearnerProfile(userId)
+      const practiceQuestionsCount = userProfile.practice_questions_count || 1
+      
+      // Use the practice_questions_count if no specific count is provided
+      if (questionCount === 1) {
+        finalQuestionCount = practiceQuestionsCount
+        console.log(`📊 Backend: Using practice_questions_count from Directory: ${finalQuestionCount}`)
+      } else {
+        console.log(`📊 Backend: Using provided questionCount: ${finalQuestionCount}`)
+      }
+    } catch (error) {
+      console.warn('⚠️ Backend: Could not get practice_questions_count, using provided count:', error.message)
+    }
+
     // Generate questions (single or multiple)
-    console.log(`🤖 Backend: Generating ${questionCount} question(s) with Gemini...`)
+    console.log(`🤖 Backend: Generating ${finalQuestionCount} question(s) with Gemini...`)
     let questions = []
     
-    if (questionType === 'coding' && questionCount > 1) {
+    if (questionType === 'coding' && finalQuestionCount > 1) {
       // Use bulk generation for multiple coding questions
       console.log('💻 Backend: Generating multiple coding questions at once')
       questions = await geminiService.generateMultipleCodingQuestions(
@@ -370,13 +389,13 @@ router.post('/generate-question-package', async (req, res) => {
         language,
         nanoSkills,
         macroSkills,
-        questionCount
+        finalQuestionCount
       )
       console.log(`✅ Backend: Generated ${questions.length} questions total`)
     } else {
       // Generate questions one by one (for theoretical or single questions)
-      for (let i = 0; i < questionCount; i++) {
-        console.log(`📝 Backend: Generating question ${i + 1} of ${questionCount}`)
+      for (let i = 0; i < finalQuestionCount; i++) {
+        console.log(`📝 Backend: Generating question ${i + 1} of ${finalQuestionCount}`)
         let question
         if (questionType === 'coding') {
           console.log('💻 Backend: Generating coding question')
@@ -453,6 +472,7 @@ router.post('/generate-question-package', async (req, res) => {
         language,
         questionType,
         questionCount: processedQuestions.length,
+        practiceQuestionsCount: finalQuestionCount,
         generatedAt: new Date().toISOString()
       }
     }
