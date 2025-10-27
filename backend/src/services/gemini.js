@@ -9,15 +9,16 @@ let genAIClient = null;
  * Prefer config.ai.gemini.apiKey -> process.env.GEMINI_API_KEY
  * If not present, we stay in mock mode.
  */
-const apiKey = (config && config.ai && config.ai.gemini && config.ai.gemini.apiKey) 
-  ? config.ai.gemini.apiKey 
-  : process.env.GEMINI_API_KEY || 'AIzaSyDgOreTpwU_3m5l4Q_r_7BnDjqHtbI5W3s';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  throw new Error('GEMINI_API_KEY is not set. Please configure it in Railway environment variables.');
+}
 
 // Always initialize Gemini with real API - no mock mode
-console.log("🔍 API Key found:", !!apiKey, "Length:", apiKey ? apiKey.length : 0);
+console.log("🔍 API Key found:", !!GEMINI_API_KEY, "Length:", GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
 
 try {
-  genAIClient = new GoogleGenerativeAI(apiKey);
+  genAIClient = new GoogleGenerativeAI(GEMINI_API_KEY);
   console.log("✅ Gemini client initialized with real API key");
 } catch (err) {
   console.error("❌ Failed to initialize Gemini client:", err?.message || err);

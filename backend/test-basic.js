@@ -4,7 +4,11 @@ async function testBasic() {
   try {
     console.log('🧪 Testing basic Gemini connection...')
     
-    const API_KEY = 'AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw'
+    const API_KEY = process.env.GEMINI_API_KEY;
+    if (!API_KEY) {
+      throw new Error('GEMINI_API_KEY is not set. Please configure it in your environment variables.');
+    }
+    
     const genAI = new GoogleGenerativeAI(API_KEY)
     
     // Try with the most basic model

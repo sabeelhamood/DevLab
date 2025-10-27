@@ -1,7 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Test Gemini API directly
-const API_KEY = 'AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw'
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  console.error('❌ GEMINI_API_KEY is not set. Please configure it in your environment variables.');
+  process.exit(1);
+}
+
 const genAI = new GoogleGenerativeAI(API_KEY)
 
 async function listModels() {

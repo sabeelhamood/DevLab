@@ -61,7 +61,15 @@ router.post('/test-question', async (req, res) => {
       })
     }
 
-    const API_KEY = 'AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw'
+    const API_KEY = process.env.GEMINI_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({
+        error: 'GEMINI_API_KEY is not configured',
+        message: 'Please set GEMINI_API_KEY in your environment variables',
+        suggestion: 'Configure the API key in Railway environment variables'
+      });
+    }
+    
     const genAI = new GoogleGenerativeAI(API_KEY)
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
     

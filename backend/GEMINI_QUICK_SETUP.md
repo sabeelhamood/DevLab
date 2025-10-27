@@ -4,7 +4,7 @@ Your Gemini API key has been integrated! Here's how to test it:
 
 ## ✅ **Your API Key is Ready:**
 ```
-AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+your_gemini_api_key_here
 ```
 
 ## 🔧 **Setup Steps:**

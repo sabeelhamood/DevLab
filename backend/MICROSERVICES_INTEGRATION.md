@@ -88,7 +88,7 @@ SANDBOX_API_URL=http://localhost:3007
 SANDBOX_API_KEY=your-api-key
 
 # Gemini API (Already configured)
-GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ## 🚀 **How It Works:**

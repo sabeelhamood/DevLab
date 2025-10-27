@@ -32,7 +32,7 @@ VERCEL_ORG_ID=your-vercel-org-id
 VERCEL_PROJECT_ID=your-vercel-project-id
 RAILWAY_TOKEN=your-railway-token
 RAILWAY_SERVICE_ID=your-railway-service-id
-GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### 3. Deploy with One Command
@@ -49,13 +49,13 @@ git push origin main
 In Vercel Dashboard → Settings → Environment Variables:
 ```
 VITE_API_URL=https://devlab-backend.railway.app
-VITE_GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Railway Environment Variables  
 In Railway Dashboard → Variables:
 ```
-GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+GEMINI_API_KEY=your_gemini_api_key_here
 NODE_ENV=production
 PORT=3001
 CORS_ORIGINS=https://devlab-frontend.vercel.app

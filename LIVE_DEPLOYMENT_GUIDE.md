@@ -20,7 +20,7 @@
 5. **Environment Variables:**
    ```
    VITE_API_URL=https://devlab-backend.railway.app
-   VITE_GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+   VITE_GEMINI_API_KEY=your_gemini_api_key_here
    ```
 6. **Click "Deploy"**
 
@@ -34,7 +34,7 @@
    - **Start Command:** `npm start`
 5. **Environment Variables:**
    ```
-   GEMINI_API_KEY=AIzaSyBJSbRei0fxnTRN1yb3V0NlJ623pBqKWcw
+   GEMINI_API_KEY=your_gemini_api_key_here
    NODE_ENV=production
    PORT=3001
    CORS_ORIGINS=https://devlab-frontend.vercel.app

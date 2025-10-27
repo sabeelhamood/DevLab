@@ -33,7 +33,7 @@ VERCEL_ORG_ID=team_xxx (optional)
 RAILWAY_TOKEN=railway_xxx
 RAILWAY_PROJECT_ID=xxx
 RAILWAY_SERVICE_ID=xxx (optional)
-GEMINI_API_KEY=AIzaSyDgOreTpwU_3m5l4Q_r_7BnDjqHtbI5W3s
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Environment Variables
