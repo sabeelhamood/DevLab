@@ -514,25 +514,6 @@ int sum(int a, int b) {
           </div>
         )}
 
-        {/* Rate Limit Notice */}
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-yellow-800">
-                AI Service Notice
-              </h3>
-              <p className="mt-1 text-sm text-yellow-700">
-                The AI service is currently experiencing high demand. Some features like hints and detailed feedback may use fallback responses. 
-                You can still use the Judge0 code execution and test cases normally.
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Question Panel */}
@@ -565,7 +546,7 @@ int sum(int a, int b) {
                   {(question.question_type === 'code' || question.questionType === 'coding') ? '💻 CODE' : '🧠 THEORETICAL'}
                 </span>
               </div>
-              <div className="flex items-center space-x-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                 <span>Difficulty: {question.difficulty}</span>
               </div>
             </div>
@@ -573,10 +554,8 @@ int sum(int a, int b) {
             {/* Question Content Area */}
             <div className="mb-6">
               <div 
-                className="rounded-xl p-6 border-2"
+                className="rounded-xl p-6 border-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
                 style={{ 
-                  background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
-                  borderColor: 'rgba(6, 95, 70, 0.2)',
                   boxShadow: '0 4px 20px rgba(6, 95, 70, 0.1)'
                 }}
               >
@@ -589,14 +568,12 @@ int sum(int a, int b) {
                   </div>
                   <div className="flex-1">
                     <h3 
-                      className="text-lg font-semibold mb-2"
-                      style={{ color: 'var(--text-primary)' }}
+                      className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200"
                     >
                       Problem Statement
                     </h3>
                     <div 
-                      className="prose prose-lg max-w-none"
-                      style={{ color: 'var(--text-primary)' }}
+                      className="prose prose-lg max-w-none text-gray-800 dark:text-gray-200"
                     >
                       <div className="leading-relaxed text-base font-medium whitespace-pre-wrap">
                         {typeof question.question_content === 'string' 
@@ -761,7 +738,7 @@ int sum(int a, int b) {
                                 className="text-sm font-semibold"
                                 style={{ color: '#1e293b' }}
                               >
-                                Expected Output: {(() => {
+                                <span className="font-bold" style={{ color: '#1e40af' }}>Expected Output:</span> {(() => {
                                   if (testCase.expected_output !== undefined) {
                                     return typeof testCase.expected_output === 'object' 
                                       ? JSON.stringify(testCase.expected_output, null, 2)
