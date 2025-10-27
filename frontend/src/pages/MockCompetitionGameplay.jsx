@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  Trophy, 
   Clock, 
   Target, 
   Zap, 
@@ -308,7 +307,7 @@ const MockCompetitionGameplay = () => {
       
       {/* Enhanced Floating Game Icons */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Trophy Icons */}
+        {/* Award Icons */}
         <div className="floating-icon" style={{
           position: 'absolute',
           top: '8%',
@@ -596,7 +595,7 @@ const MockCompetitionGameplay = () => {
                   boxShadow: 'var(--shadow-glow)'
                 }}
               >
-                <Trophy className="w-6 h-6 text-white" />
+                <Award className="w-6 h-6 text-white" />
               </div>
               <div 
                 className="text-2xl font-bold mb-1"

@@ -1,7 +1,6 @@
 // frontend/src/pages/CompetitionPage.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Trophy, 
   Users, 
   Clock, 
   Target, 
@@ -58,7 +57,7 @@ const CompetitionPage = () => {
       
       {/* Floating Motivational Icons */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Trophy Icons */}
+        {/* Award Icons */}
         <div className="floating-icon" style={{
           position: 'absolute',
           top: '8%',
@@ -278,7 +277,7 @@ const CompetitionPage = () => {
                   boxShadow: 'var(--shadow-glow)'
                 }}
               >
-                <Trophy className="w-8 h-8" />
+                <Award className="w-8 h-8" />
               </div>
               <div>
                 <h1 
@@ -473,7 +472,7 @@ const CompetitionPage = () => {
                       boxShadow: 'var(--shadow-glow)'
                     }}
                   >
-                    <Trophy className="w-10 h-10 text-white" />
+                    <Award className="w-10 h-10 text-white" />
                   </div>
                   <p 
                     className="text-xl font-semibold mb-2"

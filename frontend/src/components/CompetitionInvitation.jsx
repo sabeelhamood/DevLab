@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Users, 
   Clock, 
-  Trophy, 
   CheckCircle, 
   XCircle, 
   Star,
@@ -463,7 +462,7 @@ function CompetitionInvitation() {
                   boxShadow: 'var(--shadow-glow)'
                 }}
               >
-                <Trophy className="w-8 h-8" />
+                <Crown className="w-8 h-8" />
               </div>
               <div>
                 <h1 
