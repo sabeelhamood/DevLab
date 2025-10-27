@@ -202,8 +202,12 @@ export class Judge0Service {
     }
     
     if (!functionName) {
-      console.log('⚠️ Judge0: No Python function detected, executing as-is');
-      return sourceCode;
+      console.log('⚠️ Judge0: No Python function detected, trying fallback approach');
+      
+      // Fallback: Try to execute the code as-is and capture any output
+      const wrappedCode = `${sourceCode}\n\n# Fallback execution - capture any output\nprint("Code executed successfully")`;
+      console.log('🔧 Judge0: Using fallback wrapped Python code:', wrappedCode);
+      return wrappedCode;
     }
     
     // Create function call
@@ -217,7 +221,8 @@ export class Judge0Service {
       functionCall = `${functionName}()`;
     }
     
-    const wrappedCode = `${sourceCode}\n\n# Test execution\nresult = ${functionCall}\nprint(result)`;
+    // Use print with explicit string conversion to ensure output is captured
+    const wrappedCode = `${sourceCode}\n\n# Test execution\nresult = ${functionCall}\nprint(str(result))`;
     console.log('🔧 Judge0: Wrapped Python code:', wrappedCode);
     return wrappedCode;
   }
@@ -444,8 +449,13 @@ int main() {
     }
     
     if (!functionName) {
-      console.log('⚠️ Judge0: No function pattern detected, executing code as-is');
-      return sourceCode;
+      console.log('⚠️ Judge0: No function pattern detected, trying fallback approach');
+      
+      // Fallback: Try to execute the code as-is and capture any output
+      // This handles cases where the code might be a simple expression or statement
+      const wrappedCode = `${sourceCode}\n\n// Fallback execution - capture any output\nconsole.log("Code executed successfully");`;
+      console.log('🔧 Judge0: Using fallback wrapped code:', wrappedCode);
+      return wrappedCode;
     }
     
     // Parse input safely
@@ -476,7 +486,8 @@ int main() {
     }
     
     // Create wrapped code that executes the function and prints the result
-    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nconsole.log(result);`;
+    // Use console.log to ensure output is captured
+    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nconsole.log(JSON.stringify(result));`;
     
     console.log('🔧 Judge0: Wrapped code:', wrappedCode);
     return wrappedCode;
