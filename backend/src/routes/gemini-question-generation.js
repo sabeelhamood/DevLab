@@ -15,6 +15,20 @@ router.get('/test-cors', (req, res) => {
   })
 })
 
+// Health check endpoint for question generation service
+router.get('/health', (req, res) => {
+  console.log('🏥 Health check: Question generation service')
+  res.json({
+    status: 'healthy',
+    service: 'question-generation',
+    timestamp: new Date().toISOString(),
+    cors: {
+      origin: req.header('Origin'),
+      allowed: true
+    }
+  })
+})
+
 // Generate question based on course, topic, and skills
 router.post('/generate-question', async (req, res) => {
   try {
@@ -374,6 +388,8 @@ router.post('/generate-question-package', async (req, res) => {
       })
     }
 
+    console.log('✅ Backend: Starting question generation process...')
+    
     // Get practice_questions_count from Directory Microservice
     let finalQuestionCount = questionCount
     try {

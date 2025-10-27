@@ -62,7 +62,6 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function(origin, callback) {
     console.log('🌐 CORS: Request from origin:', origin);
-    console.log('🌐 CORS: Request method:', 'OPTIONS' || 'GET' || 'POST');
     
     // Allow requests with no origin (like Postman, mobile apps, curl)
     if (!origin) {
@@ -96,6 +95,18 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Additional CORS middleware for debugging
+app.use((req, res, next) => {
+  console.log('🔍 Request details:', {
+    method: req.method,
+    url: req.url,
+    origin: req.header('Origin'),
+    userAgent: req.header('User-Agent'),
+    headers: req.headers
+  });
+  next();
+});
 
 // Handle preflight requests explicitly for all routes
 app.options('*', (req, res) => {
