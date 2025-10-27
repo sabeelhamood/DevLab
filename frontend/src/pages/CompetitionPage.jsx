@@ -12,7 +12,6 @@ import {
   XCircle,
   Timer,
   Star,
-  TrendingUp,
   Rocket,
   Plus
 } from 'lucide-react';
@@ -20,10 +19,11 @@ import {
 const CompetitionPage = () => {
   const [activeTab, setActiveTab] = useState('invitations');
   const [competitions, setCompetitions] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
+  const [isClient, setIsClient] = useState(false);
 
   // Mock data for demonstration
   useEffect(() => {
+    setIsClient(true);
     // Mock competitions data
     setCompetitions([
       {
@@ -48,23 +48,8 @@ const CompetitionPage = () => {
       }
     ]);
 
-    // Mock leaderboard data
-    setLeaderboard([
-      { rank: 1, name: "Alex Johnson", score: 285, wins: 12, avatar: "👨‍💻" },
-      { rank: 2, name: "Sarah Chen", score: 267, wins: 10, avatar: "👩‍💻" },
-      { rank: 3, name: "Mike Rodriguez", score: 245, wins: 8, avatar: "👨‍🎓" },
-      { rank: 4, name: "Emma Wilson", score: 223, wins: 7, avatar: "👩‍🎓" },
-      { rank: 5, name: "David Kim", score: 201, wins: 6, avatar: "👨‍🔬" }
-    ]);
   }, []);
 
-  const handleJoinCompetition = (competitionId) => {
-    alert(`Joining competition ${competitionId}! This would start the live competition.`);
-  };
-
-  const handleCreateCompetition = () => {
-    alert("Creating new competition invitation! This would invite other learners.");
-  };
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
@@ -324,7 +309,6 @@ const CompetitionPage = () => {
           {[
             { id: 'invitations', label: 'Invitations', icon: Users },
             { id: 'active', label: 'Active', icon: Play },
-            { id: 'leaderboard', label: 'Leaderboard', icon: TrendingUp },
             { id: 'history', label: 'History', icon: Clock }
           ].map(tab => (
             <button
@@ -366,30 +350,6 @@ const CompetitionPage = () => {
                   >
                     Competition Invitations
                   </h2>
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={handleCreateCompetition}
-                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
-                      style={{
-                        background: 'var(--gradient-accent)',
-                        boxShadow: 'var(--shadow-glow)'
-                      }}
-                    >
-                      Create Competition
-                    </button>
-                    
-                    <button
-                      onClick={() => navigate('/mock-competition/demo/question/1')}
-                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 flex items-center space-x-2"
-                      style={{
-                        background: 'var(--gradient-primary)',
-                        boxShadow: 'var(--shadow-glow)'
-                      }}
-                    >
-                      <Rocket className="w-4 h-4" />
-                      <span>Try Demo Game</span>
-                    </button>
-                  </div>
                 </div>
                 
                 <div className="grid gap-6">
@@ -473,7 +433,7 @@ const CompetitionPage = () => {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleJoinCompetition(competition.id)}
+                          onClick={() => window.location.href = 'https://dev-lab-phi.vercel.app/mock-competition/demo/question/1'}
                           className="px-8 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105"
                           style={{
                             background: 'var(--gradient-primary)',
@@ -489,97 +449,6 @@ const CompetitionPage = () => {
               </div>
             )}
 
-            {activeTab === 'leaderboard' && (
-              <div className="space-y-6">
-                <h2 
-                  className="text-3xl font-bold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Leaderboard
-                </h2>
-                
-                <div 
-                  className="rounded-2xl overflow-hidden border-2"
-                  style={{ 
-                    background: 'var(--gradient-card)',
-                    borderColor: 'rgba(6, 95, 70, 0.2)',
-                    boxShadow: 'var(--shadow-card)'
-                  }}
-                >
-                  <div 
-                    className="grid grid-cols-4 gap-4 p-6 font-semibold"
-                    style={{ 
-                      background: 'var(--gradient-primary)',
-                      color: 'white'
-                    }}
-                  >
-                    <div>Rank</div>
-                    <div>Player</div>
-                    <div>Score</div>
-                    <div>Wins</div>
-                  </div>
-                  
-                  {leaderboard.map((player, index) => (
-                    <div
-                      key={player.rank}
-                      className={`grid grid-cols-4 gap-4 p-6 border-b transition-all duration-300 hover:scale-105 ${
-                        index < 3 
-                          ? 'bg-gradient-to-r from-yellow-50 to-orange-50' 
-                          : 'hover:bg-gray-50'
-                      }`}
-                      style={{ 
-                        borderColor: 'rgba(6, 95, 70, 0.1)'
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        {index < 3 && (
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center"
-                            style={{
-                              background: index === 0 
-                                ? 'var(--gradient-accent)' 
-                                : index === 1 
-                                ? 'linear-gradient(135deg, #64748b, #475569)'
-                                : 'linear-gradient(135deg, #d97706, #f59e0b)',
-                              boxShadow: 'var(--shadow-glow)'
-                            }}
-                          >
-                            <Trophy className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                        <span 
-                          className="font-bold text-lg"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          #{player.rank}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-3xl">{player.avatar}</span>
-                        <span 
-                          className="font-semibold text-lg"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          {player.name}
-                        </span>
-                      </div>
-                      <div 
-                        className="font-bold text-xl"
-                        style={{ color: 'var(--primary-green)' }}
-                      >
-                        {player.score}
-                      </div>
-                      <div 
-                        className="font-semibold text-lg"
-                        style={{ color: 'var(--accent-green)' }}
-                      >
-                        {player.wins}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {activeTab === 'active' && (
               <div className="space-y-6">

@@ -18,6 +18,7 @@ import {
   Timer,
   Rocket
 } from 'lucide-react';
+import soundManager from '../utils/soundManager';
 
 const MockCompetitionGameplay = () => {
   const navigate = useNavigate();
@@ -36,8 +37,9 @@ const MockCompetitionGameplay = () => {
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
-  const audioRef = useRef(null);
   const timerRef = useRef(null);
 
   // Mock questions data
@@ -88,38 +90,47 @@ const MockCompetitionGameplay = () => {
 
   const currentQuestionData = mockQuestions[currentQuestion - 1];
 
-  // Sound effects
+  // Initialize sound and start background music when component mounts
+  useEffect(() => {
+    setIsClient(true);
+    // Start background music when entering competition
+    soundManager.playBackgroundMusic();
+    
+    return () => {
+      // Stop background music when leaving
+      soundManager.stopBackgroundMusic();
+    };
+  }, []);
+
+  // Sound effects using sound manager
   const playSound = (soundType) => {
     if (!soundEnabled) return;
     
-    const sounds = {
-      start: () => {
-        // Play start sound
-        console.log('🔊 Playing start sound');
-      },
-      pause: () => {
-        // Play pause sound
-        console.log('🔊 Playing pause sound');
-      },
-      complete: () => {
-        // Play completion sound
-        console.log('🔊 Playing completion sound');
-      },
-      correct: () => {
-        // Play correct answer sound
-        console.log('🔊 Playing correct sound');
-      },
-      wrong: () => {
-        // Play wrong answer sound
-        console.log('🔊 Playing wrong sound');
-      },
-      timer: () => {
-        // Play timer warning sound
-        console.log('🔊 Playing timer warning');
-      }
-    };
-    
-    sounds[soundType]?.();
+    switch (soundType) {
+      case 'start':
+        soundManager.playSound('start') || soundManager.playFallbackStart();
+        break;
+      case 'pause':
+        soundManager.playSound('pause');
+        break;
+      case 'complete':
+        soundManager.playSound('complete') || soundManager.playFallbackComplete();
+        break;
+      case 'correct':
+        soundManager.playSound('correct') || soundManager.playFallbackCorrect();
+        break;
+      case 'wrong':
+        soundManager.playSound('wrong') || soundManager.playFallbackWrong();
+        break;
+      case 'timer':
+        soundManager.playSound('timer') || soundManager.playFallbackTimer();
+        break;
+      case 'join':
+        soundManager.playSound('join') || soundManager.playFallbackJoin();
+        break;
+      default:
+        break;
+    }
   };
 
   useEffect(() => {
@@ -139,6 +150,11 @@ const MockCompetitionGameplay = () => {
             playSound('timer');
           }
           
+          // Play countdown sound for last 10 seconds
+          if (prev <= 10 && prev > 0) {
+            playSound('timer');
+          }
+          
           return prev - 1;
         });
       }, 1000);
@@ -155,6 +171,7 @@ const MockCompetitionGameplay = () => {
 
   const handleStart = () => {
     setIsRunning(true);
+    setHasStarted(true);
     playSound('start');
   };
 
@@ -166,6 +183,7 @@ const MockCompetitionGameplay = () => {
   const handleReset = () => {
     setIsRunning(false);
     setIsCompleted(false);
+    setHasStarted(false);
     setTimeLeft(currentQuestionData?.timeLimit || 600);
     setAnswer(currentQuestionData?.starterCode || '');
   };
@@ -207,6 +225,7 @@ const MockCompetitionGameplay = () => {
       setTimeLeft(600);
       setIsRunning(false);
       setIsCompleted(false);
+      setHasStarted(false);
       setShowResult(false);
       setResult(null);
     } else {
@@ -287,8 +306,9 @@ const MockCompetitionGameplay = () => {
       {/* Animated Background */}
       <div className="bg-animation"></div>
       
-      {/* Floating Game Icons */}
+      {/* Enhanced Floating Game Icons */}
       <div className="absolute inset-0 pointer-events-none">
+        {/* Trophy Icons */}
         <div className="floating-icon" style={{
           position: 'absolute',
           top: '8%',
@@ -309,6 +329,7 @@ const MockCompetitionGameplay = () => {
           animationDelay: '2s'
         }}>🚀</div>
         
+        {/* Lightning and Energy Icons */}
         <div className="floating-icon" style={{
           position: 'absolute',
           top: '45%',
@@ -329,6 +350,7 @@ const MockCompetitionGameplay = () => {
           animationDelay: '1s'
         }}>💡</div>
         
+        {/* Target and Achievement Icons */}
         <div className="floating-icon" style={{
           position: 'absolute',
           top: '60%',
@@ -348,6 +370,66 @@ const MockCompetitionGameplay = () => {
           animation: 'floatUpDown 4.8s ease-in-out infinite',
           animationDelay: '2.5s'
         }}>⭐</div>
+        
+        {/* Additional Gaming Icons */}
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '15%',
+          left: '25%',
+          fontSize: '34px',
+          color: 'rgba(15, 118, 110, 0.4)',
+          animation: 'floatUpDown 5.2s ease-in-out infinite',
+          animationDelay: '1.5s'
+        }}>🎮</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '15%',
+          left: '8%',
+          fontSize: '42px',
+          color: 'rgba(4, 120, 87, 0.4)',
+          animation: 'floatUpDown 4.2s ease-in-out infinite',
+          animationDelay: '3.5s'
+        }}>🔥</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          top: '70%',
+          right: '5%',
+          fontSize: '30px',
+          color: 'rgba(6, 95, 70, 0.4)',
+          animation: 'floatUpDown 6.2s ease-in-out infinite',
+          animationDelay: '2.8s'
+        }}>💎</div>
+        
+        <div className="floating-icon" style={{
+          position: 'absolute',
+          bottom: '50%',
+          right: '25%',
+          fontSize: '35px',
+          color: 'rgba(217, 119, 6, 0.4)',
+          animation: 'floatUpDown 4.7s ease-in-out infinite',
+          animationDelay: '1.8s'
+        }}>🎪</div>
+        
+        {/* Floating Particles - Only render on client side */}
+        {isClient && [...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="particle"
+            style={{
+              position: 'absolute',
+              width: `${Math.random() * 4 + 2}px`,
+              height: `${Math.random() * 4 + 2}px`,
+              background: `rgba(${Math.random() > 0.5 ? '6, 95, 70' : '217, 119, 6'}, ${Math.random() * 0.3 + 0.2})`,
+              borderRadius: '50%',
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `particleFloat ${Math.random() * 8 + 12}s linear infinite`,
+              animationDelay: `${Math.random() * 5}s`
+            }}
+          />
+        ))}
       </div>
       
       {/* CSS Animations */}
@@ -371,6 +453,23 @@ const MockCompetitionGameplay = () => {
           }
         }
         
+        @keyframes particleFloat {
+          0% { 
+            transform: translateY(100vh) translateX(0px) rotate(0deg);
+            opacity: 0;
+          }
+          10% { 
+            opacity: 0.6;
+          }
+          90% { 
+            opacity: 0.6;
+          }
+          100% { 
+            transform: translateY(-100px) translateX(${Math.random() * 200 - 100}px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        
         @keyframes pulseGlow {
           0%, 100% { 
             box-shadow: 0 0 20px rgba(6, 95, 70, 0.3);
@@ -382,15 +481,63 @@ const MockCompetitionGameplay = () => {
           }
         }
         
+        @keyframes bounceIn {
+          0% {
+            transform: scale(0.3);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+          20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+        
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 5px rgba(6, 95, 70, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 20px rgba(6, 95, 70, 0.8);
+          }
+        }
+        
+        .bounce-in {
+          animation: bounceIn 0.6s ease-out;
+        }
+        
+        .shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        .glow {
+          animation: glow 2s ease-in-out infinite;
+        }
+        
         @media (max-width: 768px) {
           .floating-icon {
             font-size: 24px !important;
             animation-duration: 6s !important;
           }
+          .particle {
+            animation-duration: 18s !important;
+          }
         }
         
         @media (prefers-reduced-motion: reduce) {
-          .floating-icon {
+          .floating-icon,
+          .particle {
             animation: none !important;
           }
         }
@@ -416,7 +563,10 @@ const MockCompetitionGameplay = () => {
             
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
+                onClick={() => {
+                  const newSoundEnabled = soundManager.toggleSound();
+                  setSoundEnabled(newSoundEnabled);
+                }}
                 className="p-3 rounded-xl transition-all duration-300 hover:scale-105"
                 style={{
                   background: 'var(--gradient-card)',
@@ -586,7 +736,7 @@ const MockCompetitionGameplay = () => {
                   {!isRunning && !isCompleted && (
                     <button
                       onClick={handleStart}
-                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 flex items-center space-x-2"
+                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 flex items-center space-x-2 bounce-in glow"
                       style={{
                         background: 'var(--gradient-primary)',
                         boxShadow: 'var(--shadow-glow)'
@@ -806,7 +956,7 @@ const MockCompetitionGameplay = () => {
                 <button
                   onClick={handleAutoSubmit}
                   disabled={loading || isCompleted}
-                  className="px-8 py-4 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3"
+                  className="px-8 py-4 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 bounce-in"
                   style={{
                     background: 'var(--gradient-primary)',
                     boxShadow: 'var(--shadow-glow)'
@@ -824,7 +974,7 @@ const MockCompetitionGameplay = () => {
         {showResult && result && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div 
-              className="rounded-2xl p-8 max-w-md w-full mx-4 border-2"
+              className={`rounded-2xl p-8 max-w-md w-full mx-4 border-2 ${result.correct ? 'bounce-in' : 'shake'}`}
               style={{ 
                 background: 'var(--gradient-card)',
                 borderColor: 'rgba(6, 95, 70, 0.2)',
@@ -833,7 +983,7 @@ const MockCompetitionGameplay = () => {
             >
               <div className="text-center">
                 <div 
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                  className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 ${result.correct ? 'glow' : ''}`}
                   style={{ 
                     background: result.correct ? 'var(--gradient-primary)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
                     boxShadow: 'var(--shadow-glow)'

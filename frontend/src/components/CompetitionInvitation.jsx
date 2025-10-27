@@ -12,15 +12,25 @@ import {
   Crown,
   AlertCircle
 } from 'lucide-react'
+import soundManager from '../utils/soundManager'
 
 function CompetitionInvitation() {
   const navigate = useNavigate()
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [responding, setResponding] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     loadInvitation()
+    // Start background music when entering invitation page
+    soundManager.playBackgroundMusic()
+    
+    return () => {
+      // Stop background music when leaving
+      soundManager.stopBackgroundMusic()
+    }
   }, [])
 
   const loadInvitation = async () => {
@@ -66,6 +76,9 @@ function CompetitionInvitation() {
 
   const handleAcceptInvitation = async (competitorId) => {
     setResponding(true)
+    // Play join sound
+    soundManager.playSound('join') || soundManager.playFallbackJoin()
+    
     try {
       const response = await fetch(`/api/competitions/invitation/${invitation.id}/respond`, {
         method: 'POST',
@@ -296,8 +309,8 @@ function CompetitionInvitation() {
           animationDelay: '2.5s'
         }}>⭐</div>
         
-        {/* Enhanced Floating Particles */}
-        {[...Array(20)].map((_, i) => (
+        {/* Enhanced Floating Particles - Only render on client side */}
+        {isClient && [...Array(20)].map((_, i) => (
           <div
             key={i}
             className="particle"

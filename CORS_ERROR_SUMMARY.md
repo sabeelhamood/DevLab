@@ -78,3 +78,4 @@ So when `CORS_ORIGINS` is not set in Railway, your Vercel frontend URL is not in
 5. Refresh your Vercel app
 
 Done! ✨
+
