@@ -7,7 +7,7 @@ import app from './src/app.js';
 import { config } from './src/config/environment.js';
 import logger from './src/utils/logger.js';
 
-const PORT = config.port;
+const PORT = process.env.PORT || config.port || 3001;
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

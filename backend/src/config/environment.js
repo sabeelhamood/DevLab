@@ -22,7 +22,10 @@ const requiredEnvVars = [
 ];
 
 // Validate required environment variables
+// Note: In production (Railway), we don't block startup - server must start for healthchecks
+// Missing keys will be reported in /health endpoint but won't prevent server from starting
 const validateEnv = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
   const missing = [];
   
   // Only require GEMINI_API_KEY for question generation to work
@@ -59,7 +62,15 @@ const validateEnv = () => {
       `  Create backend/.env with:\n` +
       `  GEMINI_API_KEY=your-api-key-from-railway\n\n` +
       `Get your Gemini API key from Railway Service Variables.`;
-    throw new Error(errorMsg);
+    
+    // In production (Railway), warn but don't throw - server must start for healthchecks
+    if (isProduction) {
+      console.warn(`⚠️  WARNING: ${errorMsg}`);
+      console.warn('⚠️  Server will start but some features will not work until environment variables are set.');
+    } else {
+      // In development, throw to prevent running with missing config
+      throw new Error(errorMsg);
+    }
   }
 };
 
