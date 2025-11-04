@@ -39,7 +39,8 @@ COPY src ./src
 # Switch to non-root user
 USER nodejs
 
-# Expose port (for local testing only)
+# Expose port (Railway will inject PORT env var at runtime)
+# Note: EXPOSE is just documentation - Railway routes to whatever port the app listens on
 EXPOSE 3000
 
 # Start the app
