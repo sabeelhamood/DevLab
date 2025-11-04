@@ -90,3 +90,4 @@ If after 2-3 minutes you still see CORS errors:
 
 **Expected Result:** Your Vercel frontend should successfully communicate with Railway backend without CORS errors.
 
+

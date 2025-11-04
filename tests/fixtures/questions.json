@@ -1,0 +1,38 @@
+{
+  "codingQuestion": {
+    "question_id": "q_test_001",
+    "question_text": "Write a function that returns the sum of two numbers",
+    "programming_language": "Python",
+    "course_name": "Python Fundamentals",
+    "lesson_name": "Functions",
+    "nano_skills": ["function_definition", "return_statement"],
+    "micro_skills": ["python_basics"],
+    "test_cases": [
+      {
+        "input": "2, 3",
+        "expected_output": "5",
+        "is_hidden": false
+      },
+      {
+        "input": "-5, 10",
+        "expected_output": "5",
+        "is_hidden": false
+      }
+    ],
+    "hints": [
+      "Think about what a function needs: parameters and a return statement",
+      "Consider how you can add two numbers together",
+      "Remember to return the result"
+    ]
+  },
+  "theoreticalQuestion": {
+    "question_id": "q_test_002",
+    "question_text": "What is the difference between a list and a tuple in Python?",
+    "question_type": "theoretical",
+    "course_name": "Python Fundamentals",
+    "lesson_name": "Data Structures"
+  }
+}
+
+
+

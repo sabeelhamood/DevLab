@@ -1,52 +1,44 @@
-import { config } from '../config/environment.js'
+/**
+ * Error Handler Middleware
+ * Centralized error handling
+ */
 
-export const errorHandler = (err, req, res, next) => {
-  let error = { ...err }
-  error.message = err.message
+import logger from '../utils/logger.js';
+import { config } from '../config/environment.js';
 
-  // Log error
-  console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-  })
+const errorHandler = (err, req, res, next) => {
+  logger.error('Error:', {
+    error: err.message,
+    stack: config.env !== 'production' ? err.stack : undefined,
+    path: req.path,
+    method: req.method
+  });
 
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    const message = 'Resource not found'
-    error = { name: 'CastError', message, statusCode: 404 }
-  }
+  // Default error
+  let statusCode = err.status || err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
 
-  // Mongoose duplicate key
-  if (err.name === 'MongoError' && err.code === 11000) {
-    const message = 'Duplicate field value entered'
-    error = { name: 'MongoError', message, statusCode: 400 }
-  }
-
-  // Mongoose validation error
+  // Validation errors
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map((val) => val.message).join(', ')
-    error = { name: 'ValidationError', message, statusCode: 400 }
+    statusCode = 400;
+    message = 'Validation Error';
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token'
-    error = { name: 'JsonWebTokenError', message, statusCode: 401 }
+    statusCode = 401;
+    message = 'Invalid token';
   }
 
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired'
-    error = { name: 'TokenExpiredError', message, statusCode: 401 }
-  }
+  res.status(statusCode).json({
+    error: config.env === 'production' && statusCode === 500 
+      ? 'Internal Server Error' 
+      : message,
+    ...(config.env !== 'production' && { stack: err.stack })
+  });
+};
 
-  res.status(error.statusCode || 500).json({
-    success: false,
-    error: error.message || 'Server Error',
-    ...(config.nodeEnv === 'development' && { stack: err.stack }),
-  })
-}
+export default errorHandler;
+
+
 

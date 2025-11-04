@@ -1,193 +1,185 @@
 # DEVLAB Microservice
 
-An advanced, AI-powered microservice within the EduCore AI learning platform, designed to provide interactive, intelligent learning experiences for organizational employees.
+Advanced AI-powered interactive learning environment for practical coding exercises and exam preparation.
 
-## Overview
+## 🚀 Quick Start (Localhost)
 
-DEVLAB provides personalized, practical coding exercises and theoretical questions tailored to individual learners' skill levels, course requirements, and organizational needs. The microservice integrates seamlessly with other EduCore AI services while maintaining independent development and deployment capabilities.
+**Before deployment, test the application locally:**
 
-## Key Features
+### 1. Install Dependencies
 
-- **AI-Powered Question Generation**: Dynamic, personalized questions using Gemini AI
-- **Multi-Language Support**: Python, Java, JavaScript, C++, Go, Rust with syntax highlighting
-- **Secure Code Execution**: Sandboxed environment for safe code testing
-- **Real-Time Feedback**: AI-generated guidance and improvement suggestions
-- **Learning Analytics**: Comprehensive progress tracking and reporting
-- **Instructor Tools**: Content management and question repository
-- **Microservice Integration**: Seamless data flow with EduCore AI ecosystem
+```bash
+# Backend
+cd backend
+npm install
 
-## Architecture
+# Frontend (new terminal)
+cd frontend
+npm install
+```
 
-- **Frontend**: React 18 + TypeScript + Tailwind CSS
-- **Backend**: Node.js 20 + Express + TypeScript
-- **Database**: PostgreSQL (Supabase) + MongoDB Atlas
-- **Infrastructure**: Vercel + Railway
-- **AI Integration**: Gemini API + SandBox API
-- **Monitoring**: Application monitoring and logging
+### 2. Configure Environment Variables
 
-## Quick Start
+Create `backend/.env`:
+```env
+NODE_ENV=development
+PORT=3001
+SUPABASE_URL=your-supabase-url
+SUPABASE_KEY=your-supabase-key
+MONGO_URL=mongodb://localhost:27017/devlab-dev
+GEMINI_API_KEY=your-gemini-key
+JUDGE0_API_KEY=your-judge0-key
+JUDGE0_API_URL=https://judge0-ce.p.rapidapi.com
+CORS_ORIGINS=http://localhost:5173
+LOG_LEVEL=debug
+```
 
-### Prerequisites
+Create `frontend/.env.local`:
+```env
+VITE_API_URL=http://localhost:3001
+```
 
-- Node.js 20+
-- npm or yarn
-- Supabase account
-- MongoDB Atlas account
-- Vercel account
-- Railway account
+### 3. Start Development Servers
 
-### Development Setup
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run dev
+```
+Backend runs on: **http://localhost:3001**
 
-1. **Clone and Install**
-   ```bash
-   git clone <repository-url>
-   cd devlab-microservice
-   npm install
-   ```
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+Frontend runs on: **http://localhost:5173**
 
-2. **Environment Configuration**
-   ```bash
-   # Configure environment variables in Vercel and Railway
-   # No .env files needed - all secrets managed through cloud platforms
-   ```
+### 4. Open in Browser
 
-3. **Start Development Environment**
-   ```bash
-   npm run dev
-   ```
+Visit: **http://localhost:5173**
 
-4. **Run Tests**
-   ```bash
-   npm run test
-   npm run test:coverage
-   ```
+**⚠️ Important**: This project is **NOT pushed to GitHub**. All code is local only. Test thoroughly on localhost before any deployment.
+
+**Note**: The application is ready for localhost testing. No deployment will occur until you've tested it locally and approved.
 
 ## Project Structure
 
 ```
-devlab-microservice/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Application pages
-│   │   ├── services/       # API services
-│   │   ├── hooks/          # Custom React hooks
-│   │   └── types/          # TypeScript type definitions
-│   ├── public/             # Static assets
-│   └── tests/              # Frontend tests
-├── backend/                 # Express backend application
-│   ├── src/
-│   │   ├── routes/         # Express routes
-│   │   ├── services/       # Business logic services
-│   │   ├── middleware/     # Express middleware
-│   │   └── config/         # Configuration files
-│   ├── tests/              # Backend tests
-│   └── migrations/         # Database migrations
-├── tests/                   # Integration & E2E Tests
-│   ├── integration/        # Integration tests
-│   ├── e2e/               # End-to-end tests
-│   └── fixtures/          # Test data fixtures
-├── docs/                   # Documentation
-└── scripts/                # Utility scripts
+DevLab/
+├── frontend/          # React + Vite frontend
+├── backend/           # Node.js + Express backend
+├── tests/             # Test suite (TDD)
+└── docs/              # Documentation
 ```
 
-## Development Workflow
+## Getting Started
 
-### TDD Methodology
+### Prerequisites
 
-This project follows strict Test-Driven Development (TDD) principles:
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- MongoDB Atlas account
+- Gemini API key
+- Judge0 API key
 
-1. **RED**: Write failing tests first
-2. **GREEN**: Implement minimal code to pass tests
-3. **REFACTOR**: Optimize and clean code while maintaining tests
+### Installation
 
-### Code Quality
+1. **Clone repository**
+```bash
+git clone <repository-url>
+cd DevLab
+```
 
-- **TypeScript**: Full type safety across frontend and backend
-- **ESLint + Prettier**: Automated code formatting and linting
-- **Jest**: Comprehensive testing framework
-- **Coverage**: 95% test coverage requirement
-- **Pre-commit Hooks**: Automated quality checks
+2. **Install frontend dependencies**
+```bash
+cd frontend
+npm install
+```
 
-### Git Workflow
+3. **Install backend dependencies**
+```bash
+cd ../backend
+npm install
+```
 
-1. **Feature Branches**: Create feature branches from `develop`
-2. **Pull Requests**: All changes require PR review
-3. **Quality Gates**: Automated testing and quality checks
-4. **Deployment**: Automated deployment to staging/production
+4. **Configure environment variables**
 
-## API Documentation
+Backend (`.env`):
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
 
-### Authentication Endpoints
+Frontend (`.env.local`):
+```bash
+cp .env.local.example .env.local
+# Edit .env.local with your values
+```
 
-- `POST /api/auth/validate` - Validate JWT token
-- `POST /api/auth/refresh` - Refresh JWT token
-- `GET /api/auth/roles` - Get user roles
+### Development
 
-### Question Management
+**Start backend**:
+```bash
+cd backend
+npm run dev
+```
 
-- `GET /api/questions/personalized` - Get personalized questions
-- `POST /api/questions/{id}/submit` - Submit code solution
-- `GET /api/questions/{id}/feedback` - Get AI feedback
+**Start frontend**:
+```bash
+cd frontend
+npm run dev
+```
 
-### Learning Analytics
+Backend runs on `http://localhost:3001`
+Frontend runs on `http://localhost:5173`
 
-- `GET /api/analytics/learner/{id}` - Get learner progress
-- `POST /api/analytics/practice-completion` - Send completion data
-- `GET /api/analytics/dashboard` - Get analytics dashboard
+### Testing
 
-## External Integrations
+**Run all tests**:
+```bash
+# Backend
+cd backend
+npm test
 
-### EduCore AI Services
+# Frontend
+cd frontend
+npm test
+```
 
-- **Directory Service**: Learner profiles and quotas
-- **Authentication Service**: JWT validation and user roles
-- **Assessment Service**: Theoretical questions and code questions
-- **Content Studio**: GPT-generated and trainer questions
-- **Learning Analytics**: Progress tracking and reporting
-- **HR Reporting**: Practice levels and competencies
-- **Contextual Assistant**: Performance insights and chatbot
+**Run tests in watch mode**:
+```bash
+npm run test:watch
+```
 
-### AI Services
+## Features
 
-- **Gemini API**: Question generation and feedback
-- **SandBox API**: Secure code execution
+- Dynamic question generation (Gemini AI)
+- Secure code execution (Judge0)
+- AI-powered feedback system
+- Progressive hint system
+- Anonymous competitions
+- AI fraud detection
+- Trainer question validation
 
-## Monitoring & Observability
+## Technology Stack
 
-- **Application Monitoring**: Performance and error tracking
-- **Logging**: Comprehensive logging with MongoDB Atlas
-- **Health Checks**: Automated health monitoring
-- **Analytics**: Learning analytics and reporting
+- **Frontend**: React 18, Vite, Tailwind CSS
+- **Backend**: Node.js, Express.js
+- **Databases**: Supabase (PostgreSQL), MongoDB Atlas
+- **External APIs**: Gemini, Judge0
+- **Testing**: Jest, React Testing Library, Vitest
 
-## Security
+## Documentation
 
-- **JWT Authentication**: Secure token-based authentication
-- **RBAC**: Role-based access control
-- **Sandbox Isolation**: Secure code execution
-- **Data Encryption**: At rest and in transit
-- **Security Scanning**: Automated vulnerability detection
-
-## Performance
-
-- **Response Time**: < 2 seconds for code execution
-- **Concurrent Users**: 10,000+ supported
-- **Auto-scaling**: Railway auto-scaling
-- **Caching**: Redis for performance optimization
-- **CDN**: Vercel global CDN
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Follow TDD methodology
-4. Ensure 95% test coverage
-5. Submit a pull request
+- [Project Foundation](./PROJECT_FOUNDATION.md)
+- [Requirements Discovery](./REQUIREMENTS_DISCOVERY.md)
+- [Architecture Design](./ARCHITECTURE_DESIGN.md)
+- [Feature Planning](./FEATURE_PLANNING.md)
+- [Environment Setup](./ENVIRONMENT_SETUP.md)
 
 ## License
 
-This project is proprietary software developed for EduCore AI learning platform.
+ISC
 
-## Support
-
-For technical support and questions, please contact the development team or create an issue in the repository.

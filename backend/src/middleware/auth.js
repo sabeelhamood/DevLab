@@ -1,71 +1,105 @@
-import jwt from 'jsonwebtoken'
-import { config } from '../config/environment.js'
+/**
+ * Authentication Middleware
+ * JWT token validation and API key validation
+ */
 
+import jwt from 'jsonwebtoken';
+import { config } from '../config/environment.js';
+import logger from '../utils/logger.js';
+
+/**
+ * Validate JWT token
+ */
 export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1]
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Access token required' 
-    })
-  }
-
-  jwt.verify(token, config.security.jwtSecret, (err, user) => {
-    if (err) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Invalid or expired token' 
-      })
-    }
-    req.user = user
-    next()
-  })
-}
-
-export const authenticateService = (req, res, next) => {
-  const apiKey = req.headers['x-api-key']
-  const serviceId = req.headers['x-service-id']
-
-  if (!apiKey || !serviceId) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Service authentication required' 
-    })
-  }
-
-  // Validate service API key
-  const validServices = config.security.apiKeys.split(',')
-  
-  if (!validServices.includes(apiKey)) {
-    return res.status(403).json({ 
-      success: false, 
-      error: 'Invalid service API key' 
-    })
-  }
-
-  req.headers['service-id'] = serviceId
-  next()
-}
-
-export const requireRole = (roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Authentication required' 
-      })
+    if (!token) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'No token provided'
+      });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Insufficient permissions' 
-      })
+    jwt.verify(token, config.security.jwtSecret, (err, decoded) => {
+      if (err) {
+        logger.warn('Invalid token', { error: err.message, ip: req.ip });
+        return res.status(403).json({
+          error: 'Invalid token',
+          message: 'Token verification failed'
+        });
+      }
+
+      req.user = decoded;
+      next();
+    });
+  } catch (error) {
+    logger.error('Authentication error', { error: error.message });
+    res.status(500).json({
+      error: 'Authentication error',
+      message: 'Internal server error'
+    });
+  }
+};
+
+/**
+ * Validate API key for microservice communication
+ */
+export const validateApiKey = (req, res, next) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+
+    if (!apiKey) {
+      return res.status(401).json({
+        error: 'API key required',
+        message: 'No API key provided'
+      });
     }
 
-    next()
+    const validKeys = config.security.microserviceApiKeys?.split(',') || [];
+
+    if (!validKeys.includes(apiKey)) {
+      logger.warn('Invalid API key', { ip: req.ip });
+      return res.status(403).json({
+        error: 'Invalid API key',
+        message: 'API key verification failed'
+      });
+    }
+
+    req.service = { apiKey };
+    next();
+  } catch (error) {
+    logger.error('API key validation error', { error: error.message });
+    res.status(500).json({
+      error: 'API key validation error',
+      message: 'Internal server error'
+    });
   }
-}
+};
+
+/**
+ * Optional authentication - doesn't fail if no token
+ */
+export const optionalAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      jwt.verify(token, config.security.jwtSecret, (err, decoded) => {
+        if (!err) {
+          req.user = decoded;
+        }
+      });
+    }
+
+    next();
+  } catch (error) {
+    // Continue without authentication
+    next();
+  }
+};
+
+
 
