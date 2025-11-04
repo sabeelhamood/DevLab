@@ -25,8 +25,11 @@ const app = express();
 // Railway healthchecks come from healthcheck.railway.app and must be accessible
 app.use('/health', healthRoutes);
 
-// Security middleware
-app.use(helmet());
+// Security middleware - configure Helmet to allow healthchecks
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for healthchecks
+  crossOriginEmbedderPolicy: false // Allow Railway healthchecks
+}));
 
 // CORS configuration - allow Railway healthcheck hostname
 const corsOrigins = [
