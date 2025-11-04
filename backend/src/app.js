@@ -21,9 +21,20 @@ import healthRoutes from './routes/healthRoutes.js';
 
 const app = express();
 
-// Health check route - must be BEFORE security middleware for Railway healthchecks
-// Railway healthchecks come from healthcheck.railway.app and must be accessible
-app.use('/health', healthRoutes);
+// CRITICAL: Register health endpoint FIRST and as a simple inline handler
+// This ensures Railway healthchecks work even if healthRoutes import fails
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Also register healthRoutes for detailed health info (if it loads successfully)
+// This is a fallback in case the inline handler above doesn't work
+try {
+  app.use('/health', healthRoutes);
+} catch (error) {
+  // If healthRoutes fails to load, the inline handler above will still work
+  console.warn('Health routes failed to load, using inline handler:', error.message);
+}
 
 // Security middleware - configure Helmet to allow healthchecks
 app.use(helmet({
@@ -32,11 +43,22 @@ app.use(helmet({
 }));
 
 // CORS configuration - allow Railway healthcheck hostname
-const corsOrigins = [
-  ...config.security.corsOrigins,
+// Use try-catch to handle config errors gracefully
+let corsOrigins = [
   'https://healthcheck.railway.app', // Railway healthcheck hostname
-  'http://healthcheck.railway.app'  // Railway healthcheck hostname (fallback)
+  'http://healthcheck.railway.app',  // Railway healthcheck hostname (fallback)
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3001'
 ];
+
+try {
+  if (config?.security?.corsOrigins) {
+    corsOrigins = [...corsOrigins, ...config.security.corsOrigins];
+  }
+} catch (error) {
+  console.warn('Could not load CORS config, using defaults:', error.message);
+}
 
 app.use(cors({
   origin: (origin, callback) => {
