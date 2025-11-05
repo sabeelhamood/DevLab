@@ -47,6 +47,7 @@ app.use(helmet({
 let corsOrigins = [
   'https://healthcheck.railway.app', // Railway healthcheck hostname
   'http://healthcheck.railway.app',  // Railway healthcheck hostname (fallback)
+  'https://dev-lab-phi.vercel.app',  // Vercel production deployment
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3001'
