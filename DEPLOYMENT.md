@@ -3,23 +3,30 @@
 ## Production URLs
 
 - **Frontend (Vercel):** https://dev-lab-phi.vercel.app/
-- **Backend (Railway):** https://devlab-backend-production.up.railway.app
+- **Backend (Railway):** https://devlab-backend-production-0bcb.up.railway.app
 
 ## Vercel Environment Variables
 
 Add these environment variables in your Vercel project settings:
 
 ```
-VITE_API_URL=https://devlab-backend-production.up.railway.app
+VITE_API_URL=https://devlab-backend-production-0bcb.up.railway.app
 ```
+
+**⚠️ IMPORTANT:** The `VITE_API_URL` should NOT include `/api` at the end. It should be just the base URL.
+
+- ✅ Correct: `https://devlab-backend-production-0bcb.up.railway.app`
+- ❌ Wrong: `https://devlab-backend-production-0bcb.up.railway.app/api`
+
+The frontend services already add `/api/` to their paths, so including it in `VITE_API_URL` would cause double `/api` paths.
 
 ### How to Set in Vercel:
 
 1. Go to your Vercel project dashboard
 2. Navigate to **Settings** → **Environment Variables**
-3. Add the variable:
+3. Add or update the variable:
    - **Name:** `VITE_API_URL`
-   - **Value:** `https://devlab-backend-production.up.railway.app`
+   - **Value:** `https://devlab-backend-production-0bcb.up.railway.app` (without `/api`)
    - **Environment:** Production, Preview, Development (all)
 4. Save and redeploy
 
@@ -27,7 +34,7 @@ VITE_API_URL=https://devlab-backend-production.up.railway.app
 
 The backend is deployed on Railway and automatically:
 - Uses Railway Service Variables for all API keys (GEMINI_API_KEY, x-rapidapi-key, etc.)
-- Exposes the backend at: `https://devlab-backend-production.up.railway.app`
+- Exposes the backend at: `https://devlab-backend-production-0bcb.up.railway.app`
 - CORS is configured to allow requests from:
   - `https://dev-lab-phi.vercel.app` (Vercel frontend)
   - `http://localhost:5173` (local development)
@@ -54,19 +61,20 @@ Frontend runs on: `http://localhost:5173`
 
 The frontend will automatically use:
 - Local backend (`http://localhost:3001`) in development
-- Railway backend (`https://devlab-backend-production.up.railway.app`) in production
+- Railway backend (`https://devlab-backend-production-0bcb.up.railway.app`) in production (if VITE_API_URL is not set)
 
 ## Testing Production Setup
 
 1. **Frontend:** Visit https://dev-lab-phi.vercel.app/
-2. **Backend API:** Test with `https://devlab-backend-production.up.railway.app/api/health`
+2. **Backend API:** Test with `https://devlab-backend-production-0bcb.up.railway.app/health`
 
 ## CORS Configuration
 
 The backend CORS allows requests from:
 - ✅ `https://dev-lab-phi.vercel.app` (Production frontend)
 - ✅ `http://localhost:5173` (Local development)
-- ✅ `https://devlab-backend-production.up.railway.app` (Backend direct access)
+- ✅ All `.vercel.app` subdomains (for preview deployments)
+- ✅ `https://devlab-backend-production-0bcb.up.railway.app` (Backend direct access)
 
 To add more origins, set `CORS_ORIGINS` in Railway Service Variables (comma-separated).
 
