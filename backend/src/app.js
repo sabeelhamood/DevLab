@@ -71,6 +71,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow all Vercel deployments (production and preview)
+    if (origin.includes('.vercel.app') || origin === 'https://dev-lab-phi.vercel.app') {
+      return callback(null, true);
+    }
+    
     // Check if origin is in allowed list
     if (corsOrigins.includes(origin)) {
       return callback(null, true);
