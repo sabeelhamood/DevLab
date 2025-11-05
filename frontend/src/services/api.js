@@ -8,12 +8,20 @@ import axios from 'axios';
 // API URL Configuration:
 // - Production (Vercel): Uses Railway backend URL from VITE_API_URL env var
 // - Local Development: Uses localhost:3001 or VITE_API_URL from .env.local
-// NOTE: VITE_API_URL should NOT include /api - it should be just the base URL
-// Example: https://devlab-backend-production-0bcb.up.railway.app (NOT /api)
-const API_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD 
+// NOTE: Automatically strips trailing /api if present to prevent double /api paths
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  const fallbackUrl = import.meta.env.PROD 
     ? 'https://devlab-backend-production-0bcb.up.railway.app' 
-    : 'http://localhost:3001');
+    : 'http://localhost:3001';
+  
+  const baseUrl = envUrl || fallbackUrl;
+  
+  // Remove trailing /api if present (frontend services already add /api/ to paths)
+  return baseUrl.replace(/\/api\/?$/, '');
+};
+
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
