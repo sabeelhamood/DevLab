@@ -4,7 +4,7 @@ import App from './App.jsx';
 import './styles/index.css';
 
 // Build version marker - updated on each deployment
-const BUILD_VERSION = '2024-01-15-v4-VERCEL-DEPLOY';
+const BUILD_VERSION = '2024-01-15-v5-FORCE-DEPLOY';
 if (import.meta.env.PROD) {
   console.log(`🚀 DEVLAB Frontend - Build Version: ${BUILD_VERSION}`);
   console.log(`🌐 Environment: Production`);
