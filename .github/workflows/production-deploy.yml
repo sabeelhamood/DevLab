@@ -59,14 +59,19 @@ jobs:
         echo "🧪 Running frontend tests..."
         npm run test --if-present || echo "⚠️ No tests configured"
         
-    - name: 🏗️ Build Frontend (Fresh Build)
+    - name: 🏗️ Build Frontend (Fresh Build - No Cache)
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "🏗️ Building frontend for production (clearing cache)..."
-        # Clear any build cache
+        echo "🏗️ Building frontend for production (clearing ALL cache)..."
+        # Clear ALL build artifacts and cache
         rm -rf node_modules/.vite 2>/dev/null || true
         rm -rf dist 2>/dev/null || true
+        rm -rf .vite 2>/dev/null || true
+        rm -rf .vercel 2>/dev/null || true
+        # Clear npm cache
+        npm cache clean --force 2>/dev/null || true
         # Build fresh
+        echo "📦 Running npm run build..."
         npm run build
         # Verify build output
         if [ ! -d "dist" ]; then
@@ -75,6 +80,20 @@ jobs:
         fi
         echo "✅ Build completed successfully"
         echo "📦 Build output size: $(du -sh dist | cut -f1)"
+        echo "📁 Build files:"
+        ls -lah dist/ || true
+        # Verify CSS file exists and contains red background
+        CSS_FILE=$(find dist/assets -name "*.css" 2>/dev/null | head -1)
+        if [ -n "$CSS_FILE" ]; then
+          echo "📄 CSS file found: $CSS_FILE"
+          if grep -q "#ff0000" "$CSS_FILE" 2>/dev/null; then
+            echo "✅ Red background CSS verified in build output"
+          else
+            echo "⚠️ Warning: Red background CSS not found in $CSS_FILE"
+          fi
+        else
+          echo "⚠️ Warning: No CSS file found in dist/assets/"
+        fi
         
     - name: 🚀 Deploy to Vercel (Force Fresh Build)
       working-directory: ${{ env.FRONTEND_DIR }}
