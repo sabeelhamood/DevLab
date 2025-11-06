@@ -82,6 +82,87 @@ textarea:focus {
   outline-offset: 2px;
 }
 
+/* Button Styles */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg font-medium text-white;
+  background: var(--gradient-primary);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(6, 95, 70, 0.2);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(6, 95, 70, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg font-medium;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Custom Background Utilities */
+.bg-bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.bg-bg-card {
+  background-color: var(--bg-card);
+}
+
+/* Custom Text Utilities */
+.text-text-primary {
+  color: var(--text-primary);
+}
+
+.text-text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-text-muted {
+  color: var(--text-muted);
+}
+
+.text-text-accent {
+  color: var(--text-accent);
+}
+
+/* Shadow Utilities */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-hover {
+  box-shadow: var(--shadow-hover);
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   * {
