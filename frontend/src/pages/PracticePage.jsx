@@ -37,22 +37,45 @@ const PracticePage = () => {
       };
 
       // Call backend to generate question (backend will call Gemini)
+      console.log('🔄 Requesting question generation from backend...', mockContentStudioRequest);
       const response = await questionService.generateQuestions(mockContentStudioRequest);
       
+      console.log('📦 Backend response:', response);
+      
       if (response.success && response.questions && response.questions.length > 0) {
+        const question = response.questions[0];
+        
+        // Log question source (Gemini or mock)
+        const questionSource = question.source || 'unknown';
+        console.log(`✅ Question received (source: ${questionSource}):`, question);
+        
+        if (questionSource === 'mock') {
+          console.warn('⚠️ Using mock questions - Gemini API may not be configured or unavailable');
+          setError('Using mock questions. Gemini API may not be configured. Check backend logs.');
+        } else if (questionSource === 'gemini') {
+          console.log('✅ Real Gemini question received!');
+        }
+        
         // Display the first question
-        setCurrentQuestion(response.questions[0]);
+        setCurrentQuestion(question);
         setCode(''); // Clear previous code
         setExecutionResults(null); // Clear previous results
         setFeedback(null); // Clear previous feedback
         setHints([]); // Clear hints
         setHintsUsed(0); // Reset hints used
       } else {
-        setError('No questions generated. Please try again.');
+        console.error('❌ Invalid response format:', response);
+        setError(`No questions generated. Response: ${JSON.stringify(response)}`);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load question. Please try again.');
-      console.error('Question loading error:', err);
+      console.error('❌ Question loading error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        statusText: err.response?.statusText
+      });
+      setError(err.response?.data?.error || err.message || 'Failed to load question. Please try again.');
     } finally {
       setIsLoadingQuestion(false);
     }
