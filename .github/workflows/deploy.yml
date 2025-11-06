@@ -43,14 +43,31 @@ jobs:
           export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
           export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
           
-          # Deploy to Vercel (with or without ORG_ID)
+          # Read project ID from .vercel/project.json to ensure correct project
           cd frontend
-          if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
-            echo "Using VERCEL_ORG_ID for deployment"
-            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+          if [ -f "../.vercel/project.json" ]; then
+            PROJECT_ID=$(cat ../.vercel/project.json | grep -o '"projectId":"[^"]*' | cut -d'"' -f4)
+            ORG_ID=$(cat ../.vercel/project.json | grep -o '"orgId":"[^"]*' | cut -d'"' -f4)
+            echo "📋 Using project ID from .vercel/project.json: $PROJECT_ID"
+            echo "📋 Using org ID: $ORG_ID"
+            
+            # Copy .vercel folder to frontend directory
+            if [ ! -d ".vercel" ]; then
+              mkdir -p .vercel
+              cp ../.vercel/project.json .vercel/project.json
+            fi
+            
+            # Deploy using explicit project configuration
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID"
           else
-            echo "Deploying without ORG_ID (using default scope)"
-            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+            echo "⚠️ .vercel/project.json not found, using secrets"
+            if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
+              echo "Using VERCEL_ORG_ID for deployment"
+              vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+            else
+              echo "Deploying without ORG_ID (using default scope)"
+              vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+            fi
           fi
           
           echo "✅ Frontend deployed to Vercel successfully"
