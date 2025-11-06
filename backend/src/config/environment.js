@@ -122,6 +122,7 @@ export const config = {
       'http://localhost:5173',
       'http://localhost:3000',
       'http://localhost:3001',
+      'https://dev-lab-gules.vercel.app',
       'https://dev-lab-mocha.vercel.app',
       'https://devlab-backend-production.up.railway.app'
     ],
