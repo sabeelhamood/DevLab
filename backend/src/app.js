@@ -13,6 +13,7 @@ import errorHandler from './middleware/errorHandler.js';
 
 // Import routes
 import questionRoutes from './routes/questionRoutes.js';
+import contentStudioRoutes from './routes/contentStudioRoutes.js';
 import codeExecutionRoutes from './routes/codeExecutionRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import competitionRoutes from './routes/competitionRoutes.js';
@@ -113,6 +114,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/questions', questionRoutes);
+app.use('/api/content-studio', contentStudioRoutes);
 app.use('/api/code', codeExecutionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/competitions', competitionRoutes);

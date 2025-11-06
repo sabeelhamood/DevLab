@@ -59,7 +59,8 @@ class GeminiClient {
         nano_skills,
         micro_skills,
         programming_language,
-        quantity = 4
+        quantity = 4,
+        language = 'english' // Human language for question generation
       } = params;
 
       const prompt = this.buildQuestionPrompt({
@@ -69,7 +70,8 @@ class GeminiClient {
         nano_skills,
         micro_skills,
         programming_language,
-        quantity
+        quantity,
+        language
       });
 
       // Validate API key before making request
@@ -190,9 +192,26 @@ class GeminiClient {
    * Build prompt for question generation
    */
   buildQuestionPrompt(params) {
-    const { course_name, lesson_name, nano_skills, micro_skills, programming_language, quantity } = params;
+    const { course_name, lesson_name, nano_skills, micro_skills, programming_language, quantity, language = 'english' } = params;
     
-    return `Generate ${quantity} coding practice questions for the following context:
+    // Map language names to proper language identifiers
+    const languageMap = {
+      'hebrew': 'Hebrew',
+      'english': 'English',
+      'arabic': 'Arabic',
+      'russian': 'Russian',
+      'spanish': 'Spanish',
+      'french': 'French',
+      'german': 'German',
+      'chinese': 'Chinese',
+      'japanese': 'Japanese',
+      'korean': 'Korean'
+    };
+    
+    const targetLanguage = languageMap[language?.toLowerCase()] || language || 'English';
+    
+    return `Generate ${quantity} coding practice questions for the following context. IMPORTANT: All questions, instructions, and explanations must be written in ${targetLanguage}:
+
 
 Course: ${course_name}
 Lesson: ${lesson_name}
@@ -201,14 +220,16 @@ Nano Skills: ${nano_skills.join(', ')}
 Micro Skills: ${micro_skills.join(', ')}
 
 Requirements:
-1. Distribute difficulty levels from low to high across all questions
-2. Each question must include:
-   - Clear problem statement
+1. All text (questions, instructions, explanations) MUST be in ${targetLanguage}
+2. Distribute difficulty levels from low to high across all questions
+3. Each question must include:
+   - Clear problem statement in ${targetLanguage}
    - At least 3 test cases (2 public, 1 hidden)
    - Expected outputs for each test case
-3. Questions should progressively increase in difficulty
-4. Questions must be relevant to the specified skills
-5. Return response in JSON format with array of questions
+4. Questions should progressively increase in difficulty
+5. Questions must be relevant to the specified skills
+6. Return response in JSON format with array of questions
+7. Code examples and variable names can be in English, but all explanations must be in ${targetLanguage}
 
 Return format:
 {

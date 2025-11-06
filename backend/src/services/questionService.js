@@ -15,7 +15,7 @@ const questionService = {
    */
   async generateCodingQuestions(params) {
     try {
-      const { quantity, lesson_id, course_name, lesson_name, nano_skills, micro_skills, programming_language } = params;
+      const { quantity, lesson_id, course_name, lesson_name, nano_skills, micro_skills, programming_language, language } = params;
 
       // Generate questions via Gemini (with automatic fallback to mock data)
       const questions = await geminiClient.generateQuestions({
@@ -25,7 +25,8 @@ const questionService = {
         nano_skills,
         micro_skills,
         programming_language,
-        quantity
+        quantity,
+        language // Pass language to Gemini
       });
 
       // Ensure we have questions

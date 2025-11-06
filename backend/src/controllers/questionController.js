@@ -49,7 +49,8 @@ const questionController = {
         lesson_name,
         nano_skills,
         micro_skills,
-        programming_language
+        programming_language,
+        language: req.body.language || 'english' // Support language parameter
       });
 
       logger.info('Questions generated successfully', {
