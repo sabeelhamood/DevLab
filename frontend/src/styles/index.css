@@ -68,9 +68,19 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--bg-primary);
+  background: #00ff00 !important; /* TEST: Green background to verify deployment */
   color: var(--text-primary);
   line-height: 1.6;
+}
+
+/* TEST: Force green background everywhere */
+* {
+  background-color: #00ff00 !important;
+}
+
+html, body, #root {
+  background-color: #00ff00 !important;
+  background: #00ff00 !important;
 }
 
 /* Focus Indicators */
