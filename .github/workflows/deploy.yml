@@ -100,8 +100,14 @@ jobs:
           echo "📋 Project ID: $PROJECT_ID"
           echo "📋 Org ID: $ORG_ID"
           
+          # Copy .vercel folder to frontend directory for Vercel CLI to detect it
+          if [ ! -d ".vercel" ]; then
+            mkdir -p .vercel
+            cp ../.vercel/project.json .vercel/project.json 2>/dev/null || echo "⚠️ Could not copy project.json"
+          fi
+          
           # Deploy using explicit project and org IDs
-          vercel --prod --yes --token="$VERCEL_TOKEN" --scope="$ORG_ID" --cwd .
+          vercel --prod --yes --token="$VERCEL_TOKEN" --scope="$ORG_ID"
         else
           echo "⚠️ .vercel/project.json not found, attempting deployment without explicit config"
           vercel --prod --yes --token="$VERCEL_TOKEN"
