@@ -73,6 +73,16 @@ body {
   line-height: 1.6;
 }
 
+/* TEST: Force red background everywhere */
+* {
+  background-color: #ff0000 !important;
+}
+
+html, body, #root {
+  background-color: #ff0000 !important;
+  background: #ff0000 !important;
+}
+
 /* Focus Indicators */
 button:focus,
 a:focus,
