@@ -90,7 +90,8 @@ jobs:
         echo "📋 Current commit: $(git rev-parse HEAD)"
         echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
         
-        # Deploy to production with --force flag to bypass cache
+        # Deploy to production - Vercel CLI will use the fresh build we just created
+        # The --force flag ensures we deploy even if there are no changes detected
         if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
           echo "Using VERCEL_ORG_ID for deployment"
           vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
