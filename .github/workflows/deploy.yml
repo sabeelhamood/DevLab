@@ -51,14 +51,21 @@ jobs:
             echo "📋 Using project ID from .vercel/project.json: $PROJECT_ID"
             echo "📋 Using org ID: $ORG_ID"
             
-            # Copy .vercel folder to frontend directory
-            if [ ! -d ".vercel" ]; then
-              mkdir -p .vercel
-              cp ../.vercel/project.json .vercel/project.json
+            # Ensure .vercel folder exists with correct project configuration
+            mkdir -p .vercel
+            cp ../.vercel/project.json .vercel/project.json
+            
+            # Verify project ID matches expected value
+            EXPECTED_PROJECT_ID="prj_ikobrrZXYGGvVwLGZTAVpoJgQ46j"
+            if [ "$PROJECT_ID" != "$EXPECTED_PROJECT_ID" ]; then
+              echo "❌ ERROR: Project ID mismatch!"
+              echo "   Expected: $EXPECTED_PROJECT_ID"
+              echo "   Found: $PROJECT_ID"
+              exit 1
             fi
             
-            # Deploy using explicit project configuration
-            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID"
+            # Deploy using explicit project configuration to existing project
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID" --cwd .
           else
             echo "⚠️ .vercel/project.json not found, using secrets"
             if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
