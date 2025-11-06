@@ -1,0 +1,6 @@
+# Vercel ignore file - ensure fresh builds
+node_modules
+.vite
+dist
+*.log
+
