@@ -65,18 +65,16 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
         
-    - name: 🔍 Validate Vercel Secrets
+    - name: 🔍 Validate Vercel Token
       run: |
-        echo "🔐 Validating Vercel secrets..."
+        echo "🔐 Validating Vercel token..."
         if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
-          echo "❌ VERCEL_TOKEN is missing"
+          echo "❌ VERCEL_TOKEN is missing in GitHub secrets"
+          echo "⚠️  Please add VERCEL_TOKEN to GitHub repository secrets"
+          echo "   Go to: Settings → Secrets and variables → Actions → New repository secret"
           exit 1
         fi
-        if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-          echo "❌ VERCEL_PROJECT_ID is missing"
-          exit 1
-        fi
-        echo "✅ All Vercel secrets validated"
+        echo "✅ Vercel token validated"
         
     - name: 📦 Install Frontend Dependencies
       working-directory: frontend
@@ -88,26 +86,36 @@ jobs:
       
     - name: 🚀 Deploy to Vercel
       working-directory: frontend
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       run: |
         echo "🚀 Deploying frontend to Vercel..."
         npm install -g vercel@latest
         
-        export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
-        export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
-        
-        if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
-          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
-        else
-          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
-        fi
+        # Use existing Vercel project configuration
+        # The .vercel folder contains project.json with projectId and orgId
+        # Vercel CLI will automatically detect and use it
+        vercel --prod --yes --token="$VERCEL_TOKEN"
         
         echo "✅ Frontend deployed to Vercel successfully"
         
     - name: 📊 Get Deployment URL
       id: vercel-url
       run: |
-        echo "url=https://${{ secrets.VERCEL_PROJECT_ID }}.vercel.app" >> $GITHUB_OUTPUT
-        echo "🌐 Frontend URL: https://${{ secrets.VERCEL_PROJECT_ID }}.vercel.app"
+        # Get project ID from .vercel/project.json or use secret
+        if [ -f "../.vercel/project.json" ]; then
+          PROJECT_ID=$(cat ../.vercel/project.json | grep -o '"projectId":"[^"]*' | cut -d'"' -f4)
+          if [ -n "$PROJECT_ID" ]; then
+            echo "url=https://dev-lab-phi.vercel.app" >> $GITHUB_OUTPUT
+            echo "🌐 Frontend URL: https://dev-lab-phi.vercel.app"
+          else
+            echo "url=https://dev-lab-phi.vercel.app" >> $GITHUB_OUTPUT
+            echo "🌐 Frontend URL: https://dev-lab-phi.vercel.app"
+          fi
+        else
+          echo "url=https://dev-lab-phi.vercel.app" >> $GITHUB_OUTPUT
+          echo "🌐 Frontend URL: https://dev-lab-phi.vercel.app"
+        fi
 
   # ===========================================
   # BACKEND DEPLOYMENT TO RAILWAY
@@ -199,7 +207,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🌐 Frontend (Vercel)" >> $GITHUB_STEP_SUMMARY
         echo "- **Status**: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **URL**: https://${{ secrets.VERCEL_PROJECT_ID }}.vercel.app" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: https://dev-lab-phi.vercel.app" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🚂 Backend (Railway)" >> $GITHUB_STEP_SUMMARY
         echo "- **Status**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
