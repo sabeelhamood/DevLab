@@ -92,10 +92,20 @@ jobs:
         echo "🚀 Deploying frontend to Vercel..."
         npm install -g vercel@latest
         
-        # Use existing Vercel project configuration
-        # The .vercel folder contains project.json with projectId and orgId
-        # Vercel CLI will automatically detect and use it
-        vercel --prod --yes --token="$VERCEL_TOKEN"
+        # Read project configuration from .vercel/project.json
+        if [ -f "../.vercel/project.json" ]; then
+          PROJECT_ID=$(cat ../.vercel/project.json | grep -o '"projectId":"[^"]*' | cut -d'"' -f4)
+          ORG_ID=$(cat ../.vercel/project.json | grep -o '"orgId":"[^"]*' | cut -d'"' -f4)
+          
+          echo "📋 Project ID: $PROJECT_ID"
+          echo "📋 Org ID: $ORG_ID"
+          
+          # Deploy using explicit project and org IDs
+          vercel --prod --yes --token="$VERCEL_TOKEN" --scope="$ORG_ID" --cwd .
+        else
+          echo "⚠️ .vercel/project.json not found, attempting deployment without explicit config"
+          vercel --prod --yes --token="$VERCEL_TOKEN"
+        fi
         
         echo "✅ Frontend deployed to Vercel successfully"
         
