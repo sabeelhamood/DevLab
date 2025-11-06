@@ -73,7 +73,9 @@ app.use(cors({
     }
     
     // Allow all Vercel deployments (production and preview)
-    if (origin.includes('.vercel.app') || origin === 'https://dev-lab-mocha.vercel.app') {
+    if (origin.includes('.vercel.app') || 
+        origin === 'https://dev-lab-mocha.vercel.app' ||
+        origin === 'https://dev-lab-phi.vercel.app') {
       return callback(null, true);
     }
     
