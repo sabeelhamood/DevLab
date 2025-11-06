@@ -2,7 +2,7 @@
 
 ## Production URLs
 
-- **Frontend (Vercel):** https://dev-lab-phi.vercel.app/
+- **Frontend (Vercel):** https://dev-lab-mocha.vercel.app/
 - **Backend (Railway):** https://devlab-backend-production-0bcb.up.railway.app
 
 ## Vercel Environment Variables

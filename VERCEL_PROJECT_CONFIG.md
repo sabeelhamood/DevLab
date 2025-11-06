@@ -5,7 +5,7 @@
 **Project ID:** `prj_ikobrrZXYGGvVwLGZTAVpoJgQ46j`  
 **Project Name:** `dev-lab`  
 **Organization ID:** `team_JtAAnCXg3Dcce07dXx9bJAJk`  
-**Deployment Domain:** `https://dev-lab-phi.vercel.app/`
+**Deployment Domain:** `https://dev-lab-mocha.vercel.app/`
 
 ## 📋 Configuration Files
 
@@ -55,7 +55,7 @@ After deployment:
    - Verify project ID matches: `prj_ikobrrZXYGGvVwLGZTAVpoJgQ46j`
 
 2. **Check Deployment URL:**
-   - Should be: `https://dev-lab-phi.vercel.app/`
+   - Should be: `https://dev-lab-mocha.vercel.app/`
    - Or check Vercel dashboard for actual domain
 
 3. **Check GitHub Actions:**
