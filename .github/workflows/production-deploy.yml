@@ -149,8 +149,8 @@ jobs:
         sleep 10
         # Check if the page contains the new build version
         HTML_CONTENT=$(curl -s "$FRONTEND_URL" || echo "")
-        if echo "$HTML_CONTENT" | grep -q "2024-01-15-v14-FINAL-RED-BG-DEPLOY"; then
-          echo "✅ Deployment verified: New version (v14) is deployed!"
+        if echo "$HTML_CONTENT" | grep -q "2024-01-15-v15-PRODUCTION-READY"; then
+          echo "✅ Deployment verified: New version (v15) is deployed!"
         else
           echo "⚠️ Warning: Could not verify new version in deployment"
           echo "Please check manually at: $FRONTEND_URL"
