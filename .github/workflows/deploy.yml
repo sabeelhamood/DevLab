@@ -64,16 +64,25 @@ jobs:
               exit 1
             fi
             
-            # Deploy using explicit project configuration to existing project
-            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID" --cwd .
+            # Verify we're on the latest commit
+            echo "📋 Current commit: $(git rev-parse HEAD)"
+            echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
+            
+            # Deploy using explicit project configuration with --force to bypass cache
+            vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID" --cwd .
           else
             echo "⚠️ .vercel/project.json not found, using secrets"
+            
+            # Verify we're on the latest commit
+            echo "📋 Current commit: $(git rev-parse HEAD)"
+            echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
+            
             if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
               echo "Using VERCEL_ORG_ID for deployment"
-              vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+              vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
             else
               echo "Deploying without ORG_ID (using default scope)"
-              vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+              vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}"
             fi
           fi
           

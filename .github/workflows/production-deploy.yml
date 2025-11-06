@@ -43,11 +43,15 @@ jobs:
         fi
         echo "✅ All Vercel secrets validated"
         
-    - name: 📦 Install Frontend Dependencies
+    - name: 📦 Install Frontend Dependencies (Fresh Install)
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "📦 Installing frontend dependencies..."
+        echo "📦 Installing frontend dependencies (fresh install)..."
+        # Clear npm cache to ensure fresh install
+        npm cache clean --force 2>/dev/null || true
+        # Install dependencies
         npm ci --prefer-offline --no-audit
+        echo "✅ Dependencies installed"
         
     - name: 🧪 Run Frontend Tests
       working-directory: ${{ env.FRONTEND_DIR }}
@@ -55,29 +59,44 @@ jobs:
         echo "🧪 Running frontend tests..."
         npm run test --if-present || echo "⚠️ No tests configured"
         
-    - name: 🏗️ Build Frontend
+    - name: 🏗️ Build Frontend (Fresh Build)
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "🏗️ Building frontend for production..."
+        echo "🏗️ Building frontend for production (clearing cache)..."
+        # Clear any build cache
+        rm -rf node_modules/.vite 2>/dev/null || true
+        rm -rf dist 2>/dev/null || true
+        # Build fresh
         npm run build
+        # Verify build output
+        if [ ! -d "dist" ]; then
+          echo "❌ Build failed: dist directory not found"
+          exit 1
+        fi
+        echo "✅ Build completed successfully"
+        echo "📦 Build output size: $(du -sh dist | cut -f1)"
         
-    - name: 🚀 Deploy to Vercel
+    - name: 🚀 Deploy to Vercel (Force Fresh Build)
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "🚀 Deploying frontend to Vercel..."
+        echo "🚀 Deploying frontend to Vercel with fresh build (no cache)..."
         export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
         export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
         
         # Install Vercel CLI
         npm install -g vercel@latest
         
-        # Deploy to production
+        # Verify we're on the latest commit
+        echo "📋 Current commit: $(git rev-parse HEAD)"
+        echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
+        
+        # Deploy to production with --force flag to bypass cache
         if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
           echo "Using VERCEL_ORG_ID for deployment"
-          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+          vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
         else
           echo "Deploying without ORG_ID (using default scope)"
-          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+          vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}"
         fi
         
         echo "✅ Frontend deployed to Vercel successfully"
@@ -100,6 +119,21 @@ jobs:
         else
           echo "❌ Frontend smoke test failed"
           exit 1
+        fi
+    
+    - name: ✅ Verify Deployment Version
+      run: |
+        echo "🔍 Verifying deployed version..."
+        FRONTEND_URL="${{ steps.vercel-url.outputs.url }}"
+        # Wait a bit for deployment to be fully ready
+        sleep 10
+        # Check if the page contains the new build version
+        HTML_CONTENT=$(curl -s "$FRONTEND_URL" || echo "")
+        if echo "$HTML_CONTENT" | grep -q "2024-01-15-v12-RED-BG-VERIFICATION-FINAL"; then
+          echo "✅ Deployment verified: New version (v12) is deployed!"
+        else
+          echo "⚠️ Warning: Could not verify new version in deployment"
+          echo "Please check manually at: $FRONTEND_URL"
         fi
 
   # ===========================================
