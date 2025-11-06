@@ -2,7 +2,7 @@
 
 ## Production URLs
 
-- **Frontend (Vercel):** https://dev-lab-mocha.vercel.app/
+- **Frontend (Vercel):** https://dev-lab-gules.vercel.app/
 - **Backend (Railway):** https://devlab-backend-production-0bcb.up.railway.app
 
 ## Vercel Environment Variables
@@ -36,7 +36,7 @@ The backend is deployed on Railway and automatically:
 - Uses Railway Service Variables for all API keys (GEMINI_API_KEY, x-rapidapi-key, etc.)
 - Exposes the backend at: `https://devlab-backend-production-0bcb.up.railway.app`
 - CORS is configured to allow requests from:
-  - `https://dev-lab-phi.vercel.app` (Vercel frontend)
+  - `https://dev-lab-gules.vercel.app` (Vercel frontend)
   - `http://localhost:5173` (local development)
 
 ## Local Development
@@ -65,13 +65,13 @@ The frontend will automatically use:
 
 ## Testing Production Setup
 
-1. **Frontend:** Visit https://dev-lab-phi.vercel.app/
+1. **Frontend:** Visit https://dev-lab-gules.vercel.app/
 2. **Backend API:** Test with `https://devlab-backend-production-0bcb.up.railway.app/health`
 
 ## CORS Configuration
 
 The backend CORS allows requests from:
-- ✅ `https://dev-lab-phi.vercel.app` (Production frontend)
+- ✅ `https://dev-lab-gules.vercel.app` (Production frontend)
 - ✅ `http://localhost:5173` (Local development)
 - ✅ All `.vercel.app` subdomains (for preview deployments)
 - ✅ `https://devlab-backend-production-0bcb.up.railway.app` (Backend direct access)

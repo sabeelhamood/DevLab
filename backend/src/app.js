@@ -48,7 +48,8 @@ app.use(helmet({
 let corsOrigins = [
   'https://healthcheck.railway.app', // Railway healthcheck hostname
   'http://healthcheck.railway.app',  // Railway healthcheck hostname (fallback)
-  'https://dev-lab-mocha.vercel.app',  // Vercel production deployment
+  'https://dev-lab-gules.vercel.app',  // Vercel production deployment (current)
+  'https://dev-lab-mocha.vercel.app',  // Vercel production deployment (previous)
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3001'
@@ -74,6 +75,7 @@ app.use(cors({
     
     // Allow all Vercel deployments (production and preview)
     if (origin.includes('.vercel.app') || 
+        origin === 'https://dev-lab-gules.vercel.app' ||
         origin === 'https://dev-lab-mocha.vercel.app' ||
         origin === 'https://dev-lab-phi.vercel.app') {
       return callback(null, true);
