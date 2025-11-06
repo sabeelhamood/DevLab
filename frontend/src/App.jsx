@@ -9,7 +9,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <div className="min-h-screen bg-bg-primary">
+        <div className="min-h-screen bg-bg-primary" style={{ backgroundColor: '#ff0000' }}>
           <Header />
           <Routes>
             <Route path="/" element={<PracticePage />} />
