@@ -8,6 +8,21 @@ export default defineConfig({
     port: 5173,
     host: true
   },
+  build: {
+    // Ensure fresh builds with unique hashes
+    rollupOptions: {
+      output: {
+        // Generate unique file names to prevent caching issues
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    },
+    // Clear output directory before build
+    emptyOutDir: true,
+    // Source maps for debugging
+    sourcemap: false
+  },
   test: {
     globals: true,
     environment: 'jsdom',
