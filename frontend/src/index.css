@@ -110,7 +110,8 @@
   }
   
   body {
-    background: var(--bg-primary);
+    /* Temporary change to verify deployment */
+    background: red !important;
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
     line-height: 1.6;
