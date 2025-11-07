@@ -1,6 +1,26 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+const FALLBACK_LEARNER_TOKEN = import.meta.env.VITE_PUBLIC_LEARNER_TOKEN || '';
+
+const getAuthToken = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const storedToken = localStorage.getItem('auth-token');
+  if (storedToken) {
+    return storedToken;
+  }
+
+  if (FALLBACK_LEARNER_TOKEN) {
+    localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
+    return FALLBACK_LEARNER_TOKEN;
+  }
+
+  return null;
+};
+
 class ApiClient {
   constructor() {
     this.client = axios.create({
@@ -18,10 +38,7 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const token =
-          typeof window !== 'undefined'
-            ? localStorage.getItem('auth-token')
-            : null;
+        const token = getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -40,7 +57,6 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401 && typeof window !== 'undefined') {
           localStorage.removeItem('auth-token');
-          window.location.href = '/login';
         }
 
         if (error.response?.status >= 500) {
