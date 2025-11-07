@@ -3,6 +3,18 @@ import toast from 'react-hot-toast';
 
 const FALLBACK_LEARNER_TOKEN = import.meta.env.VITE_PUBLIC_LEARNER_TOKEN || '';
 
+const ensureMockSessionToken = () => {
+  if (typeof window === 'undefined') return null;
+
+  if (!FALLBACK_LEARNER_TOKEN) return null;
+
+  const existing = localStorage.getItem('auth-token');
+  if (existing !== FALLBACK_LEARNER_TOKEN) {
+    localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
+  }
+  return FALLBACK_LEARNER_TOKEN;
+};
+
 const getAuthToken = () => {
   if (typeof window === 'undefined') {
     return null;
@@ -13,12 +25,7 @@ const getAuthToken = () => {
     return storedToken;
   }
 
-  if (FALLBACK_LEARNER_TOKEN) {
-    localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
-    return FALLBACK_LEARNER_TOKEN;
-  }
-
-  return null;
+  return ensureMockSessionToken();
 };
 
 class ApiClient {
@@ -52,15 +59,12 @@ class ApiClient {
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
+        ensureMockSessionToken();
         return response;
       },
       (error) => {
         if (error.response?.status === 401 && typeof window !== 'undefined') {
-          if (FALLBACK_LEARNER_TOKEN) {
-            localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
-          } else {
-            localStorage.removeItem('auth-token');
-          }
+          ensureMockSessionToken();
         }
 
         if (error.response?.status >= 500) {
