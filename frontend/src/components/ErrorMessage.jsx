@@ -2,6 +2,23 @@ import React from 'react';
 import { AlertCircle, RefreshCw, Wifi, Clock } from 'lucide-react';
 
 const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
+  const errorMessage = (() => {
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return error;
+    }
+    if (error?.message && typeof error.message === 'string') {
+      return error.message;
+    }
+    if (error) {
+      try {
+        return JSON.stringify(error);
+      } catch (jsonError) {
+        return 'An unexpected error occurred.';
+      }
+    }
+    return 'An unexpected error occurred.';
+  })();
+
   const getErrorIcon = (errorMessage) => {
     if (
       errorMessage.includes('timeout') ||
@@ -67,17 +84,17 @@ const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
     }
   };
 
-  const errorType = getErrorType(error);
+  const errorType = getErrorType(errorMessage);
   const errorColor = getErrorColor(errorType);
 
   return (
     <div className={`rounded-lg border p-4 ${errorColor}`}>
       <div className="flex items-start">
-        {getErrorIcon(error)}
+        {getErrorIcon(errorMessage)}
         <div className="ml-3 flex-1">
           <h3 className="text-sm font-medium">{getErrorTitle(errorType)}</h3>
           <div className="mt-2 text-sm">
-            <p className="mb-2">{error}</p>
+            <p className="mb-2">{errorMessage}</p>
             <p className="text-xs opacity-75">
               {getErrorSuggestion(errorType)}
             </p>
