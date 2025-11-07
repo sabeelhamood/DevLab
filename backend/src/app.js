@@ -37,6 +37,8 @@ const allowedOrigins = [
   'http://localhost:3002',
   'http://localhost:3003',
   'http://localhost:5173',
+  'https://dev-lab-mu.vercel.app',
+  'https://dev-ap2xptjqo-sabeels-projects-5df24825.vercel.app',
   ...(config.security?.corsOrigins || []),
 ];
 
