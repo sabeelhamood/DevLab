@@ -4,8 +4,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import Layout from './components/layout/Layout';
-import './styles/theme-transitions.css';
+import Layout from './components/layout/Layout.jsx';
 import PracticePage from './pages/learner/PracticePage.jsx';
 import InvitationsPage from './pages/competition/InvitationsPage.jsx';
 import MatchPage from './pages/competition/MatchPage.jsx';

@@ -1,34 +1,45 @@
 import React from 'react';
 import { AlertCircle, RefreshCw, Wifi, Clock } from 'lucide-react';
 
-const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
-  const errorMessage = (() => {
+const ErrorMessage = ({
+  title,
+  message,
+  error,
+  onRetry,
+  isLoading = false,
+}) => {
+  const resolveMessage = () => {
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message.trim();
+    }
     if (typeof error === 'string' && error.trim().length > 0) {
-      return error;
+      return error.trim();
     }
     if (error?.message && typeof error.message === 'string') {
-      return error.message;
+      return error.message.trim();
     }
     if (error) {
       try {
         return JSON.stringify(error);
-      } catch (jsonError) {
+      } catch (_jsonError) {
         return 'An unexpected error occurred.';
       }
     }
     return 'An unexpected error occurred.';
-  })();
+  };
+
+  const errorMessage = resolveMessage();
 
   const getErrorIcon = (errorMessage) => {
     if (
-      errorMessage.includes('timeout') ||
-      errorMessage.includes('timed out')
+      errorMessage?.includes('timeout') ||
+      errorMessage?.includes('timed out')
     ) {
       return <Clock className="h-5 w-5 text-orange-500" />;
     }
     if (
-      errorMessage.includes('connection') ||
-      errorMessage.includes('network')
+      errorMessage?.includes('connection') ||
+      errorMessage?.includes('network')
     ) {
       return <Wifi className="h-5 w-5 text-red-500" />;
     }
@@ -37,14 +48,14 @@ const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
 
   const getErrorType = (errorMessage) => {
     if (
-      errorMessage.includes('timeout') ||
-      errorMessage.includes('timed out')
+      errorMessage?.includes('timeout') ||
+      errorMessage?.includes('timed out')
     ) {
       return 'timeout';
     }
     if (
-      errorMessage.includes('connection') ||
-      errorMessage.includes('network')
+      errorMessage?.includes('connection') ||
+      errorMessage?.includes('network')
     ) {
       return 'connection';
     }
@@ -86,13 +97,14 @@ const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
 
   const errorType = getErrorType(errorMessage);
   const errorColor = getErrorColor(errorType);
+  const resolvedTitle = title || getErrorTitle(errorType);
 
   return (
     <div className={`rounded-lg border p-4 ${errorColor}`}>
       <div className="flex items-start">
         {getErrorIcon(errorMessage)}
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium">{getErrorTitle(errorType)}</h3>
+          <h3 className="text-sm font-medium">{resolvedTitle}</h3>
           <div className="mt-2 text-sm">
             <p className="mb-2">{errorMessage}</p>
             <p className="text-xs opacity-75">

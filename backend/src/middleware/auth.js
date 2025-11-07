@@ -36,7 +36,9 @@ export const authenticateService = (req, res, next) => {
   }
 
   // Validate service API key
-  const validServices = config.security.apiKeys.split(',');
+  const validServices = config.security?.apiKeys
+    ? config.security.apiKeys.split(',')
+    : [];
 
   if (!validServices.includes(apiKey)) {
     return res.status(403).json({
@@ -58,7 +60,7 @@ export const requireRole = roles => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles?.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         error: 'Insufficient permissions',

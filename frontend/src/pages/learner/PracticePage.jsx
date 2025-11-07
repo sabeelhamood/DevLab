@@ -18,11 +18,20 @@ import ErrorMessage from '../../components/ErrorMessage.jsx';
 const DEFAULT_LANGUAGE = 'javascript';
 
 const PracticePage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const sessionId = searchParams.get('sessionId');
+  const DEFAULT_SESSION_ID =
+    import.meta.env.VITE_DEFAULT_PRACTICE_SESSION_ID || 'session-demo';
+
+  const sessionId = searchParams.get('sessionId') || DEFAULT_SESSION_ID;
+
+  useEffect(() => {
+    if (!searchParams.get('sessionId') && DEFAULT_SESSION_ID) {
+      setSearchParams({ sessionId: DEFAULT_SESSION_ID }, { replace: true });
+    }
+  }, [searchParams, setSearchParams, DEFAULT_SESSION_ID]);
 
   const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [codeState, setCodeState] = useState({
@@ -41,7 +50,7 @@ const PracticePage = () => {
     queryFn: () => getPracticeSession(sessionId),
     enabled: Boolean(sessionId),
     onSuccess: (data) => {
-      if (!activeQuestionId && data.questions?.length) {
+      if (!activeQuestionId && data?.questions?.length) {
         setActiveQuestionId(data.questions[0].id);
       }
     },
@@ -51,6 +60,21 @@ const PracticePage = () => {
     return session?.questions?.find(
       (question) => question.id === activeQuestionId
     );
+  }, [session, activeQuestionId]);
+
+  useEffect(() => {
+    if (!session?.questions?.length) return;
+
+    const firstQuestionId = session.questions[0]?.id ?? null;
+    const existsInSession = session.questions.some(
+      (question) => question.id === activeQuestionId
+    );
+
+    if (!activeQuestionId && firstQuestionId) {
+      setActiveQuestionId(firstQuestionId);
+    } else if (!existsInSession && firstQuestionId) {
+      setActiveQuestionId(firstQuestionId);
+    }
   }, [session, activeQuestionId]);
 
   useEffect(() => {
@@ -167,43 +191,64 @@ const PracticePage = () => {
 
   const handleCloseReveal = () => setRevealOpen(false);
 
-  if (!sessionId) {
-    return (
-      <div className="flex h-full items-center justify-center">
+  const fallbackChecks = [
+    {
+      condition: () => !sessionId,
+      render: () => (
         <ErrorMessage
           title="Practice session not found"
           message="Please launch practice from your course or contact your trainer."
         />
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <LoadingSpinner label="Loading your practice session..." />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-full items-center justify-center">
+      ),
+    },
+    {
+      condition: () => isLoading,
+      render: () => <LoadingSpinner label="Loading your practice session..." />,
+    },
+    {
+      condition: () => isError,
+      render: () => (
         <ErrorMessage
           title="Unable to load practice session"
           message={error?.message || 'Please refresh or try again later.'}
         />
-      </div>
-    );
-  }
-
-  if (!activeQuestion) {
-    return (
-      <div className="flex h-full items-center justify-center">
+      ),
+    },
+    {
+      condition: () => session?.error === 'UNAUTHORIZED',
+      render: () => (
+        <ErrorMessage
+          title="Sign in required"
+          message="We could not verify your access to this practice session. Please log in again or contact your administrator."
+        />
+      ),
+    },
+    {
+      condition: () => !session,
+      render: () => (
+        <ErrorMessage
+          title="No active practice session"
+          message="Launch practice from your course or ask your trainer to assign a session."
+        />
+      ),
+    },
+    {
+      condition: () => !activeQuestion,
+      render: () => (
         <ErrorMessage
           title="No questions available"
           message="This session has no practice questions assigned."
         />
+      ),
+    },
+  ];
+
+  const fallbackResult = fallbackChecks.find(({ condition }) => condition());
+
+  if (fallbackResult) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        {fallbackResult.render()}
       </div>
     );
   }

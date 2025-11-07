@@ -13,23 +13,30 @@ import { config } from '../../config/environment.js';
 
 const router = express.Router();
 
-const practiceService = createPracticeService({
-  repository: createSupabasePracticeRepository(),
-  geminiClient: createGeminiClient({
-    apiKey: config.ai.gemini.apiKey || process.env['GEMINI_API_KEY'],
-    model: config.ai.gemini.model,
-    logger: console,
-  }),
-  judge0Client: createJudge0Client({
-    rapidApiKey: config.externalServices.judge0.rapidApiKey,
-    rapidApiHost: config.externalServices.judge0.rapidApiHost,
-    baseUrl: config.externalServices.judge0.baseUrl,
-    logger: console,
-  }),
+const geminiClient = createGeminiClient({
+  apiKey: config.ai.gemini.apiKey || process.env['GEMINI_API_KEY'],
+  model: config.ai.gemini.model,
   logger: console,
 });
 
-const controller = createPracticeController(practiceService);
+const judge0Client = createJudge0Client({
+  rapidApiKey: config.externalServices.judge0.rapidApiKey,
+  rapidApiHost: config.externalServices.judge0.rapidApiHost,
+  baseUrl: config.externalServices.judge0.baseUrl,
+  logger: console,
+});
+
+const practiceService = createPracticeService({
+  repository: createSupabasePracticeRepository(),
+  geminiClient,
+  judge0Client,
+  logger: console,
+});
+
+const controller = createPracticeController(practiceService, {
+  geminiClient,
+  logger: console,
+});
 
 router.post('/sessions', authenticateService, controller.initializeSession);
 router.get(

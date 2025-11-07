@@ -8,9 +8,27 @@ const CompetitionInviteList = ({
   busyId,
 }) => {
   const sortedInvites = useMemo(() => {
-    return [...(invitations || [])].sort((a, b) =>
-      a.createdAt < b.createdAt ? 1 : -1
-    );
+    const resolveInvitationId = (invitation) =>
+      invitation?.id ??
+      invitation?.invitationId ??
+      invitation?.invitation_id ??
+      invitation?._id ??
+      invitation?.uuid ??
+      invitation?.metadata?.invitationId ??
+      invitation?.metadata?.id ??
+      null;
+
+    return [...(invitations || [])]
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .map((invitation, index) => {
+        const resolvedId = resolveInvitationId(invitation);
+        if (resolvedId) {
+          return invitation?.id === resolvedId
+            ? invitation
+            : { ...invitation, id: resolvedId };
+        }
+        return { ...invitation, id: `invitation-${index}` };
+      });
   }, [invitations]);
 
   if (!sortedInvites.length) {

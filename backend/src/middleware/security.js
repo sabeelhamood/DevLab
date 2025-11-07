@@ -235,7 +235,7 @@ export const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    if (config.security.corsOrigins.includes(origin)) {
+    if (config.security?.corsOrigins?.includes(origin)) {
       return callback(null, true);
     }
 

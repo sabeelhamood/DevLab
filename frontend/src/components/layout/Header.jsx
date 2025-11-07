@@ -23,13 +23,13 @@ export default function Header() {
                 backgroundClip: 'text',
               }}
             >
-              App
+              DevLab
             </h1>
             <span
               className="text-sm"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Platform
+              Learning Platform
             </span>
           </div>
 
