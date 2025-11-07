@@ -1,11 +1,14 @@
 // Global error handler for unhandled promise rejections
+const includesMessage = (value, substring) =>
+  typeof value === 'string' && value.includes(substring);
+
 export const setupGlobalErrorHandlers = () => {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 
     // Check if it's related to message channels or async listeners
-    if (event.reason?.message?.includes('message channel closed')) {
+    if (includesMessage(event.reason?.message, 'message channel closed')) {
       console.warn(
         'Message channel error detected - this is likely a browser extension or async listener issue'
       );
@@ -35,7 +38,7 @@ export const setupGlobalErrorHandlers = () => {
     console.error('Global error:', event.error);
 
     // Check if it's related to message channels
-    if (event.error?.message?.includes('message channel closed')) {
+    if (includesMessage(event.error?.message, 'message channel closed')) {
       console.warn(
         'Message channel error detected - preventing default behavior'
       );
@@ -60,7 +63,7 @@ export const safeAsyncOperation = async (
       return null;
     }
 
-    if (error.message?.includes('message channel closed')) {
+    if (includesMessage(error.message, 'message channel closed')) {
       console.warn('Message channel closed during operation');
       return null;
     }
