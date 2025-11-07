@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
+    "@headlessui/react": "^2.2.9",
+    "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.38.4",
     "@tanstack/react-query": "^5.8.4",
     "axios": "^1.6.2",
