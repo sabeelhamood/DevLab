@@ -1,8 +1,5 @@
 import apiClient from './client.js';
 
-// Temporary mock/testing flag. Remove once real authentication service is in place.
-const FORCE_MOCK_AUTH = true;
-
 const buildDevMockSession = (sessionId) => ({
   id: sessionId || 'session-demo',
   learnerId: 'demo-learner',
@@ -102,12 +99,6 @@ const handleErrorResponse = ({ sessionId, error, isDev }) => {
 export const getPracticeSession = async (sessionId) => {
   if (!sessionId) return null;
 
-  if (FORCE_MOCK_AUTH) {
-    const mockSession = buildDevMockSession(sessionId);
-    sessionCache.set(sessionId, mockSession);
-    return mockSession;
-  }
-
   const isDev = Boolean(import.meta.env.DEV);
 
   try {
@@ -133,14 +124,6 @@ export const getPracticeSession = async (sessionId) => {
 };
 
 export const requestHint = async (sessionId, questionId) => {
-  if (FORCE_MOCK_AUTH) {
-    return Promise.resolve({
-      hint:
-        'Mock hint: Think about iterating through the data and handling edge cases.',
-      remainingHints: 2,
-    });
-  }
-
   const response = await apiClient.post(
     `/practice/sessions/${sessionId}/hints`,
     {
@@ -151,16 +134,6 @@ export const requestHint = async (sessionId, questionId) => {
 };
 
 export const runCode = async (sessionId, questionId, submission) => {
-  if (FORCE_MOCK_AUTH) {
-    return Promise.resolve({
-      stdout: 'Mock runner output\nAll tests passed ✅',
-      stderr: '',
-      status: 'Completed',
-      time: '0.01',
-      memory: '5120',
-    });
-  }
-
   const response = await apiClient.post(`/practice/sessions/${sessionId}/run`, {
     questionId,
     submission,
@@ -169,16 +142,6 @@ export const runCode = async (sessionId, questionId, submission) => {
 };
 
 export const submitSolution = async (sessionId, questionId, payload) => {
-  if (FORCE_MOCK_AUTH) {
-    return Promise.resolve({
-      correct: true,
-      aiSuspected: false,
-      feedback:
-        'Great job! Mock evaluator says your solution meets the requirements.',
-      diagnostics: { testsPassed: true },
-    });
-  }
-
   const response = await apiClient.post(
     `/practice/sessions/${sessionId}/submit`,
     {
