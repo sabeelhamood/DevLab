@@ -56,7 +56,11 @@ class ApiClient {
       },
       (error) => {
         if (error.response?.status === 401 && typeof window !== 'undefined') {
-          localStorage.removeItem('auth-token');
+          if (FALLBACK_LEARNER_TOKEN) {
+            localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
+          } else {
+            localStorage.removeItem('auth-token');
+          }
         }
 
         if (error.response?.status >= 500) {
