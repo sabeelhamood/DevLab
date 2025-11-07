@@ -43,47 +43,14 @@ jobs:
           export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
           export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
           
-          # Read project ID from .vercel/project.json to ensure correct project
+          # Deploy to Vercel (with or without ORG_ID)
           cd frontend
-          if [ -f "../.vercel/project.json" ]; then
-            PROJECT_ID=$(cat ../.vercel/project.json | grep -o '"projectId":"[^"]*' | cut -d'"' -f4)
-            ORG_ID=$(cat ../.vercel/project.json | grep -o '"orgId":"[^"]*' | cut -d'"' -f4)
-            echo "📋 Using project ID from .vercel/project.json: $PROJECT_ID"
-            echo "📋 Using org ID: $ORG_ID"
-            
-            # Ensure .vercel folder exists with correct project configuration
-            mkdir -p .vercel
-            cp ../.vercel/project.json .vercel/project.json
-            
-            # Verify project ID matches expected value
-            EXPECTED_PROJECT_ID="prj_ikobrrZXYGGvVwLGZTAVpoJgQ46j"
-            if [ "$PROJECT_ID" != "$EXPECTED_PROJECT_ID" ]; then
-              echo "❌ ERROR: Project ID mismatch!"
-              echo "   Expected: $EXPECTED_PROJECT_ID"
-              echo "   Found: $PROJECT_ID"
-              exit 1
-            fi
-            
-            # Verify we're on the latest commit
-            echo "📋 Current commit: $(git rev-parse HEAD)"
-            echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
-            
-            # Deploy using explicit project configuration with --force to bypass cache
-            vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="$ORG_ID" --cwd .
+          if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "Using VERCEL_ORG_ID for deployment"
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
           else
-            echo "⚠️ .vercel/project.json not found, using secrets"
-            
-            # Verify we're on the latest commit
-            echo "📋 Current commit: $(git rev-parse HEAD)"
-            echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
-            
-            if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
-              echo "Using VERCEL_ORG_ID for deployment"
-              vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
-            else
-              echo "Deploying without ORG_ID (using default scope)"
-              vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}"
-            fi
+            echo "Deploying without ORG_ID (using default scope)"
+            vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
           fi
           
           echo "✅ Frontend deployed to Vercel successfully"

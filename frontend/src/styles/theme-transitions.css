@@ -1,0 +1,72 @@
+/* Global theme transition styles */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Ensure smooth transitions for all theme-dependent properties */
+body {
+  transition: background-color 0.3s ease;
+}
+
+/* Theme-specific particle animations */
+.particle {
+  transition: background-color 0.3s ease;
+}
+
+/* Theme-specific floating icons */
+.floating-icon {
+  transition: color 0.3s ease;
+}
+
+/* Theme-specific gradient orbs */
+.gradient-orb {
+  transition: background 0.3s ease;
+}
+
+/* Theme-specific gradient waves */
+.gradient-wave {
+  transition: background 0.3s ease;
+}
+
+/* Theme-specific loading particles */
+.loading-particle {
+  transition: background-color 0.3s ease;
+}
+
+/* Ensure proper contrast in both themes */
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  color-scheme: light;
+}
+
+/* Theme-aware scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-green);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-green);
+}
+
+/* Theme-aware selection */
+::selection {
+  background: var(--primary-green);
+  color: white;
+}
+
+::-moz-selection {
+  background: var(--primary-green);
+  color: white;
+}

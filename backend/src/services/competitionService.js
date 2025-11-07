@@ -1,196 +1,156 @@
-/**
- * Competition Service
- * Business logic for competition system
- */
+/* eslint-disable max-lines-per-function */
+const createCompetitionService = ({
+  queueManager,
+  geminiClient,
+  analyticsExporter,
+}) => {
+  const now = () => new Date().toISOString();
 
-import matchingService from './matchingService.js';
-import supabase from '../database/supabase.js';
-import microserviceClient from '../clients/microserviceClient.js';
-import logger from '../utils/logger.js';
+  const scheduleInvitation = async ({
+    courseId,
+    courseName,
+    learnerId,
+    metadata,
+  }) => {
+    const invitation = await queueManager.inviteLearner({
+      courseId,
+      courseName,
+      learnerId,
+      metadata,
+    });
+    return invitation;
+  };
 
-const competitionService = {
-  /**
-   * Create competition invitation
-   */
-  async createInvitation(courseId, learnerId) {
-    try {
-      // Find potential competitors
-      const competitors = await matchingService.findPotentialCompetitors(courseId, learnerId);
+  const listInvitations = learnerId => queueManager.listInvitations(learnerId);
 
-      if (competitors.length === 0) {
-        throw new Error('No potential competitors found');
-      }
+  const acceptInvitation = async ({ invitationId, learnerId }) => {
+    const invitation = await queueManager.acceptInvitation({
+      invitationId,
+      learnerId,
+    });
+    return invitation;
+  };
 
-      // Create invitation
-      const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const { data, error } = await supabase
-        .from('competition_invitations')
-        .insert({
-          invitation_id: invitationId,
-          course_id: courseId,
-          learner_id: learnerId,
-          potential_competitors: competitors.map((c, index) => ({
-            competitor_id: c.learner_id,
-            anonymous_id: `Competitor #${index + 1}`,
-            skill_level: c.skill_level,
-            available: c.available
-          })),
-          status: 'pending'
-        })
-        .select()
-        .single();
+  const declineInvitation = ({ invitationId, learnerId }) =>
+    queueManager.declineInvitation({ invitationId, learnerId });
 
-      if (error) {
-        throw error;
-      }
+  const startMatch = async ({
+    courseId,
+    courseName,
+    participants,
+    questions,
+    timer,
+  }) => {
+    const match = await queueManager.createMatch({
+      courseId,
+      courseName,
+      participants,
+      questions,
+      timer,
+    });
+    return match;
+  };
 
-      logger.info('Competition invitation created', {
-        invitation_id: invitationId,
-        course_id: courseId,
-        learner_id: learnerId
-      });
-
-      return {
-        invitation_id: invitationId,
-        potential_competitors: data.potential_competitors
-      };
-    } catch (error) {
-      logger.error('Competition invitation creation error:', error);
+  const submitRound = async ({ matchId, submission }) => {
+    const match = await queueManager.getMatch(matchId);
+    if (!match) {
+      const error = new Error('MATCH_NOT_FOUND');
+      error.code = 'MATCH_NOT_FOUND';
       throw error;
     }
-  },
 
-  /**
-   * Get pending invitations for learner
-   */
-  async getInvitations(learnerId) {
-    try {
-      const { data, error } = await supabase
-        .from('competition_invitations')
-        .select('*')
-        .eq('learner_id', learnerId)
-        .eq('status', 'pending');
+    const currentQuestionIndex = submission.questionIndex;
+    match.results = match.results || {};
+    match.results[submission.participantId] =
+      match.results[submission.participantId] || [];
 
-      if (error) {
-        throw error;
-      }
+    const evaluation = await geminiClient.evaluateSolution({
+      question: match.questions[currentQuestionIndex],
+      submission: {
+        language: submission.language,
+        code: submission.code,
+      },
+    });
 
-      return data || [];
-    } catch (error) {
-      logger.error('Get invitations error:', error);
+    match.results[submission.participantId][currentQuestionIndex] = {
+      submittedAt: now(),
+      evaluation,
+    };
+
+    await queueManager.updateMatch(matchId, match);
+
+    return {
+      evaluation,
+    };
+  };
+
+  const completeMatch = async ({ matchId }) => {
+    const match = await queueManager.getMatch(matchId);
+    if (!match) {
+      const error = new Error('MATCH_NOT_FOUND');
+      error.code = 'MATCH_NOT_FOUND';
       throw error;
     }
-  },
 
-  /**
-   * Select competitor from list
-   */
-  async selectCompetitor(invitationId, anonymousId) {
-    try {
-      // Get invitation
-      const { data: invitation, error: fetchError } = await supabase
-        .from('competition_invitations')
-        .select('*')
-        .eq('invitation_id', invitationId)
-        .single();
-
-      if (fetchError || !invitation) {
-        throw new Error('Invitation not found');
-      }
-
-      // Find competitor by anonymous ID
-      const competitor = invitation.potential_competitors.find(
-        c => c.anonymous_id === anonymousId
+    const scoreParticipant = participantId => {
+      const submissions = match.results?.[participantId] || [];
+      const score = submissions.reduce(
+        (total, result) => total + (result?.evaluation?.correct ? 1 : 0),
+        0
       );
-
-      if (!competitor) {
-        throw new Error('Competitor not found');
-      }
-
-      // Update invitation
-      const { error: updateError } = await supabase
-        .from('competition_invitations')
-        .update({
-          selected_competitor_id: competitor.competitor_id,
-          status: 'pending_acceptance'
-        })
-        .eq('invitation_id', invitationId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      logger.info('Competitor selected', {
-        invitation_id: invitationId,
-        competitor_id: competitor.competitor_id
-      });
-    } catch (error) {
-      logger.error('Competitor selection error:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Submit solution in competition
-   */
-  async submitSolution(competitionId, solution) {
-    try {
-      // Get competition
-      const { data: competition, error } = await supabase
-        .from('competitions')
-        .select('*')
-        .eq('competition_id', competitionId)
-        .single();
-
-      if (error || !competition) {
-        throw new Error('Competition not found');
-      }
-
-      // Store solution (simplified - would need learner_id from auth)
-      // TODO: Get learner_id from authenticated request
-
       return {
-        success: true,
-        message: 'Solution submitted successfully'
+        participantId,
+        score,
+        questionsAnswered: submissions.filter(res => res?.evaluation?.correct)
+          .length,
       };
-    } catch (error) {
-      logger.error('Solution submission error:', error);
-      throw error;
-    }
-  },
+    };
 
-  /**
-   * Get competition status
-   */
-  async getCompetitionStatus(competitionId) {
-    try {
-      const { data, error } = await supabase
-        .from('competitions')
-        .select('*')
-        .eq('competition_id', competitionId)
-        .single();
+    const [participantOne, participantTwo] = match.participants;
+    const performanceLearner1 = scoreParticipant(participantOne.id);
+    const performanceLearner2 = scoreParticipant(participantTwo.id);
 
-      if (error || !data) {
-        throw new Error('Competition not found');
-      }
+    match.status = 'completed';
+    match.completedAt = now();
+    match.winner =
+      performanceLearner1.score >= performanceLearner2.score
+        ? participantOne.id
+        : participantTwo.id;
 
-      return {
-        competition_id: data.competition_id,
-        status: data.status,
-        questions: data.questions,
-        // Don't include solutions or learner IDs (anonymity)
-      };
-    } catch (error) {
-      logger.error('Get competition status error:', error);
-      throw error;
-    }
-  }
+    await queueManager.updateMatch(matchId, match);
+
+    await analyticsExporter?.exportCompetition?.({
+      competitionId: match.id,
+      courseId: match.courseId,
+      createdAt: match.createdAt,
+      timer: match.timer,
+      learner1Id: participantOne.id,
+      learner2Id: participantTwo.id,
+      performanceLearner1,
+      performanceLearner2,
+      score: {
+        learner1: performanceLearner1.score,
+        learner2: performanceLearner2.score,
+      },
+      questionsAnswered: {
+        learner1: performanceLearner1.questionsAnswered,
+        learner2: performanceLearner2.questionsAnswered,
+      },
+    });
+
+    return match;
+  };
+
+  return {
+    scheduleInvitation,
+    listInvitations,
+    acceptInvitation,
+    declineInvitation,
+    startMatch,
+    submitRound,
+    completeMatch,
+    getMatch: matchId => queueManager.getMatch(matchId),
+  };
 };
 
-export default competitionService;
-
-
-
-
-
+export default createCompetitionService;

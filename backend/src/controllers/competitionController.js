@@ -1,134 +1,132 @@
-/**
- * Competition Controller
- * Handles competition-related requests
- */
-
-import competitionService from '../services/competitionService.js';
-import logger from '../utils/logger.js';
-
-const competitionController = {
-  /**
-   * Create competition invitation (from Course Builder)
-   * POST /api/competitions/invite
-   */
-  async createInvitation(req, res, next) {
-    try {
-      const { course_id, learner_id } = req.body;
-
-      if (!course_id || !learner_id) {
-        return res.status(400).json({
-          error: 'Missing required fields',
-          required: ['course_id', 'learner_id']
-        });
-      }
-
-      // Create invitation asynchronously (Course Builder doesn't wait for response)
-      const invitation = await competitionService.createInvitation(course_id, learner_id);
-
-      // Return simple acknowledgment - Course Builder doesn't process this response
-      // This is a fire-and-forget notification pattern
-      res.json({
-        success: true,
-        message: 'Notification received'
-      });
-    } catch (error) {
-      logger.error('Competition invitation creation error:', error);
-      next(error);
-    }
-  },
-
-  /**
-   * Get pending invitations for learner
-   * GET /api/competitions/invitations/:learnerId
-   */
-  async getInvitations(req, res, next) {
-    try {
-      const { learnerId } = req.params;
-
-      const invitations = await competitionService.getInvitations(learnerId);
-
-      res.json({
-        invitations
-      });
-    } catch (error) {
-      logger.error('Get invitations error:', error);
-      next(error);
-    }
-  },
-
-  /**
-   * Learner selects competitor from list
-   * POST /api/competitions/select-competitor
-   */
-  async selectCompetitor(req, res, next) {
-    try {
-      const { invitation_id, selected_competitor_anonymous_id } = req.body;
-
-      if (!invitation_id || !selected_competitor_anonymous_id) {
-        return res.status(400).json({
-          error: 'Missing required fields'
-        });
-      }
-
-      await competitionService.selectCompetitor(invitation_id, selected_competitor_anonymous_id);
-
-      res.json({
-        success: true,
-        message: 'Competitor selected successfully'
-      });
-    } catch (error) {
-      logger.error('Competitor selection error:', error);
-      next(error);
-    }
-  },
-
-  /**
-   * Submit solution in competition
-   * POST /api/competitions/:competitionId/submit
-   */
-  async submitSolution(req, res, next) {
-    try {
-      const { competitionId } = req.params;
-      const { question_id, code, programming_language } = req.body;
-
-      if (!question_id || !code || !programming_language) {
-        return res.status(400).json({
-          error: 'Missing required fields'
-        });
-      }
-
-      const result = await competitionService.submitSolution(competitionId, {
-        question_id,
-        code,
-        programming_language
-      });
-
-      res.json(result);
-    } catch (error) {
-      logger.error('Solution submission error:', error);
-      next(error);
-    }
-  },
-
-  /**
-   * Get competition status
-   * GET /api/competitions/:competitionId/status
-   */
-  async getCompetitionStatus(req, res, next) {
-    try {
-      const { competitionId } = req.params;
-
-      const status = await competitionService.getCompetitionStatus(competitionId);
-
-      res.json(status);
-    } catch (error) {
-      logger.error('Get competition status error:', error);
-      next(error);
-    }
-  }
+/* eslint-disable max-lines-per-function */
+const errorStatusMap = {
+  INVITATION_NOT_FOUND: 404,
+  INVITATION_FORBIDDEN: 403,
+  MATCH_NOT_FOUND: 404,
 };
 
-export default competitionController;
+const mapErrorToStatus = error => {
+  if (!error) return 500;
+  const code = error.code || error.message;
+  return errorStatusMap[code] || 500;
+};
 
+export const createCompetitionController = competitionService => ({
+  queueInvitation: async (req, res, next) => {
+    try {
+      const invitation = await competitionService.scheduleInvitation({
+        courseId: req.body.courseId,
+        courseName: req.body.courseName,
+        learnerId: req.body.learnerId,
+        metadata: req.body.metadata,
+      });
 
+      res.status(202).json({ success: true, data: invitation });
+    } catch (error) {
+      next(error);
+    }
+  },
 
+  listInvitations: async (req, res, next) => {
+    try {
+      const invitations = await competitionService.listInvitations(
+        req.user.sub
+      );
+      res.status(200).json({ success: true, data: invitations });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  acceptInvitation: async (req, res) => {
+    try {
+      const invitation = await competitionService.acceptInvitation({
+        invitationId: req.params.invitationId,
+        learnerId: req.user.sub,
+      });
+
+      res.status(200).json({ success: true, data: invitation });
+    } catch (error) {
+      const status = mapErrorToStatus(error);
+      res.status(status).json({ success: false, error: error.message });
+    }
+  },
+
+  declineInvitation: async (req, res) => {
+    try {
+      const invitation = await competitionService.declineInvitation({
+        invitationId: req.params.invitationId,
+        learnerId: req.user.sub,
+      });
+
+      res.status(200).json({ success: true, data: invitation });
+    } catch (error) {
+      const status = mapErrorToStatus(error);
+      res.status(status).json({ success: false, error: error.message });
+    }
+  },
+
+  startMatch: async (req, res, next) => {
+    try {
+      const match = await competitionService.startMatch({
+        courseId: req.body.courseId,
+        courseName: req.body.courseName,
+        participants: req.body.participants,
+        questions: req.body.questions,
+        timer: req.body.timer,
+      });
+
+      res.status(201).json({ success: true, data: match });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getMatch: async (req, res, next) => {
+    try {
+      const match = await competitionService.getMatch(req.params.matchId);
+      if (!match) {
+        return res
+          .status(404)
+          .json({ success: false, error: 'MATCH_NOT_FOUND' });
+      }
+      res.status(200).json({ success: true, data: match });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  submitRound: async (req, res) => {
+    try {
+      const result = await competitionService.submitRound({
+        matchId: req.params.matchId,
+        submission: {
+          participantId: req.user.sub,
+          questionIndex: req.body.questionIndex,
+          language: req.body.language,
+          code: req.body.code,
+        },
+      });
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      const status = mapErrorToStatus(error);
+      res.status(status).json({ success: false, error: error.message });
+    }
+  },
+
+  completeMatch: async (req, res) => {
+    try {
+      const match = await competitionService.completeMatch({
+        matchId: req.params.matchId,
+      });
+
+      res.status(200).json({ success: true, data: match });
+    } catch (error) {
+      const status = mapErrorToStatus(error);
+      res.status(status).json({ success: false, error: error.message });
+    }
+  },
+});
+
+export default createCompetitionController;

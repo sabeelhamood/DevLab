@@ -1,36 +1,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
-    port: 5173,
-    host: true
+    port: 3000,
+    host: true,
+    open: true,
   },
   build: {
-    // Ensure fresh builds with unique hashes
-    rollupOptions: {
-      output: {
-        // Generate unique file names to prevent caching issues
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
-    },
-    // Clear output directory before build
-    emptyOutDir: true,
-    // Source maps for debugging
-    sourcemap: false
+    outDir: 'dist',
+    sourcemap: true,
   },
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './tests/setup/testSetup.js',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/']
-    }
-  }
+    setupFiles: ['./src/test/setup.js'],
+  },
+  define: {
+    'process.env': process.env,
+  },
+  envPrefix: 'VITE_',
 });

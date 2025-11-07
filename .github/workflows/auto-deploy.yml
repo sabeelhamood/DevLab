@@ -30,12 +30,11 @@ jobs:
             exit 1
           fi
           
-          # Trigger Vercel deployment using REST API with force flag
-          # This forces a fresh build without using cache
+          # Trigger Vercel deployment using REST API (simplified payload)
           RESPONSE=$(curl -X POST "https://api.vercel.com/v13/deployments" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"projectId\": \"${{ secrets.VERCEL_PROJECT_ID }}\", \"forceNew\": true}" \
+            -d "{\"projectId\": \"${{ secrets.VERCEL_PROJECT_ID }}\"}" \
             -w "\nHTTP Status: %{http_code}\n" \
             -s)
           

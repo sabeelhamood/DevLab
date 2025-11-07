@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide covers the deployment of the DEVLAB microservice across different environments using Vercel (frontend) and Railway (backend).
+This guide covers the deployment of the DEVLAB microservice across different environments using
+Vercel (frontend) and Railway (backend).
 
 ## Architecture
 
@@ -24,6 +25,7 @@ This guide covers the deployment of the DEVLAB microservice across different env
 ## Prerequisites
 
 ### Required Accounts
+
 - [Vercel Account](https://vercel.com) - Frontend hosting
 - [Railway Account](https://railway.app) - Backend hosting
 - [Supabase Account](https://supabase.com) - PostgreSQL database
@@ -31,6 +33,7 @@ This guide covers the deployment of the DEVLAB microservice across different env
 - [GitHub Account](https://github.com) - Source control and CI/CD
 
 ### Required Services
+
 - Gemini API key for AI functionality
 - SandBox API key for code execution
 - Service API keys for microservice communication
@@ -40,6 +43,7 @@ This guide covers the deployment of the DEVLAB microservice across different env
 ### 1. Frontend (Vercel)
 
 #### Environment Variables
+
 Configure these in Vercel dashboard:
 
 ```bash
@@ -60,6 +64,7 @@ NEXT_PUBLIC_CORPORATE_ASSISTANT_URL=https://corporate-assistant.railway.app
 ```
 
 #### Deployment Steps
+
 1. Connect GitHub repository to Vercel
 2. Set build command: `npm run build`
 3. Set output directory: `frontend/dist`
@@ -69,6 +74,7 @@ NEXT_PUBLIC_CORPORATE_ASSISTANT_URL=https://corporate-assistant.railway.app
 ### 2. Backend (Railway)
 
 #### Environment Variables
+
 Configure these in Railway dashboard:
 
 ```bash
@@ -105,6 +111,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 ```
 
 #### Deployment Steps
+
 1. Connect GitHub repository to Railway
 2. Set build command: `npm run build`
 3. Set start command: `npm start`
@@ -114,12 +121,14 @@ RATE_LIMIT_MAX_REQUESTS=100
 ### 3. Database Setup
 
 #### Supabase (PostgreSQL)
+
 1. Create new project in Supabase
 2. Run database migrations
 3. Configure Row Level Security (RLS)
 4. Set up service role key
 
 #### MongoDB Atlas
+
 1. Create cluster in MongoDB Atlas
 2. Create database and collections
 3. Configure network access
@@ -189,16 +198,19 @@ SANDBOX_TEST_API_KEY=your-test-sandbox-api-key
 ## Deployment Environments
 
 ### Development
+
 - **Frontend**: `http://localhost:3001`
 - **Backend**: `http://localhost:3001`
 - **Database**: Local Supabase and MongoDB
 
 ### Staging
+
 - **Frontend**: `https://devlab-staging.vercel.app`
 - **Backend**: `https://devlab-staging-api.railway.app`
 - **Database**: Staging Supabase and MongoDB
 
 ### Production
+
 - **Frontend**: `https://devlab.vercel.app`
 - **Backend**: `https://devlab-api.railway.app`
 - **Database**: Production Supabase and MongoDB
@@ -206,16 +218,19 @@ SANDBOX_TEST_API_KEY=your-test-sandbox-api-key
 ## Monitoring and Observability
 
 ### Health Checks
+
 - **Backend**: `GET /health`
 - **Frontend**: Built-in Vercel health checks
 - **Database**: Connection monitoring
 
 ### Logging
+
 - **Application Logs**: Railway logs
 - **Error Tracking**: MongoDB Atlas for operational data
 - **Performance**: Vercel Analytics
 
 ### Metrics
+
 - **Response Time**: < 2 seconds
 - **Uptime**: 99.9% target
 - **Error Rate**: < 0.1%
@@ -224,28 +239,28 @@ SANDBOX_TEST_API_KEY=your-test-sandbox-api-key
 ## Security Configuration
 
 ### CORS Settings
+
 ```javascript
 // Backend CORS configuration
 const corsOptions = {
-  origin: [
-    'https://devlab.vercel.app',
-    'https://devlab-staging.vercel.app'
-  ],
-  credentials: true
-}
+  origin: ['https://devlab.vercel.app', 'https://devlab-staging.vercel.app'],
+  credentials: true,
+};
 ```
 
 ### Rate Limiting
+
 ```javascript
 // Rate limiting configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
-})
+  message: 'Too many requests from this IP',
+});
 ```
 
 ### Environment Variables Security
+
 - No `.env` files in production
 - All secrets managed through cloud platforms
 - Service-to-service authentication with API keys
@@ -256,16 +271,19 @@ const limiter = rateLimit({
 ### Common Issues
 
 #### Frontend Deployment Issues
+
 1. **Build Failures**: Check environment variables
 2. **API Connection**: Verify `NEXT_PUBLIC_API_URL`
 3. **Database Connection**: Check Supabase configuration
 
 #### Backend Deployment Issues
+
 1. **Database Connection**: Verify connection strings
 2. **External Services**: Check service URLs and API keys
 3. **Memory Issues**: Monitor Railway resource usage
 
 #### Database Issues
+
 1. **Connection Timeouts**: Check network access
 2. **Authentication**: Verify service keys
 3. **Performance**: Monitor query performance
@@ -286,18 +304,21 @@ npm run test:db-connection
 ## Rollback Procedures
 
 ### Frontend Rollback
+
 1. Go to Vercel dashboard
 2. Navigate to deployments
 3. Select previous deployment
 4. Click "Promote to Production"
 
 ### Backend Rollback
+
 1. Go to Railway dashboard
 2. Navigate to deployments
 3. Select previous deployment
 4. Click "Deploy"
 
 ### Database Rollback
+
 1. Use Supabase dashboard for schema changes
 2. Use MongoDB Atlas for data rollback
 3. Restore from backups if necessary
@@ -305,18 +326,21 @@ npm run test:db-connection
 ## Performance Optimization
 
 ### Frontend
+
 - Vercel CDN for static assets
 - Image optimization
 - Code splitting
 - Caching strategies
 
 ### Backend
+
 - Railway auto-scaling
 - Database connection pooling
 - Caching with Redis (if needed)
 - API response optimization
 
 ### Database
+
 - Supabase connection pooling
 - MongoDB Atlas auto-scaling
 - Query optimization
@@ -325,12 +349,14 @@ npm run test:db-connection
 ## Support and Maintenance
 
 ### Regular Tasks
+
 - Monitor system health
 - Update dependencies
 - Review security patches
 - Backup verification
 
 ### Emergency Procedures
+
 - Incident response plan
 - Contact information
 - Escalation procedures
@@ -341,7 +367,3 @@ npm run test:db-connection
 - **Technical Support**: devops@devlab.com
 - **Security Issues**: security@devlab.com
 - **General Inquiries**: support@devlab.com
-
-
-
-

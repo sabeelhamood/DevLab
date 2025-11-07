@@ -1,46 +1,54 @@
-/**
- * Error Handler Middleware
- * Centralized error handling
- */
-
-import logger from '../utils/logger.js';
+/* eslint-disable no-console, max-lines-per-function */
 import { config } from '../config/environment.js';
 
-const errorHandler = (err, req, res, next) => {
-  logger.error('Error:', {
-    error: err.message,
-    stack: config.env !== 'production' ? err.stack : undefined,
-    path: req.path,
-    method: req.method
+export const errorHandler = (err, req, res) => {
+  let error = { ...err };
+  error.message = err.message;
+
+  // Log error
+  console.error('Error:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
   });
 
-  // Default error
-  let statusCode = err.status || err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
+  // Mongoose bad ObjectId
+  if (err.name === 'CastError') {
+    const message = 'Resource not found';
+    error = { name: 'CastError', message, statusCode: 404 };
+  }
 
-  // Validation errors
+  // Mongoose duplicate key
+  if (err.name === 'MongoError' && err.code === 11000) {
+    const message = 'Duplicate field value entered';
+    error = { name: 'MongoError', message, statusCode: 400 };
+  }
+
+  // Mongoose validation error
   if (err.name === 'ValidationError') {
-    statusCode = 400;
-    message = 'Validation Error';
+    const message = Object.values(err.errors)
+      .map(val => val.message)
+      .join(', ');
+    error = { name: 'ValidationError', message, statusCode: 400 };
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    statusCode = 401;
-    message = 'Invalid token';
+    const message = 'Invalid token';
+    error = { name: 'JsonWebTokenError', message, statusCode: 401 };
   }
 
-  res.status(statusCode).json({
-    error: config.env === 'production' && statusCode === 500 
-      ? 'Internal Server Error' 
-      : message,
-    ...(config.env !== 'production' && { stack: err.stack })
+  if (err.name === 'TokenExpiredError') {
+    const message = 'Token expired';
+    error = { name: 'TokenExpiredError', message, statusCode: 401 };
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    error: error.message || 'Server Error',
+    ...(config.nodeEnv === 'development' && { stack: err.stack }),
   });
 };
-
-export default errorHandler;
-
-
-
-
-

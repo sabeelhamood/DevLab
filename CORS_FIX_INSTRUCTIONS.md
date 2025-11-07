@@ -9,21 +9,25 @@ Access to fetch at 'https://devlab-backend-production-0bcb.up.railway.app/api/ge
 ## 🎯 Solution: Configure Railway Environment Variables
 
 ### Step 1: Access Railway Dashboard
+
 1. Go to: https://railway.app
 2. Log in to your account
 3. Select the project: `devlab-backend-production`
 
 ### Step 2: Add CORS Environment Variable
+
 1. Click on **Settings** tab (or gear icon)
 2. Click on **Variables** section
 3. Add/Update the following variable:
 
 **Variable Name:**
+
 ```
 CORS_ORIGINS
 ```
 
 **Variable Value:**
+
 ```
 https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app,https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app,https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app,https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:5173
 ```
@@ -31,6 +35,7 @@ https://dev-lab-phi.vercel.app,https://dev-lab-git-main-sabeels-projects-5df2482
 4. Click **Save** or **Update**
 
 ### Step 3: Verify Other Required Variables
+
 Make sure these variables are also set in Railway:
 
 - `NODE_ENV` = `production`
@@ -39,11 +44,13 @@ Make sure these variables are also set in Railway:
 - `CORS_ORIGINS` = (the value above)
 
 ### Step 4: Redeploy
+
 1. Railway will automatically redeploy when you save the environment variable
 2. Wait 1-2 minutes for the deployment to complete
 3. Check the deployment logs to ensure it succeeded
 
 ### Step 5: Test the Fix
+
 1. Go to: https://dev-lab-phi.vercel.app
 2. Open browser DevTools (F12)
 3. Check the Console tab
@@ -52,6 +59,7 @@ Make sure these variables are also set in Railway:
 ## 🔍 Verification
 
 After updating, the backend will:
+
 1. Accept requests from your Vercel frontend
 2. Return proper CORS headers
 3. Allow API calls to succeed
@@ -59,6 +67,7 @@ After updating, the backend will:
 ## 📋 Backend Code Reference
 
 The backend CORS configuration is in:
+
 - `backend/src/config/environment.js` - Reads CORS_ORIGINS from environment
 - `backend/src/app.js` - Applies CORS middleware
 
@@ -88,6 +97,5 @@ If after 2-3 minutes you still see CORS errors:
 
 ---
 
-**Expected Result:** Your Vercel frontend should successfully communicate with Railway backend without CORS errors.
-
-
+**Expected Result:** Your Vercel frontend should successfully communicate with Railway backend
+without CORS errors.

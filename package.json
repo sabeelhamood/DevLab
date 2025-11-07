@@ -1,0 +1,56 @@
+{
+  "name": "microservice",
+  "version": "1.0.0",
+  "description": "Microservice application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "echo 'Root build - use specific frontend/backend builds'",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "echo 'Backend build completed - no compilation needed for Node.js'",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && npm run test",
+    "test:integration": "cd tests && npm run test",
+    "test:ci": "npm run test:frontend:ci && npm run test:backend:ci",
+    "test:frontend:ci": "cd frontend && npm run test:ci",
+    "test:backend:ci": "cd backend && npm run test:ci",
+    "test:coverage": "npm run test:frontend:coverage && npm run test:backend:coverage",
+    "test:frontend:coverage": "cd frontend && npm run test:coverage",
+    "test:backend:coverage": "cd backend && npm run test:coverage",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:fix": "npm run lint:frontend:fix && npm run lint:backend:fix",
+    "lint:frontend:fix": "cd frontend && npm run lint:fix",
+    "lint:backend:fix": "cd backend && npm run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "npm run type-check:frontend && npm run type-check:backend",
+    "type-check:frontend": "cd frontend && npm run type-check",
+    "type-check:backend": "cd backend && npm run type-check",
+    "quality": "npm run lint && npm run type-check && npm run test:coverage",
+    "quality:fix": "npm run lint:fix && npm run format",
+    "setup": "npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && npm install",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "microservice"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prettier": "^3.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.11"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "tests"
+  ]
+}

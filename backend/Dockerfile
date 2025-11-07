@@ -16,6 +16,18 @@ COPY package*.json ./
 # Install dependencies (omit dev)
 RUN npm install --omit=dev
 
+# ---- Builder stage ----
+FROM base AS builder
+
+# Copy installed dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build the app
+RUN npm run build
+
 # ---- Runner / Production stage ----
 FROM base AS runner
 
@@ -26,21 +38,17 @@ ENV PORT=$PORT
 
 # Create user for running app
 RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nodejs
+    && adduser --system --uid 1001 nextjs
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy source files and package.json
-COPY package.json ./
-COPY server.js ./
-COPY src ./src
+# Copy source files and dependencies
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Switch to non-root user
-USER nodejs
+USER nextjs
 
-# Expose port (Railway will inject PORT env var at runtime)
-# Note: EXPOSE is just documentation - Railway routes to whatever port the app listens on
+# Expose port (for local testing only)
 EXPOSE 3000
 
 # Start the app

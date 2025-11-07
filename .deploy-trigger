@@ -1,4 +1,0 @@
-Deployment trigger - commit a72abaeb
-Timestamp: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-Commit: a72abaeb - Sync all local changes to match localhost version
-

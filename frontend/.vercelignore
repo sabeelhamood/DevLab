@@ -1,6 +1,0 @@
-# Vercel ignore - ensure fresh builds
-node_modules
-.vite
-dist
-*.log
-.DS_Store

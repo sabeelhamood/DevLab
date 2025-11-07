@@ -43,15 +43,11 @@ jobs:
         fi
         echo "✅ All Vercel secrets validated"
         
-    - name: 📦 Install Frontend Dependencies (Fresh Install)
+    - name: 📦 Install Frontend Dependencies
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "📦 Installing frontend dependencies (fresh install)..."
-        # Clear npm cache to ensure fresh install
-        npm cache clean --force 2>/dev/null || true
-        # Install dependencies
+        echo "📦 Installing frontend dependencies..."
         npm ci --prefer-offline --no-audit
-        echo "✅ Dependencies installed"
         
     - name: 🧪 Run Frontend Tests
       working-directory: ${{ env.FRONTEND_DIR }}
@@ -59,64 +55,29 @@ jobs:
         echo "🧪 Running frontend tests..."
         npm run test --if-present || echo "⚠️ No tests configured"
         
-    - name: 🏗️ Build Frontend (Fresh Build - No Cache)
+    - name: 🏗️ Build Frontend
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "🏗️ Building frontend for production (clearing ALL cache)..."
-        # Clear ALL build artifacts and cache
-        rm -rf node_modules/.vite 2>/dev/null || true
-        rm -rf dist 2>/dev/null || true
-        rm -rf .vite 2>/dev/null || true
-        rm -rf .vercel 2>/dev/null || true
-        # Clear npm cache
-        npm cache clean --force 2>/dev/null || true
-        # Build fresh
-        echo "📦 Running npm run build..."
+        echo "🏗️ Building frontend for production..."
         npm run build
-        # Verify build output
-        if [ ! -d "dist" ]; then
-          echo "❌ Build failed: dist directory not found"
-          exit 1
-        fi
-        echo "✅ Build completed successfully"
-        echo "📦 Build output size: $(du -sh dist | cut -f1)"
-        echo "📁 Build files:"
-        ls -lah dist/ || true
-        # Verify CSS file exists and contains red background
-        CSS_FILE=$(find dist/assets -name "*.css" 2>/dev/null | head -1)
-        if [ -n "$CSS_FILE" ]; then
-          echo "📄 CSS file found: $CSS_FILE"
-          if grep -q "#ff0000" "$CSS_FILE" 2>/dev/null; then
-            echo "✅ Red background CSS verified in build output"
-          else
-            echo "⚠️ Warning: Red background CSS not found in $CSS_FILE"
-          fi
-        else
-          echo "⚠️ Warning: No CSS file found in dist/assets/"
-        fi
         
-    - name: 🚀 Deploy to Vercel (Force Fresh Build)
+    - name: 🚀 Deploy to Vercel
       working-directory: ${{ env.FRONTEND_DIR }}
       run: |
-        echo "🚀 Deploying frontend to Vercel with fresh build (no cache)..."
+        echo "🚀 Deploying frontend to Vercel..."
         export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
         export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
         
         # Install Vercel CLI
         npm install -g vercel@latest
         
-        # Verify we're on the latest commit
-        echo "📋 Current commit: $(git rev-parse HEAD)"
-        echo "📋 Latest commit message: $(git log -1 --pretty=%B)"
-        
-        # Deploy to production - Vercel CLI will use the fresh build we just created
-        # The --force flag ensures we deploy even if there are no changes detected
+        # Deploy to production
         if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
           echo "Using VERCEL_ORG_ID for deployment"
-          vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
+          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}"
         else
           echo "Deploying without ORG_ID (using default scope)"
-          vercel --prod --yes --force --token="${{ secrets.VERCEL_TOKEN }}"
+          vercel --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
         fi
         
         echo "✅ Frontend deployed to Vercel successfully"
@@ -139,21 +100,6 @@ jobs:
         else
           echo "❌ Frontend smoke test failed"
           exit 1
-        fi
-    
-    - name: ✅ Verify Deployment Version
-      run: |
-        echo "🔍 Verifying deployed version..."
-        FRONTEND_URL="${{ steps.vercel-url.outputs.url }}"
-        # Wait a bit for deployment to be fully ready
-        sleep 10
-        # Check if the page contains the new build version
-        HTML_CONTENT=$(curl -s "$FRONTEND_URL" || echo "")
-        if echo "$HTML_CONTENT" | grep -q "2024-01-15-v15-PRODUCTION-READY"; then
-          echo "✅ Deployment verified: New version (v15) is deployed!"
-        else
-          echo "⚠️ Warning: Could not verify new version in deployment"
-          echo "Please check manually at: $FRONTEND_URL"
         fi
 
   # ===========================================
