@@ -1,60 +1,82 @@
-import { Bell, User } from 'lucide-react';
-import ThemeToggle from '../ThemeToggle.jsx';
+import { useAuthStore } from '../../store/authStore.js'
+import { Bell, User, LogOut } from 'lucide-react'
+import Button from '../ui/Button.jsx'
+import ThemeToggle from '../ThemeToggle.jsx'
 
 export default function Header() {
+  const { user, logout } = useAuthStore()
+
   return (
-    <header
+    <header 
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-all duration-300"
-      style={{
+      style={{ 
         background: 'var(--bg-primary)',
         borderColor: 'rgba(6, 95, 70, 0.2)',
-        boxShadow: 'var(--shadow-card)',
+        boxShadow: 'var(--shadow-card)'
       }}
     >
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1
+            <h1 
               className="text-2xl font-bold font-display"
-              style={{
+              style={{ 
                 background: 'var(--gradient-primary)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                backgroundClip: 'text'
               }}
             >
-              DevLab
+              DEVLAB
             </h1>
-            <span
-              className="text-sm"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Learning Platform
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              AI-Powered Learning Platform
             </span>
           </div>
-
+          
           <div className="flex items-center space-x-4">
             {/* Theme Toggle */}
             <ThemeToggle />
-
-            <button
+            
+            <button 
               className="p-2 transition-colors hover:scale-110"
               style={{ color: 'var(--text-secondary)' }}
             >
               <Bell className="h-5 w-5" />
             </button>
-
-            <div className="flex items-center space-x-2">
-              <div
-                className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold relative animate-pulse"
-                style={{ background: 'var(--gradient-primary)' }}
-              >
-                <User className="h-5 w-5" />
+            
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {user?.name}
+                </p>
+                <p className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
+                  {user?.role}
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div 
+                  className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold relative animate-pulse"
+                  style={{ background: 'var(--gradient-primary)' }}
+                >
+                  <User className="h-5 w-5" />
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="transition-all duration-300 hover:scale-110"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
     </header>
-  );
+  )
 }

@@ -44,29 +44,26 @@
 ## 🧪 **TEST YOUR DEPLOYMENT**
 
 ### **Frontend Test**
-
 ```bash
 curl https://devlab-frontend.vercel.app
 ```
 
 ### **Backend Test**
-
 ```bash
 curl https://devlab-backend.railway.app/health
 ```
 
 ### **Gemini AI Test**
-
 ```bash
 curl -X POST https://devlab-backend.railway.app/api/gemini-test/test-simple
 ```
 
 ## 🎮 **TRY SOLVING QUESTIONS**
 
-Once deployed, visit: **https://devlab-frontend.vercel.app/practice**
+Once deployed, visit:
+**https://devlab-frontend.vercel.app/practice**
 
 ### **Available Features:**
-
 - ✅ **AI-Generated Coding Questions**
 - ✅ **Real-time Code Evaluation**
 - ✅ **Progressive Hints System**
@@ -74,7 +71,6 @@ Once deployed, visit: **https://devlab-frontend.vercel.app/practice**
 - ✅ **JavaScript, Python, Java Support**
 
 ### **Question Types:**
-
 1. **Coding Challenges** - Write functions, algorithms
 2. **Theoretical Questions** - Multiple choice concepts
 3. **Debugging Tasks** - Fix broken code
@@ -85,7 +81,6 @@ Once deployed, visit: **https://devlab-frontend.vercel.app/practice**
 If you prefer command line:
 
 ### **Vercel (Frontend)**
-
 ```bash
 cd frontend
 vercel login
@@ -93,7 +88,6 @@ vercel --prod
 ```
 
 ### **Railway (Backend)**
-
 ```bash
 cd backend
 railway login
@@ -104,8 +98,7 @@ railway up
 
 - **Vercel Dashboard:** [vercel.com/dashboard](https://vercel.com/dashboard)
 - **Railway Dashboard:** [railway.app/dashboard](https://railway.app/dashboard)
-- **GitHub Actions:**
-  [github.com/sabeelhamood/DevLab/actions](https://github.com/sabeelhamood/DevLab/actions)
+- **GitHub Actions:** [github.com/sabeelhamood/DevLab/actions](https://github.com/sabeelhamood/DevLab/actions)
 
 ## 🎯 **SUCCESS INDICATORS**
 
@@ -113,24 +106,21 @@ railway up
 ✅ Backend responds at Railway URL  
 ✅ Gemini AI generates questions  
 ✅ CORS allows frontend-backend communication  
-✅ Environment variables loaded correctly
+✅ Environment variables loaded correctly  
 
 ## 🚨 **TROUBLESHOOTING**
 
 ### **If Frontend Doesn't Load:**
-
 1. Check Vercel deployment logs
 2. Verify environment variables
 3. Check build process
 
 ### **If Backend Doesn't Respond:**
-
 1. Check Railway deployment logs
 2. Verify environment variables
 3. Check health endpoint
 
 ### **If Gemini AI Fails:**
-
 1. Verify GEMINI_API_KEY is set
 2. Check API key permissions
 3. Test with curl command
@@ -152,3 +142,4 @@ After successful deployment, you'll have:
 **API Endpoint:** `https://devlab-backend.railway.app/api`
 
 Start solving questions and experience AI-powered learning! 🚀
+

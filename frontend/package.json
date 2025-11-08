@@ -1,7 +1,7 @@
 {
-  "name": "frontend",
+  "name": "devlab-frontend",
   "version": "1.0.0",
-  "description": "Frontend React application",
+  "description": "DEVLAB Frontend - React application for AI-powered learning",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,13 +13,10 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext js,jsx --fix",
-    "type-check": "echo \"Skipping type check: project uses JavaScript\""
+    "lint:fix": "eslint . --ext js,jsx --fix"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
-    "@headlessui/react": "^2.2.9",
-    "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.38.4",
     "@tanstack/react-query": "^5.8.4",
     "axios": "^1.6.2",
@@ -33,19 +30,14 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^1.0.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
     "husky": "^9.1.7",
-    "jsdom": "^27.1.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
     "vite": "^5.4.21",

@@ -7,13 +7,11 @@ This document explains how to set up automatic deployment for the fullstack DevL
 Add these secrets to your GitHub repository (Settings → Secrets and variables → Actions):
 
 ### Vercel Secrets
-
 - `VERCEL_TOKEN` - Your Vercel personal access token
 - `VERCEL_PROJECT_ID` - Your Vercel project ID
 - `VERCEL_ORG_ID` - Your Vercel organization ID
 
 ### Railway Secrets
-
 - `RAILWAY_TOKEN` - Your Railway personal access token
 - `RAILWAY_PROJECT_ID` - Your Railway project ID
 - `RAILWAY_SERVICE_ID` - Your Railway service ID
@@ -22,14 +20,12 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## 🏗️ Deployment Architecture
 
 ### Frontend (Vercel)
-
 - **Build Command**: `cd frontend && npm run build`
 - **Output Directory**: `frontend/dist`
 - **Framework**: Vite
 - **Auto-deployment**: Triggered on every push to `main`
 
 ### Backend (Railway)
-
 - **Root Directory**: `backend/`
 - **Build Command**: `cd backend && npm run build`
 - **Start Command**: `npm start`
@@ -53,7 +49,6 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## 🛠️ Manual Setup Steps
 
 ### 1. Vercel Setup
-
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
 2. Import your GitHub repository
 3. Configure build settings:
@@ -63,7 +58,6 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 5. Get your Organization ID from Settings → General
 
 ### 2. Railway Setup
-
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Create a new project from your GitHub repository
 3. Set the root directory to `backend/`
@@ -71,7 +65,6 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 5. Get your Project ID and Service ID from the dashboard
 
 ### 3. GitHub Secrets Setup
-
 1. Go to your GitHub repository
 2. Navigate to Settings → Secrets and variables → Actions
 3. Add all required secrets listed above
@@ -79,7 +72,6 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## 🧪 Testing Deployment
 
 ### Test Frontend Deployment
-
 ```bash
 # Manual Vercel deployment
 cd frontend
@@ -87,7 +79,6 @@ vercel --prod
 ```
 
 ### Test Backend Deployment
-
 ```bash
 # Manual Railway deployment
 cd backend
@@ -125,7 +116,6 @@ railway logs
 ## 🎯 Success Criteria
 
 After setup, pushing to `main` should:
-
 - ✅ Build and deploy frontend to Vercel
 - ✅ Build and deploy backend to Railway
 - ✅ Set `GEMINI_API_KEY` in Railway environment
@@ -135,7 +125,6 @@ After setup, pushing to `main` should:
 ## 📞 Support
 
 If you encounter issues:
-
 1. Check GitHub Actions logs for detailed error messages
 2. Verify all secrets are correctly set
 3. Test manual deployments first

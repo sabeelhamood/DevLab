@@ -6,18 +6,18 @@ module.exports = {
   printWidth: 80,
   tabWidth: 2,
   useTabs: false,
-
+  
   // Advanced formatting
   bracketSpacing: true,
   bracketSameLine: false,
   arrowParens: 'avoid',
   endOfLine: 'lf',
-
+  
   // Plugin-specific formatting
   plugins: ['prettier-plugin-tailwindcss'],
-  tailwindConfig: './frontend/tailwind.config.js',
+  tailwindConfig: './tailwind.config.js',
   tailwindFunctions: ['clsx', 'cn'],
-
+  
   // Override for specific file types
   overrides: [
     {
@@ -35,3 +35,7 @@ module.exports = {
     },
   ],
 };
+
+
+
+

@@ -1,106 +1,80 @@
-import axios from 'axios';
-import toast from 'react-hot-toast';
-
-const FALLBACK_LEARNER_TOKEN = import.meta.env.VITE_PUBLIC_LEARNER_TOKEN || '';
-
-const ensureMockSessionToken = () => {
-  if (typeof window === 'undefined') return null;
-
-  if (!FALLBACK_LEARNER_TOKEN) return null;
-
-  const existing = localStorage.getItem('auth-token');
-  if (existing !== FALLBACK_LEARNER_TOKEN) {
-    localStorage.setItem('auth-token', FALLBACK_LEARNER_TOKEN);
-  }
-  return FALLBACK_LEARNER_TOKEN;
-};
-
-const getAuthToken = () => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const storedToken = localStorage.getItem('auth-token');
-  if (storedToken) {
-    return storedToken;
-  }
-
-  return ensureMockSessionToken();
-};
+import axios from 'axios'
+import toast from 'react-hot-toast'
 
 class ApiClient {
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+      baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production-0bcb.up.railway.app/api' : 'http://localhost:3001/api'),
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
-    });
+    })
 
-    this.setupInterceptors();
+    this.setupInterceptors()
   }
 
   setupInterceptors() {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const token = getAuthToken();
+        const token = localStorage.getItem('auth-token')
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          config.headers.Authorization = `Bearer ${token}`
         }
-        return config;
+        return config
       },
       (error) => {
-        return Promise.reject(error);
+        return Promise.reject(error)
       }
-    );
+    )
 
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
-        ensureMockSessionToken();
-        return response;
+        return response
       },
       (error) => {
-        if (error.response?.status === 401 && typeof window !== 'undefined') {
-          ensureMockSessionToken();
+        if (error.response?.status === 401) {
+          localStorage.removeItem('auth-token')
+          window.location.href = '/login'
         }
-
+        
         if (error.response?.status >= 500) {
-          toast.error('Server error. Please try again later.');
+          toast.error('Server error. Please try again later.')
         }
-
-        return Promise.reject(error);
+        
+        return Promise.reject(error)
       }
-    );
+    )
   }
 
   async get(url, config) {
-    const response = await this.client.get(url, config);
-    return response;
+    const response = await this.client.get(url, config)
+    return response.data
   }
 
   async post(url, data, config) {
-    const response = await this.client.post(url, data, config);
-    return response;
+    const response = await this.client.post(url, data, config)
+    return response.data
   }
 
   async put(url, data, config) {
-    const response = await this.client.put(url, data, config);
-    return response;
+    const response = await this.client.put(url, data, config)
+    return response.data
   }
 
   async delete(url, config) {
-    const response = await this.client.delete(url, config);
-    return response;
+    const response = await this.client.delete(url, config)
+    return response.data
   }
 
   async patch(url, data, config) {
-    const response = await this.client.patch(url, data, config);
-    return response;
+    const response = await this.client.patch(url, data, config)
+    return response.data
   }
 }
 
-export const apiClient = new ApiClient();
-export default apiClient;
+export const apiClient = new ApiClient()
+
+

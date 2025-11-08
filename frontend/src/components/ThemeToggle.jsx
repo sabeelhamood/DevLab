@@ -12,7 +12,7 @@ const ThemeToggle = () => {
       style={{
         background: 'var(--gradient-card)',
         border: '2px solid rgba(6, 95, 70, 0.2)',
-        boxShadow: 'var(--shadow-card)',
+        boxShadow: 'var(--shadow-card)'
       }}
       title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
     >

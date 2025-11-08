@@ -1,39 +1,45 @@
-const config = {
+module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: [
-    '**/__tests__/**/*.(spec|test).[cm]js',
-    '**/?(*.)+(spec|test).[cm]js',
+    '**/__tests__/**/*.ts',
+    '**/?(*.)+(spec|test).ts'
   ],
-  collectCoverageFrom: ['src/**/*.{js,jsx}', '!src/app.js'],
+  transform: {
+    '^.+\\.ts$': 'ts-jest',
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/*.test.ts',
+    '!src/**/*.spec.ts',
+    '!src/app.ts'
+  ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
-  coveragePathIgnorePatterns: [
-    '<rootDir>/src/config/',
-    '<rootDir>/src/middleware/security.js',
-    '<rootDir>/src/middleware/validateRequest.js',
-    '<rootDir>/src/middleware/errorHandler.js',
-    '<rootDir>/src/routes/security/',
-    '<rootDir>/src/services/security/',
-    '<rootDir>/src/integrations/',
-    '<rootDir>/src/controllers/healthController.js',
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json'
   ],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 60,
-      lines: 60,
-      statements: 60,
-    },
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    }
   },
-  transform: {},
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 10000,
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
-  restoreMocks: true,
+  restoreMocks: true
 };
 
-export default config;
+
+
+

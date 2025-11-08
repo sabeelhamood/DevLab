@@ -1,6 +1,10 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const server = http.createServer((req, res) => {
   let filePath = '.' + req.url;
@@ -24,7 +28,7 @@ const server = http.createServer((req, res) => {
     '.ttf': 'application/font-ttf',
     '.eot': 'application/vnd.ms-fontobject',
     '.otf': 'application/font-otf',
-    '.wasm': 'application/wasm',
+    '.wasm': 'application/wasm'
   };
 
   const contentType = mimeTypes[extname] || 'application/octet-stream';

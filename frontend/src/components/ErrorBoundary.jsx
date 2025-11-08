@@ -1,23 +1,23 @@
-import React from 'react';
+import React from 'react'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    super(props)
+    this.state = { hasError: false, error: null, errorInfo: null }
   }
 
-  static getDerivedStateFromError(_error) {
+  static getDerivedStateFromError(error) {
     // Update state so the next render will show the fallback UI
-    return { hasError: true };
+    return { hasError: true }
   }
 
   componentDidCatch(error, errorInfo) {
     // Log the error
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
     this.setState({
       error: error,
-      errorInfo: errorInfo,
-    });
+      errorInfo: errorInfo
+    })
   }
 
   render() {
@@ -27,16 +27,8 @@ class ErrorBoundary extends React.Component {
           <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-8 w-8 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
+                <svg className="h-8 w-8 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
@@ -46,9 +38,7 @@ class ErrorBoundary extends React.Component {
               </div>
             </div>
             <div className="text-sm text-gray-600 mb-4">
-              <p>
-                An error occurred while loading the page. This might be due to:
-              </p>
+              <p>An error occurred while loading the page. This might be due to:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Network connectivity issues</li>
                 <li>Server timeout</li>
@@ -63,13 +53,7 @@ class ErrorBoundary extends React.Component {
                 Reload Page
               </button>
               <button
-                onClick={() =>
-                  this.setState({
-                    hasError: false,
-                    error: null,
-                    errorInfo: null,
-                  })
-                }
+                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
                 className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Try Again
@@ -88,11 +72,19 @@ class ErrorBoundary extends React.Component {
             )}
           </div>
         </div>
-      );
+      )
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
 
-export default ErrorBoundary;
+export default ErrorBoundary
+
+
+
+
+
+
+
+

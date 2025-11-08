@@ -1,13 +1,13 @@
 {
-  "name": "backend",
+  "name": "devlab-backend",
   "version": "1.0.0",
-  "description": "Backend Express.js API",
+  "description": "DEVLAB Backend - Express.js API for AI-powered learning platform",
   "type": "module",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "build": "echo 'Backend build completed - no compilation needed for Node.js'",
+    "build": "echo 'Backend build completed - no compilation needed for Node.js'", 
     "test": "jest",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:watch": "jest --watch",
@@ -15,8 +15,7 @@
     "test:integration": "jest --testPathPattern=integration",
     "test:e2e": "jest --testPathPattern=e2e",
     "lint": "eslint src --ext .js",
-    "lint:fix": "eslint src --ext .js --fix",
-    "type-check": "echo \"Skipping type check: backend uses JavaScript\""
+    "lint:fix": "eslint src --ext .js --fix"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",

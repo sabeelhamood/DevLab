@@ -1,12 +1,14 @@
-import { forwardRef } from 'react';
-import { cn } from '../../utils/cn.js';
+import { forwardRef } from 'react'
+import { cn } from '../../utils/cn.js'
 
 const Input = forwardRef(
   ({ className, type, label, error, helperText, ...props }, ref) => {
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-sm font-medium text-gray-700">{label}</label>
+          <label className="text-sm font-medium text-gray-700">
+            {label}
+          </label>
         )}
         <input
           type={type}
@@ -18,14 +20,16 @@ const Input = forwardRef(
           ref={ref}
           {...props}
         />
-        {error && <p className="text-sm text-error-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-error-600">{error}</p>
+        )}
         {helperText && !error && (
           <p className="text-sm text-gray-500">{helperText}</p>
         )}
       </div>
-    );
+    )
   }
-);
-Input.displayName = 'Input';
+)
+Input.displayName = 'Input'
 
-export default Input;
+export default Input

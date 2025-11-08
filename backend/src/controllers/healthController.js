@@ -1,19 +1,22 @@
-import { config } from '../config/environment.js';
+import { config } from '../config/environment.js'
 
 export const healthController = {
   async healthCheck(req, res) {
     try {
       // Set CORS headers explicitly for health endpoint
-      const origin = req.headers.origin;
-      if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+      const origin = req.headers.origin
+      const allowedOrigins = [
+        'https://dev-lab-phi.vercel.app',
+        'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+        'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app'
+      ]
+      
+      if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin)
       }
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization'
-      );
-
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      
       // Mock health check - in real implementation, this would check actual services
       const healthStatus = {
         status: 'healthy',
@@ -23,20 +26,21 @@ export const healthController = {
         services: {
           database: 'connected',
           ai: 'connected',
-          external: 'connected',
+          external: 'connected'
         },
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        cpu: process.cpuUsage(),
-      };
+        cpu: process.cpuUsage()
+      }
 
-      res.status(200).json(healthStatus);
+      res.status(200).json(healthStatus)
     } catch (error) {
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        error: error.message,
-      });
+        error: error.message
+      })
     }
-  },
-};
+  }
+}
+

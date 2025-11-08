@@ -3,7 +3,6 @@
 ## 🔴 Error Messages You're Seeing
 
 1. **CORS Error:**
-
    ```
    Access to fetch at 'https://devlab-backend-production-0bcb.up.railway.app/api/gemini-questions/generate-question-package' from origin 'https://dev-lab-phi.vercel.app' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
    ```
@@ -15,11 +14,9 @@
 
 ## 🔍 What is CORS?
 
-**CORS** (Cross-Origin Resource Sharing) is a browser security feature that blocks requests from one
-website to another unless the server explicitly allows it.
+**CORS** (Cross-Origin Resource Sharing) is a browser security feature that blocks requests from one website to another unless the server explicitly allows it.
 
 In your case:
-
 - **Frontend:** Running on `https://dev-lab-phi.vercel.app` (Vercel)
 - **Backend:** Running on `https://devlab-backend-production-0bcb.up.railway.app` (Railway)
 - **Problem:** Railway backend is not telling the browser to allow requests from Vercel
@@ -53,7 +50,6 @@ Your backend code is configured correctly, but the **Railway environment variabl
 ## 📝 Why This Happened
 
 Your backend code in `backend/src/app.js` already has CORS configuration:
-
 ```javascript
 const allowedOrigins = [
   'https://dev-lab-phi.vercel.app',
@@ -62,14 +58,11 @@ const allowedOrigins = [
 ```
 
 However, it also reads from environment variable:
-
 ```javascript
 ...(config.security?.corsOrigins || [])
 ```
 
-The `config.security.corsOrigins` comes from `CORS_ORIGINS` environment variable in
-`backend/src/config/environment.js`:
-
+The `config.security.corsOrigins` comes from `CORS_ORIGINS` environment variable in `backend/src/config/environment.js`:
 ```javascript
 corsOrigins: process.env['CORS_ORIGINS']?.split(',') || [...]
 ```
@@ -85,3 +78,6 @@ So when `CORS_ORIGINS` is not set in Railway, your Vercel frontend URL is not in
 5. Refresh your Vercel app
 
 Done! ✨
+
+
+

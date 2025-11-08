@@ -2,13 +2,11 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for deploying the DEVLAB microservice to production
-environments.
+This guide provides step-by-step instructions for deploying the DEVLAB microservice to production environments.
 
 ## Pre-Deployment Checklist
 
 ### ✅ Environment Setup
-
 - [ ] Vercel account configured
 - [ ] Railway account configured
 - [ ] Supabase project created
@@ -17,14 +15,12 @@ environments.
 - [ ] SSL certificates ready
 
 ### ✅ Environment Variables
-
 - [ ] All required environment variables set
 - [ ] Secrets properly configured
 - [ ] API keys validated
 - [ ] Database connections tested
 
 ### ✅ Security Configuration
-
 - [ ] Security headers configured
 - [ ] Rate limiting enabled
 - [ ] CORS settings applied
@@ -36,7 +32,6 @@ environments.
 ### 1. Frontend Deployment (Vercel)
 
 #### Step 1: Connect Repository
-
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -49,7 +44,6 @@ vercel link
 ```
 
 #### Step 2: Configure Environment Variables
-
 ```bash
 # Set environment variables in Vercel dashboard
 vercel env add NEXT_PUBLIC_API_URL production
@@ -58,7 +52,6 @@ vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 ```
 
 #### Step 3: Deploy
-
 ```bash
 # Deploy to production
 vercel --prod
@@ -70,7 +63,6 @@ curl https://devlab.vercel.app/health
 ### 2. Backend Deployment (Railway)
 
 #### Step 1: Connect Repository
-
 ```bash
 # Install Railway CLI
 npm install -g @railway/cli
@@ -83,7 +75,6 @@ railway link
 ```
 
 #### Step 2: Configure Environment Variables
-
 ```bash
 # Set environment variables
 railway variables set NODE_ENV=production
@@ -99,7 +90,6 @@ railway variables set CORS_ORIGINS=https://devlab.vercel.app
 ```
 
 #### Step 3: Deploy
-
 ```bash
 # Deploy to production
 railway up
@@ -111,7 +101,6 @@ curl https://devlab-api.railway.app/health
 ### 3. Database Setup
 
 #### Supabase Configuration
-
 ```sql
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -127,12 +116,11 @@ CREATE POLICY "Users can update own data" ON users
 ```
 
 #### MongoDB Atlas Configuration
-
 ```javascript
 // Create collections and indexes
-db.sessions.createIndex({ learnerId: 1, createdAt: -1 });
-db.analytics.createIndex({ learnerId: 1, timestamp: -1 });
-db.security_events.createIndex({ timestamp: -1, severity: 1 });
+db.sessions.createIndex({ "learnerId": 1, "createdAt": -1 })
+db.analytics.createIndex({ "learnerId": 1, "timestamp": -1 })
+db.security_events.createIndex({ "timestamp": -1, "severity": 1 })
 ```
 
 ## Post-Deployment Verification
@@ -140,14 +128,12 @@ db.security_events.createIndex({ timestamp: -1, severity: 1 });
 ### 1. Health Checks
 
 #### Frontend Health Check
-
 ```bash
 curl -I https://devlab.vercel.app
 # Expected: 200 OK
 ```
 
 #### Backend Health Check
-
 ```bash
 curl https://devlab-api.railway.app/health
 # Expected: {"status":"healthy","timestamp":"...","version":"1.0.0"}
@@ -156,7 +142,6 @@ curl https://devlab-api.railway.app/health
 ### 2. API Testing
 
 #### Authentication Test
-
 ```bash
 # Test login endpoint
 curl -X POST https://devlab-api.railway.app/api/auth/login \
@@ -165,7 +150,6 @@ curl -X POST https://devlab-api.railway.app/api/auth/login \
 ```
 
 #### Question API Test
-
 ```bash
 # Test questions endpoint
 curl -X GET "https://devlab-api.railway.app/api/questions/personalized?courseId=1" \
@@ -175,7 +159,6 @@ curl -X GET "https://devlab-api.railway.app/api/questions/personalized?courseId=
 ### 3. Database Connectivity
 
 #### Supabase Connection Test
-
 ```bash
 # Test Supabase connection
 curl -X GET "https://your-project.supabase.co/rest/v1/users?select=*" \
@@ -183,7 +166,6 @@ curl -X GET "https://your-project.supabase.co/rest/v1/users?select=*" \
 ```
 
 #### MongoDB Connection Test
-
 ```bash
 # Test MongoDB connection
 curl -X GET "https://devlab-api.railway.app/api/health"
@@ -195,13 +177,11 @@ curl -X GET "https://devlab-api.railway.app/api/health"
 ### 1. Application Monitoring
 
 #### Vercel Analytics
-
 - Enable Vercel Analytics in dashboard
 - Configure custom events
 - Set up performance monitoring
 
 #### Railway Monitoring
-
 - Enable Railway monitoring
 - Configure alerting
 - Set up log aggregation
@@ -209,7 +189,6 @@ curl -X GET "https://devlab-api.railway.app/api/health"
 ### 2. Security Monitoring
 
 #### Security Dashboard
-
 ```bash
 # Access security dashboard
 curl -X GET "https://devlab-api.railway.app/api/security/dashboard" \
@@ -217,7 +196,6 @@ curl -X GET "https://devlab-api.railway.app/api/security/dashboard" \
 ```
 
 #### Security Metrics
-
 ```bash
 # Get security metrics
 curl -X GET "https://devlab-api.railway.app/api/security/metrics" \
@@ -227,13 +205,11 @@ curl -X GET "https://devlab-api.railway.app/api/security/metrics" \
 ### 3. Performance Monitoring
 
 #### Frontend Performance
-
 - Lighthouse CI integration
 - Core Web Vitals monitoring
 - Bundle size tracking
 
 #### Backend Performance
-
 - Response time monitoring
 - Throughput tracking
 - Error rate monitoring
@@ -243,7 +219,6 @@ curl -X GET "https://devlab-api.railway.app/api/security/metrics" \
 ### 1. Frontend Rollback
 
 #### Vercel Rollback
-
 ```bash
 # List deployments
 vercel ls
@@ -255,7 +230,6 @@ vercel rollback <deployment-url>
 ### 2. Backend Rollback
 
 #### Railway Rollback
-
 ```bash
 # List deployments
 railway status
@@ -267,13 +241,11 @@ railway rollback
 ### 3. Database Rollback
 
 #### Supabase Rollback
-
 - Use Supabase dashboard
 - Restore from backup
 - Apply migration rollback
 
 #### MongoDB Rollback
-
 - Use MongoDB Atlas
 - Restore from backup
 - Apply data rollback
@@ -283,21 +255,18 @@ railway rollback
 ### 1. Regular Maintenance
 
 #### Daily Tasks
-
 - [ ] Check system health
 - [ ] Review security events
 - [ ] Monitor performance metrics
 - [ ] Verify backups
 
 #### Weekly Tasks
-
 - [ ] Update dependencies
 - [ ] Review security logs
 - [ ] Performance optimization
 - [ ] Capacity planning
 
 #### Monthly Tasks
-
 - [ ] Security audit
 - [ ] Performance review
 - [ ] Backup verification
@@ -306,7 +275,6 @@ railway rollback
 ### 2. Scaling Procedures
 
 #### Horizontal Scaling
-
 ```bash
 # Scale Railway service
 railway scale --replicas 3
@@ -316,7 +284,6 @@ railway scale --replicas 3
 ```
 
 #### Vertical Scaling
-
 ```bash
 # Upgrade Railway plan
 railway plan upgrade
@@ -330,19 +297,16 @@ railway plan upgrade
 ### Common Issues
 
 #### Frontend Issues
-
 1. **Build Failures**: Check environment variables
 2. **API Connection**: Verify API URL configuration
 3. **Performance**: Optimize bundle size
 
 #### Backend Issues
-
 1. **Database Connection**: Check connection strings
 2. **Memory Issues**: Monitor resource usage
 3. **API Errors**: Check logs and monitoring
 
 #### Database Issues
-
 1. **Connection Timeouts**: Check network configuration
 2. **Query Performance**: Optimize database queries
 3. **Storage Issues**: Monitor storage usage
@@ -366,19 +330,16 @@ curl https://devlab-api.railway.app/api/security/dashboard
 ## Support and Maintenance
 
 ### Contact Information
-
 - **Technical Support**: devops@devlab.com
 - **Security Issues**: security@devlab.com
 - **General Inquiries**: support@devlab.com
 
 ### Documentation
-
 - **API Documentation**: https://devlab-docs.vercel.app
 - **User Guide**: https://devlab-guide.vercel.app
 - **Developer Guide**: https://devlab-dev.vercel.app
 
 ### Monitoring Dashboards
-
 - **Application Monitoring**: Railway Dashboard
 - **Frontend Analytics**: Vercel Analytics
 - **Security Monitoring**: Security Dashboard
@@ -386,5 +347,8 @@ curl https://devlab-api.railway.app/api/security/dashboard
 
 ## Conclusion
 
-This deployment guide ensures successful production deployment of the DEVLAB microservice with
-proper monitoring, security, and maintenance procedures in place.
+This deployment guide ensures successful production deployment of the DEVLAB microservice with proper monitoring, security, and maintenance procedures in place.
+
+
+
+

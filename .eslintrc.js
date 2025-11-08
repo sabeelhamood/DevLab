@@ -5,7 +5,10 @@ module.exports = {
     es2021: true,
     node: true,
   },
-  extends: ['eslint:recommended', 'prettier'],
+  extends: [
+    'eslint:recommended',
+    'prettier',
+  ],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -19,13 +22,13 @@ module.exports = {
     'prefer-const': 'error',
     'no-var': 'error',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-
+    
     // Code quality rules
-    complexity: ['warn', 10],
+    'complexity': ['warn', 10],
     'max-depth': ['warn', 4],
     'max-lines-per-function': ['warn', 50],
     'max-params': ['warn', 4],
-
+    
     // Security rules
     'no-eval': 'error',
     'no-implied-eval': 'error',
@@ -50,3 +53,7 @@ module.exports = {
     '*.config.ts',
   ],
 };
+
+
+
+

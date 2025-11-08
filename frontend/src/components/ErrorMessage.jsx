@@ -1,112 +1,73 @@
-import React from 'react';
-import { AlertCircle, RefreshCw, Wifi, Clock } from 'lucide-react';
+import React from 'react'
+import { AlertCircle, RefreshCw, Wifi, Clock } from 'lucide-react'
 
-const ErrorMessage = ({
-  title,
-  message,
-  error,
-  onRetry,
-  isLoading = false,
-}) => {
-  const resolveMessage = () => {
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message.trim();
-    }
-    if (typeof error === 'string' && error.trim().length > 0) {
-      return error.trim();
-    }
-    if (error?.message && typeof error.message === 'string') {
-      return error.message.trim();
-    }
-    if (error) {
-      try {
-        return JSON.stringify(error);
-      } catch (_jsonError) {
-        return 'An unexpected error occurred.';
-      }
-    }
-    return 'An unexpected error occurred.';
-  };
-
-  const errorMessage = resolveMessage();
-
+const ErrorMessage = ({ error, onRetry, isLoading = false }) => {
   const getErrorIcon = (errorMessage) => {
-    if (
-      errorMessage?.includes('timeout') ||
-      errorMessage?.includes('timed out')
-    ) {
-      return <Clock className="h-5 w-5 text-orange-500" />;
+    if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+      return <Clock className="h-5 w-5 text-orange-500" />
     }
-    if (
-      errorMessage?.includes('connection') ||
-      errorMessage?.includes('network')
-    ) {
-      return <Wifi className="h-5 w-5 text-red-500" />;
+    if (errorMessage.includes('connection') || errorMessage.includes('network')) {
+      return <Wifi className="h-5 w-5 text-red-500" />
     }
-    return <AlertCircle className="h-5 w-5 text-red-500" />;
-  };
+    return <AlertCircle className="h-5 w-5 text-red-500" />
+  }
 
   const getErrorType = (errorMessage) => {
-    if (
-      errorMessage?.includes('timeout') ||
-      errorMessage?.includes('timed out')
-    ) {
-      return 'timeout';
+    if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+      return 'timeout'
     }
-    if (
-      errorMessage?.includes('connection') ||
-      errorMessage?.includes('network')
-    ) {
-      return 'connection';
+    if (errorMessage.includes('connection') || errorMessage.includes('network')) {
+      return 'connection'
     }
-    return 'general';
-  };
+    return 'general'
+  }
 
   const getErrorColor = (errorType) => {
     switch (errorType) {
       case 'timeout':
-        return 'bg-orange-50 border-orange-200 text-orange-800';
+        return 'bg-orange-50 border-orange-200 text-orange-800'
       case 'connection':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 border-red-200 text-red-800'
       default:
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 border-red-200 text-red-800'
     }
-  };
+  }
 
   const getErrorTitle = (errorType) => {
     switch (errorType) {
       case 'timeout':
-        return 'Request Timeout';
+        return 'Request Timeout'
       case 'connection':
-        return 'Connection Lost';
+        return 'Connection Lost'
       default:
-        return 'Error Occurred';
+        return 'Error Occurred'
     }
-  };
+  }
 
   const getErrorSuggestion = (errorType) => {
     switch (errorType) {
       case 'timeout':
-        return 'The request is taking longer than expected. This might be due to high server load or network issues.';
+        return 'The request is taking longer than expected. This might be due to high server load or network issues.'
       case 'connection':
-        return 'Please check your internet connection and try again.';
+        return 'Please check your internet connection and try again.'
       default:
-        return 'An unexpected error occurred. Please try again.';
+        return 'An unexpected error occurred. Please try again.'
     }
-  };
+  }
 
-  const errorType = getErrorType(errorMessage);
-  const errorColor = getErrorColor(errorType);
-  const resolvedTitle = title || getErrorTitle(errorType);
+  const errorType = getErrorType(error)
+  const errorColor = getErrorColor(errorType)
 
   return (
     <div className={`rounded-lg border p-4 ${errorColor}`}>
       <div className="flex items-start">
-        {getErrorIcon(errorMessage)}
+        {getErrorIcon(error)}
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium">{resolvedTitle}</h3>
+          <h3 className="text-sm font-medium">
+            {getErrorTitle(errorType)}
+          </h3>
           <div className="mt-2 text-sm">
-            <p className="mb-2">{errorMessage}</p>
+            <p className="mb-2">{error}</p>
             <p className="text-xs opacity-75">
               {getErrorSuggestion(errorType)}
             </p>
@@ -135,7 +96,15 @@ const ErrorMessage = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ErrorMessage;
+export default ErrorMessage
+
+
+
+
+
+
+
+

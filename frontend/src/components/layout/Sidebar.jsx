@@ -1,22 +1,51 @@
-import { NavLink } from 'react-router-dom';
-import { Home, HelpCircle, Terminal, Sword } from 'lucide-react';
-import { cn } from '../../utils/cn.js';
+import { NavLink } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore.js'
+import { 
+  Home, 
+  BookOpen, 
+  Trophy, 
+  BarChart3, 
+  Settings, 
+  Users,
+  Monitor,
+  HelpCircle
+} from 'lucide-react'
+import { cn } from '../../utils/cn.js'
 
-const navigation = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Practice Lab', href: '/learner/practice', icon: Terminal },
-  { name: 'Competitions', href: '/competition/invitations', icon: Sword },
-];
+const navigation = {
+  learner: [
+    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Practice', href: '/practice', icon: BookOpen },
+    { name: 'Competition', href: '/competitions', icon: Trophy },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  ],
+  trainer: [
+    { name: 'Dashboard', href: '/trainer', icon: Home },
+    { name: 'Questions', href: '/trainer/questions', icon: BookOpen },
+    { name: 'Analytics', href: '/trainer/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/trainer/settings', icon: Settings },
+  ],
+  admin: [
+    { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'Users', href: '/admin/users', icon: Users },
+    { name: 'Monitoring', href: '/admin/monitoring', icon: Monitor },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  ]
+}
 
 export default function Sidebar() {
-  const userNavigation = navigation;
+  const { user } = useAuthStore()
+  
+  if (!user) return null
+
+  const userNavigation = navigation[user.role] || navigation.learner
 
   return (
-    <div
+    <div 
       className="w-64 shadow-lg border-r transition-all duration-300"
-      style={{
+      style={{ 
         background: 'var(--gradient-card)',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
       }}
     >
       <nav className="mt-6 px-3">
@@ -28,15 +57,15 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 cn(
                   'group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 relative overflow-hidden',
-                  isActive ? 'text-white shadow-lg' : 'hover:scale-105'
+                  isActive
+                    ? 'text-white shadow-lg'
+                    : 'hover:scale-105'
                 )
               }
               style={({ isActive }) => ({
-                background: isActive
-                  ? 'var(--gradient-primary)'
-                  : 'transparent',
+                background: isActive ? 'var(--gradient-primary)' : 'transparent',
                 color: isActive ? 'white' : 'var(--text-secondary)',
-                boxShadow: isActive ? 'var(--shadow-glow)' : 'none',
+                boxShadow: isActive ? 'var(--shadow-glow)' : 'none'
               })}
             >
               {({ isActive }) => (
@@ -44,9 +73,7 @@ export default function Sidebar() {
                   <item.icon
                     className={cn(
                       'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
-                      isActive
-                        ? 'text-white'
-                        : 'text-gray-400 group-hover:text-primary-cyan'
+                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary-cyan'
                     )}
                   />
                   {item.name}
@@ -58,17 +85,17 @@ export default function Sidebar() {
             </NavLink>
           ))}
         </div>
-
-        <div
+        
+        <div 
           className="mt-8 pt-6"
           style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
         >
           <NavLink
             to="/help"
             className="flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 hover:scale-105"
-            style={{
+            style={{ 
               color: 'var(--text-secondary)',
-              background: 'transparent',
+              background: 'transparent'
             }}
           >
             <HelpCircle className="mr-3 h-5 w-5 text-gray-400" />
@@ -77,5 +104,5 @@ export default function Sidebar() {
         </div>
       </nav>
     </div>
-  );
+  )
 }

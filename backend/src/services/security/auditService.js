@@ -1,34 +1,33 @@
-/* eslint-disable no-console, max-lines-per-function */
-import { config } from '../../config/environment.js';
+import { config } from '../../config/environment.js'
 
 class SecurityAuditService {
   constructor() {
-    this.events = [];
-    this.maxEvents = 10000;
+    this.events = []
+    this.maxEvents = 10000
   }
 
   logEvent(event) {
     const securityEvent = {
       id: `sec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date().toISOString(),
-      ...event,
-    };
+      ...event
+    }
 
-    this.events.push(securityEvent);
+    this.events.push(securityEvent)
 
     // Maintain event limit
     if (this.events.length > this.maxEvents) {
-      this.events = this.events.slice(-this.maxEvents);
+      this.events = this.events.slice(-this.maxEvents)
     }
 
     // Log to console for development
     if (config.nodeEnv === 'development') {
-      console.log('Security Event:', securityEvent);
+      console.log('Security Event:', securityEvent)
     }
 
     // Send to external security monitoring (in production)
     if (config.nodeEnv === 'production') {
-      this.sendToSecurityMonitoring(securityEvent);
+      this.sendToSecurityMonitoring(securityEvent)
     }
   }
 
@@ -36,18 +35,16 @@ class SecurityAuditService {
     this.logEvent({
       type: 'authentication',
       severity: success ? 'low' : 'medium',
-      message: success
-        ? 'Successful authentication'
-        : 'Failed authentication attempt',
+      message: success ? 'Successful authentication' : 'Failed authentication attempt',
       userId,
       ip: req.ip,
       userAgent: req.get('User-Agent') || 'Unknown',
       metadata: {
         success,
         endpoint: req.path,
-        method: req.method,
-      },
-    });
+        method: req.method
+      }
+    })
   }
 
   logAuthorizationEvent(req, success, userId, resource) {
@@ -62,9 +59,9 @@ class SecurityAuditService {
         success,
         endpoint: req.path,
         method: req.method,
-        resource,
-      },
-    });
+        resource
+      }
+    })
   }
 
   logInputValidationEvent(req, validationType, details) {
@@ -79,9 +76,9 @@ class SecurityAuditService {
         details,
         endpoint: req.path,
         method: req.method,
-        body: this.sanitizeRequestBody(req.body),
-      },
-    });
+        body: this.sanitizeRequestBody(req.body)
+      }
+    })
   }
 
   logRateLimitEvent(req, limitType, attempts) {
@@ -95,9 +92,9 @@ class SecurityAuditService {
         limitType,
         attempts,
         endpoint: req.path,
-        method: req.method,
-      },
-    });
+        method: req.method
+      }
+    })
   }
 
   logSuspiciousActivity(req, activityType, details) {
@@ -112,49 +109,48 @@ class SecurityAuditService {
         details,
         endpoint: req.path,
         method: req.method,
-        headers: this.sanitizeHeaders(req.headers),
-      },
-    });
+        headers: this.sanitizeHeaders(req.headers)
+      }
+    })
   }
 
   getSecurityMetrics(timeRange) {
-    const filteredEvents = timeRange
-      ? this.events.filter(
-          event =>
-            event.timestamp >= timeRange.start &&
-            event.timestamp <= timeRange.end
+    const filteredEvents = timeRange 
+      ? this.events.filter(event => 
+          event.timestamp >= timeRange.start && 
+          event.timestamp <= timeRange.end
         )
-      : this.events;
+      : this.events
 
     const eventsByType = filteredEvents.reduce((acc, event) => {
-      acc[event.type] = (acc[event.type] || 0) + 1;
-      return acc;
-    }, {});
+      acc[event.type] = (acc[event.type] || 0) + 1
+      return acc
+    }, {})
 
     const eventsBySeverity = filteredEvents.reduce((acc, event) => {
-      acc[event.severity] = (acc[event.severity] || 0) + 1;
-      return acc;
-    }, {});
+      acc[event.severity] = (acc[event.severity] || 0) + 1
+      return acc
+    }, {})
 
     const ipCounts = filteredEvents.reduce((acc, event) => {
-      acc[event.ip] = (acc[event.ip] || 0) + 1;
-      return acc;
-    }, {});
+      acc[event.ip] = (acc[event.ip] || 0) + 1
+      return acc
+    }, {})
 
     const userAgentCounts = filteredEvents.reduce((acc, event) => {
-      acc[event.userAgent] = (acc[event.userAgent] || 0) + 1;
-      return acc;
-    }, {});
+      acc[event.userAgent] = (acc[event.userAgent] || 0) + 1
+      return acc
+    }, {})
 
     const topIPs = Object.entries(ipCounts)
       .map(([ip, count]) => ({ ip, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .slice(0, 10)
 
     const topUserAgents = Object.entries(userAgentCounts)
       .map(([userAgent, count]) => ({ userAgent, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .slice(0, 10)
 
     return {
       totalEvents: filteredEvents.length,
@@ -164,84 +160,64 @@ class SecurityAuditService {
       topUserAgents,
       timeRange: timeRange || {
         start: this.events[0]?.timestamp || new Date().toISOString(),
-        end:
-          this.events[this.events.length - 1]?.timestamp ||
-          new Date().toISOString(),
-      },
-    };
+        end: this.events[this.events.length - 1]?.timestamp || new Date().toISOString()
+      }
+    }
   }
 
   getRecentEvents(limit = 100) {
     return this.events
-      .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      )
-      .slice(0, limit);
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit)
   }
 
   getEventsBySeverity(severity) {
-    return this.events.filter(event => event.severity === severity);
+    return this.events.filter(event => event.severity === severity)
   }
 
   getEventsByType(type) {
-    return this.events.filter(event => event.type === type);
+    return this.events.filter(event => event.type === type)
   }
 
   sanitizeRequestBody(body) {
-    if (!body) return body;
-
+    if (!body) return body
+    
     // Remove sensitive fields
-    const sensitiveFields = ['password', 'token', 'secret', 'key'];
-    const sanitized = { ...body };
-
+    const sensitiveFields = ['password', 'token', 'secret', 'key']
+    const sanitized = { ...body }
+    
     for (const field of sensitiveFields) {
       if (sanitized[field]) {
-        sanitized[field] = '[REDACTED]';
+        sanitized[field] = '[REDACTED]'
       }
     }
-
-    return sanitized;
+    
+    return sanitized
   }
 
   sanitizeHeaders(headers) {
-    const sanitized = { ...headers };
-    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key'];
-
+    const sanitized = { ...headers }
+    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key']
+    
     for (const header of sensitiveHeaders) {
       if (sanitized[header]) {
-        sanitized[header] = '[REDACTED]';
+        sanitized[header] = '[REDACTED]'
       }
     }
-
-    return sanitized;
+    
+    return sanitized
   }
 
   async sendToSecurityMonitoring(event) {
     try {
       // In production, send to external security monitoring service
       // This could be Sentry, DataDog, or a custom security dashboard
-      console.log('Sending to security monitoring:', event.id);
+      console.log('Sending to security monitoring:', event.id)
     } catch (error) {
-      console.error('Failed to send security event to monitoring:', error);
+      console.error('Failed to send security event to monitoring:', error)
     }
   }
 }
 
-export const securityAuditService = new SecurityAuditService();
+export const securityAuditService = new SecurityAuditService()
 
-export const auditLog = async message => {
-  try {
-    console.log('🔍 Security Audit Log:', message);
-  } catch (error) {
-    console.error('❌ Failed to log security audit message:', error);
-  }
-};
-
-export const auditAccess = async details => {
-  try {
-    console.log('🔐 Access log:', details);
-  } catch (error) {
-    console.error('❌ Failed to log access details:', error);
-  }
-};

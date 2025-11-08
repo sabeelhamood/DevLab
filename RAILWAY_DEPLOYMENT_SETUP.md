@@ -16,14 +16,12 @@ GEMINI_API_KEY = [Your Gemini API Key]
 ### **2. Railway Target Port Configuration**
 
 In Railway Dashboard → Your Service → Settings → Networking:
-
 - **Target Port**: `3001`
 - **Public Networking**: Enabled
 
 ### **3. Get Your Railway Backend URL**
 
 After deployment, your Railway backend URL will be:
-
 - Format: `https://[service-name].up.railway.app`
 - Example: `https://devlab-production.up.railway.app`
 
@@ -42,7 +40,6 @@ Replace `[YOUR_RAILWAY_URL]` with your actual Railway backend URL.
 ### **2. Redeploy Frontend**
 
 After setting the environment variable:
-
 1. Go to Vercel Dashboard → Deployments
 2. Click "Redeploy" on the latest deployment
 3. Or push a new commit to trigger automatic deployment
@@ -50,19 +47,16 @@ After setting the environment variable:
 ## 🧪 **Testing Your Deployment**
 
 ### **1. Test Backend Health**
-
 ```bash
 curl https://[YOUR_RAILWAY_URL]/health
 ```
 
 ### **2. Test API Endpoints**
-
 ```bash
 curl https://[YOUR_RAILWAY_URL]/api/health
 ```
 
 ### **3. Test Frontend-Backend Communication**
-
 1. Visit your Vercel frontend URL
 2. Check browser console for API errors
 3. Test question generation functionality
@@ -94,7 +88,7 @@ railway variables
 ✅ **Backend**: Running on Railway with PORT=3001  
 ✅ **Frontend**: Deployed on Vercel with correct API URL  
 ✅ **CORS**: Configured for Vercel frontend  
-✅ **Communication**: Frontend ↔ Backend working
+✅ **Communication**: Frontend ↔ Backend working  
 
 ## 🎯 **Final URLs**
 

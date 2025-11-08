@@ -1,87 +1,43 @@
-/* eslint-disable complexity, max-lines-per-function */
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const envCandidates = [
-  path.join(__dirname, '../../.env.local'),
-  path.join(__dirname, '../../.env'),
-];
-
-envCandidates.forEach(envPath => {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-  }
-});
-
 const getEnvironmentConfig = () => {
-  const nodeEnv = process.env['NODE_ENV'] || 'development';
-
+  const nodeEnv = process.env['NODE_ENV'] || 'development'
+  
   return {
     nodeEnv,
     port: parseInt(process.env['PORT'] || '3000'),
     database: {
       supabase: {
         url: process.env['SUPABASE_URL'] || '',
-        serviceKey:
-          process.env['SUPABASE_SERVICE_KEY'] ||
-          process.env['SUPABASE_SERVICE_ROLE_KEY'] ||
-          '',
+        serviceKey: process.env['SUPABASE_SERVICE_KEY'] || '',
       },
       mongodb: {
         uri: process.env['MONGODB_ATLAS_URI'] || '',
       },
     },
     externalServices: {
-      judge0: {
-        rapidApiKey:
-          process.env['X_RAPIDAPI_KEY'] || process.env['RAPIDAPI_KEY'] || '',
-        rapidApiHost:
-          process.env['X_RAPIDAPI_HOST'] ||
-          process.env['RAPIDAPI_HOST'] ||
-          'judge0-ce.p.rapidapi.com',
-        baseUrl:
-          process.env['JUDGE0_BASE_URL'] || 'https://judge0-ce.p.rapidapi.com',
-      },
-      learningAnalytics: {
-        url: process.env['LEARNING_ANALYTICS_URL'] || '',
-        authToken: process.env['LEARNING_ANALYTICS_TOKEN'] || '',
-        maxAttempts: parseInt(
-          process.env['LEARNING_ANALYTICS_MAX_ATTEMPTS'] || '5'
-        ),
-        baseDelayMs: parseInt(
-          process.env['LEARNING_ANALYTICS_BASE_DELAY_MS'] || '30000'
-        ),
-        maxDelayMs: parseInt(
-          process.env['LEARNING_ANALYTICS_MAX_DELAY_MS'] || '300000'
-        ),
-      },
+      directory: process.env['DIRECTORY_SERVICE_URL'] || '',
+      assessment: process.env['ASSESSMENT_SERVICE_URL'] || '',
+      contentStudio: process.env['CONTENT_STUDIO_URL'] || '',
+      learningAnalytics: process.env['LEARNING_ANALYTICS_URL'] || '',
+      hrReporting: process.env['HR_REPORTING_URL'] || '',
+      corporateAssistant: process.env['CORPORATE_ASSISTANT_URL'] || '',
     },
     ai: {
       gemini: {
         apiKey: process.env['GEMINI_API_KEY'] || '',
-        model: process.env['GEMINI_MODEL'] || 'gemini-1.5-flash',
+      },
+      sandbox: {
+        apiKey: process.env['SANDBOX_API_KEY'] || '',
+        url: process.env['SANDBOX_API_URL'] || '',
       },
     },
     security: {
       jwtSecret: process.env['SERVICE_JWT_SECRET'] || 'dev-secret-key',
       apiKeys: process.env['SERVICE_API_KEYS'] || '',
-      corsOrigins: process.env['CORS_ORIGINS']?.split(',') || [
-        'http://localhost:3001',
-        'http://localhost:3003',
-      ],
+      corsOrigins: process.env['CORS_ORIGINS']?.split(',') || ['http://localhost:3001', 'http://localhost:3003'],
     },
-    rateLimitWindowMs: parseInt(
-      process.env['RATE_LIMIT_WINDOW_MS'] || '900000'
-    ), // 15 minutes
-    rateLimitMaxRequests: parseInt(
-      process.env['RATE_LIMIT_MAX_REQUESTS'] || '100'
-    ),
-  };
-};
+    rateLimitWindowMs: parseInt(process.env['RATE_LIMIT_WINDOW_MS'] || '900000'), // 15 minutes
+    rateLimitMaxRequests: parseInt(process.env['RATE_LIMIT_MAX_REQUESTS'] || '100'),
+  }
+}
 
-export const config = getEnvironmentConfig();
+export const config = getEnvironmentConfig()

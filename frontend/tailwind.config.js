@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
@@ -11,7 +14,7 @@ export default {
         'accent-gold': '#d97706',
         'accent-green': '#047857',
         'accent-orange': '#f59e0b',
-
+        
         // Neutral Colors
         'bg-primary': '#f8fafc',
         'bg-secondary': '#e2e8f0',
@@ -21,13 +24,13 @@ export default {
         'text-secondary': '#475569',
         'text-muted': '#64748b',
         'text-accent': '#334155',
-
+        
         // Gamification Colors
         'xp-color': '#f59e0b',
         'level-color': '#047857',
         'badge-color': '#10b981',
         'streak-color': '#ef4444',
-
+        
         // Legacy colors for compatibility
         primary: {
           50: '#f0fdfa',
@@ -102,16 +105,16 @@ export default {
         'gradient-card': 'linear-gradient(145deg, #ffffff, #f0fdfa)',
       },
       boxShadow: {
-        glow: '0 0 30px rgba(6, 95, 70, 0.3)',
-        card: '0 10px 40px rgba(0, 0, 0, 0.1)',
-        hover: '0 20px 60px rgba(6, 95, 70, 0.2)',
+        'glow': '0 0 30px rgba(6, 95, 70, 0.3)',
+        'card': '0 10px 40px rgba(0, 0, 0, 0.1)',
+        'hover': '0 20px 60px rgba(6, 95, 70, 0.2)',
       },
       spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
+        'xs': '0.5rem',
+        'sm': '1rem',
+        'md': '1.5rem',
+        'lg': '2rem',
+        'xl': '3rem',
         '2xl': '4rem',
       },
       animation: {
@@ -132,4 +135,4 @@ export default {
     },
   },
   plugins: [],
-};
+}

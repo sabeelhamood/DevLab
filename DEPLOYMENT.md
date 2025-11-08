@@ -9,7 +9,6 @@
 ## 🔧 Environment Variables Setup
 
 ### Vercel (Frontend)
-
 Set these in Vercel Dashboard → Settings → Environment Variables:
 
 ```
@@ -18,7 +17,6 @@ VITE_GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
 ### Railway (Backend)
-
 Set these in Railway Dashboard → Variables:
 
 ```
@@ -82,19 +80,16 @@ The GitHub Actions workflow will automatically deploy when you push to the `main
 ## 🧪 Testing Deployment
 
 ### Frontend Health Check
-
 ```bash
 curl https://devlab-frontend.vercel.app
 ```
 
 ### Backend Health Check
-
 ```bash
 curl https://devlab-backend.railway.app/health
 ```
 
 ### Gemini API Test
-
 ```bash
 curl -X POST https://devlab-backend.railway.app/api/gemini-test/test-simple
 ```
@@ -159,7 +154,7 @@ curl https://devlab-backend.railway.app/api/gemini/generate-question \
 ✅ Gemini API integration working  
 ✅ CORS configured correctly  
 ✅ Health checks passing  
-✅ Live URLs accessible
+✅ Live URLs accessible  
 
 ## 📞 Support
 
