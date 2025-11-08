@@ -1,27 +1,18 @@
-import jwt from 'jsonwebtoken';
 import { config } from '../config/environment.js';
 
-export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+const DEFAULT_USER = Object.freeze({
+  sub: 'guest',
+  id: 'guest',
+  role: 'admin',
+  name: 'Guest User',
+});
 
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: 'Access token required',
-    });
+export const authenticateToken = (req, _res, next) => {
+  // Authentication is disabled; always allow access with a default user context.
+  if (!req.user) {
+    req.user = { ...DEFAULT_USER };
   }
-
-  jwt.verify(token, config.security.jwtSecret, (err, user) => {
-    if (err) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid or expired token',
-      });
-    }
-    req.user = user;
-    next();
-  });
+  next();
 };
 
 export const authenticateService = (req, res, next) => {
@@ -51,22 +42,7 @@ export const authenticateService = (req, res, next) => {
   next();
 };
 
-export const requireRole = roles => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-      });
-    }
-
-    if (!roles?.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions',
-      });
-    }
-
-    next();
-  };
+export const requireRole = () => (_req, _res, next) => {
+  // Authorization checks are disabled; always allow access.
+  next();
 };
