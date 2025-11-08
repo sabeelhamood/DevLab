@@ -46,6 +46,8 @@ const app = express()
 // CORS configuration - MUST be first middleware
 const allowedOrigins = [
   'https://dev-lab-phi.vercel.app', // production frontend
+  'https://dev-lab-nu.vercel.app',
+  'https://dev-lab-three.vercel.app',
   'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
   'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
   'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',

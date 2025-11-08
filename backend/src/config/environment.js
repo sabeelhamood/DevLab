@@ -33,7 +33,21 @@ const getEnvironmentConfig = () => {
     security: {
       jwtSecret: process.env['SERVICE_JWT_SECRET'] || 'dev-secret-key',
       apiKeys: process.env['SERVICE_API_KEYS'] || '',
-      corsOrigins: process.env['CORS_ORIGINS']?.split(',') || ['http://localhost:3001', 'http://localhost:3003'],
+      corsOrigins: process.env['CORS_ORIGINS']?.split(',') ||
+        [
+          'https://dev-lab-phi.vercel.app',
+          'https://dev-lab-nu.vercel.app',
+          'https://dev-lab-three.vercel.app',
+          'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
+          'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
+          'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
+          'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://localhost:3002',
+          'http://localhost:3003',
+          'http://localhost:5173'
+        ],
     },
     rateLimitWindowMs: parseInt(process.env['RATE_LIMIT_WINDOW_MS'] || '900000'), // 15 minutes
     rateLimitMaxRequests: parseInt(process.env['RATE_LIMIT_MAX_REQUESTS'] || '100'),
