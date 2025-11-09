@@ -487,6 +487,8 @@ export const mockMicroservices = {
       }
     },
 
+  },
+
   evaluateCode: (code, testCases) => {
       const results = testCases.map(testCase => ({
         input: testCase.input,
