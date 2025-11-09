@@ -23,6 +23,7 @@ import questionRoutes from './routes/questions/questionRoutes.js'
 import sessionRoutes from './routes/sessions/sessionRoutes.js'
 import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
 import healthRoutes from './routes/health/healthRoutes.js'
+import dataRequestRoutes from './routes/dataRequestRoutes.js'
 
 // Gemini AI routes
 import geminiRoutes from './routes/gemini.js'
@@ -34,14 +35,32 @@ import judge0Routes from './routes/judge0.js'
 import competitionRoutes from './routes/competitions.js'
 
 // External service routes
-import directoryRoutes from './routes/external/directoryRoutes.js'
 import assessmentRoutes from './routes/external/assessmentRoutes.js'
 import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
 import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
-import hrReportingRoutes from './routes/external/hrReportingRoutes.js'
-import assistantRoutes from './routes/external/assistantRoutes.js'
+import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
 
 const app = express()
+
+const logDatabaseEnvStatus = () => {
+  if (config.nodeEnv !== 'development') {
+    return
+  }
+
+  const envFlags = {
+    SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
+    SUPABASE_KEY: Boolean(process.env.SUPABASE_KEY),
+    MONGO_URL: Boolean(process.env.MONGO_URL)
+  }
+
+  const status = Object.entries(envFlags)
+    .map(([key, present]) => `${present ? '✅' : '⚠️'} ${key}`)
+    .join('  ')
+
+  console.log(`🔍 ENV CHECK: ${status}`)
+}
+
+logDatabaseEnvStatus()
 
 // CORS configuration - MUST be first middleware
 const allowedOrigins = [
@@ -199,17 +218,16 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/gemini', geminiRoutes)
 app.use('/api/gemini-test', geminiTestRoutes)
 app.use('/api/gemini-questions', geminiQuestionRoutes)
+app.use('/api', dataRequestRoutes)
 
 // Judge0 routes
 app.use('/api/judge0', judge0Routes)
 
 // External service routes (for microservice communication)
-app.use('/api/external/learners', directoryRoutes)
-app.use('/api/external/questions', assessmentRoutes)
-app.use('/api/external/content', contentStudioRoutes)
+app.use('/api/external/assessment', assessmentRoutes)
+app.use('/api/external/content-studio', contentStudioRoutes)
 app.use('/api/external/analytics', learningAnalyticsRoutes)
-app.use('/api/external/hr', hrReportingRoutes)
-app.use('/api/external/assistant', assistantRoutes)
+app.use('/api/external/course-builder', courseBuilderRoutes)
 
 // Error handling middleware
 app.use(notFound)

@@ -132,21 +132,17 @@ This project follows strict Test-Driven Development (TDD) principles:
 
 ### Learning Analytics
 
-- `GET /api/analytics/learner/{id}` - Get learner progress
-- `POST /api/analytics/practice-completion` - Send completion data
-- `GET /api/analytics/dashboard` - Get analytics dashboard
+- `POST /api/external/analytics/competition-summary` - Forward anonymized competition results for downstream analytics
 
 ## External Integrations
 
 ### EduCore AI Services
 
-- **Directory Service**: Learner profiles and quotas
 - **Authentication Service**: JWT validation and user roles
-- **Assessment Service**: Theoretical questions and code questions
-- **Content Studio**: GPT-generated and trainer questions
-- **Learning Analytics**: Progress tracking and reporting
-- **HR Reporting**: Practice levels and competencies
-- **Contextual Assistant**: Performance insights and chatbot
+- **Content Studio**: Sends generation/validation tasks with topic skills metadata
+- **Assessment Service**: Handles theoretical question creation and assessment-driven code question pulls
+- **Learning Analytics**: Receives competition performance summaries for longitudinal insights
+- **Course Builder**: Notifies DEVLAB when a learner finishes a course so anonymous competitions can be scheduled
 
 ### AI Services
 

@@ -1,6 +1,222 @@
-import { connectMongoDB, supabase, getSupabaseTables } from './database.js'
+import {
+  connectMongoDB,
+  supabase,
+  getSupabaseTables,
+  supabaseConfig,
+  getMongoDB
+} from './database.js'
 import { LogModel } from '../models/Log.js'
 import { AnalyticsModel } from '../models/Analytics.js'
+
+const pgMetaHeaders = {
+  apikey: supabaseConfig.url ? supabaseConfig.key : '',
+  Authorization: supabaseConfig.url ? `Bearer ${supabaseConfig.key}` : '',
+  'Content-Type': 'application/json'
+}
+
+const fetchPgMeta = async (path, options = {}) => {
+  const url = `${supabaseConfig.url}/rest/v1/${path}`
+  const response = await fetch(url, {
+    method: 'GET',
+    ...options,
+    headers: {
+      ...pgMetaHeaders,
+      ...(options.headers || {})
+    }
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`pg_meta request failed [${response.status}]: ${text}`)
+  }
+
+  return response.json()
+}
+
+const ensureExtension = async (name) => {
+  const response = await fetchPgMeta(`pg_meta/extensions?name=eq.${name}`)
+  if (response.length > 0) {
+    return
+}
+
+  await fetchPgMeta(`pg_meta/extensions`, {
+    method: 'POST',
+    body: JSON.stringify({ name })
+  })
+}
+
+const ensureTempQuestionsTable = async () => {
+  if (!supabaseConfig?.url) {
+    return
+  }
+
+  const tables = await fetchPgMeta(
+    `pg_meta/tables?name=eq.temp_questions&schema=eq.public`
+  )
+
+  if (tables.length > 0) {
+    return
+  }
+
+  await ensureExtension('pgcrypto')
+
+  const table = await fetchPgMeta('pg_meta/tables', {
+    method: 'POST',
+    body: JSON.stringify({
+      schema: 'public',
+      name: 'temp_questions',
+      comment: 'Temporary question storage awaiting confirmation from microservices'
+    })
+  })
+
+  const tableId = table?.id
+  if (!tableId) {
+    throw new Error('Unable to create temp_questions table')
+  }
+
+  const columns = [
+    {
+      name: 'id',
+      type: 'uuid',
+      default_value: 'gen_random_uuid()',
+      is_nullable: false
+    },
+    {
+      name: 'request_id',
+      type: 'text',
+      is_nullable: false
+    },
+    {
+      name: 'question',
+      type: 'jsonb',
+      is_nullable: false
+    },
+    {
+      name: 'hints',
+      type: 'jsonb',
+      is_nullable: true
+    },
+    {
+      name: 'test_cases',
+      type: 'jsonb',
+      is_nullable: true
+    },
+    {
+      name: 'status',
+      type: 'text',
+      default_value: "'pending'",
+      is_nullable: false
+    },
+    {
+      name: 'created_at',
+      type: 'timestamptz',
+      default_value: 'now()',
+      is_nullable: false
+    },
+    {
+      name: 'updated_at',
+      type: 'timestamptz',
+      default_value: 'now()',
+      is_nullable: false
+    }
+  ]
+
+  await Promise.all(
+    columns.map((column) =>
+      fetchPgMeta('pg_meta/columns', {
+        method: 'POST',
+        body: JSON.stringify({
+          table_id: tableId,
+          position: 'last',
+          ...column
+        })
+      })
+    )
+  )
+
+  await fetchPgMeta('pg_meta/primary_keys', {
+    method: 'POST',
+    body: JSON.stringify({
+      table_id: tableId,
+      columns: ['id']
+    })
+  })
+
+  await fetchPgMeta('pg_meta/indexes', {
+    method: 'POST',
+    body: JSON.stringify({
+      table_id: tableId,
+      name: 'temp_questions_request_id_idx',
+      columns: ['request_id'],
+      is_unique: false
+    })
+  })
+}
+
+const ensureCompetitionColumns = async () => {
+  if (!supabaseConfig?.url) {
+    return
+  }
+
+  const tables = await fetchPgMeta(
+    `pg_meta/tables?name=eq.competitions&schema=eq.public`
+  )
+
+  if (tables.length === 0) {
+    return
+  }
+
+  const tableId = tables[0].id
+
+  const ensureColumn = async (column) => {
+    const existing = await fetchPgMeta(
+      `pg_meta/columns?table_id=eq.${tableId}&name=eq.${column.name}`
+    )
+
+    if (existing.length > 0) {
+      return
+    }
+
+    await fetchPgMeta('pg_meta/columns', {
+      method: 'POST',
+      body: JSON.stringify({
+        table_id: tableId,
+        position: 'last',
+        ...column
+      })
+    })
+  }
+
+  const columns = [
+    { name: 'status', type: 'text', default_value: "'pending'", is_nullable: false },
+    { name: 'timer', type: 'text', is_nullable: true },
+    { name: 'performance_learner1', type: 'jsonb', is_nullable: true },
+    { name: 'performance_learner2', type: 'jsonb', is_nullable: true },
+    { name: 'score', type: 'integer', is_nullable: true },
+    { name: 'questions_answered', type: 'integer', is_nullable: true },
+    { name: 'updated_at', type: 'timestamptz', default_value: 'now()', is_nullable: false }
+  ]
+
+  for (const column of columns) {
+    await ensureColumn(column)
+  }
+}
+
+const ensureMongoCollections = async () => {
+  const db = getMongoDB()
+  const existing = await db.listCollections().toArray()
+  const existingNames = new Set(existing.map((collection) => collection.name))
+
+  const requiredCollections = ['logs', 'errors', 'analytics', 'sessions', 'submissions']
+
+  await Promise.all(
+    requiredCollections.map(async (collectionName) => {
+      if (!existingNames.has(collectionName)) {
+        await db.createCollection(collectionName)
+      }
+    })
+  )
+}
 
 export const initializeDatabases = async () => {
   try {
@@ -16,7 +232,7 @@ export const initializeDatabases = async () => {
     
     if (error) {
       console.log('⚠️  Supabase connection test failed:', error.message)
-      console.log('   Make sure to set SUPABASE_URL and SUPABASE_ANON_KEY environment variables')
+      console.log('   Make sure to set SUPABASE_URL and SUPABASE_KEY environment variables')
     } else {
       console.log('✅ Supabase PostgreSQL connected')
     }
@@ -24,6 +240,17 @@ export const initializeDatabases = async () => {
     // Create MongoDB indexes for better performance
     await createMongoIndexes()
     
+    await Promise.all([
+      ensureMongoCollections().catch((error) =>
+        console.warn('⚠️  Unable to verify MongoDB collections:', error.message)
+      ),
+      ensureTempQuestionsTable().catch((error) =>
+        console.warn('⚠️  Unable to create temp_questions table automatically:', error.message)
+      ),
+      ensureCompetitionColumns().catch((error) =>
+        console.warn('⚠️  Unable to verify competitions table structure:', error.message)
+      )
+    ])
     console.log('✅ Database initialization complete')
     return true
   } catch (error) {

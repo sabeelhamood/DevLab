@@ -51,12 +51,10 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 # External Services
-NEXT_PUBLIC_DIRECTORY_SERVICE_URL=https://directory-service.railway.app
 NEXT_PUBLIC_ASSESSMENT_SERVICE_URL=https://assessment-service.railway.app
 NEXT_PUBLIC_CONTENT_STUDIO_URL=https://content-studio.railway.app
 NEXT_PUBLIC_LEARNING_ANALYTICS_URL=https://learning-analytics.railway.app
-NEXT_PUBLIC_HR_REPORTING_URL=https://hr-reporting.railway.app
-NEXT_PUBLIC_CORPORATE_ASSISTANT_URL=https://corporate-assistant.railway.app
+NEXT_PUBLIC_COURSE_BUILDER_URL=https://course-builder.railway.app
 ```
 
 #### Deployment Steps
@@ -82,12 +80,10 @@ SUPABASE_SERVICE_KEY=your-supabase-service-key
 MONGODB_ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/devlab
 
 # External Services
-DIRECTORY_SERVICE_URL=https://directory-service.railway.app
 ASSESSMENT_SERVICE_URL=https://assessment-service.railway.app
 CONTENT_STUDIO_URL=https://content-studio.railway.app
 LEARNING_ANALYTICS_URL=https://learning-analytics.railway.app
-HR_REPORTING_URL=https://hr-reporting.railway.app
-CORPORATE_ASSISTANT_URL=https://corporate-assistant.railway.app
+COURSE_BUILDER_URL=https://course-builder.railway.app
 
 # AI Services
 GEMINI_API_KEY=your-gemini-api-key

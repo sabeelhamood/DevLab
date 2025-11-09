@@ -14,6 +14,13 @@ export default defineConfig({
     port: 3000,
     host: true,
     open: true,
+    proxy: {
+      '/api': {
+        target: 'https://devlab-backend-production-0bcb.up.railway.app',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',

@@ -185,53 +185,34 @@ Get dashboard analytics.
 
 ## External Service Endpoints
 
-### Directory Service
+### Unified Gateway
 
-#### GET /external/learners/{learnerId}
-Get learner profile from Directory Service.
-
-#### POST /external/learners/{learnerId}/quota
-Update learner quota.
-
-### Assessment Service
-
-#### GET /external/questions/theoretical
-Get theoretical questions from Assessment Service.
-
-#### POST /external/questions/code
-Send code questions to Assessment Service.
+#### POST /api/data-request
+Generic entry point for all microservices. The request body must include `requester_service` and a `payload` object. The gateway routes the payload to the appropriate internal handler (Content Studio, Assessment, Analytics, Course Builder) and returns the JSON response emitted by that handler.
 
 ### Content Studio
 
-#### GET /external/content/{courseId}/skills
-Get course skills from Content Studio.
+#### POST /external/content-studio/generate-questions
+Create question packages for a topic. Payload includes `amount`, `topic_id`, `topic_name`, `skills`, `question_type`, `programming_language`, `humanLanguage`.
+Gemini assigns a monotonically increasing difficulty label for each generated question (first = basic, last = hardest).
 
-#### GET /external/content/{courseId}/type
-Get question type for course.
+#### POST /external/content-studio/validate-question
+Validate trainer-authored questions and, when relevant, transform them into structured coding packages.
+
+### Assessment Service
+
+#### POST /external/assessment/code
+Assessment requests code questions without hints or solutions. Payload includes `topic_name`, `programming_language`, `number_of_questions`, `nano_skills`, `micro_skills`.
 
 ### Learning Analytics
 
-#### POST /external/analytics/session-complete
-Send session completion data.
+#### POST /external/analytics/competition-summary
+Send anonymized competition summaries for downstream analysis.
 
-#### POST /external/analytics/performance
-Send performance metrics.
+### Course Builder
 
-### HR Reporting
-
-#### POST /external/hr/practice-level
-Send practice level data to HR Reporting.
-
-#### POST /external/hr/competencies
-Send competency data.
-
-### Corporate Assistant
-
-#### POST /external/assistant/performance
-Send performance data to Corporate Assistant.
-
-#### GET /external/assistant/chatbot-config
-Get chatbot configuration.
+#### POST /external/course-builder/course-completion
+Notify DevLab that a learner has completed a course so an anonymous competition invitation can be queued. Fire-and-forget acknowledgement (`202 Accepted`).
 
 ## Error Responses
 

@@ -95,13 +95,7 @@ export class CompetitionModel {
 
   // Delete competition
   static async delete(competitionId) {
-    const { error } = await supabase
-      .from(competitions)
-      .delete()
-      .eq('competition_id', competitionId)
-    
-    if (error) throw error
-    return true
+    throw new Error('Competition deletion is disabled to preserve historical analytics data.')
   }
 
   // Get active competitions (no result yet)
@@ -134,6 +128,49 @@ export class CompetitionModel {
     
     if (error) throw error
     return data
+  }
+
+  static async upsertSummary(summary) {
+    const updatePayload = {
+      status: 'completed',
+      timer: summary.timer || null,
+      performance_learner1: summary.performance_learner1 || null,
+      performance_learner2: summary.performance_learner2 || null,
+      score: summary.score ?? null,
+      questions_answered: summary.questions_answered ?? null,
+      updated_at: new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from(competitions)
+      .update(updatePayload)
+      .eq('competition_id', summary.competition_id)
+      .select('competition_id')
+
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      const insertPayload = {
+        competition_id: summary.competition_id,
+        course_id: summary.course_id,
+        learner1_id: summary.learner1_id,
+        learner2_id: summary.learner2_id,
+        status: 'completed',
+        timer: summary.timer || null,
+        performance_learner1: summary.performance_learner1 || null,
+        performance_learner2: summary.performance_learner2 || null,
+        score: summary.score ?? null,
+        questions_answered: summary.questions_answered ?? null,
+        created_at: summary.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { error: insertError } = await supabase
+        .from(competitions)
+        .insert([insertPayload])
+
+      if (insertError) throw insertError
+    }
   }
 
   // Find eligible learners for competition (completed same course)
@@ -232,6 +269,30 @@ export class CompetitionModel {
       player1Time: data.learner1_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0,
       player2Time: data.learner2_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
     }
+  }
+
+  static async upsertSummary(summary) {
+    const payload = {
+      competition_id: summary.competition_id,
+      course_id: summary.course_id,
+      learner1_id: summary.learner1_id,
+      learner2_id: summary.learner2_id,
+      timer: summary.timer,
+      performance_learner1: summary.performance_learner1,
+      performance_learner2: summary.performance_learner2,
+      score: summary.score,
+      questions_answered: summary.questions_answered,
+      created_at: summary.created_at || new Date().toISOString(),
+      analytics_snapshot: summary
+    }
+
+    const { data, error } = await supabase
+      .from(competitions)
+      .upsert(payload, { onConflict: 'competition_id' })
+      .select()
+
+    if (error) throw error
+    return data?.[0] || payload
   }
 }
 

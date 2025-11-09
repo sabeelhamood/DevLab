@@ -111,15 +111,10 @@ router.get('/completed/all', async (req, res) => {
 })
 
 router.delete('/:competitionId', async (req, res) => {
-  try {
-    const { competitionId } = req.params
-    
-    await CompetitionModel.delete(competitionId)
-    res.json({ message: 'Competition deleted successfully' })
-  } catch (error) {
-    console.error('Error deleting competition:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
+  res.status(405).json({
+    success: false,
+    error: 'Competition deletion is disabled to preserve historical analytics data.'
+  })
 })
 
 export default router

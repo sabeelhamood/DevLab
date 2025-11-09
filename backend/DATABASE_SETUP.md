@@ -29,11 +29,10 @@ This guide explains how to set up the real database connections for the DEVLAB M
    - Note your project URL and API keys
 
 2. **Set Environment Variables**:
-   ```bash
-   SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_ANON_KEY=your-supabase-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-   ```
+```bash
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your-supabase-service-role-key
+```
 
 3. **Create Tables** (Run in Supabase SQL Editor):
    ```sql
@@ -110,9 +109,9 @@ This guide explains how to set up the real database connections for the DEVLAB M
    - Get your connection string
 
 2. **Set Environment Variables**:
-   ```bash
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/devlab
-   ```
+```bash
+MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/devlab
+```
 
 3. **Collections will be created automatically** when the application starts.
 
@@ -127,10 +126,10 @@ This guide explains how to set up the real database connections for the DEVLAB M
    ```bash
    # PostgreSQL (Supabase)
    SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_KEY=your-supabase-service-role-key
    
    # MongoDB Atlas
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/devlab
+MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/devlab
    
    # JWT Secret
    JWT_SECRET=your-super-secret-jwt-key-here

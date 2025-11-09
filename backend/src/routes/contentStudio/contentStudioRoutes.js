@@ -1,144 +1,382 @@
 import express from 'express'
 import { mockMicroservices } from '../../services/mockMicroservices.js'
 import { geminiService } from '../../services/gemini.js'
+import {
+  createRequestId,
+  saveTempQuestions,
+  confirmTempQuestions
+} from '../../services/tempQuestionStore.js'
 
 const router = express.Router()
 
-// Endpoint to receive requests from Content Studio
-router.post('/generate-questions', async (req, res) => {
+const DEFAULT_AMOUNT = 4
+const DEFAULT_DIFFICULTY = 'intermediate'
+const DEFAULT_PROGRAMMING_LANGUAGE = 'javascript'
+const DIFFICULTY_SEQUENCE = [
+  'basic',
+  'basic-plus',
+  'intermediate',
+  'upper-intermediate',
+  'advanced',
+  'advanced-plus',
+  'expert'
+]
+
+const buildDifficultyLadder = (count) => {
+  if (!count || count <= 0) return []
+  return Array.from({ length: count }, (_, index) =>
+    DIFFICULTY_SEQUENCE[Math.min(index, DIFFICULTY_SEQUENCE.length - 1)]
+  )
+}
+
+const normalizeSkills = (skillsPayload = {}, fallbackNano = [], fallbackMacro = []) => {
+  if (Array.isArray(skillsPayload)) {
+    return {
+      nanoSkills: skillsPayload,
+      microSkills: []
+    }
+  }
+
+  const nano =
+    skillsPayload.nanoSkills ||
+    skillsPayload.nano_skills ||
+    skillsPayload.nano ||
+    fallbackNano ||
+    []
+  const micro =
+    skillsPayload.microSkills ||
+    skillsPayload.micro_skills ||
+    skillsPayload.micro ||
+    fallbackMacro ||
+    []
+
+  return {
+    nanoSkills: Array.isArray(nano) ? nano : nano ? [nano] : [],
+    microSkills: Array.isArray(micro) ? micro : micro ? [micro] : []
+  }
+}
+
+const toAjaxCodingQuestion = ({
+  id,
+  question,
+  testCases = [],
+  hints = [],
+  programmingLanguage,
+  topicId,
+  topicName,
+  humanLanguage,
+  difficulty
+}) => {
+  const safeHints = hints.filter(Boolean).slice(0, 3)
+
+  return {
+    id,
+    topic_id: topicId,
+    topic_name: topicName,
+    question_type: 'code',
+    programming_language: programmingLanguage,
+    difficulty,
+    question,
+    test_cases: testCases.map((tc, index) => ({
+      id: `${id}_tc_${index + 1}`,
+      input: tc.input,
+      expected_output: tc.expected_output ?? tc.output,
+      explanation: tc.explanation || null
+    })),
+    clues: safeHints,
+    ajax: {
+      question,
+      testCases: testCases.map((tc) => ({
+        input: tc.input,
+        expectedOutput: tc.expected_output ?? tc.output
+      })),
+      judge0: {
+        runtime: programmingLanguage,
+        sandbox: true
+      },
+      hints: safeHints,
+      humanLanguage,
+      difficulty
+    }
+  }
+}
+
+const toAjaxTheoreticalQuestion = ({
+  id,
+  question,
+  topicId,
+  topicName,
+  humanLanguage,
+  expectedAnswer
+}) => ({
+  id,
+  topic_id: topicId,
+  topic_name: topicName,
+  question_type: 'theoretical',
+  programming_language: null,
+  question,
+  test_cases: [],
+  ajax: {
+    question,
+    testCases: [],
+    judge0: null,
+    hints: [],
+    humanLanguage,
+    expectedAnswer
+  }
+})
+
+const fetchTheoreticalQuestionsFromAssessment = async ({
+  topic_id,
+  topic_name,
+  amount,
+  humanLanguage,
+  nanoSkills,
+  microSkills
+}) => {
+  try {
+    const questions =
+      mockMicroservices.assessmentService.generateQuestions(
+        topic_id,
+        amount,
+        DEFAULT_DIFFICULTY
+      ) || []
+
+    return questions.map((item, index) =>
+      toAjaxTheoreticalQuestion({
+        id: `theoretical_${topic_id}_${index + 1}`,
+        question: item.question_content,
+        topicId: topic_id,
+        topicName: topic_name,
+        humanLanguage,
+        expectedAnswer: item.expected_answer || null,
+        nanoSkills,
+        microSkills
+      })
+    )
+  } catch (error) {
+    console.error('Assessment theoretical fetch error:', error)
+    return []
+  }
+}
+
+const generateCodingQuestions = async ({
+  topic_name,
+  topic_id,
+  amount,
+  programming_language,
+  nanoSkills,
+  microSkills,
+  humanLanguage,
+  seedQuestion
+}) => {
+  try {
+    if (amount > 1) {
+      const batch = await geminiService.generateMultipleCodingQuestions(
+        topic_name,
+        DEFAULT_DIFFICULTY,
+        programming_language,
+        nanoSkills,
+        microSkills,
+        amount,
+        {
+          humanLanguage,
+          seedQuestion
+        }
+      )
+
+      const ladder = buildDifficultyLadder(batch.length || amount)
+
+      return batch
+        .filter(Boolean)
+        .map((item, index) =>
+          toAjaxCodingQuestion({
+            id: `code_${topic_id}_${index + 1}`,
+            question: item.description || item.title,
+            testCases: item.testCases || [],
+            hints: item.hints || [],
+            programmingLanguage: programming_language,
+            topicId: topic_id,
+            topicName: topic_name,
+            humanLanguage,
+            difficulty: item.difficulty || ladder[index] || ladder[ladder.length - 1] || DEFAULT_DIFFICULTY
+          })
+        )
+    }
+
+    const singleQuestion = await geminiService.generateCodingQuestion(
+      topic_name,
+      DEFAULT_DIFFICULTY,
+      programming_language,
+      nanoSkills,
+      microSkills,
+      {
+        humanLanguage,
+        seedQuestion
+      }
+    )
+
+    if (!singleQuestion) {
+      return []
+    }
+
+    const [difficultyLabel] = buildDifficultyLadder(1)
+
+    return [
+      toAjaxCodingQuestion({
+        id: `code_${topic_id}_1`,
+        question: singleQuestion.description || singleQuestion.title,
+        testCases: singleQuestion.testCases || [],
+        hints: singleQuestion.hints || [],
+        programmingLanguage: programming_language,
+        topicId: topic_id,
+        topicName: topic_name,
+        humanLanguage,
+        difficulty: singleQuestion.difficulty || difficultyLabel || DEFAULT_DIFFICULTY
+      })
+    ]
+  } catch (error) {
+    console.error('Gemini coding generation error:', error)
+    return []
+  }
+}
+
+const validateCodingQuestionWithGemini = async ({
+  question,
+  topic_name,
+  nanoSkills,
+  microSkills,
+  humanLanguage
+}) => {
+  const validation = await geminiService.validateCodingQuestion({
+    question,
+    topic: topic_name,
+    difficulty: DEFAULT_DIFFICULTY,
+    nanoSkills,
+    macroSkills: microSkills,
+    humanLanguage
+  })
+
+  return validation
+}
+
+export const generateQuestionsHandler = async (req, res) => {
   try {
     const {
-      user_id,
-      course_name,
-      course_level,
-      course_id,
-      topic_name,
+      amount = DEFAULT_AMOUNT,
       topic_id,
-      nano_skills,
-      macro_skills,
+      topic_name,
+      skills = {},
       question_type,
-      trainer_id
-    } = req.body
+      programming_language,
+      humanLanguage = 'en',
+      nano_skills,
+      micro_skills
+    } = req.body || {}
 
-    // Validate required fields
-    if (!user_id || !course_name || !course_level || !course_id || !topic_name || !topic_id || !question_type) {
+    if (!topic_id || !topic_name || !question_type) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: user_id, course_name, course_level, course_id, topic_name, topic_id, question_type'
+        error: 'Missing required fields: topic_id, topic_name, question_type'
       })
     }
 
-    // Check if this is a trainer-created course (has trainerId)
-    const isTrainerCourse = trainer_id && trainer_id !== null && trainer_id !== undefined
-    
-    console.log(`🎓 Content Studio: Course type - ${isTrainerCourse ? 'Trainer-Created' : 'AI-Created'}`)
-    console.log(`👨‍🏫 Trainer ID: ${trainer_id || 'None (AI-Created)'}`)
-
-    // Step 1: Get question amount from Directory Microservice
-    const directoryResponse = await getQuestionAmountFromDirectory(user_id, course_id, topic_id)
-    
-    if (!directoryResponse.success) {
-      return res.status(500).json({
+    if (question_type === 'code' && !programming_language) {
+      return res.status(400).json({
         success: false,
-        error: 'Failed to get question amount from Directory service'
+        error: 'programming_language is required when question_type is "code"'
       })
     }
 
-    const questionAmount = directoryResponse.amount
+    const { nanoSkills, microSkills } = normalizeSkills(skills, nano_skills, micro_skills)
+    const questionCount = Number(amount) > 0 ? Number(amount) : DEFAULT_AMOUNT
 
-    // Step 2: Generate questions based on type
-    let questionsPackage
+    let questions = []
+    let source = ''
 
-    if (question_type === 'theoretical') {
-      if (isTrainerCourse) {
-        // For trainer courses: Validation mode only (no question generation)
-        console.log('👨‍🏫 Trainer Course: Using validation mode for theoretical questions - no question generation')
-        questionsPackage = {
-          success: true,
-          questions: [],
-          message: 'Trainer course detected. Questions should be created by the trainer. Use validation endpoints for question review.',
-          course_type: 'trainer_created',
-          trainer_id: trainer_id
-        }
-      } else {
-        // For AI courses: Full generation mode
-        console.log('🤖 AI Course: Using full generation mode for theoretical questions')
-        questionsPackage = await getTheoreticalQuestionsFromAssessment({
-          topic_id,
-          topic_name,
-          course_name,
-          course_level,
-          nano_skills,
-          macro_skills,
-          amount: questionAmount
-        })
-      }
-    } else if (question_type === 'code') {
-      if (isTrainerCourse) {
-        // For trainer courses: Validation mode only (no question generation)
-        console.log('👨‍🏫 Trainer Course: Using validation mode - no question generation')
-        questionsPackage = {
-          success: true,
-          questions: [],
-          message: 'Trainer course detected. Questions should be created by the trainer. Use validation endpoints for question review.',
-          course_type: 'trainer_created',
-          trainer_id: trainer_id
-        }
-      } else {
-        // For AI courses: Full generation mode
-        console.log('🤖 AI Course: Using full generation mode')
-        questionsPackage = await generateCodeQuestionsWithGemini({
-          course_name,
-          course_level,
-          topic_name,
-          nano_skills,
-          macro_skills,
-          amount: questionAmount
-        })
-      }
+    if (question_type === 'code') {
+      questions = await generateCodingQuestions({
+        topic_name,
+        topic_id,
+        amount: questionCount,
+        programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
+        nanoSkills,
+        microSkills,
+        humanLanguage
+      })
+      source = 'gemini_ai'
+    } else if (question_type === 'theoretical') {
+      questions = await fetchTheoreticalQuestionsFromAssessment({
+        topic_id,
+        topic_name,
+        amount: questionCount,
+        humanLanguage,
+        nanoSkills,
+        microSkills
+      })
+      source = 'assessment_service'
     } else {
       return res.status(400).json({
         success: false,
-        error: 'Invalid question_type. Must be "theoretical" or "code"'
+        error: 'Invalid question_type. Must be "code" or "theoretical"'
       })
     }
 
-    if (!questionsPackage.success) {
+    if (!questions.length) {
       return res.status(500).json({
         success: false,
-        error: questionsPackage.error || 'Failed to generate questions'
+        error: 'Unable to generate questions with provided parameters'
       })
     }
 
-    // Return the questions package to Content Studio
-    res.json({
-      success: true,
-      data: {
-        user_id,
-        course_id,
+    const requestId = createRequestId()
+
+    await saveTempQuestions({
+      requestId,
+      requesterService: 'content-studio',
+      action: 'generate-questions',
+      questions,
+      metadata: {
         topic_id,
+        topic_name,
         question_type,
-        questions: questionsPackage.questions,
-        metadata: {
-          generated_at: new Date().toISOString(),
-          question_count: questionsPackage.questions.length,
-          source: question_type === 'theoretical' ? 'assessment_service' : 'gemini_ai'
-        }
+        programming_language,
+        nanoSkills,
+        microSkills,
+        questionCount,
+        humanLanguage
       }
     })
 
+    return res.json({
+      success: true,
+      request_id: requestId,
+      data: {
+        topic_id,
+        topic_name,
+        question_type,
+        programming_language: question_type === 'code' ? programming_language : null,
+        questions,
+        metadata: {
+          generated_at: new Date().toISOString(),
+          question_count: questions.length,
+          source,
+          request_id: requestId
+        }
+      }
+    })
   } catch (error) {
-    console.error('Error in generate-questions:', error)
+    console.error('Content Studio generate-questions error:', error)
     res.status(500).json({
       success: false,
       error: 'Internal server error',
       message: error.message
     })
   }
-})
+}
 
 // Endpoint to check solution (when learner submits)
-router.post('/check-solution', async (req, res) => {
+export const checkSolutionHandler = async (req, res) => {
   try {
     const {
       user_id,
@@ -216,140 +454,9 @@ router.post('/check-solution', async (req, res) => {
       message: error.message
     })
   }
-})
-
-// Helper function to get question amount from Directory Microservice
-async function getQuestionAmountFromDirectory(userId, courseId, topicId) {
-  try {
-    // Mock implementation - in real scenario, this would be an HTTP request
-    const directoryData = mockMicroservices.directoryService.getLearnerProfile(userId)
-    
-    // Simulate getting question amount based on user profile and course
-    const questionAmount = directoryData.practice_questions_count || 5
-    
-    return {
-      success: true,
-      amount: questionAmount
-    }
-  } catch (error) {
-    console.error('Error getting question amount from Directory:', error)
-    return {
-      success: false,
-      error: error.message
-    }
-  }
 }
 
-// Helper function to get theoretical questions from Assessment Microservice
-async function getTheoreticalQuestionsFromAssessment(params) {
-  try {
-    const { topic_id, topic_name, course_name, course_level, nano_skills, macro_skills, amount } = params
-    
-    // Mock implementation - in real scenario, this would be an HTTP request to Assessment service
-    const questions = mockMicroservices.assessmentService.generateQuestions(topic_id, amount, course_level)
-    
-    // Enhance questions with the provided skills and context
-    const enhancedQuestions = questions.map((question, index) => ({
-      ...question,
-      topic_name,
-      course_name,
-      course_level,
-      nano_skills,
-      macro_skills,
-      question_content: `Theoretical question ${index + 1} about ${topic_name}: ${question.question_content}`,
-      expected_answer: `Expected answer for ${topic_name} question ${index + 1}`,
-      hints: [
-        `Hint 1: Consider the ${nano_skills[0] || 'basic concepts'}`,
-        `Hint 2: Think about ${macro_skills[0] || 'fundamental principles'}`,
-        `Hint 3: Review the ${topic_name} concepts`
-      ]
-    }))
-
-    return {
-      success: true,
-      questions: enhancedQuestions
-    }
-  } catch (error) {
-    console.error('Error getting theoretical questions from Assessment:', error)
-    return {
-      success: false,
-      error: error.message
-    }
-  }
-}
-
-// Helper function to generate code questions with Gemini
-async function generateCodeQuestionsWithGemini(params) {
-  try {
-    const { course_name, course_level, topic_name, nano_skills, macro_skills, amount } = params
-    
-    let questions = []
-    
-    if (amount > 1) {
-      // Use bulk generation for multiple questions
-      const questionDataArray = await geminiService.generateMultipleCodingQuestions(
-        topic_name,
-        course_level,
-        'javascript',
-        nano_skills,
-        macro_skills,
-        amount
-      )
-
-      questions = questionDataArray.map((questionData, index) => ({
-        question_id: `code_${topic_name}_${index + 1}`,
-        topic_name,
-        course_name,
-        course_level,
-        question_type: 'code',
-        question_content: questionData.description || questionData.title,
-        test_cases: questionData.testCases || [],
-        hints: questionData.hints || [],
-        solution: questionData.solution,
-        nano_skills,
-        macro_skills,
-        difficulty: course_level
-      }))
-    } else {
-      // Generate single question
-      const questionData = await geminiService.generateCodingQuestion(
-        topic_name,
-        course_level,
-        'javascript',
-        nano_skills,
-        macro_skills
-      )
-
-      if (questionData) {
-        questions.push({
-          question_id: `code_${topic_name}_1`,
-          topic_name,
-          course_name,
-          course_level,
-          question_type: 'code',
-          question_content: questionData.description || questionData.title,
-          test_cases: questionData.testCases || [],
-          hints: questionData.hints || [],
-          solution: questionData.solution,
-          nano_skills,
-          macro_skills,
-          difficulty: course_level
-        })
-      }
-    }
-
-    return {
-      success: true,
-      questions
-    }
-  } catch (error) {
-    console.error('Error generating code questions with Gemini:', error)
-    return {
-      success: false,
-      error: error.message
-    }
-  }
-}
+// Additional routes remain below (check-solution, validation, etc.)
 
 // Helper function to get question by ID (mock implementation)
 async function getQuestionById(questionId) {
@@ -368,57 +475,111 @@ async function getQuestionById(questionId) {
 // These endpoints allow trainers to validate their questions and get feedback
 
 // Validate a trainer-created question
-router.post('/validate-question', async (req, res) => {
+export const validateQuestionHandler = async (req, res) => {
   try {
     const {
+      question,
       question_content,
       question_type,
+      topic_id,
       topic_name,
-      course_name,
-      course_level,
+      skills = {},
+      programming_language,
+      humanLanguage = 'en',
       nano_skills,
-      macro_skills,
-      trainer_id
-    } = req.body
+      micro_skills
+    } = req.body || {}
 
-    // Validate required fields
-    if (!question_content || !question_type || !trainer_id) {
+    const trainerQuestion = question || question_content
+
+    if (!trainerQuestion || !question_type || !topic_id || !topic_name) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: question_content, question_type, trainer_id'
+        error: 'Missing required fields: question (or question_content), question_type, topic_id, topic_name'
       })
     }
 
-    console.log(`👨‍🏫 Trainer Validation: Validating question for trainer ${trainer_id}`)
+    const { nanoSkills, microSkills } = normalizeSkills(skills, nano_skills, micro_skills)
 
-    // Use Gemini to validate and provide feedback on the trainer's question
-    let validationResult
-    if (question_type === 'code') {
-      validationResult = await geminiService.validateCodingQuestion({
-        question: question_content,
-        topic: topic_name,
-        difficulty: course_level,
-        nanoSkills: nano_skills || [],
-        macroSkills: macro_skills || []
+    if (question_type === 'theoretical') {
+      const assessmentPayload = await fetchTheoreticalQuestionsFromAssessment({
+        topic_id,
+        topic_name,
+        amount: 1,
+        humanLanguage,
+        nanoSkills,
+        microSkills
       })
-    } else {
-      validationResult = await geminiService.validateTheoreticalQuestion({
-        question: question_content,
-        topic: topic_name,
-        difficulty: course_level,
-        nanoSkills: nano_skills || [],
-        macroSkills: macro_skills || []
+
+      return res.json({
+        success: true,
+        data: {
+          status: 'forwarded_to_assessment',
+          questions: assessmentPayload,
+          metadata: {
+            topic_id,
+            topic_name,
+            question_type
+          }
+        }
       })
     }
 
-    res.json({
-      success: true,
-      validation: validationResult,
-      course_type: 'trainer_created',
-      trainer_id: trainer_id,
-      message: 'Question validation completed'
+    if (question_type !== 'code') {
+      return res.status(400).json({
+        success: false,
+        error: 'question_type must be "code" or "theoretical"'
+      })
+    }
+
+    const validation = await validateCodingQuestionWithGemini({
+      question: trainerQuestion,
+      topic_name,
+      nanoSkills,
+      microSkills,
+      humanLanguage
     })
 
+    if (!validation?.isRelevant) {
+      return res.json({
+        success: true,
+        data: {
+          status: 'needs_revision',
+          message:
+            validation?.message ||
+            'Question is not relevant to the provided topic or skills. Please revise the question.',
+          validation
+        }
+      })
+    }
+
+    const generated = await generateCodingQuestions({
+      topic_name,
+      topic_id,
+      amount: 1,
+      programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
+      nanoSkills,
+      microSkills,
+      humanLanguage,
+      seedQuestion: trainerQuestion
+    })
+
+    if (!generated.length) {
+      return res.status(500).json({
+        success: false,
+        error: 'Unable to transform trainer question into coding package'
+      })
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        status: 'approved',
+        message: 'Question is relevant. Generated coding package attached.',
+        validation,
+        questions: generated
+      }
+    })
   } catch (error) {
     console.error('Error validating trainer question:', error)
     res.status(500).json({
@@ -427,10 +588,10 @@ router.post('/validate-question', async (req, res) => {
       details: error.message
     })
   }
-})
+}
 
 // Get hints and feedback for trainer-created questions
-router.post('/get-question-feedback', async (req, res) => {
+export const getQuestionFeedbackHandler = async (req, res) => {
   try {
     const {
       question_content,
@@ -496,6 +657,58 @@ router.post('/get-question-feedback', async (req, res) => {
       details: error.message
     })
   }
-})
+}
+
+router.post('/generate-questions', generateQuestionsHandler)
+
+export const confirmQuestionsHandler = async (req, res) => {
+  try {
+    const { request_id, requester_service = 'content-studio' } = req.body || {}
+
+    if (!request_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: request_id'
+      })
+    }
+
+    const removed = await confirmTempQuestions({ requestId: request_id })
+
+    if (!removed) {
+      return res.status(404).json({
+        success: false,
+        error: 'Temporary question batch not found or already confirmed'
+      })
+    }
+
+    return res.json({
+      success: true,
+      request_id
+    })
+  } catch (error) {
+    console.error('Error confirming question delivery:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to confirm question delivery',
+      details: error.message
+    })
+  }
+}
+
+// Endpoint to check solution (when learner submits)
+router.post('/check-solution', checkSolutionHandler)
+
+router.post('/validate-question', validateQuestionHandler)
+
+router.post('/get-question-feedback', getQuestionFeedbackHandler)
+router.post('/confirm-questions', confirmQuestionsHandler)
+
+export const contentStudioHandlers = {
+  generateQuestions: generateQuestionsHandler,
+  checkSolution: checkSolutionHandler,
+  validateQuestion: validateQuestionHandler,
+  getQuestionFeedback: getQuestionFeedbackHandler,
+  confirmQuestions: confirmQuestionsHandler
+}
 
 export default router

@@ -10,16 +10,13 @@ function SubtopicsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get data from mock microservices
-    const currentUser = { userId: 1 } // In real app, get from auth store
-    const learnerProfile = mockMicroservices.directoryService.getLearnerProfile(currentUser.userId)
+    const practiceQuota = 4
+    setUserQuota(practiceQuota)
+
     const topics = mockMicroservices.contentStudio.getTopics(courseId)
     
     console.log('Course ID:', courseId)
     console.log('Topics found:', topics)
-    
-    // Set user quota from Directory Service
-    setUserQuota(learnerProfile.question_quotas)
     
     if (topics.length === 0) {
       console.log('No topics found for course:', courseId)
@@ -39,7 +36,7 @@ function SubtopicsPage() {
         name: `${skill} Practice`,
         description: `Practice ${skill.toLowerCase()} concepts and implementations`,
         questionType: index % 2 === 0 ? "code" : "theoretical",
-        questionCount: learnerProfile.question_quotas,
+        questionCount: practiceQuota,
         progressPercentage: Math.floor(Math.random() * 100)
       })),
       difficulty: "intermediate",
@@ -49,7 +46,7 @@ function SubtopicsPage() {
     console.log('Transformed topics:', transformedTopics)
     setSubtopics(transformedTopics)
     setLoading(false)
-  }, [courseId, userQuota])
+  }, [courseId])
 
   const handlePracticeClick = (courseId, topicId, practiceId) => {
     navigate(`/practice/${courseId}/${topicId}/${practiceId}`)

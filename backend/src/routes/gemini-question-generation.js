@@ -1,6 +1,5 @@
 import express from 'express'
 import { geminiService } from '../services/gemini.js'
-import { mockMicroservices } from '../services/mockMicroservices.js'
 
 const router = express.Router()
 
@@ -390,22 +389,7 @@ router.post('/generate-question-package', async (req, res) => {
 
     console.log('✅ Backend: Starting question generation process...')
     
-    // Get practice_questions_count from Directory Microservice
-    let finalQuestionCount = questionCount
-    try {
-      const userProfile = mockMicroservices.directoryService.getLearnerProfile(userId)
-      const practiceQuestionsCount = userProfile.practice_questions_count || 1
-      
-      // Use the practice_questions_count if no specific count is provided
-      if (questionCount === 1) {
-        finalQuestionCount = practiceQuestionsCount
-        console.log(`📊 Backend: Using practice_questions_count from Directory: ${finalQuestionCount}`)
-      } else {
-        console.log(`📊 Backend: Using provided questionCount: ${finalQuestionCount}`)
-      }
-    } catch (error) {
-      console.warn('⚠️ Backend: Could not get practice_questions_count, using provided count:', error.message)
-    }
+    const finalQuestionCount = questionCount > 0 ? questionCount : 1
 
     // Generate questions (single or multiple)
     console.log(`🤖 Backend: Generating ${finalQuestionCount} question(s) with Gemini...`)

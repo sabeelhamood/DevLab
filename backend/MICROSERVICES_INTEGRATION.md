@@ -1,119 +1,76 @@
 # DevLab Microservices Integration
 
-## 🔗 **Real Microservices Integration Complete!**
+## 🔄 Current Microservice Contracts
 
-DevLab has been updated to integrate with real microservices as specified by your development team. Each service includes both real API endpoints and fallback mock data.
+DevLab now exchanges data with a reduced set of EduCore services through a single gateway endpoint at `/api/data-request`. Directory, HR Reporting, Skills Engine, Learner AI, and Management & Reporting are no longer in scope. The gateway routes requests based on the `requester_service` field while preserving existing logic. The active interfaces are:
 
-## 📋 **Microservices Integration Summary:**
+### 1. Content Studio (Inbound)
+- **Purpose:** Generate new questions or validate trainer-authored content.
+- **Create Question Payload:** `amount` (default 4), `topic_id`, `topic_name`, `skills`, `question_type`, `programming_language`, `humanLanguage`.
+- **Validate Question Payload:** `question`, `topic_id`, `topic_name`, `skills`, `question_type`, `programming_language?`, `humanLanguage`.
+- **Response:** AJAX-friendly packages containing the question, Judge0 execution context, test cases, up to three clues, and a Gemini-assigned difficulty ladder (basic → hardest).
 
-### 1. **Directory Service** (Port 3002)
-- **Purpose**: User profiles, organizations, quotas
-- **Data Received**: `first_name`, `last_name`, `role`, `email`, `organizationId`, `completed_courses`, `active_courses`, `question_quotas`
-- **Endpoints**:
-  - `GET /api/users/{userId}` - Get user profile
-- **Fallback**: Mock data if service unavailable
+### 2. Assessment Service (Bidirectional)
+- **Inbound (from Content Studio via DevLab):** Theoretical question generation requests are proxied to Assessment.
+- **Inbound (from Assessment):** Assessment can request code questions with `topic_name`, `programming_language`, `number_of_questions`, `nano_skills`, `micro_skills`. DevLab returns code questions **without** hints or solutions.
+- **Response Format:** AJAX payload with question text, Judge0 metadata, and test cases.
 
-### 2. **Content Studio Service** (Port 3003)
-- **Purpose**: Course and topic management
-- **Data Received**: `course_name`, `course_id`, `topic_name`, `topic_id`, `question_type`, `macro_skills`, `nano_skills`, `course_level`, `organizationId`
-- **Endpoints**:
-  - `GET /api/courses` - Get all courses
-  - `GET /api/courses/{courseId}/topics` - Get topics for course
-- **Fallback**: Mock data if service unavailable
+### 3. Course Builder (Inbound, Fire-and-Forget)
+- **Purpose:** Notify DevLab when a learner finishes a course so an anonymous competition invitation can be queued.
+- **Payload:** `course_id`, `course_name`, `learner_id`.
+- **Response:** HTTP 202 acknowledgement. DevLab matches the learner with another recent graduate asynchronously.
 
-### 3. **Assessment Service** (Port 3004)
-- **Purpose**: Question generation (HTML content)
-- **Data Received**: HTML content for theoretical and coding questions
-- **Endpoints**:
-  - `POST /api/questions/theoretical` - Get theoretical question HTML
-  - `POST /api/questions/coding` - Get coding question HTML
-- **Parameters**: `course_name`, `topic`, `nano_skills`, `macro_skills`
-- **Fallback**: Mock HTML content if service unavailable
+### 4. Learning Analytics (Outbound)
+- **Purpose:** Persist anonymized competition results.
+- **Payload:** `learner1_id`, `learner2_id`, `course_id`, `timer`, `performance_learner1`, `performance_learner2`, `score`, `questions_answered`, `competition_id`, `created_at`.
+- **Endpoint:** `POST /api/external/analytics/competition-summary`.
 
-### 4. **HR Reporting Service** (Port 3005) - OUTBOUND ONLY
-- **Purpose**: Send practice level data to HR
-- **Data Sent**: `user_id`, `practice_level`, `course_name`, `topic`, `score`, `completion_time`
-- **Endpoints**:
-  - `POST /api/practice-levels` - Send practice data
-- **No Fallback**: Outbound only, errors logged
+### 5. Gemini API (Core AI)
+- **Usage:** Question generation, validation, hints, and feedback. Prompts now incorporate `humanLanguage`, `skills`, and optional trainer question seeds.
 
-### 5. **Contextual Corporate Assistant** (Port 3006)
-- **Purpose**: Performance data and chatbot integration
-- **Data Sent**: `exercise_performance`, `learning_progress`, `skill_improvements`
-- **Data Received**: Chatbot integration details
-- **Endpoints**:
-  - `POST /api/performance` - Send performance data
-  - `GET /api/chatbot/integration` - Get chatbot integration
-- **Fallback**: Mock chatbot integration if service unavailable
+### 6. Sandbox / Judge0
+- **Usage:** Code execution remains unchanged; no contract updates required.
 
-### 6. **Gemini API** (Already Integrated)
-- **Purpose**: AI question generation, evaluation, hints
-- **Features**: Real AI integration with no mock fallbacks
-- **Endpoints**: All Gemini endpoints working with real AI
+## 🔧 Environment Variables
 
-### 7. **Sandbox API** (Port 3007)
-- **Purpose**: Safe code execution
-- **Data Sent**: `code`, `language`, `test_cases`, `timeout`, `memory_limit`
-- **Endpoints**:
-  - `POST /api/execute` - Execute code safely
-- **Fallback**: Mock execution results if service unavailable
-
-## 🔧 **Environment Configuration:**
-
-Create a `.env` file in the backend directory with:
+Add the following variables to your backend `.env`:
 
 ```env
-# Directory Service
-DIRECTORY_SERVICE_URL=http://localhost:3002
-DIRECTORY_SERVICE_TOKEN=your-token
-
-# Content Studio Service  
-CONTENT_STUDIO_SERVICE_URL=http://localhost:3003
-CONTENT_STUDIO_SERVICE_TOKEN=your-token
+# Content Studio
+CONTENT_STUDIO_URL=http://localhost:3003
 
 # Assessment Service
 ASSESSMENT_SERVICE_URL=http://localhost:3004
-ASSESSMENT_SERVICE_TOKEN=your-token
 
-# HR Reporting Service
-HR_REPORTING_SERVICE_URL=http://localhost:3005
-HR_REPORTING_SERVICE_TOKEN=your-token
+# Learning Analytics
+LEARNING_ANALYTICS_URL=http://localhost:3006
 
-# Contextual Corporate Assistant
-CONTEXTUAL_ASSISTANT_SERVICE_URL=http://localhost:3006
-CONTEXTUAL_ASSISTANT_SERVICE_TOKEN=your-token
+# Course Builder
+COURSE_BUILDER_URL=http://localhost:3007
 
 # Sandbox API
-SANDBOX_API_URL=http://localhost:3007
-SANDBOX_API_KEY=your-api-key
+SANDBOX_API_URL=http://localhost:3010
+SANDBOX_API_KEY=your-sandbox-api-key
 
-# Gemini API (Already configured)
-GEMINI_API_KEY=your_gemini_api_key_here
+# Gemini
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
-## 🚀 **How It Works:**
-
-1. **Real API Calls**: DevLab attempts to call real microservice endpoints
-2. **Fallback System**: If real services are unavailable, mock data is used
-3. **Error Handling**: Proper error logging and graceful degradation
-4. **No UI Changes**: All existing UI/UX preserved as requested
-
-## 📊 **Data Flow:**
+## 🧭 Data Flow Overview
 
 ```
-DevLab Frontend → DevLab Backend → Real Microservices
-                     ↓
-                Fallback Mock Data (if services unavailable)
+Course Builder ──► DevLab ──► Competition Engine
+Content Studio ──► DevLab ──► Gemini / Assessment ──► Content Studio
+DevLab ──► Learning Analytics
+DevLab ◄─► Assessment (code question pulls)
 ```
 
-## ✅ **Integration Status:**
+## ✅ Status
 
-- ✅ Directory Service - Real endpoints + mock fallback
-- ✅ Content Studio Service - Real endpoints + mock fallback  
-- ✅ Assessment Service - Real endpoints + mock fallback
-- ✅ HR Reporting Service - Outbound only
-- ✅ Contextual Corporate Assistant - Real endpoints + mock fallback
-- ✅ Gemini API - Real AI integration (no fallback)
-- ✅ Sandbox API - Real endpoints + mock fallback
+- ✅ Content Studio pathways updated (new payloads + AJAX responses)
+- ✅ Assessment integration refreshed (theoretical forwarding + code pulls without hints)
+- ✅ Course Builder webhook accepted and acknowledged (fire-and-forget)
+- ✅ Learning Analytics receives consolidated competition summaries
+- ✅ Legacy Directory, HR Reporting, Learner AI, and Skills Engine integrations removed
 
-All microservices are now integrated with real endpoints and fallback mock data as requested! 🎉
+DevLab is now aligned with the streamlined microservice architecture and the latest payload expectations. 🎉

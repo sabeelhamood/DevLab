@@ -4,6 +4,24 @@ import { config } from "../config/environment.js";
 
 let genAIClient = null;
 
+const DIFFICULTY_LADDER = [
+  "basic",
+  "basic-plus",
+  "intermediate",
+  "upper-intermediate",
+  "advanced",
+  "advanced-plus",
+  "expert",
+  "master"
+];
+
+const buildDifficultyLadder = (count) => {
+  if (!count || count <= 0) return [];
+  return Array.from({ length: count }, (_, index) =>
+    DIFFICULTY_LADDER[Math.min(index, DIFFICULTY_LADDER.length - 1)]
+  );
+};
+
 /**
  * Initialize the Gemini client safely.
  * Prefer config.ai.gemini.apiKey -> process.env.GEMINI_API_KEY
@@ -298,23 +316,27 @@ export class GeminiService {
     
     // Return the requested number of questions
     const selectedQuestions = difficultyQuestions.slice(0, questionCount);
+    const ladder = buildDifficultyLadder(selectedQuestions.length || questionCount);
     
-    return selectedQuestions.map((question, index) => ({
-      ...question,
-      difficulty,
-      language,
-      hints: [
-        'Think about the function structure and parameters',
-        'Consider what the function should return',
-        'Test your function with the provided examples'
-      ],
-      summary: `This is a fallback question ${index + 1} for ${topic} at ${difficulty} level. The Gemini API is currently unavailable.`,
-      courseName: 'JavaScript Programming',
-      topicName: topic,
-      nanoSkills,
-      macroSkills,
-      questionType: 'coding'
-    }));
+    return selectedQuestions.map((question, index) => {
+      const assignedDifficulty = ladder[index] || difficulty;
+      return {
+        ...question,
+        difficulty: assignedDifficulty,
+        language,
+        hints: [
+          'Think about the function structure and parameters',
+          'Consider what the function should return',
+          'Test your function with the provided examples'
+        ],
+        summary: `Fallback question ${index + 1} for ${topic}. Difficulty tier: ${assignedDifficulty}.`,
+        courseName: 'JavaScript Programming',
+        topicName: topic,
+        nanoSkills,
+        macroSkills,
+        questionType: 'coding'
+      };
+    });
   }
 
   // Generate fallback coding question when API is unavailable
@@ -357,11 +379,12 @@ export class GeminiService {
 
     const languageQuestions = fallbackQuestions[language] || fallbackQuestions.javascript;
     const difficultyQuestions = languageQuestions[difficulty] || languageQuestions.intermediate;
+    const [difficultyLabel] = buildDifficultyLadder(1);
     
     return {
       title: difficultyQuestions.title,
       description: difficultyQuestions.description,
-      difficulty,
+      difficulty: difficultyLabel || difficulty,
       language,
       testCases: difficultyQuestions.testCases,
       hints: [
@@ -371,7 +394,7 @@ export class GeminiService {
       ],
       solution: difficultyQuestions.solution,
       explanation: difficultyQuestions.solution.explanation,
-      summary: `This is a fallback question for ${topic} at ${difficulty} level. The Gemini API is currently unavailable.`,
+      summary: `This is a fallback question for ${topic} at ${difficultyLabel || difficulty} level. The Gemini API is currently unavailable.`,
       courseName: 'JavaScript Programming',
       topicName: topic,
       nanoSkills,
@@ -381,8 +404,18 @@ export class GeminiService {
   }
 
   // Generate multiple coding questions at once
-  async generateMultipleCodingQuestions(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = [], questionCount = 4) {
+  async generateMultipleCodingQuestions(
+    topic,
+    difficulty,
+    language = "javascript",
+    nanoSkills = [],
+    macroSkills = [],
+    questionCount = 4,
+    options = {}
+  ) {
     this._checkAvailability();
+
+    const { humanLanguage = 'en', seedQuestion = null } = options
 
     const prompt = `
 You are an expert programming instructor. Generate ${questionCount} coding questions for ${difficulty} level ${language} developers.
@@ -394,16 +427,20 @@ Course Context:
 - Difficulty Level: ${difficulty}
 - Programming Language: ${language}
 - Number of Questions: ${questionCount}
+- Natural Language Output: ${humanLanguage}
+- Trainer Provided Question Context (optional): ${seedQuestion ? seedQuestion : 'N/A'}
 
 Create ${questionCount} practical coding questions that:
 1. Test the specific nano skills: ${nanoSkills.join(", ")}
 2. Relate to the macro skills: ${macroSkills.join(", ")}
-3. Are appropriate for ${difficulty} level
+3. Target developers around the ${difficulty} band while gradually increasing difficulty per question
 4. Are practical and real-world relevant
 5. Have clear problem statements
 6. Each question includes 2-3 test cases with inputs and expected outputs
 7. Each question provides 2-3 short, direct hints
 8. Each question includes the complete solution that follows best practices
+9. Assign a difficulty label for each question so that Q1 is "basic", Q2 is slightly harder, and the last question is the most challenging (e.g., basic -> intermediate -> advanced -> expert)
+10. If a trainer context is provided, align the question set with that context while improving clarity and assessment rigor.
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
@@ -411,6 +448,7 @@ CRITICAL FORMATTING REQUIREMENTS:
 - ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
 - The solution code must be syntactically correct and executable
 - Use proper ${language} syntax and best practices
+- All natural language text must be written in ${humanLanguage}.
 
 \`\`\`json
 {
@@ -452,7 +490,12 @@ Return ONLY the JSON object in the specified format, no additional text.
       const text = await this._callModel(prompt);
       try {
         const parsed = JSON.parse(this._cleanJsonResponse(text));
-        return parsed.questions || parsed;
+        const questionsArray = Array.isArray(parsed.questions) ? parsed.questions : parsed;
+        const ladder = buildDifficultyLadder(questionsArray.length || questionCount);
+        return questionsArray.map((question, index) => ({
+          ...question,
+          difficulty: question.difficulty || ladder[index] || 'basic'
+        }));
       } catch (parseErr) {
         console.warn("Gemini returned non-JSON; using fallback questions");
         return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
@@ -482,8 +525,17 @@ Return ONLY the JSON object in the specified format, no additional text.
     }
   }
 
-  async generateCodingQuestion(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = []) {
+  async generateCodingQuestion(
+    topic,
+    difficulty,
+    language = "javascript",
+    nanoSkills = [],
+    macroSkills = [],
+    options = {}
+  ) {
     this._checkAvailability();
+
+    const { humanLanguage = 'en', seedQuestion = null } = options
 
     const prompt = `
 You are an expert programming instructor. Generate a coding question for a ${difficulty} level ${language} developer.
@@ -494,6 +546,8 @@ Course Context:
 - Macro Skills: ${macroSkills.join(", ")}
 - Difficulty Level: ${difficulty}
 - Programming Language: ${language}
+- Natural Language Output: ${humanLanguage}
+- Trainer Provided Question Context (optional): ${seedQuestion ? seedQuestion : 'N/A'}
 
 Create a practical coding question that:
 1. Tests the specific nano skills: ${nanoSkills.join(", ")}
@@ -504,6 +558,8 @@ Create a practical coding question that:
 6. Includes 2-3 test cases with inputs and expected outputs
 7. Provides 2-3 short, direct hints (don't give away the solution)
 8. Includes the complete solution that follows best practices and runs correctly
+9. Assign an explicit difficulty label (e.g., basic, intermediate, advanced, expert) that reflects the challenge level of this single question
+10. If a trainer question is provided, keep the thematic context but improve clarity, evaluability, and test coverage.
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
@@ -511,6 +567,7 @@ CRITICAL FORMATTING REQUIREMENTS:
 - ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
 - The solution code must be syntactically correct and executable
 - Use proper ${language} syntax and best practices
+- All natural language text must be written in ${humanLanguage}.
 
 \`\`\`json
 {
@@ -536,10 +593,19 @@ Return ONLY the JSON object in the specified format, no additional text.
       // try parse
       try {
         const parsed = JSON.parse(this._cleanJsonResponse(text));
-        return parsed;
+        const [difficultyLabel] = buildDifficultyLadder(1);
+        return {
+          ...parsed,
+          difficulty: parsed.difficulty || difficultyLabel || 'basic'
+        };
       } catch (parseErr) {
         console.warn("Gemini returned non-JSON; returning structured fallback object");
-        return this.parseStructuredResponse(text);
+        const fallback = this.parseStructuredResponse(text);
+        const [difficultyLabel] = buildDifficultyLadder(1);
+        return {
+          ...fallback,
+          difficulty: fallback.difficulty || difficultyLabel || 'basic'
+        };
       }
     } catch (err) {
       console.error("generateCodingQuestion error:", err?.message || err);
@@ -1136,7 +1202,14 @@ Return ONLY the JSON object in the specified format, no additional text.
   // Validation methods for trainer-created courses
   // These methods validate trainer-created questions and provide feedback
 
-  async validateCodingQuestion({ question, topic, difficulty, nanoSkills = [], macroSkills = [] }) {
+  async validateCodingQuestion({
+    question,
+    topic,
+    difficulty,
+    nanoSkills = [],
+    macroSkills = [],
+    humanLanguage = 'en'
+  }) {
     this._checkAvailability();
     
     const prompt = `
@@ -1147,46 +1220,84 @@ Topic: ${topic}
 Difficulty: ${difficulty}
 Nano Skills: ${nanoSkills.join(", ")}
 Macro Skills: ${macroSkills.join(", ")}
+Respond using natural language in ${humanLanguage}.
 
-Please provide validation feedback on this question:
+Provide validation feedback as **strict JSON** in the following format:
+\`\`\`json
+{
+  "is_relevant": true,
+  "relevance_reason": "Explain why/why not",
+  "needs_revision": false,
+  "difficulty_alignment": 4,
+  "clarity_rating": 5,
+  "completeness_rating": 5,
+  "revision_notes": ["Specific actionable recommendation 1", "Specific actionable recommendation 2"],
+  "summary": "One sentence overview",
+  "language": "${humanLanguage}"
+}
+\`\`\`
 
-1. **Relevance**: Is the question relevant to the topic and skills?
-2. **Difficulty**: Is the difficulty level appropriate?
-3. **Clarity**: Is the question clear and well-structured?
-4. **Completeness**: Does it have all necessary information?
-5. **Improvements**: Suggest specific improvements if needed
-
-Provide your feedback in a structured format with ratings (1-5) and specific suggestions.
+Rules:
+- Return ONLY valid JSON as shown (no markdown wrapper text).
+- Ratings must be integers between 1 and 5.
+- If \`is_relevant\` is false, set \`needs_revision\` to true and provide concrete reasons in \`revision_notes\`.
+- Keep all narrative text in ${humanLanguage}.
 `;
 
     try {
       const text = await this._callModel(prompt);
-      return {
-        validation: this._cleanJsonResponse(text),
-        isValid: true,
-        feedback: "Question validation completed successfully"
-      };
+      try {
+        const parsed = JSON.parse(this._cleanJsonResponse(text))
+        return {
+          isRelevant: parsed.is_relevant ?? parsed.isRelevant ?? true,
+          needsRevision: parsed.needs_revision ?? !parsed.is_relevant ?? false,
+          difficultyAlignment: parsed.difficulty_alignment ?? parsed.difficultyAlignment ?? null,
+          clarityRating: parsed.clarity_rating ?? null,
+          completenessRating: parsed.completeness_rating ?? null,
+          revisionNotes: Array.isArray(parsed.revision_notes) ? parsed.revision_notes : [],
+          summary: parsed.summary || parsed.relevance_reason || '',
+          language: parsed.language || humanLanguage,
+          raw: parsed
+        }
+      } catch (parseErr) {
+        console.warn("validateCodingQuestion JSON parse error:", parseErr?.message || parseErr)
+        return {
+          isRelevant: true,
+          needsRevision: false,
+          revisionNotes: ["Ensure automated parsing is configured; fallback validation used."],
+          summary: this._cleanJsonResponse(text),
+          language: humanLanguage,
+          raw: this._cleanJsonResponse(text),
+          fallback: true
+        }
+      }
     } catch (err) {
       console.error("validateCodingQuestion error:", err?.message || err);
       
       // Fallback validation
       return {
-        validation: {
-          relevance: "Question appears relevant to the topic",
-          difficulty: "Difficulty level seems appropriate",
-          clarity: "Question structure looks good",
-          completeness: "Question has necessary information",
-          improvements: ["Consider adding more specific examples", "Ensure test cases are comprehensive"],
-          rating: 4
-        },
-        isValid: true,
-        feedback: "Fallback validation completed",
+        isRelevant: true,
+        needsRevision: false,
+        difficultyAlignment: 4,
+        clarityRating: 4,
+        completenessRating: 4,
+        revisionNotes: ["Unable to reach Gemini. Performed fallback validation – consider manual review."],
+        summary: "Fallback validation: question appears aligned with the topic.",
+        language: humanLanguage,
+        raw: null,
         fallback: true
       };
     }
   }
 
-  async validateTheoreticalQuestion({ question, topic, difficulty, nanoSkills = [], macroSkills = [] }) {
+  async validateTheoreticalQuestion({
+    question,
+    topic,
+    difficulty,
+    nanoSkills = [],
+    macroSkills = [],
+    humanLanguage = 'en'
+  }) {
     this._checkAvailability();
     
     const prompt = `
@@ -1197,40 +1308,71 @@ Topic: ${topic}
 Difficulty: ${difficulty}
 Nano Skills: ${nanoSkills.join(", ")}
 Macro Skills: ${macroSkills.join(", ")}
+Respond using natural language in ${humanLanguage}.
 
-Please provide validation feedback on this theoretical question:
+Provide validation feedback as **strict JSON** in the following format:
+\`\`\`json
+{
+  "is_relevant": true,
+  "relevance_reason": "Explanation",
+  "needs_revision": false,
+  "learning_objective_alignment": 4,
+  "clarity_rating": 5,
+  "completeness_rating": 5,
+  "revision_notes": ["Actionable improvement 1"],
+  "summary": "One sentence overview",
+  "language": "${humanLanguage}"
+}
+\`\`\`
 
-1. **Educational Value**: Does the question test the intended learning objectives?
-2. **Difficulty**: Is the difficulty level appropriate for the target audience?
-3. **Clarity**: Is the question clear and unambiguous?
-4. **Completeness**: Does it have all necessary context?
-5. **Improvements**: Suggest specific improvements if needed
-
-Provide your feedback in a structured format with ratings (1-5) and specific suggestions.
+Rules:
+- Return ONLY valid JSON as shown.
+- Ratings must be integers between 1 and 5.
+- If \`is_relevant\` is false, set \`needs_revision\` to true and populate \`revision_notes\`.
+- Keep all narrative text in ${humanLanguage}.
 `;
 
     try {
       const text = await this._callModel(prompt);
-      return {
-        validation: this._cleanJsonResponse(text),
-        isValid: true,
-        feedback: "Question validation completed successfully"
-      };
+      try {
+        const parsed = JSON.parse(this._cleanJsonResponse(text))
+        return {
+          isRelevant: parsed.is_relevant ?? parsed.isRelevant ?? true,
+          needsRevision: parsed.needs_revision ?? !parsed.is_relevant ?? false,
+          objectiveAlignment: parsed.learning_objective_alignment ?? parsed.learningObjectiveAlignment ?? null,
+          clarityRating: parsed.clarity_rating ?? null,
+          completenessRating: parsed.completeness_rating ?? null,
+          revisionNotes: Array.isArray(parsed.revision_notes) ? parsed.revision_notes : [],
+          summary: parsed.summary || parsed.relevance_reason || '',
+          language: parsed.language || humanLanguage,
+          raw: parsed
+        }
+      } catch (parseErr) {
+        console.warn("validateTheoreticalQuestion JSON parse error:", parseErr?.message || parseErr)
+        return {
+          isRelevant: true,
+          needsRevision: false,
+          revisionNotes: ["Fallback validation used – unable to parse structured response."],
+          summary: this._cleanJsonResponse(text),
+          language: humanLanguage,
+          raw: this._cleanJsonResponse(text),
+          fallback: true
+        }
+      }
     } catch (err) {
       console.error("validateTheoreticalQuestion error:", err?.message || err);
       
       // Fallback validation
       return {
-        validation: {
-          educationalValue: "Question tests relevant learning objectives",
-          difficulty: "Difficulty level seems appropriate",
-          clarity: "Question is clear and well-structured",
-          completeness: "Question has necessary context",
-          improvements: ["Consider adding more specific examples", "Ensure the question aligns with learning objectives"],
-          rating: 4
-        },
-        isValid: true,
-        feedback: "Fallback validation completed",
+        isRelevant: true,
+        needsRevision: false,
+        objectiveAlignment: 4,
+        clarityRating: 4,
+        completenessRating: 4,
+        revisionNotes: ["Unable to reach Gemini. Perform manual review for alignment if critical."],
+        summary: "Fallback validation: theoretical question appears suitable.",
+        language: humanLanguage,
+        raw: null,
         fallback: true
       };
     }

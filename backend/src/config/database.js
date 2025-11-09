@@ -2,21 +2,37 @@ import { createClient } from '@supabase/supabase-js'
 import { MongoClient } from 'mongodb'
 
 // PostgreSQL (Supabase) Configuration
-const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co'
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key'
+export const supabaseConfig = {
+  url: process.env.SUPABASE_URL,
+  key: process.env.SUPABASE_KEY
+}
+
+const supabaseUrl = supabaseConfig.url
+const supabaseKey = supabaseConfig.key
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Supabase environment variables missing. Ensure SUPABASE_URL and SUPABASE_KEY are set in Railway.'
+  )
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // MongoDB Atlas Configuration
-const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/devlab'
+const mongoUri = process.env.MONGO_URL
+if (!mongoUri) {
+  throw new Error('MongoDB environment variable missing. Ensure MONGO_URL is set in Railway.')
+}
+
 const mongoClient = new MongoClient(mongoUri)
+const mongoDbName = process.env.MONGO_DB_NAME || 'devlab'
 
 let mongoDb = null
 
 export const connectMongoDB = async () => {
   try {
     await mongoClient.connect()
-    mongoDb = mongoClient.db('devlab')
+    mongoDb = mongoClient.db(mongoDbName)
     console.log('✅ Connected to MongoDB Atlas')
     return mongoDb
   } catch (error) {

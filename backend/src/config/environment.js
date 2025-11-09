@@ -7,19 +7,17 @@ const getEnvironmentConfig = () => {
     database: {
       supabase: {
         url: process.env['SUPABASE_URL'] || '',
-        serviceKey: process.env['SUPABASE_SERVICE_KEY'] || '',
+        key: process.env['SUPABASE_KEY'] || '',
       },
       mongodb: {
-        uri: process.env['MONGODB_ATLAS_URI'] || '',
+        uri: process.env['MONGO_URL'] || '',
       },
     },
     externalServices: {
-      directory: process.env['DIRECTORY_SERVICE_URL'] || '',
       assessment: process.env['ASSESSMENT_SERVICE_URL'] || '',
       contentStudio: process.env['CONTENT_STUDIO_URL'] || '',
       learningAnalytics: process.env['LEARNING_ANALYTICS_URL'] || '',
-      hrReporting: process.env['HR_REPORTING_URL'] || '',
-      corporateAssistant: process.env['CORPORATE_ASSISTANT_URL'] || '',
+      courseBuilder: process.env['COURSE_BUILDER_URL'] || '',
     },
     ai: {
       gemini: {

@@ -1,53 +1,30 @@
 // Mock Microservices Data for Frontend
 // This file simulates data from various microservices in the DEVLAB ecosystem
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production-0bcb.up.railway.app/api' : 'http://localhost:3001/api')
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? 'https://devlab-backend-production-0bcb.up.railway.app/api'
+    : 'http://localhost:3001/api')
+
+const DIFFICULTY_SEQUENCE = [
+  'basic',
+  'basic-plus',
+  'intermediate',
+  'upper-intermediate',
+  'advanced',
+  'advanced-plus',
+  'expert'
+]
+
+const buildDifficultyLadder = (count) => {
+  if (!count || count <= 0) return []
+  return Array.from({ length: count }, (_, index) =>
+    DIFFICULTY_SEQUENCE[Math.min(index, DIFFICULTY_SEQUENCE.length - 1)]
+  )
+}
 
 export const mockMicroservices = {
-  // Directory Service - User profiles, organizations, quotas
-  directoryService: {
-    getLearnerProfile: (userId) => ({
-      user_id: userId,
-      name: "John Doe",
-      email: "learner@devlab.com",
-      role: "learner",
-      organizationId: 1,
-      completed_courses: [
-        { id: 1, name: "JavaScript Fundamentals" },
-        { id: 2, name: "Advanced JavaScript Functions" }
-      ],
-      active_courses: [
-        { id: 3, name: "Data Structures & Algorithms" },
-        { id: 4, name: "React Development" }
-      ],
-      question_quotas: 4,
-      daily_question_limit: 10,
-      remaining_questions: 6
-    }),
-
-    getTrainerProfile: (userId) => ({
-      user_id: userId,
-      name: "Jane Smith",
-      email: "trainer@devlab.com",
-      role: "trainer",
-      organizationId: 1,
-      courses_created: [1, 2, 3, 4],
-      expertise_areas: ["JavaScript", "Python", "Data Structures"],
-      teaching_experience: "5 years"
-    }),
-
-    getOrganizationSettings: (orgId) => ({
-      organization_id: orgId,
-      name: "TechCorp Learning",
-      question_quotas: 4,
-      assessment_settings: {
-        passing_score: 70,
-        retry_limit: 3,
-        time_limit: 30
-      }
-    })
-  },
-
   // Content Studio Service - Courses, topics, skills
   contentStudio: {
     getCourses: () => [
@@ -216,11 +193,10 @@ export const mockMicroservices = {
 
     // Content Studio Integration - Generate questions based on user quotas
     generateQuestionsForContentStudio: async (contentStudioRequest) => {
-      const { user_id, course_id, topic_id, difficulty } = contentStudioRequest;
-      
-      // Step 1: Get user data from Directory Service
-      const userProfile = mockMicroservices.directoryService.getLearnerProfile(user_id);
-      const questionCount = userProfile.question_quotas;
+      const { user_id, course_id, topic_id, difficulty, amount } = contentStudioRequest;
+
+      const questionCount = Number(amount) > 0 ? Number(amount) : 4;
+      const ladder = buildDifficultyLadder(questionCount);
       
       // Step 2: Generate questions using Gemini (simulated)
       const questions = Array.from({ length: questionCount }, (_, i) => ({
@@ -229,7 +205,7 @@ export const mockMicroservices = {
         topic_id: topic_id,
         title: `Practice Question ${i + 1}`,
         description: `Create a JavaScript function for topic ${topic_id}`,
-        difficulty: difficulty || "intermediate",
+        difficulty: ladder[i] || difficulty || "intermediate",
         language: "javascript",
         test_cases: [
           { input: [1, 2, 3], expected_output: 6 },
@@ -251,11 +227,6 @@ export const mockMicroservices = {
         user_id: user_id,
         question_count: questionCount,
         questions: questions,
-        user_quotas: {
-          total_quota: userProfile.question_quotas,
-          daily_limit: userProfile.daily_question_limit,
-          remaining: userProfile.remaining_questions
-        },
         generated_at: new Date().toISOString(),
         content_studio_request: contentStudioRequest
       }
@@ -542,77 +513,6 @@ export const mockMicroservices = {
         "Try advanced JavaScript concepts",
         "Practice coding challenges",
         "Join study groups"
-      ]
-    })
-  },
-
-  // HR Reporting Service - Performance tracking, reporting
-  hrReporting: {
-    getEmployeeProgress: (userId) => ({
-      user_id: userId,
-      employee_id: "EMP001",
-      department: "Engineering",
-      manager: "Jane Smith",
-      learning_goals: [
-        { goal: "Master JavaScript", progress: 75, deadline: "2024-06-01" },
-        { goal: "Learn React", progress: 40, deadline: "2024-08-01" }
-      ],
-      performance_metrics: {
-        learning_velocity: 8.5,
-        skill_improvement: 15,
-        engagement_score: 9.2
-      }
-    }),
-
-    generateReport: (organizationId, period) => ({
-      organization_id: organizationId,
-      period: period,
-      total_learners: 150,
-      active_learners: 120,
-      completed_courses: 45,
-      average_completion_time: 14, // days
-      top_performers: [
-        { user_id: 1, name: "John Doe", score: 95 },
-        { user_id: 2, name: "Jane Smith", score: 92 }
-      ]
-    })
-  },
-
-  // Contextual Corporate Assistant - AI-powered assistance
-  contextualAssistant: {
-    getPersonalizedContent: (userId, context) => ({
-      user_id: userId,
-      context: context,
-      recommendations: [
-        {
-          type: "practice",
-          content: "Try this JavaScript closure exercise",
-          reason: "Based on your current learning path"
-        },
-        {
-          type: "resource",
-          content: "Read about async/await patterns",
-          reason: "Will help with your current topic"
-        }
-      ],
-      chatbot_suggestions: [
-        "Ask me about JavaScript closures",
-        "Need help with async programming?",
-        "Want to practice coding challenges?"
-      ]
-    }),
-
-    getLearningPath: (userId, goals) => ({
-      user_id: userId,
-      goals: goals,
-      recommended_path: [
-        { step: 1, topic: "JavaScript Basics", estimated_time: "2 weeks" },
-        { step: 2, topic: "Functions and Scope", estimated_time: "1 week" },
-        { step: 3, topic: "Async Programming", estimated_time: "2 weeks" }
-      ],
-      milestones: [
-        { milestone: "Complete JavaScript Basics", reward: "Basics Badge" },
-        { milestone: "Score 80% on assessment", reward: "Problem Solver Badge" }
       ]
     })
   },
