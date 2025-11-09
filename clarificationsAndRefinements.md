@@ -17,8 +17,8 @@ This document captures actionable refinements grouped by feature and delivery la
 - (2025-11-09) DEVLAB’s UI theme standardizes on Tailwind CSS slate/gray surfaces with indigo accents (`bg-indigo-600` primary buttons, hover `bg-indigo-700`, neutral backgrounds like `bg-gray-50`/`bg-gray-100` for cards, rounded corners, and subtle drop shadows for depth); any new frontend work should follow this palette and component structure for consistency.
 
 ### Database
-- (2025-11-09) DEVLAB does not use caching layers; persistence relies solely on Supabase (business data, including temporary and persistent question/competition records) and MongoDB Atlas (operational logs, errors, and system events); database credentials are sourced exclusively from Railway environment variables `SUPABASE_URL`, `SUPABASE_KEY`, and `MONGO_URL`.
-- (2025-11-09) Question data (including hints and test cases) is transient: store it in Supabase `temp_questions` with status `pending` until the originating microservice acknowledges receipt via the confirmation endpoint, then delete the record; competition data is strictly persistent for DEVLAB dashboards and downstream Learning Analytics.
+- (2025-11-09) DEVLAB uses Supabase PostgreSQL (business data, including temporary and persistent question/competition records) and MongoDB Atlas (operational logs, errors, system events). Supabase connectivity relies on a single PostgreSQL connection string supplied via `SUPABASE_URL`; Railway is the source of truth for both `SUPABASE_URL` and `MONGO_URL`.
+- (2025-11-09) Question data (including hints and test cases) is transient: store it in Supabase `temp_questions` with status `pending` until the originating microservice acknowledges receipt via the confirmation endpoint, then delete the record. Competition data is strictly persistent for DEVLAB dashboards and downstream Learning Analytics, and deletion endpoints must return HTTP 405.
 
 ---
 
