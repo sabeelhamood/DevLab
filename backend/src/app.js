@@ -22,7 +22,6 @@ import authRoutes from './routes/auth/authRoutes.js'
 import questionRoutes from './routes/questions/questionRoutes.js'
 import sessionRoutes from './routes/sessions/sessionRoutes.js'
 import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
-import healthRoutes from './routes/health/healthRoutes.js'
 import dataRequestRoutes from './routes/dataRequestRoutes.js'
 
 // Gemini AI routes
@@ -39,6 +38,7 @@ import assessmentRoutes from './routes/external/assessmentRoutes.js'
 import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
 import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
 import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
+import { initializeDatabases } from './config/initDatabase.js'
 
 const app = express()
 
@@ -49,7 +49,6 @@ const logDatabaseEnvStatus = () => {
 
   const envFlags = {
     SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
-    SUPABASE_KEY: Boolean(process.env.SUPABASE_KEY),
     MONGO_URL: Boolean(process.env.MONGO_URL)
   }
 
@@ -237,30 +236,40 @@ app.use(errorHandler)
 const PORT = process.env.PORT || 3001
 const HOST = '0.0.0.0'
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
-  console.log(`📊 Environment: ${config.nodeEnv}`)
-  console.log(`🔗 API Base URL: http://${HOST}:${PORT}/api`)
-  console.log(`🏥 Health Check: http://${HOST}:${PORT}/health`)
-  console.log(`🔧 Process.env.PORT: ${process.env.PORT}`)
-  console.log(`🔧 Config.port: ${config.port}`)
-})
+let server
 
-// Handle server errors
-server.on('error', (error) => {
-  console.error('❌ Server error:', error)
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use`)
+const startServer = async () => {
+  try {
+    await initializeDatabases()
+  } catch (error) {
+    console.error('❌ Database initialization failed during startup:', error)
   }
-})
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully')
-  server.close(() => {
-    console.log('✅ Server closed')
-    process.exit(0)
+  server = app.listen(PORT, HOST, () => {
+    console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
+    console.log(`📊 Environment: ${config.nodeEnv}`)
+    console.log(`🔗 API Base URL: http://${HOST}:${PORT}/api`)
+    console.log(`🏥 Health Check: http://${HOST}:${PORT}/health`)
+    console.log(`🔧 Process.env.PORT: ${process.env.PORT}`)
+    console.log(`🔧 Config.port: ${config.port}`)
   })
-})
+
+  server.on('error', (error) => {
+    console.error('❌ Server error:', error)
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use`)
+    }
+  })
+
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully')
+    server.close(() => {
+      console.log('✅ Server closed')
+      process.exit(0)
+    })
+  })
+}
+
+startServer()
 
 export default app
