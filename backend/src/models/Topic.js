@@ -1,167 +1,299 @@
-import { supabase, getSupabaseTables } from '../config/database.js'
+import { getSupabaseTables, postgres } from '../config/database.js'
+import {
+  buildInsertStatement,
+  buildUpdateStatement,
+  buildPagination,
+  runCountQuery
+} from '../utils/postgresHelpers.js'
 
-const { topics } = getSupabaseTables()
+const tables = getSupabaseTables()
+const topicsTable = postgres.quoteIdentifier(tables.topics)
+const coursesTable = postgres.quoteIdentifier(tables.courses)
+const questionsTable = postgres.quoteIdentifier(tables.questions)
+const practicesTable = postgres.quoteIdentifier(tables.practices)
 
-export class TopicModel {
-  // Create a new topic
-  static async create(topicData) {
-    const { data, error } = await supabase
-      .from(topics)
-      .insert([topicData])
-      .select()
-    
-    if (error) throw error
-    return data[0]
+const loadRelatedData = async (topics = [], options = {}) => {
+  if (!topics.length) {
+    return []
   }
 
-  // Get topic by ID
-  static async findById(topicId) {
-    const { data, error } = await supabase
-      .from(topics)
-      .select(`
-        *,
-        course:courses(*),
-        questions:questions(*),
-        practices:practices(*)
-      `)
-      .eq('topic_id', topicId)
-      .single()
-    
-    if (error) throw error
-    return data
+  const courseIds = [
+    ...new Set(
+      topics
+        .map((topic) => topic.course_id)
+        .filter(Boolean)
+    )
+  ]
+
+  let coursesMap = {}
+  if (courseIds.length && options.includeCourse) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${coursesTable} WHERE "course_id" = ANY($1::uuid[])`,
+      [courseIds]
+    )
+
+    coursesMap = rows.reduce((acc, course) => {
+      acc[course.course_id] = course
+      return acc
+    }, {})
   }
 
-  // Get all topics with pagination
-  static async findAll(page = 1, limit = 10, filters = {}) {
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+  let questionsMap = {}
+  if (options.includeQuestions) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${questionsTable} WHERE "topic_id" = ANY($1::uuid[]) ORDER BY "created_at" ASC`,
+      [topics.map((topic) => topic.topic_id)]
+    )
 
-    let query = supabase
-      .from(topics)
-      .select(`
-        *,
-        course:courses(*)
-      `, { count: 'exact' })
-      .range(from, to)
+    questionsMap = rows.reduce((acc, question) => {
+      const key = question.topic_id
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(question)
+      return acc
+    }, {})
+  }
 
-    // Apply filters
-    if (filters.course_id) {
-      query = query.eq('course_id', filters.course_id)
+  let practicesMap = {}
+  if (options.includePractices) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${practicesTable} WHERE "topic_id" = ANY($1::uuid[]) ORDER BY "created_at" DESC`,
+      [topics.map((topic) => topic.topic_id)]
+    )
+
+    practicesMap = rows.reduce((acc, practice) => {
+      const key = practice.topic_id
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(practice)
+      return acc
+    }, {})
+  }
+
+  return topics.map((topic) => {
+    const result = { ...topic }
+
+    if (options.includeCourse) {
+      result.course = coursesMap[topic.course_id] || null
     }
 
-    const { data, error, count } = await query
-    
-    if (error) throw error
+    if (options.includeQuestions) {
+      result.questions = questionsMap[topic.topic_id] || []
+    }
+
+    if (options.includePractices) {
+      result.practices = practicesMap[topic.topic_id] || []
+    }
+
+    return result
+  })
+}
+
+export class TopicModel {
+  static async create(topicData) {
+    const query = buildInsertStatement(topicsTable, topicData)
+    const { rows } = await postgres.query(query.text, query.values)
+    const [topic] = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+    return topic
+  }
+
+  static async findById(topicId) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${topicsTable} WHERE "topic_id" = $1 LIMIT 1`,
+      [topicId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const [topic] = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+
+    return topic || null
+  }
+
+  static async findAll(page = 1, limit = 10, filters = {}) {
+    const { limit: pageLimit, offset } = buildPagination(page, limit)
+    const conditions = []
+    const values = []
+
+    if (filters.course_id) {
+      values.push(filters.course_id)
+      conditions.push(`"course_id" = $${values.length}`)
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const [{ rows }, count] = await Promise.all([
+      postgres.query(
+        `
+        SELECT *
+        FROM ${topicsTable}
+        ${whereClause}
+        ORDER BY "created_at" DESC
+        LIMIT $${values.length + 1}
+        OFFSET $${values.length + 2}
+        `,
+        [...values, pageLimit, offset]
+      ),
+      runCountQuery(topicsTable, conditions.join(' AND '), values)
+    ])
+
+    const data = await loadRelatedData(rows, { includeCourse: true })
     return { data, count }
   }
 
-  // Get topics by course
   static async findByCourse(courseId) {
-    const { data, error } = await supabase
-      .from(topics)
-      .select(`
-        *,
-        questions:questions(*),
-        practices:practices(*)
-      `)
-      .eq('course_id', courseId)
-      .order('topic_id')
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${topicsTable}
+      WHERE "course_id" = $1
+      ORDER BY "created_at" ASC
+      `,
+      [courseId]
+    )
+
+    const topics = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+    return topics
   }
 
-  // Update topic
   static async update(topicId, updateData) {
-    const { data, error } = await supabase
-      .from(topics)
-      .update(updateData)
-      .eq('topic_id', topicId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const fields = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    }
+
+    const query = buildUpdateStatement(
+      topicsTable,
+      fields,
+      `WHERE "topic_id" = $${Object.keys(fields).length + 1}`,
+      [topicId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [topic] = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+    return topic || null
   }
 
-  // Delete topic
   static async delete(topicId) {
-    const { error } = await supabase
-      .from(topics)
-      .delete()
-      .eq('topic_id', topicId)
-    
-    if (error) throw error
+    await postgres.query(
+      `DELETE FROM ${topicsTable} WHERE "topic_id" = $1`,
+      [topicId]
+    )
     return true
   }
 
-  // Get topics with specific nano skills
   static async findByNanoSkills(nanoSkills) {
-    const { data, error } = await supabase
-      .from(topics)
-      .select(`
-        *,
-        course:courses(*)
-      `)
-      .contains('nano_skills', nanoSkills)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${topicsTable}
+      WHERE "nano_skills" @> $1::jsonb
+      ORDER BY "created_at" DESC
+      `,
+      [JSON.stringify(nanoSkills)]
+    )
+
+    const topics = await loadRelatedData(rows, { includeCourse: true })
+    return topics
   }
 
-  // Get topics with specific macro skills
   static async findByMacroSkills(macroSkills) {
-    const { data, error } = await supabase
-      .from(topics)
-      .select(`
-        *,
-        course:courses(*)
-      `)
-      .contains('macro_skills', macroSkills)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${topicsTable}
+      WHERE "macro_skills" @> $1::jsonb
+      ORDER BY "created_at" DESC
+      `,
+      [JSON.stringify(macroSkills)]
+    )
+
+    const topics = await loadRelatedData(rows, { includeCourse: true })
+    return topics
   }
 
-  // Update nano skills for a topic
   static async updateNanoSkills(topicId, nanoSkills) {
-    const { data, error } = await supabase
-      .from(topics)
-      .update({ nano_skills: nanoSkills })
-      .eq('topic_id', topicId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildUpdateStatement(
+      topicsTable,
+      {
+        nano_skills: nanoSkills,
+        updated_at: new Date().toISOString()
+      },
+      'WHERE "topic_id" = $3',
+      [topicId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [topic] = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+    return topic || null
   }
 
-  // Update macro skills for a topic
   static async updateMacroSkills(topicId, macroSkills) {
-    const { data, error } = await supabase
-      .from(topics)
-      .update({ macro_skills: macroSkills })
-      .eq('topic_id', topicId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildUpdateStatement(
+      topicsTable,
+      {
+        macro_skills: macroSkills,
+        updated_at: new Date().toISOString()
+      },
+      'WHERE "topic_id" = $3',
+      [topicId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [topic] = await loadRelatedData(rows, {
+      includeCourse: true,
+      includeQuestions: true,
+      includePractices: true
+    })
+    return topic || null
   }
 
-  // Get topic statistics
   static async getTopicStats(topicId) {
-    const { data, error } = await supabase
-      .from('practices')
-      .select('*')
-      .eq('topic_id', topicId)
-    
-    if (error) throw error
-    
-    const stats = {
-      total_practices: data.length,
-      completed_practices: data.filter(p => p.status === 'completed').length,
-      average_score: data.reduce((sum, p) => sum + (p.score || 0), 0) / data.length || 0
+    const { rows } = await postgres.query(
+      `
+      SELECT "status", "score"
+      FROM ${practicesTable}
+      WHERE "topic_id" = $1
+      `,
+      [topicId]
+    )
+
+    const totalPractices = rows.length
+    const completedPractices = rows.filter((practice) => practice.status === 'completed').length
+    const averageScore =
+      totalPractices > 0
+        ? rows.reduce((sum, practice) => sum + (practice.score || 0), 0) / totalPractices
+        : 0
+
+    return {
+      total_practices: totalPractices,
+      completed_practices: completedPractices,
+      average_score: averageScore
     }
-    
-    return stats
   }
 }
 

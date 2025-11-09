@@ -1,125 +1,178 @@
-import { supabase, getSupabaseTables } from '../config/database.js'
+import { getSupabaseTables, postgres } from '../config/database.js'
+import {
+  buildInsertStatement,
+  buildUpdateStatement,
+  buildPagination,
+  runCountQuery
+} from '../utils/postgresHelpers.js'
 
-const { courses } = getSupabaseTables()
+const tables = getSupabaseTables()
+const coursesTable = postgres.quoteIdentifier(tables.courses)
+const usersTable = postgres.quoteIdentifier(tables.userProfiles)
+const topicsTable = postgres.quoteIdentifier(tables.topics)
+
+const attachRelations = async (courses = []) => {
+  if (!courses.length) {
+    return []
+  }
+
+  const courseIds = courses.map((course) => course.course_id)
+  const trainerIds = [
+    ...new Set(
+      courses
+        .map((course) => course.trainer_id)
+        .filter(Boolean)
+    )
+  ]
+
+  let trainersMap = {}
+  if (trainerIds.length) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${usersTable} WHERE "user_id" = ANY($1::uuid[])`,
+      [trainerIds]
+    )
+
+    trainersMap = rows.reduce((acc, row) => {
+      acc[row.user_id] = row
+      return acc
+    }, {})
+  }
+
+  const { rows: topicRows } = await postgres.query(
+    `SELECT * FROM ${topicsTable} WHERE "course_id" = ANY($1::uuid[]) ORDER BY "created_at" ASC`,
+    [courseIds]
+  )
+
+  const topicsMap = topicRows.reduce((acc, topic) => {
+    const key = topic.course_id
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(topic)
+    return acc
+  }, {})
+
+  return courses.map((course) => ({
+    ...course,
+    trainer: course.trainer_id ? trainersMap[course.trainer_id] || null : null,
+    topics: topicsMap[course.course_id] || []
+  }))
+}
 
 export class CourseModel {
-  // Create a new course
   static async create(courseData) {
-    const { data, error } = await supabase
-      .from(courses)
-      .insert([courseData])
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildInsertStatement(coursesTable, courseData)
+    const { rows } = await postgres.query(query.text, query.values)
+    const [course] = await attachRelations(rows)
+    return course
   }
 
-  // Get course by ID
   static async findById(courseId) {
-    const { data, error } = await supabase
-      .from(courses)
-      .select(`
-        *,
-        trainer:userProfiles!courses_trainer_id_fkey(*),
-        topics:topics(*)
-      `)
-      .eq('course_id', courseId)
-      .single()
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${coursesTable} WHERE "course_id" = $1 LIMIT 1`,
+      [courseId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const [course] = await attachRelations(rows)
+    return course || null
   }
 
-  // Get all courses with pagination
   static async findAll(page = 1, limit = 10, filters = {}) {
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const { limit: pageLimit, offset } = buildPagination(page, limit)
+    const conditions = []
+    const values = []
 
-    let query = supabase
-      .from(courses)
-      .select(`
-        *,
-        trainer:userProfiles!courses_trainer_id_fkey(*),
-        topics:topics(*)
-      `, { count: 'exact' })
-      .range(from, to)
-
-    // Apply filters
     if (filters.level) {
-      query = query.eq('level', filters.level)
-    }
-    if (filters.trainer_id) {
-      query = query.eq('trainer_id', filters.trainer_id)
+      values.push(filters.level)
+      conditions.push(`"level" = $${values.length}`)
     }
 
-    const { data, error, count } = await query
-    
-    if (error) throw error
+    if (filters.trainer_id) {
+      values.push(filters.trainer_id)
+      conditions.push(`"trainer_id" = $${values.length}`)
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+    const queryText = `
+      SELECT * FROM ${coursesTable}
+      ${whereClause}
+      ORDER BY "created_at" DESC
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `
+
+    const [{ rows }, count] = await Promise.all([
+      postgres.query(queryText, [...values, pageLimit, offset]),
+      runCountQuery(coursesTable, conditions.join(' AND '), values)
+    ])
+
+    const data = await attachRelations(rows)
     return { data, count }
   }
 
-  // Update course
   static async update(courseId, updateData) {
-    const { data, error } = await supabase
-      .from(courses)
-      .update(updateData)
-      .eq('course_id', courseId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const fields = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    }
+
+    const query = buildUpdateStatement(
+      coursesTable,
+      fields,
+      `WHERE "course_id" = $${Object.keys(fields).length + 1}`,
+      [courseId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [course] = await attachRelations(rows)
+    return course || null
   }
 
-  // Delete course
   static async delete(courseId) {
-    const { error } = await supabase
-      .from(courses)
-      .delete()
-      .eq('course_id', courseId)
-    
-    if (error) throw error
+    await postgres.query(
+      `DELETE FROM ${coursesTable} WHERE "course_id" = $1`,
+      [courseId]
+    )
     return true
   }
 
-  // Get courses by trainer
   static async findByTrainer(trainerId) {
-    const { data, error } = await supabase
-      .from(courses)
-      .select(`
-        *,
-        topics:topics(*)
-      `)
-      .eq('trainer_id', trainerId)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${coursesTable} WHERE "trainer_id" = $1 ORDER BY "created_at" DESC`,
+      [trainerId]
+    )
+
+    const courses = await attachRelations(rows)
+    return courses
   }
 
-  // Get courses by level
   static async findByLevel(level) {
-    const { data, error } = await supabase
-      .from(courses)
-      .select(`
-        *,
-        trainer:userProfiles!courses_trainer_id_fkey(*),
-        topics:topics(*)
-      `)
-      .eq('level', level)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${coursesTable} WHERE "level" = $1 ORDER BY "created_at" DESC`,
+      [level]
+    )
+
+    const courses = await attachRelations(rows)
+    return courses
   }
 
-  // Update AI feedback for course
   static async updateAIFeedback(courseId, aiFeedback) {
-    const { data, error } = await supabase
-      .from(courses)
-      .update({ ai_feedback: aiFeedback })
-      .eq('course_id', courseId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildUpdateStatement(
+      coursesTable,
+      {
+        ai_feedback: aiFeedback,
+        updated_at: new Date().toISOString()
+      },
+      'WHERE "course_id" = $3',
+      [courseId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [course] = await attachRelations(rows)
+    return course || null
   }
 }
 

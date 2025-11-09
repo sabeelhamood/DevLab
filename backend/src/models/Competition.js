@@ -1,133 +1,322 @@
-import { supabase, getSupabaseTables } from '../config/database.js'
+import { getSupabaseTables, postgres } from '../config/database.js'
+import {
+  buildInsertStatement,
+  buildPagination,
+  buildUpdateStatement,
+  runCountQuery
+} from '../utils/postgresHelpers.js'
 
-const { competitions } = getSupabaseTables()
+const tables = getSupabaseTables()
+const competitionsTable = postgres.quoteIdentifier(tables.competitions)
+const coursesTable = postgres.quoteIdentifier(tables.courses)
+const usersTable = postgres.quoteIdentifier(tables.userProfiles)
+
+const loadCompetitionRelations = async (competitions = []) => {
+  if (!competitions.length) {
+    return []
+  }
+
+  const courseIds = [
+    ...new Set(
+      competitions
+        .map((competition) => competition.course_id)
+        .filter(Boolean)
+    )
+  ]
+
+  const learnerIds = [
+    ...new Set(
+      competitions
+        .flatMap((competition) => [competition.learner1_id, competition.learner2_id])
+        .filter(Boolean)
+    )
+  ]
+
+  let coursesMap = {}
+  if (courseIds.length) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${coursesTable} WHERE "course_id" = ANY($1::uuid[])`,
+      [courseIds]
+    )
+
+    coursesMap = rows.reduce((acc, course) => {
+      acc[course.course_id] = course
+      return acc
+    }, {})
+  }
+
+  let learnersMap = {}
+  if (learnerIds.length) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${usersTable} WHERE "user_id" = ANY($1::uuid[])`,
+      [learnerIds]
+    )
+
+    learnersMap = rows.reduce((acc, learner) => {
+      acc[learner.user_id] = learner
+      return acc
+    }, {})
+  }
+
+  return competitions.map((competition) => ({
+    ...competition,
+    course: competition.course_id ? coursesMap[competition.course_id] || null : null,
+    learner1: competition.learner1_id ? learnersMap[competition.learner1_id] || null : null,
+    learner2: competition.learner2_id ? learnersMap[competition.learner2_id] || null : null
+  }))
+}
+
+const defaultRelations = {
+  includeCourse: true,
+  includeLearners: true
+}
 
 export class CompetitionModel {
-  // Create a new competition
   static async create(competitionData) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .insert([competitionData])
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildInsertStatement(competitionsTable, competitionData)
+    const { rows } = await postgres.query(query.text, query.values)
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition
   }
 
-  // Get competition by ID
   static async findById(competitionId) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        course:courses(*),
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `)
-      .eq('competition_id', competitionId)
-      .single()
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${competitionsTable} WHERE "competition_id" = $1 LIMIT 1`,
+      [competitionId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition || null
   }
 
-  // Get all competitions with pagination
   static async findAll(page = 1, limit = 10) {
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const { limit: pageLimit, offset } = buildPagination(page, limit)
 
-    const { data, error, count } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        course:courses(*),
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `, { count: 'exact' })
-      .range(from, to)
-    
-    if (error) throw error
+    const [{ rows }, count] = await Promise.all([
+      postgres.query(
+        `
+        SELECT *
+        FROM ${competitionsTable}
+        ORDER BY "created_at" DESC
+        LIMIT $1
+        OFFSET $2
+        `,
+        [pageLimit, offset]
+      ),
+      runCountQuery(competitionsTable)
+    ])
+
+    const data = await loadCompetitionRelations(rows, defaultRelations)
     return { data, count }
   }
 
-  // Get competitions by course
   static async findByCourse(courseId) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `)
-      .eq('course_id', courseId)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${competitionsTable}
+      WHERE "course_id" = $1
+      ORDER BY "created_at" DESC
+      `,
+      [courseId]
+    )
+
+    const competitions = await loadCompetitionRelations(rows, defaultRelations)
+    return competitions
   }
 
-  // Get competitions by learner
   static async findByLearner(learnerId) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        course:courses(*),
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `)
-      .or(`learner1_id.eq.${learnerId},learner2_id.eq.${learnerId}`)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${competitionsTable}
+      WHERE "learner1_id" = $1 OR "learner2_id" = $1
+      ORDER BY "created_at" DESC
+      `,
+      [learnerId]
+    )
+
+    const competitions = await loadCompetitionRelations(rows, defaultRelations)
+    return competitions
   }
 
-  // Update competition result
   static async updateResult(competitionId, result) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .update({ result })
-      .eq('competition_id', competitionId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildUpdateStatement(
+      competitionsTable,
+      {
+        result,
+        updated_at: new Date().toISOString()
+      },
+      'WHERE "competition_id" = $3',
+      [competitionId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition || null
   }
 
-  // Delete competition
-  static async delete(competitionId) {
+  static async delete(_competitionId) {
     throw new Error('Competition deletion is disabled to preserve historical analytics data.')
   }
 
-  // Get active competitions (no result yet)
   static async getActive() {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        course:courses(*),
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `)
-      .is('result', null)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${competitionsTable}
+      WHERE "result" IS NULL
+      ORDER BY "created_at" DESC
+      `
+    )
+
+    const competitions = await loadCompetitionRelations(rows, defaultRelations)
+    return competitions
   }
 
-  // Get completed competitions
   static async getCompleted() {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select(`
-        *,
-        course:courses(*),
-        learner1:userProfiles!competitions_learner1_id_fkey(*),
-        learner2:userProfiles!competitions_learner2_id_fkey(*)
-      `)
-      .not('result', 'is', null)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${competitionsTable}
+      WHERE "result" IS NOT NULL
+      ORDER BY "created_at" DESC
+      `
+    )
+
+    const competitions = await loadCompetitionRelations(rows, defaultRelations)
+    return competitions
+  }
+
+  static async findEligibleLearners(courseId, excludeLearnerId) {
+    try {
+      const { rows } = await postgres.query(
+        `
+        SELECT "learner_id", "completed_at"
+        FROM "course_completions"
+        WHERE "course_id" = $1 AND "learner_id" <> $2
+        ORDER BY "completed_at" DESC
+        LIMIT 10
+        `,
+        [courseId, excludeLearnerId]
+      )
+
+      return rows.map((row) => ({
+        id: row.learner_id,
+        completedAt: row.completed_at
+      }))
+    } catch (error) {
+      return [
+        { id: 'learner-1', completedAt: new Date().toISOString() },
+        { id: 'learner-2', completedAt: new Date().toISOString() },
+        { id: 'learner-3', completedAt: new Date().toISOString() }
+      ]
+    }
+  }
+
+  static async updateAnswer(competitionId, learnerId, questionId, answerData) {
+    const column =
+      learnerId === 'learner1_id'
+        ? '"learner1_answers"'
+        : '"learner2_answers"'
+
+    const { rows } = await postgres.query(
+      `
+      UPDATE ${competitionsTable}
+      SET ${column} = $1,
+          "updated_at" = now()
+      WHERE "competition_id" = $2
+      RETURNING *
+      `,
+      [answerData, competitionId]
+    )
+
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition || null
+  }
+
+  static async checkBothAnswersSubmitted(competitionId, questionId) {
+    const { rows } = await postgres.query(
+      `
+      SELECT "learner1_answers", "learner2_answers"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
+      `,
+      [competitionId]
+    )
+
+    if (!rows.length) {
+      return false
+    }
+
+    const [data] = rows
+    const learner1Submitted = data.learner1_answers?.some((answer) => answer.questionId === questionId)
+    const learner2Submitted = data.learner2_answers?.some((answer) => answer.questionId === questionId)
+
+    return Boolean(learner1Submitted && learner2Submitted)
+  }
+
+  static async updateCurrentQuestion(competitionId, questionNumber) {
+    const { rows } = await postgres.query(
+      `
+      UPDATE ${competitionsTable}
+      SET "current_question" = $1,
+          "updated_at" = now()
+      WHERE "competition_id" = $2
+      RETURNING *
+      `,
+      [questionNumber, competitionId]
+    )
+
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition || null
+  }
+
+  static async determineWinner(competitionId) {
+    const { rows } = await postgres.query(
+      `
+      SELECT "learner1_answers", "learner2_answers"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
+      `,
+      [competitionId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const [data] = rows
+
+    const learner1Score =
+      data.learner1_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+    const learner2Score =
+      data.learner2_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+
+    const winner =
+      learner1Score > learner2Score
+        ? 'Player A'
+        : learner2Score > learner1Score
+        ? 'Player B'
+        : 'Tie'
+
+    return {
+      winner,
+      player1Score: learner1Score,
+      player2Score: learner2Score,
+      player1Rank: learner1Score > learner2Score ? 1 : 2,
+      player2Rank: learner2Score > learner1Score ? 1 : 2,
+      player1Time:
+        data.learner1_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0,
+      player2Time:
+        data.learner2_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
+    }
   }
 
   static async upsertSummary(summary) {
@@ -138,161 +327,44 @@ export class CompetitionModel {
       performance_learner2: summary.performance_learner2 || null,
       score: summary.score ?? null,
       questions_answered: summary.questions_answered ?? null,
+      analytics_snapshot: summary.analytics_snapshot || summary,
       updated_at: new Date().toISOString()
     }
 
-    const { data, error } = await supabase
-      .from(competitions)
-      .update(updatePayload)
-      .eq('competition_id', summary.competition_id)
-      .select('competition_id')
+    const updateQuery = buildUpdateStatement(
+      competitionsTable,
+      updatePayload,
+      `WHERE "competition_id" = $${Object.keys(updatePayload).length + 1}`,
+      [summary.competition_id]
+    )
 
-    if (error) throw error
+    const { rows } = await postgres.query(updateQuery.text, updateQuery.values)
 
-    if (!data || data.length === 0) {
-      const insertPayload = {
-        competition_id: summary.competition_id,
-        course_id: summary.course_id,
-        learner1_id: summary.learner1_id,
-        learner2_id: summary.learner2_id,
-        status: 'completed',
-        timer: summary.timer || null,
-        performance_learner1: summary.performance_learner1 || null,
-        performance_learner2: summary.performance_learner2 || null,
-        score: summary.score ?? null,
-        questions_answered: summary.questions_answered ?? null,
-        created_at: summary.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      const { error: insertError } = await supabase
-        .from(competitions)
-        .insert([insertPayload])
-
-      if (insertError) throw insertError
+    if (rows.length) {
+      const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+      return competition || null
     }
-  }
 
-  // Find eligible learners for competition (completed same course)
-  static async findEligibleLearners(courseId, excludeLearnerId) {
-    // This would integrate with your course completion system
-    // For now, return mock data
-    const { data, error } = await supabase
-      .from('course_completions') // Assuming this table exists
-      .select('learner_id, completed_at')
-      .eq('course_id', courseId)
-      .neq('learner_id', excludeLearnerId)
-      .order('completed_at', { ascending: false })
-      .limit(10)
-    
-    if (error) {
-      // If table doesn't exist, return mock data
-      return [
-        { id: 'learner-1', completedAt: new Date().toISOString() },
-        { id: 'learner-2', completedAt: new Date().toISOString() },
-        { id: 'learner-3', completedAt: new Date().toISOString() }
-      ]
-    }
-    
-    return data.map(item => ({
-      id: item.learner_id,
-      completedAt: item.completed_at
-    }))
-  }
-
-  // Update answer for a specific learner and question
-  static async updateAnswer(competitionId, learnerId, questionId, answerData) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .update({
-        [`learner${learnerId === 'learner1_id' ? '1' : '2'}_answers`]: answerData
-      })
-      .eq('competition_id', competitionId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
-  }
-
-  // Check if both players submitted answers for current question
-  static async checkBothAnswersSubmitted(competitionId, questionId) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select('learner1_answers, learner2_answers')
-      .eq('competition_id', competitionId)
-      .single()
-    
-    if (error) throw error
-    
-    // Check if both learners have submitted answers for the current question
-    const learner1Submitted = data.learner1_answers?.some(answer => answer.questionId === questionId)
-    const learner2Submitted = data.learner2_answers?.some(answer => answer.questionId === questionId)
-    
-    return learner1Submitted && learner2Submitted
-  }
-
-  // Update current question number
-  static async updateCurrentQuestion(competitionId, questionNumber) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .update({ current_question: questionNumber })
-      .eq('competition_id', competitionId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
-  }
-
-  // Determine winner based on scores
-  static async determineWinner(competitionId) {
-    const { data, error } = await supabase
-      .from(competitions)
-      .select('learner1_id, learner2_id, learner1_answers, learner2_answers')
-      .eq('competition_id', competitionId)
-      .single()
-    
-    if (error) throw error
-    
-    // Calculate scores
-    const learner1Score = data.learner1_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
-    const learner2Score = data.learner2_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
-    
-    const winner = learner1Score > learner2Score ? 'Player A' : 
-                   learner2Score > learner1Score ? 'Player B' : 'Tie'
-    
-    return {
-      winner,
-      player1Score: learner1Score,
-      player2Score: learner2Score,
-      player1Rank: learner1Score > learner2Score ? 1 : 2,
-      player2Rank: learner2Score > learner1Score ? 1 : 2,
-      player1Time: data.learner1_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0,
-      player2Time: data.learner2_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
-    }
-  }
-
-  static async upsertSummary(summary) {
-    const payload = {
+    const insertPayload = {
       competition_id: summary.competition_id,
-      course_id: summary.course_id,
-      learner1_id: summary.learner1_id,
-      learner2_id: summary.learner2_id,
-      timer: summary.timer,
-      performance_learner1: summary.performance_learner1,
-      performance_learner2: summary.performance_learner2,
-      score: summary.score,
-      questions_answered: summary.questions_answered,
+      course_id: summary.course_id || null,
+      learner1_id: summary.learner1_id || null,
+      learner2_id: summary.learner2_id || null,
+      status: 'completed',
+      timer: summary.timer || null,
+      performance_learner1: summary.performance_learner1 || null,
+      performance_learner2: summary.performance_learner2 || null,
+      score: summary.score ?? null,
+      questions_answered: summary.questions_answered ?? null,
+      analytics_snapshot: summary.analytics_snapshot || summary,
       created_at: summary.created_at || new Date().toISOString(),
-      analytics_snapshot: summary
+      updated_at: new Date().toISOString()
     }
 
-    const { data, error } = await supabase
-      .from(competitions)
-      .upsert(payload, { onConflict: 'competition_id' })
-      .select()
-
-    if (error) throw error
-    return data?.[0] || payload
+    const insertQuery = buildInsertStatement(competitionsTable, insertPayload)
+    const insertResult = await postgres.query(insertQuery.text, insertQuery.values)
+    const [competition] = await loadCompetitionRelations(insertResult.rows, defaultRelations)
+    return competition || insertPayload
   }
 }
 

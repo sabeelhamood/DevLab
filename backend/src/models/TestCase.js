@@ -1,184 +1,266 @@
-import { supabase, getSupabaseTables } from '../config/database.js'
+import { getSupabaseTables, postgres } from '../config/database.js'
+import {
+  buildInsertStatement,
+  buildPagination,
+  buildUpdateStatement,
+  runCountQuery
+} from '../utils/postgresHelpers.js'
 
-const { testCases } = getSupabaseTables()
+const tables = getSupabaseTables()
+const testCasesTable = postgres.quoteIdentifier(tables.testCases)
+const questionsTable = postgres.quoteIdentifier(tables.questions)
+
+const loadTestCaseRelations = async (testCases = []) => {
+  if (!testCases.length) {
+    return []
+  }
+
+  const questionIds = [
+    ...new Set(
+      testCases
+        .map((testCase) => testCase.question_id)
+        .filter(Boolean)
+    )
+  ]
+
+  let questionsMap = {}
+  if (questionIds.length) {
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${questionsTable} WHERE "question_id" = ANY($1::uuid[])`,
+      [questionIds]
+    )
+
+    questionsMap = rows.reduce((acc, question) => {
+      acc[question.question_id] = question
+      return acc
+    }, {})
+  }
+
+  return testCases.map((testCase) => ({
+    ...testCase,
+    question: testCase.question_id ? questionsMap[testCase.question_id] || null : null
+  }))
+}
 
 export class TestCaseModel {
-  // Create a new test case
   static async create(testCaseData) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .insert([testCaseData])
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildInsertStatement(testCasesTable, testCaseData)
+    const { rows } = await postgres.query(query.text, query.values)
+    const [testCase] = await loadTestCaseRelations(rows)
+    return testCase
   }
 
-  // Get test case by ID
   static async findById(testCaseId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select(`
-        *,
-        question:questions(*)
-      `)
-      .eq('testCase_id', testCaseId)
-      .single()
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${testCasesTable} WHERE "testCase_id" = $1 LIMIT 1`,
+      [testCaseId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const [testCase] = await loadTestCaseRelations(rows)
+    return testCase || null
   }
 
-  // Get all test cases with pagination
   static async findAll(page = 1, limit = 10) {
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const { limit: pageLimit, offset } = buildPagination(page, limit)
 
-    const { data, error, count } = await supabase
-      .from(testCases)
-      .select(`
-        *,
-        question:questions(*)
-      `, { count: 'exact' })
-      .range(from, to)
-    
-    if (error) throw error
+    const [{ rows }, count] = await Promise.all([
+      postgres.query(
+        `
+        SELECT *
+        FROM ${testCasesTable}
+        ORDER BY "created_at" DESC
+        LIMIT $1
+        OFFSET $2
+        `,
+        [pageLimit, offset]
+      ),
+      runCountQuery(testCasesTable)
+    ])
+
+    const data = await loadTestCaseRelations(rows)
     return { data, count }
   }
 
-  // Get test cases by question
   static async findByQuestion(questionId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select('*')
-      .eq('question_id', questionId)
-      .order('testCase_id')
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${testCasesTable}
+      WHERE "question_id" = $1
+      ORDER BY "created_at" ASC
+      `,
+      [questionId]
+    )
+
+    return loadTestCaseRelations(rows)
   }
 
-  // Get test cases by course
   static async findByCourse(courseId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select(`
-        *,
-        question:questions(*)
-      `)
-      .eq('question.course_id', courseId)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT tc.*
+      FROM ${testCasesTable} tc
+      INNER JOIN ${questionsTable} q ON tc."question_id" = q."question_id"
+      WHERE q."course_id" = $1
+      ORDER BY tc."created_at" DESC
+      `,
+      [courseId]
+    )
+
+    return loadTestCaseRelations(rows)
   }
 
-  // Get test cases by topic
   static async findByTopic(topicId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select(`
-        *,
-        question:questions(*)
-      `)
-      .eq('question.topic_id', topicId)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT tc.*
+      FROM ${testCasesTable} tc
+      INNER JOIN ${questionsTable} q ON tc."question_id" = q."question_id"
+      WHERE q."topic_id" = $1
+      ORDER BY tc."created_at" DESC
+      `,
+      [topicId]
+    )
+
+    return loadTestCaseRelations(rows)
   }
 
-  // Update test case
   static async update(testCaseId, updateData) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .update(updateData)
-      .eq('testCase_id', testCaseId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const fields = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    }
+
+    const query = buildUpdateStatement(
+      testCasesTable,
+      fields,
+      `WHERE "testCase_id" = $${Object.keys(fields).length + 1}`,
+      [testCaseId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    const [testCase] = await loadTestCaseRelations(rows)
+    return testCase || null
   }
 
-  // Delete test case
   static async delete(testCaseId) {
-    const { error } = await supabase
-      .from(testCases)
-      .delete()
-      .eq('testCase_id', testCaseId)
-    
-    if (error) throw error
+    await postgres.query(
+      `
+      DELETE FROM ${testCasesTable}
+      WHERE "testCase_id" = $1
+      `,
+      [testCaseId]
+    )
     return true
   }
 
-  // Delete all test cases for a question
   static async deleteByQuestion(questionId) {
-    const { error } = await supabase
-      .from(testCases)
-      .delete()
-      .eq('question_id', questionId)
-    
-    if (error) throw error
+    await postgres.query(
+      `
+      DELETE FROM ${testCasesTable}
+      WHERE "question_id" = $1
+      `,
+      [questionId]
+    )
     return true
   }
 
-  // Create multiple test cases for a question
   static async createMultiple(questionId, testCasesData) {
-    const testCasesWithQuestionId = testCasesData.map(testCase => ({
-      ...testCase,
-      question_id: questionId
-    }))
+    if (!Array.isArray(testCasesData) || testCasesData.length === 0) {
+      return []
+    }
 
-    const { data, error } = await supabase
-      .from(testCases)
-      .insert(testCasesWithQuestionId)
-      .select()
-    
-    if (error) throw error
-    return data
+    const payload = testCasesData.map((testCase) => [
+      questionId,
+      testCase.input ?? null,
+      testCase.expected_output ?? null,
+      testCase.explanation ?? null,
+      testCase.metadata ? JSON.stringify(testCase.metadata) : null
+    ])
+
+    const placeholders = payload
+      .map(
+        (_, index) =>
+          `($${index * 5 + 1}, $${index * 5 + 2}, $${index * 5 + 3}, $${index * 5 + 4}, $${index * 5 + 5})`
+      )
+      .join(', ')
+
+    const values = payload.flat()
+
+    const insertSql = `
+      INSERT INTO ${testCasesTable} (
+        "question_id",
+        "input",
+        "expected_output",
+        "explanation",
+        "metadata"
+      )
+      VALUES ${placeholders}
+      RETURNING *
+    `
+
+    const { rows } = await postgres.query(insertSql, values)
+    return loadTestCaseRelations(rows)
   }
 
-  // Get test cases for code execution
   static async getForExecution(questionId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select('input, expected_output')
-      .eq('question_id', questionId)
-      .order('testCase_id')
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `
+      SELECT "input", "expected_output"
+      FROM ${testCasesTable}
+      WHERE "question_id" = $1
+      ORDER BY "created_at" ASC
+      `,
+      [questionId]
+    )
+
+    return rows
   }
 
-  // Validate test case input/output
   static async validateTestCase(testCaseId, actualOutput) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select('expected_output')
-      .eq('testCase_id', testCaseId)
-      .single()
-    
-    if (error) throw error
-    
-    const isCorrect = data.expected_output === actualOutput
+    const { rows } = await postgres.query(
+      `
+      SELECT "expected_output"
+      FROM ${testCasesTable}
+      WHERE "testCase_id" = $1
+      LIMIT 1
+      `,
+      [testCaseId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const expected = rows[0].expected_output
+    const passed = expected === actualOutput
+
     return {
       testCaseId,
-      expected: data.expected_output,
+      expected,
       actual: actualOutput,
-      passed: isCorrect
+      passed
     }
   }
 
-  // Get test case statistics for a question
   static async getQuestionStats(questionId) {
-    const { data, error } = await supabase
-      .from(testCases)
-      .select('*')
-      .eq('question_id', questionId)
-    
-    if (error) throw error
-    
+    const { rows } = await postgres.query(
+      `
+      SELECT *
+      FROM ${testCasesTable}
+      WHERE "question_id" = $1
+      `,
+      [questionId]
+    )
+
     return {
-      total_test_cases: data.length,
-      test_cases: data
+      total_test_cases: rows.length,
+      test_cases: rows
     }
   }
 }
+

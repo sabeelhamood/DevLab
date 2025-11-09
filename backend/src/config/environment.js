@@ -7,7 +7,6 @@ const getEnvironmentConfig = () => {
     database: {
       supabase: {
         url: process.env['SUPABASE_URL'] || '',
-        key: process.env['SUPABASE_KEY'] || '',
       },
       mongodb: {
         uri: process.env['MONGO_URL'] || '',

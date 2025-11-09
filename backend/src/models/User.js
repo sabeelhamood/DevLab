@@ -1,124 +1,113 @@
-import { supabase, getSupabaseTables } from '../config/database.js'
+import { getSupabaseTables, postgres } from '../config/database.js'
+import {
+  buildInsertStatement,
+  buildUpdateStatement,
+  buildPagination,
+  runCountQuery
+} from '../utils/postgresHelpers.js'
 
 const { userProfiles } = getSupabaseTables()
+const table = postgres.quoteIdentifier(userProfiles)
 
 export class UserProfileModel {
-  // Create a new user profile
   static async create(userData) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .insert([userData])
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const query = buildInsertStatement(table, userData)
+    const { rows } = await postgres.query(query.text, query.values)
+    return rows[0]
   }
 
-  // Get user profile by ID
   static async findById(userId) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
+      [userId]
+    )
+
+    return rows[0] || null
   }
 
-  // Get user profile by email
   static async findByEmail(email) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('*')
-      .eq('email', email)
-      .single()
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${table} WHERE "email" = $1 LIMIT 1`,
+      [email]
+    )
+
+    return rows[0] || null
   }
 
-  // Update user profile
   static async update(userId, updateData) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .update(updateData)
-      .eq('user_id', userId)
-      .select()
-    
-    if (error) throw error
-    return data[0]
+    const fields = {
+      ...updateData,
+      updated_at: new Date().toISOString()
+    }
+
+    const query = buildUpdateStatement(
+      table,
+      fields,
+      `WHERE "user_id" = $${Object.keys(fields).length + 1}`,
+      [userId]
+    )
+
+    const { rows } = await postgres.query(query.text, query.values)
+    return rows[0] || null
   }
 
-  // Delete user profile
   static async delete(userId) {
-    const { error } = await supabase
-      .from(userProfiles)
-      .delete()
-      .eq('user_id', userId)
-    
-    if (error) throw error
+    await postgres.query(
+      `DELETE FROM ${table} WHERE "user_id" = $1`,
+      [userId]
+    )
     return true
   }
 
-  // Get all user profiles with pagination
   static async findAll(page = 1, limit = 10) {
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const { limit: pageLimit, offset } = buildPagination(page, limit)
 
-    const { data, error, count } = await supabase
-      .from(userProfiles)
-      .select('*', { count: 'exact' })
-      .range(from, to)
-    
-    if (error) throw error
-    return { data, count }
+    const [{ rows }, count] = await Promise.all([
+      postgres.query(
+        `SELECT * FROM ${table} ORDER BY "created_at" DESC LIMIT $1 OFFSET $2`,
+        [pageLimit, offset]
+      ),
+      runCountQuery(table)
+    ])
+
+    return { data: rows, count }
   }
 
-  // Get users by organization
   static async findByOrganization(organizationId) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('*')
-      .eq('organizationId', organizationId)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${table} WHERE "organizationId" = $1`,
+      [organizationId]
+    )
+
+    return rows
   }
 
-  // Get users by role
   static async findByRole(role) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('*')
-      .eq('role', role)
-    
-    if (error) throw error
-    return data
+    const { rows } = await postgres.query(
+      `SELECT * FROM ${table} WHERE "role" = $1`,
+      [role]
+    )
+
+    return rows
   }
 
-  // Get completed courses for a user
   static async getCompletedCourses(userId) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('completed_courses')
-      .eq('user_id', userId)
-      .single()
-    
-    if (error) throw error
-    return data.completed_courses || []
+    const { rows } = await postgres.query(
+      `SELECT "completed_courses" FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
+      [userId]
+    )
+
+    return rows[0]?.completed_courses ?? []
   }
 
-  // Get active courses for a user
   static async getActiveCourses(userId) {
-    const { data, error } = await supabase
-      .from(userProfiles)
-      .select('active_courses')
-      .eq('user_id', userId)
-      .single()
-    
-    if (error) throw error
-    return data.active_courses || []
+    const { rows } = await postgres.query(
+      `SELECT "active_courses" FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
+      [userId]
+    )
+
+    return rows[0]?.active_courses ?? []
   }
 }
+
 

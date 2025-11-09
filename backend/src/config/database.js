@@ -1,22 +1,33 @@
-import { createClient } from '@supabase/supabase-js'
 import { MongoClient } from 'mongodb'
+import { Pool } from 'pg'
 
-// PostgreSQL (Supabase) Configuration
-export const supabaseConfig = {
-  url: process.env.SUPABASE_URL,
-  key: process.env.SUPABASE_KEY
-}
+const connectionString = process.env.SUPABASE_URL
 
-const supabaseUrl = supabaseConfig.url
-const supabaseKey = supabaseConfig.key
-
-if (!supabaseUrl || !supabaseKey) {
+if (!connectionString) {
   throw new Error(
-    'Supabase environment variables missing. Ensure SUPABASE_URL and SUPABASE_KEY are set in Railway.'
+    'Supabase connection string missing. Ensure SUPABASE_URL is set in Railway (postgresql://<user>:<password>@<host>:<port>/<database>).'
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+const sslRequired = /sslmode=require/i.test(connectionString)
+
+const pool = new Pool({
+  connectionString,
+  ssl: sslRequired ? { rejectUnauthorized: false } : undefined
+})
+
+pool.on('error', (error) => {
+  console.error('❌ Unexpected PostgreSQL error:', error)
+})
+
+const quoteIdentifier = (identifier = '') => `"${identifier.replace(/"/g, '""')}"`
+
+export const postgres = {
+  pool,
+  query: (text, params) => pool.query(text, params),
+  getClient: () => pool.connect(),
+  quoteIdentifier
+}
 
 // MongoDB Atlas Configuration
 const mongoUri = process.env.MONGO_URL

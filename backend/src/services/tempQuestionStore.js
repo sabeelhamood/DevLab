@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { supabase } from '../config/database.js'
+import { postgres } from '../config/database.js'
 
 export const createRequestId = () => randomUUID()
 
@@ -41,54 +41,78 @@ export const saveTempQuestions = async ({
     updated_at: new Date().toISOString()
   }
 
-  const { error } = await supabase
-    .from('temp_questions')
-    .upsert(record, { onConflict: 'request_id' })
-
-  if (error) {
-    throw error
-  }
+  await postgres.query(
+    `
+    INSERT INTO "temp_questions" (
+      "id",
+      "request_id",
+      "question",
+      "hints",
+      "test_cases",
+      "status",
+      "created_at",
+      "updated_at"
+    )
+    VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, now(), $7)
+    ON CONFLICT ("request_id")
+    DO UPDATE SET
+      "question" = EXCLUDED."question",
+      "hints" = EXCLUDED."hints",
+      "test_cases" = EXCLUDED."test_cases",
+      "status" = EXCLUDED."status",
+      "updated_at" = EXCLUDED."updated_at"
+    `,
+    [
+      record.id,
+      record.request_id,
+      JSON.stringify(record.question),
+      JSON.stringify(record.hints),
+      JSON.stringify(record.test_cases),
+      record.status,
+      record.updated_at
+    ]
+  )
 }
 
 export const confirmTempQuestions = async ({ requestId }) => {
   const timestamp = new Date().toISOString()
-  const { data, error } = await supabase
-    .from('temp_questions')
-    .update({ status: 'confirmed', updated_at: timestamp })
-    .eq('request_id', requestId)
-    .select('id')
+  const { rows } = await postgres.query(
+    `
+    UPDATE "temp_questions"
+    SET "status" = 'confirmed',
+        "updated_at" = $2
+    WHERE "request_id" = $1
+    RETURNING "id"
+    `,
+    [requestId, timestamp]
+  )
 
-  if (error) {
-    throw error
-  }
-
-  if (!data || data.length === 0) {
+  if (!rows.length) {
     return false
   }
 
-  const { error: deleteError } = await supabase
-    .from('temp_questions')
-    .delete()
-    .eq('request_id', requestId)
-
-  if (deleteError) {
-    throw deleteError
-  }
+  await postgres.query(
+    `
+    DELETE FROM "temp_questions"
+    WHERE "request_id" = $1
+    `,
+    [requestId]
+  )
 
   return true
 }
 
 export const getTempQuestionById = async (requestId) => {
-  const { data, error } = await supabase
-    .from('temp_questions')
-    .select('*')
-    .eq('request_id', requestId)
-    .maybeSingle()
+  const { rows } = await postgres.query(
+    `
+    SELECT *
+    FROM "temp_questions"
+    WHERE "request_id" = $1
+    LIMIT 1
+    `,
+    [requestId]
+  )
 
-  if (error) {
-    throw error
-  }
-
-  return data
+  return rows[0] || null
 }
 
