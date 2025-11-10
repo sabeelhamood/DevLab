@@ -1,10 +1,27 @@
 import { connectMongoDB, postgres, getMongoDB } from './database.js'
 
+const toRegClass = (tableName) => `public."${tableName}"`
+
+const tableExists = async (client, tableName) => {
+  const { rows } = await client.query(
+    `SELECT to_regclass($1) AS oid`,
+    [toRegClass(tableName)]
+  )
+  return Boolean(rows[0]?.oid)
+}
+
 const ensureExtension = async (client) => {
   await client.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`)
 }
 
-const foreignKeyStatement = (constraintName, table, column, referencedTable, referencedColumn, onDelete = 'NO ACTION') => `
+const foreignKeyStatement = (
+  constraintName,
+  table,
+  column,
+  referencedTable,
+  referencedColumn,
+  onDelete = 'NO ACTION'
+) => `
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -20,6 +37,86 @@ BEGIN
   END IF;
 END $$;
 `
+
+const cleanupLegacyUserProfiles = async (client) => {
+  if (!(await tableExists(client, 'userProfiles'))) {
+    return
+}
+
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'userProfiles'
+          AND column_name = 'user_id'
+      ) THEN
+        ALTER TABLE "userProfiles" RENAME COLUMN "user_id" TO "learner_id";
+      END IF;
+    END $$;
+  `)
+
+  await client.query(`ALTER TABLE "userProfiles" ADD COLUMN IF NOT EXISTS "learner_name" text;`)
+  await client.query(`ALTER TABLE "userProfiles" ADD COLUMN IF NOT EXISTS "created_at" timestamptz NOT NULL DEFAULT now();`)
+  await client.query(`ALTER TABLE "userProfiles" ADD COLUMN IF NOT EXISTS "updated_at" timestamptz NOT NULL DEFAULT now();`)
+  await client.query(`ALTER TABLE "userProfiles" ALTER COLUMN "learner_id" SET NOT NULL;`)
+
+  const legacyColumns = [
+    'name',
+    'email',
+    'role',
+    'organizationId',
+    'completed_courses',
+    'active_courses'
+  ]
+
+  for (const column of legacyColumns) {
+    await client.query(`ALTER TABLE "userProfiles" DROP COLUMN IF EXISTS "${column}";`)
+  }
+
+  const legacyIndexes = [
+    'userprofiles_email_key',
+    'userprofiles_role_idx',
+    'userprofiles_organization_idx'
+  ]
+
+  for (const index of legacyIndexes) {
+    await client.query(`DROP INDEX IF EXISTS ${index};`)
+  }
+
+  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userProfiles_pkey";`)
+  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userprofiles_pkey";`)
+  await client.query(`ALTER TABLE "userProfiles" ADD PRIMARY KEY ("learner_id");`)
+}
+
+const cleanupCourseCompletions = async (client) => {
+  if (!(await tableExists(client, 'course_completions'))) {
+    return
+  }
+
+  const removableColumns = ['id', 'source', 'metadata', 'created_at', 'recorded_at']
+  for (const column of removableColumns) {
+    await client.query(`ALTER TABLE "course_completions" DROP COLUMN IF EXISTS "${column}";`)
+  }
+
+  await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "learner_id" uuid;`)
+  await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_id" text;`)
+  await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "completed_at" timestamptz NOT NULL DEFAULT now();`)
+
+  await client.query(`ALTER TABLE "course_completions" ALTER COLUMN "learner_id" SET NOT NULL;`)
+  await client.query(`ALTER TABLE "course_completions" ALTER COLUMN "course_id" SET NOT NULL;`)
+  await client.query(`ALTER TABLE "course_completions" ALTER COLUMN "completed_at" SET NOT NULL;`)
+  await client.query(`ALTER TABLE "course_completions" ALTER COLUMN "completed_at" SET DEFAULT now();`)
+
+  await client.query(`ALTER TABLE "course_completions" DROP CONSTRAINT IF EXISTS "course_completions_pkey";`)
+  await client.query(`ALTER TABLE "course_completions" ADD PRIMARY KEY ("learner_id", "course_id", "completed_at");`)
+}
+
+const dropLegacyCompetitionTable = async (client) => {
+  await client.query(`DROP TABLE IF EXISTS "competition_participation" CASCADE;`)
+}
 
 const tableStatements = [
   {
@@ -332,7 +429,9 @@ const ensureSupabaseCoreTables = async () => {
   try {
     await client.query('BEGIN')
     await ensureExtension(client)
-    await client.query('DROP TABLE IF EXISTS "competition_participation" CASCADE;')
+    await cleanupLegacyUserProfiles(client)
+    await cleanupCourseCompletions(client)
+    await dropLegacyCompetitionTable(client)
 
     for (const table of tableStatements) {
       await client.query(table.create)
