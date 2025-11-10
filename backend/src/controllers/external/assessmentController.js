@@ -1,10 +1,10 @@
 import { geminiService } from '../../services/gemini.js'
-import { mockMicroservices } from '../../services/mockMicroservices.js'
 import {
   createRequestId,
   saveTempQuestions,
   confirmTempQuestions
 } from '../../services/tempQuestionStore.js'
+import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 
 const DIFFICULTY_SEQUENCE = [
   'basic',
@@ -16,6 +16,29 @@ const DIFFICULTY_SEQUENCE = [
   'expert'
 ]
 
+const DEFAULT_THEORETICAL_DIFFICULTY = 'intermediate'
+
+const parseSkills = (value) => {
+  if (!value) {
+    return []
+  }
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return [value]
+    }
+  }
+
+  return []
+}
+
 const buildDifficultyLadder = (count) => {
   if (!count || count <= 0) return []
   return Array.from({ length: count }, (_, index) =>
@@ -26,32 +49,59 @@ const buildDifficultyLadder = (count) => {
 export const assessmentController = {
   async getTheoreticalQuestions(req, res) {
     try {
-      const questions = [
-        {
-          id: 'tq-1',
-          title: 'What is Python?',
-          description: 'Explain what Python is and its main features.',
-          type: 'theoretical',
-          difficulty: 'beginner',
-          courseId: '1',
-          topicId: '1'
-        }
-      ]
+      const payload = {
+        topic_id: req.body?.topic_id || req.query?.topic_id || req.body?.topicId || req.query?.topicId,
+        topic_name:
+          req.body?.topic_name ||
+          req.query?.topic_name ||
+          req.body?.topicName ||
+          req.query?.topicName,
+        amount: Number(
+          req.body?.amount ??
+            req.query?.amount ??
+            req.body?.number_of_questions ??
+            req.query?.number_of_questions ??
+            1
+        ),
+        difficulty:
+          req.body?.difficulty ||
+          req.query?.difficulty ||
+          DEFAULT_THEORETICAL_DIFFICULTY,
+        humanLanguage:
+          req.body?.humanLanguage || req.query?.humanLanguage || 'en',
+        nanoSkills:
+          parseSkills(
+            req.body?.nano_skills ||
+              req.body?.nanoSkills ||
+              req.query?.nano_skills ||
+              req.query?.nanoSkills
+          ),
+        microSkills:
+          parseSkills(
+            req.body?.micro_skills ||
+              req.body?.microSkills ||
+              req.query?.micro_skills ||
+              req.query?.microSkills
+          )
+      }
 
-      const requestId = createRequestId()
+      if (!payload.topic_id || !payload.topic_name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields: topic_id, topic_name'
+        })
+      }
 
-      await saveTempQuestions({
-        requestId,
-        requesterService: 'assessment',
-        action: 'theoretical',
-        questions,
-        metadata: {
-          source: 'assessment',
-          question_type: 'theoretical'
+      const questions = await fetchAssessmentTheoreticalQuestions(payload)
+
+      res.json({
+        success: true,
+        data: {
+          topic_id: payload.topic_id,
+          topic_name: payload.topic_name,
+          questions
         }
       })
-
-      res.json({ success: true, request_id: requestId, data: questions })
     } catch (error) {
       res.status(500).json({ success: false, error: error.message })
     }

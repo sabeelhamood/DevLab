@@ -1,11 +1,11 @@
 import express from 'express'
-import { mockMicroservices } from '../../services/mockMicroservices.js'
 import { geminiService } from '../../services/gemini.js'
 import {
   createRequestId,
   saveTempQuestions,
   confirmTempQuestions
 } from '../../services/tempQuestionStore.js'
+import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 
 const router = express.Router()
 
@@ -135,21 +135,32 @@ const fetchTheoreticalQuestionsFromAssessment = async ({
   microSkills
 }) => {
   try {
-    const questions =
-      mockMicroservices.assessmentService.generateQuestions(
-        topic_id,
-        amount,
-        DEFAULT_DIFFICULTY
-      ) || []
+    const assessmentQuestions = await fetchAssessmentTheoreticalQuestions({
+      topic_id,
+      topic_name,
+      amount,
+      difficulty: DEFAULT_DIFFICULTY,
+      humanLanguage,
+      nanoSkills,
+      microSkills
+    })
 
-    return questions.map((item, index) =>
+    return (assessmentQuestions || []).map((item, index) =>
       toAjaxTheoreticalQuestion({
-        id: `theoretical_${topic_id}_${index + 1}`,
-        question: item.question_content,
-        topicId: topic_id,
-        topicName: topic_name,
+        id:
+          item.id ||
+          item.question_id ||
+          `theoretical_${topic_id}_${index + 1}`,
+        question:
+          item.question_content ||
+          item.question ||
+          item.title ||
+          item.description ||
+          '',
+        topicId: item.topic_id || topic_id,
+        topicName: item.topic_name || topic_name,
         humanLanguage,
-        expectedAnswer: item.expected_answer || null,
+        expectedAnswer: item.expected_answer || item.expectedAnswer || null,
         nanoSkills,
         microSkills
       })
