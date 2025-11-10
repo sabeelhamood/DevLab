@@ -1,15 +1,5 @@
 import { connectMongoDB, postgres, getMongoDB } from './database.js'
 
-const toRegClass = (tableName) => `public."${tableName}"`
-
-const tableExists = async (client, tableName) => {
-  const { rows } = await client.query(
-    `SELECT to_regclass($1) AS oid`,
-    [toRegClass(tableName)]
-  )
-  return Boolean(rows[0]?.oid)
-}
-
 const ensureExtension = async (client) => {
   await client.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`)
 }
@@ -38,10 +28,125 @@ BEGIN
 END $$;
 `
 
+const tableExists = async (client, tableName) => {
+  const { rows } = await client.query(
+    `
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = $1
+    ) AS exists
+    `,
+    [tableName]
+  )
+
+  return Boolean(rows[0]?.exists)
+}
+
+const getTableColumns = async (client, tableName) => {
+  const { rows } = await client.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = $1
+    `,
+    [tableName]
+  )
+
+  return rows.map((row) => row.column_name)
+}
+
+const dropConstraintIfPresent = async (client, tableName, constraintName) => {
+  if (!(await tableExists(client, tableName))) {
+    return
+}
+
+  await client.query(`ALTER TABLE "${tableName}" DROP CONSTRAINT IF EXISTS "${constraintName}";`)
+}
+
+const dropUserProfileForeignKeys = async (client) => {
+  const constraints = [
+    { table: 'courses', constraint: 'courses_trainer_id_fkey' },
+    { table: 'practices', constraint: 'practices_learner_id_fkey' },
+    { table: 'competition_participation', constraint: 'competition_participation_learner1_id_fkey' },
+    { table: 'competition_participation', constraint: 'competition_participation_learner2_id_fkey' },
+    { table: 'competition_participation', constraint: 'competition_participation_winner_id_fkey' },
+    { table: 'competitions', constraint: 'competitions_learner1_id_fkey' },
+    { table: 'competitions', constraint: 'competitions_learner2_id_fkey' },
+    { table: 'competitions', constraint: 'competitions_winner_id_fkey' }
+  ]
+
+  for (const { table, constraint } of constraints) {
+    await dropConstraintIfPresent(client, table, constraint)
+  }
+}
+
+const expectedCompetitionColumns = [
+  'competition_id',
+  'course_name',
+  'course_id',
+  'learner1_id',
+  'learner2_id',
+  'winner_id',
+  'learner1_score',
+  'learner2_score',
+  'learner1_timer',
+  'learner2_timer',
+  'timer',
+  'status',
+  'result',
+  'performance_learner1',
+  'performance_learner2',
+  'score',
+  'questions_answered',
+  'question_count',
+  'time_limit',
+  'questions',
+  'learner1_answers',
+  'learner2_answers',
+  'current_question',
+  'analytics_snapshot',
+  'created_at',
+  'updated_at'
+]
+
+const competitionsNeedsReset = async (client) => {
+  if (!(await tableExists(client, 'competitions'))) {
+    return false
+  }
+
+  const columns = new Set(await getTableColumns(client, 'competitions'))
+  const expected = new Set(expectedCompetitionColumns)
+
+  if (columns.size !== expected.size) {
+    return true
+  }
+
+  for (const column of expected) {
+    if (!columns.has(column)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+const resetCompetitionsTable = async (client) => {
+  if (await competitionsNeedsReset(client)) {
+    await client.query(`DROP TABLE IF EXISTS "competitions" CASCADE;`)
+  }
+
+  await client.query(`DROP TABLE IF EXISTS "competition_participation" CASCADE;`)
+}
+
 const cleanupLegacyUserProfiles = async (client) => {
   if (!(await tableExists(client, 'userProfiles'))) {
     return
-}
+  }
+
+  await dropUserProfileForeignKeys(client)
 
   await client.query(`
     DO $$
@@ -86,8 +191,8 @@ const cleanupLegacyUserProfiles = async (client) => {
     await client.query(`DROP INDEX IF EXISTS ${index};`)
   }
 
-  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userProfiles_pkey";`)
-  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userprofiles_pkey";`)
+  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userProfiles_pkey" CASCADE;`)
+  await client.query(`ALTER TABLE "userProfiles" DROP CONSTRAINT IF EXISTS "userprofiles_pkey" CASCADE;`)
   await client.query(`ALTER TABLE "userProfiles" ADD PRIMARY KEY ("learner_id");`)
 }
 
@@ -429,9 +534,9 @@ const ensureSupabaseCoreTables = async () => {
   try {
     await client.query('BEGIN')
     await ensureExtension(client)
+    await resetCompetitionsTable(client)
     await cleanupLegacyUserProfiles(client)
     await cleanupCourseCompletions(client)
-    await dropLegacyCompetitionTable(client)
 
     for (const table of tableStatements) {
       await client.query(table.create)
