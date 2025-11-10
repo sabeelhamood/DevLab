@@ -25,22 +25,12 @@ const tableStatements = [
   {
     create: `
       CREATE TABLE IF NOT EXISTS "userProfiles" (
-        "user_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "name" text NOT NULL,
-        "email" text NOT NULL,
-        "role" text NOT NULL DEFAULT 'learner',
-        "organizationId" uuid,
-        "completed_courses" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "active_courses" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "learner_id" uuid PRIMARY KEY,
+        "metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
         "created_at" timestamptz NOT NULL DEFAULT now(),
         "updated_at" timestamptz NOT NULL DEFAULT now()
       );
-    `,
-    indexes: [
-      `CREATE UNIQUE INDEX IF NOT EXISTS userprofiles_email_key ON "userProfiles" ("email");`,
-      `CREATE INDEX IF NOT EXISTS userprofiles_role_idx ON "userProfiles" ("role");`,
-      `CREATE INDEX IF NOT EXISTS userprofiles_organization_idx ON "userProfiles" ("organizationId");`
-    ]
+    `
   },
   {
     create: `
@@ -66,7 +56,7 @@ const tableStatements = [
         '"courses"',
         '"trainer_id"',
         '"userProfiles"',
-        '"user_id"',
+        '"learner_id"',
         'SET NULL'
       )
     ]
@@ -127,7 +117,7 @@ const tableStatements = [
         '"practices"',
         '"learner_id"',
         '"userProfiles"',
-        '"user_id"',
+        '"learner_id"',
         'CASCADE'
       ),
       foreignKeyStatement(
@@ -269,7 +259,7 @@ const tableStatements = [
         '"competitions"',
         '"learner1_id"',
         '"userProfiles"',
-        '"user_id"',
+        '"learner_id"',
         'SET NULL'
       ),
       foreignKeyStatement(
@@ -277,8 +267,87 @@ const tableStatements = [
         '"competitions"',
         '"learner2_id"',
         '"userProfiles"',
-        '"user_id"',
+        '"learner_id"',
         'SET NULL'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "course_completions" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "learner_id" uuid NOT NULL,
+        "course_id" uuid NOT NULL,
+        "completed_at" timestamptz NOT NULL,
+        "source" text,
+        "metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS course_completions_learner_id_idx ON "course_completions" ("learner_id");`,
+      `CREATE INDEX IF NOT EXISTS course_completions_course_id_idx ON "course_completions" ("course_id");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'course_completions_learner_id_fkey',
+        '"course_completions"',
+        '"learner_id"',
+        '"userProfiles"',
+        '"learner_id"',
+        'CASCADE'
+      ),
+      foreignKeyStatement(
+        'course_completions_course_id_fkey',
+        '"course_completions"',
+        '"course_id"',
+        '"courses"',
+        '"course_id"',
+        'CASCADE'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "competition_participation" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "competition_id" uuid NOT NULL,
+        "course_id" uuid,
+        "learner_id" uuid NOT NULL,
+        "role" text,
+        "metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS competition_participation_competition_idx ON "competition_participation" ("competition_id");`,
+      `CREATE INDEX IF NOT EXISTS competition_participation_learner_idx ON "competition_participation" ("learner_id");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'competition_participation_competition_id_fkey',
+        '"competition_participation"',
+        '"competition_id"',
+        '"competitions"',
+        '"competition_id"',
+        'CASCADE'
+      ),
+      foreignKeyStatement(
+        'competition_participation_course_id_fkey',
+        '"competition_participation"',
+        '"course_id"',
+        '"courses"',
+        '"course_id"',
+        'SET NULL'
+      ),
+      foreignKeyStatement(
+        'competition_participation_learner_id_fkey',
+        '"competition_participation"',
+        '"learner_id"',
+        '"userProfiles"',
+        '"learner_id"',
+        'CASCADE'
       )
     ]
   }

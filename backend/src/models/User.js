@@ -6,55 +6,61 @@ import {
   runCountQuery
 } from '../utils/postgresHelpers.js'
 
-const { userProfiles } = getSupabaseTables()
-const table = postgres.quoteIdentifier(userProfiles)
+const tables = getSupabaseTables()
+const profileTable = postgres.quoteIdentifier(tables.userProfiles)
+const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions)
 
 export class UserProfileModel {
   static async create(userData) {
-    const query = buildInsertStatement(table, userData)
+    if (!userData?.learner_id) {
+      throw new Error('learner_id is required to create a user profile')
+    }
+
+    const payload = {
+      learner_id: userData.learner_id,
+      metadata: userData.metadata ?? {}
+    }
+
+    const query = buildInsertStatement(profileTable, payload)
     const { rows } = await postgres.query(query.text, query.values)
     return rows[0]
   }
 
-  static async findById(userId) {
+  static async findById(learnerId) {
     const { rows } = await postgres.query(
-      `SELECT * FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
-      [userId]
+      `SELECT * FROM ${profileTable} WHERE "learner_id" = $1 LIMIT 1`,
+      [learnerId]
     )
 
     return rows[0] || null
   }
 
-  static async findByEmail(email) {
-    const { rows } = await postgres.query(
-      `SELECT * FROM ${table} WHERE "email" = $1 LIMIT 1`,
-      [email]
-    )
-
-    return rows[0] || null
-  }
-
-  static async update(userId, updateData) {
+  static async update(learnerId, updateData) {
     const fields = {
-      ...updateData,
+      ...(updateData?.metadata !== undefined ? { metadata: updateData.metadata } : {}),
       updated_at: new Date().toISOString()
     }
 
+    if (Object.keys(fields).length === 1 && fields.updated_at) {
+      // nothing to update besides timestamp
+      return this.findById(learnerId)
+    }
+
     const query = buildUpdateStatement(
-      table,
+      profileTable,
       fields,
-      `WHERE "user_id" = $${Object.keys(fields).length + 1}`,
-      [userId]
+      `WHERE "learner_id" = $${Object.keys(fields).length + 1}`,
+      [learnerId]
     )
 
     const { rows } = await postgres.query(query.text, query.values)
     return rows[0] || null
   }
 
-  static async delete(userId) {
+  static async delete(learnerId) {
     await postgres.query(
-      `DELETE FROM ${table} WHERE "user_id" = $1`,
-      [userId]
+      `DELETE FROM ${profileTable} WHERE "learner_id" = $1`,
+      [learnerId]
     )
     return true
   }
@@ -64,49 +70,27 @@ export class UserProfileModel {
 
     const [{ rows }, count] = await Promise.all([
       postgres.query(
-        `SELECT * FROM ${table} ORDER BY "created_at" DESC LIMIT $1 OFFSET $2`,
+        `SELECT * FROM ${profileTable} ORDER BY "created_at" DESC LIMIT $1 OFFSET $2`,
         [pageLimit, offset]
       ),
-      runCountQuery(table)
+      runCountQuery(profileTable)
     ])
 
     return { data: rows, count }
   }
 
-  static async findByOrganization(organizationId) {
+  static async getCompletedCourses(learnerId) {
     const { rows } = await postgres.query(
-      `SELECT * FROM ${table} WHERE "organizationId" = $1`,
-      [organizationId]
+      `
+      SELECT "course_id", "completed_at", "source", "metadata"
+      FROM ${courseCompletionsTable}
+      WHERE "learner_id" = $1
+      ORDER BY "completed_at" DESC
+      `,
+      [learnerId]
     )
 
     return rows
-  }
-
-  static async findByRole(role) {
-    const { rows } = await postgres.query(
-      `SELECT * FROM ${table} WHERE "role" = $1`,
-      [role]
-    )
-
-    return rows
-  }
-
-  static async getCompletedCourses(userId) {
-    const { rows } = await postgres.query(
-      `SELECT "completed_courses" FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
-      [userId]
-    )
-
-    return rows[0]?.completed_courses ?? []
-  }
-
-  static async getActiveCourses(userId) {
-    const { rows } = await postgres.query(
-      `SELECT "active_courses" FROM ${table} WHERE "user_id" = $1 LIMIT 1`,
-      [userId]
-    )
-
-    return rows[0]?.active_courses ?? []
   }
 }
 

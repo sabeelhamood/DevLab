@@ -28,12 +28,12 @@ const attachRelations = async (courses = []) => {
   let trainersMap = {}
   if (trainerIds.length) {
     const { rows } = await postgres.query(
-      `SELECT * FROM ${usersTable} WHERE "user_id" = ANY($1::uuid[])`,
+      `SELECT * FROM ${usersTable} WHERE "learner_id" = ANY($1::uuid[])`,
       [trainerIds]
     )
 
     trainersMap = rows.reduce((acc, row) => {
-      acc[row.user_id] = row
+      acc[row.learner_id] = row
       return acc
     }, {})
   }

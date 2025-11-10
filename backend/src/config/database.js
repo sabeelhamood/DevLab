@@ -80,7 +80,9 @@ export const getSupabaseTables = () => {
     topics: 'topics',
     questions: 'questions',
     testCases: 'testCases',
-    practices: 'practices'
+    practices: 'practices',
+    courseCompletions: 'course_completions',
+    competitionParticipation: 'competition_participation'
   }
 }
 

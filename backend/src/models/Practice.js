@@ -45,12 +45,12 @@ const loadPracticeRelations = async (practices = [], options = {}) => {
   let learnersMap = {}
   if (options.includeLearner && learnerIds.length) {
     const { rows } = await postgres.query(
-      `SELECT * FROM ${usersTable} WHERE "user_id" = ANY($1::uuid[])`,
+      `SELECT * FROM ${usersTable} WHERE "learner_id" = ANY($1::uuid[])`,
       [learnerIds]
     )
 
     learnersMap = rows.reduce((acc, learner) => {
-      acc[learner.user_id] = learner
+      acc[learner.learner_id] = learner
       return acc
     }, {})
   }

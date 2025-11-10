@@ -39,7 +39,7 @@ export const courseBuilderController = {
       const eligibleLearners =
         competitionService?.getEligibleLearners?.(course_id) || []
 
-      const opponent = eligibleLearners.find((entry) => entry.user_id !== learner_id) || null
+      const opponent = eligibleLearners.find((entry) => entry.id !== learner_id) || null
 
       // Create competition invitation asynchronously (mocked)
       const invitation =
@@ -63,7 +63,7 @@ export const courseBuilderController = {
             competitionId,
             courseId: course_id,
             learnerId: learner_id,
-            opponentId: opponent?.user_id,
+            opponentId: opponent?.id,
             createdAt
           })
         )

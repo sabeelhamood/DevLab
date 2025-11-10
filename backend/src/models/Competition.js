@@ -10,6 +10,7 @@ const tables = getSupabaseTables()
 const competitionsTable = postgres.quoteIdentifier(tables.competitions)
 const coursesTable = postgres.quoteIdentifier(tables.courses)
 const usersTable = postgres.quoteIdentifier(tables.userProfiles)
+const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions)
 
 const loadCompetitionRelations = async (competitions = []) => {
   if (!competitions.length) {
@@ -48,12 +49,12 @@ const loadCompetitionRelations = async (competitions = []) => {
   let learnersMap = {}
   if (learnerIds.length) {
     const { rows } = await postgres.query(
-      `SELECT * FROM ${usersTable} WHERE "user_id" = ANY($1::uuid[])`,
+      `SELECT * FROM ${usersTable} WHERE "learner_id" = ANY($1::uuid[])`,
       [learnerIds]
     )
 
     learnersMap = rows.reduce((acc, learner) => {
-      acc[learner.user_id] = learner
+      acc[learner.learner_id] = learner
       return acc
     }, {})
   }
@@ -197,7 +198,7 @@ export class CompetitionModel {
       const { rows } = await postgres.query(
         `
         SELECT "learner_id", "completed_at"
-        FROM "course_completions"
+        FROM ${courseCompletionsTable}
         WHERE "course_id" = $1 AND "learner_id" <> $2
         ORDER BY "completed_at" DESC
         LIMIT 10
