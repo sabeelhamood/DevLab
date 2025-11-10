@@ -75,14 +75,13 @@ export const getCollections = () => {
 export const getSupabaseTables = () => {
   return {
     userProfiles: 'userProfiles',
-    competitions: 'competition_participation',
+    competitions: 'competitions',
     courses: 'courses',
     topics: 'topics',
     questions: 'questions',
     testCases: 'testCases',
     practices: 'practices',
-    courseCompletions: 'course_completions',
-    competitionParticipation: 'competition_participation'
+    courseCompletions: 'course_completions'
   }
 }
 

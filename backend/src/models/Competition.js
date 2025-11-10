@@ -7,7 +7,7 @@ import {
 } from '../utils/postgresHelpers.js'
 
 const tables = getSupabaseTables()
-const competitionTableName = tables.competitionParticipation || tables.competitions
+const competitionTableName = tables.competitions
 const competitionsTable = postgres.quoteIdentifier(competitionTableName)
 const usersTable = postgres.quoteIdentifier(tables.userProfiles)
 const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions)

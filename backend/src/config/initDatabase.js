@@ -41,8 +41,7 @@ const tableStatements = [
         "learner_id" uuid NOT NULL,
         "course_id" text NOT NULL,
         "completed_at" timestamptz NOT NULL DEFAULT now(),
-        "recorded_at" timestamptz NOT NULL DEFAULT now(),
-        PRIMARY KEY ("learner_id", "course_id")
+        PRIMARY KEY ("learner_id", "course_id", "completed_at")
       );
     `,
     indexes: [
@@ -62,7 +61,7 @@ const tableStatements = [
   },
   {
     create: `
-      CREATE TABLE IF NOT EXISTS "competition_participation" (
+      CREATE TABLE IF NOT EXISTS "competitions" (
         "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "course_name" text,
         "course_id" text,
@@ -73,8 +72,8 @@ const tableStatements = [
         "learner2_score" numeric,
         "learner1_timer" integer,
         "learner2_timer" integer,
+        "timer" integer,
         "status" text NOT NULL DEFAULT 'pending',
-        "timer" text,
         "result" jsonb,
         "performance_learner1" jsonb,
         "performance_learner2" jsonb,
@@ -92,35 +91,220 @@ const tableStatements = [
       );
     `,
     indexes: [
-      `CREATE INDEX IF NOT EXISTS competition_participation_course_id_idx ON "competition_participation" ("course_id");`,
-      `CREATE INDEX IF NOT EXISTS competition_participation_learner1_idx ON "competition_participation" ("learner1_id");`,
-      `CREATE INDEX IF NOT EXISTS competition_participation_learner2_idx ON "competition_participation" ("learner2_id");`,
-      `CREATE INDEX IF NOT EXISTS competition_participation_winner_idx ON "competition_participation" ("winner_id");`
+      `CREATE INDEX IF NOT EXISTS competitions_course_id_idx ON "competitions" ("course_id");`,
+      `CREATE INDEX IF NOT EXISTS competitions_learner1_id_idx ON "competitions" ("learner1_id");`,
+      `CREATE INDEX IF NOT EXISTS competitions_learner2_id_idx ON "competitions" ("learner2_id");`,
+      `CREATE INDEX IF NOT EXISTS competitions_winner_id_idx ON "competitions" ("winner_id");`
     ],
     foreignKeys: [
       foreignKeyStatement(
-        'competition_participation_learner1_id_fkey',
-        '"competition_participation"',
+        'competitions_learner1_id_fkey',
+        '"competitions"',
         '"learner1_id"',
         '"userProfiles"',
         '"learner_id"',
         'CASCADE'
       ),
       foreignKeyStatement(
-        'competition_participation_learner2_id_fkey',
-        '"competition_participation"',
+        'competitions_learner2_id_fkey',
+        '"competitions"',
         '"learner2_id"',
         '"userProfiles"',
         '"learner_id"',
         'SET NULL'
       ),
       foreignKeyStatement(
-        'competition_participation_winner_id_fkey',
-        '"competition_participation"',
+        'competitions_winner_id_fkey',
+        '"competitions"',
         '"winner_id"',
         '"userProfiles"',
         '"learner_id"',
         'SET NULL'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "courses" (
+        "course_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "trainer_id" uuid,
+        "title" text NOT NULL,
+        "description" text,
+        "level" text NOT NULL DEFAULT 'beginner',
+        "ai_feedback" jsonb,
+        "metadata" jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS courses_trainer_id_idx ON "courses" ("trainer_id");`,
+      `CREATE INDEX IF NOT EXISTS courses_level_idx ON "courses" ("level");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'courses_trainer_id_fkey',
+        '"courses"',
+        '"trainer_id"',
+        '"userProfiles"',
+        '"learner_id"',
+        'SET NULL'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "topics" (
+        "topic_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "course_id" uuid NOT NULL,
+        "topic_name" text NOT NULL,
+        "nano_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "macro_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "summary" text,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS topics_course_id_idx ON "topics" ("course_id");`,
+      `CREATE INDEX IF NOT EXISTS topics_topic_name_idx ON "topics" ("topic_name");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'topics_course_id_fkey',
+        '"topics"',
+        '"course_id"',
+        '"courses"',
+        '"course_id"',
+        'CASCADE'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "practices" (
+        "practice_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "learner_id" uuid NOT NULL,
+        "course_id" uuid,
+        "topic_id" uuid,
+        "status" text NOT NULL DEFAULT 'in_progress',
+        "score" numeric,
+        "content" jsonb NOT NULL DEFAULT '{}'::jsonb,
+        "time_spent" integer NOT NULL DEFAULT 0,
+        "metadata" jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS practices_learner_id_idx ON "practices" ("learner_id");`,
+      `CREATE INDEX IF NOT EXISTS practices_course_id_idx ON "practices" ("course_id");`,
+      `CREATE INDEX IF NOT EXISTS practices_topic_id_idx ON "practices" ("topic_id");`,
+      `CREATE INDEX IF NOT EXISTS practices_status_idx ON "practices" ("status");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'practices_learner_id_fkey',
+        '"practices"',
+        '"learner_id"',
+        '"userProfiles"',
+        '"learner_id"',
+        'CASCADE'
+      ),
+      foreignKeyStatement(
+        'practices_course_id_fkey',
+        '"practices"',
+        '"course_id"',
+        '"courses"',
+        '"course_id"',
+        'SET NULL'
+      ),
+      foreignKeyStatement(
+        'practices_topic_id_fkey',
+        '"practices"',
+        '"topic_id"',
+        '"topics"',
+        '"topic_id"',
+        'SET NULL'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "questions" (
+        "question_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "topic_id" uuid NOT NULL,
+        "course_id" uuid,
+        "practice_id" uuid,
+        "title" text,
+        "question_type" text NOT NULL DEFAULT 'theoretical',
+        "question_content" text NOT NULL,
+        "difficulty" text NOT NULL DEFAULT 'intermediate',
+        "language" text,
+        "tags" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "metadata" jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS questions_topic_id_idx ON "questions" ("topic_id");`,
+      `CREATE INDEX IF NOT EXISTS questions_course_id_idx ON "questions" ("course_id");`,
+      `CREATE INDEX IF NOT EXISTS questions_practice_id_idx ON "questions" ("practice_id");`,
+      `CREATE INDEX IF NOT EXISTS questions_question_type_idx ON "questions" ("question_type");`,
+      `CREATE INDEX IF NOT EXISTS questions_difficulty_idx ON "questions" ("difficulty");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'questions_topic_id_fkey',
+        '"questions"',
+        '"topic_id"',
+        '"topics"',
+        '"topic_id"',
+        'CASCADE'
+      ),
+      foreignKeyStatement(
+        'questions_course_id_fkey',
+        '"questions"',
+        '"course_id"',
+        '"courses"',
+        '"course_id"',
+        'SET NULL'
+      ),
+      foreignKeyStatement(
+        'questions_practice_id_fkey',
+        '"questions"',
+        '"practice_id"',
+        '"practices"',
+        '"practice_id"',
+        'SET NULL'
+      )
+    ]
+  },
+  {
+    create: `
+      CREATE TABLE IF NOT EXISTS "testCases" (
+        "testCase_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "question_id" uuid NOT NULL,
+        "input" text,
+        "expected_output" text NOT NULL,
+        "explanation" text,
+        "metadata" jsonb,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS testcases_question_id_idx ON "testCases" ("question_id");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'testcases_question_id_fkey',
+        '"testCases"',
+        '"question_id"',
+        '"questions"',
+        '"question_id"',
+        'CASCADE'
       )
     ]
   }
@@ -148,7 +332,7 @@ const ensureSupabaseCoreTables = async () => {
   try {
     await client.query('BEGIN')
     await ensureExtension(client)
-    await client.query('DROP TABLE IF EXISTS "courses" CASCADE;')
+    await client.query('DROP TABLE IF EXISTS "competition_participation" CASCADE;')
 
     for (const table of tableStatements) {
       await client.query(table.create)
