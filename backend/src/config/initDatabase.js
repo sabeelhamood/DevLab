@@ -61,18 +61,17 @@ const getTableColumns = async (client, tableName) => {
 const dropConstraintIfPresent = async (client, tableName, constraintName) => {
   if (!(await tableExists(client, tableName))) {
     return
-}
+  }
 
   await client.query(`ALTER TABLE "${tableName}" DROP CONSTRAINT IF EXISTS "${constraintName}";`)
 }
 
+const dropTableIfExists = async (client, tableName) => {
+  await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`)
+}
+
 const dropUserProfileForeignKeys = async (client) => {
   const constraints = [
-    { table: 'courses', constraint: 'courses_trainer_id_fkey' },
-    { table: 'practices', constraint: 'practices_learner_id_fkey' },
-    { table: 'competition_participation', constraint: 'competition_participation_learner1_id_fkey' },
-    { table: 'competition_participation', constraint: 'competition_participation_learner2_id_fkey' },
-    { table: 'competition_participation', constraint: 'competition_participation_winner_id_fkey' },
     { table: 'competitions', constraint: 'competitions_learner1_id_fkey' },
     { table: 'competitions', constraint: 'competitions_learner2_id_fkey' },
     { table: 'competitions', constraint: 'competitions_winner_id_fkey' }
@@ -92,8 +91,6 @@ const expectedCompetitionColumns = [
   'winner_id',
   'learner1_score',
   'learner2_score',
-  'learner1_timer',
-  'learner2_timer',
   'timer',
   'status',
   'result',
@@ -106,8 +103,6 @@ const expectedCompetitionColumns = [
   'questions',
   'learner1_answers',
   'learner2_answers',
-  'current_question',
-  'analytics_snapshot',
   'created_at',
   'updated_at'
 ]
@@ -135,16 +130,16 @@ const competitionsNeedsReset = async (client) => {
 
 const resetCompetitionsTable = async (client) => {
   if (await competitionsNeedsReset(client)) {
-    await client.query(`DROP TABLE IF EXISTS "competitions" CASCADE;`)
+    await dropTableIfExists(client, 'competitions')
   }
 
-  await client.query(`DROP TABLE IF EXISTS "competition_participation" CASCADE;`)
+  await dropTableIfExists(client, 'competition_participation')
 }
 
 const cleanupLegacyUserProfiles = async (client) => {
   if (!(await tableExists(client, 'userProfiles'))) {
     return
-  }
+}
 
   await dropUserProfileForeignKeys(client)
 
@@ -208,6 +203,7 @@ const cleanupCourseCompletions = async (client) => {
 
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "learner_id" uuid;`)
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_id" text;`)
+  await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_name" text;`)
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "completed_at" timestamptz NOT NULL DEFAULT now();`)
 
   await client.query(`ALTER TABLE "course_completions" ALTER COLUMN "learner_id" SET NOT NULL;`)
@@ -219,8 +215,27 @@ const cleanupCourseCompletions = async (client) => {
   await client.query(`ALTER TABLE "course_completions" ADD PRIMARY KEY ("learner_id", "course_id", "completed_at");`)
 }
 
-const dropLegacyCompetitionTable = async (client) => {
-  await client.query(`DROP TABLE IF EXISTS "competition_participation" CASCADE;`)
+const cleanupTopics = async (client) => {
+  if (!(await tableExists(client, 'topics'))) {
+    return
+  }
+
+  await dropConstraintIfPresent(client, 'topics', 'topics_course_id_fkey')
+  await client.query(`ALTER TABLE "topics" DROP COLUMN IF EXISTS "summary";`)
+}
+
+const cleanupQuestions = async (client) => {
+  if (!(await tableExists(client, 'questions'))) {
+    return
+  }
+
+  await dropConstraintIfPresent(client, 'questions', 'questions_course_id_fkey')
+  await dropConstraintIfPresent(client, 'questions', 'questions_practice_id_fkey')
+}
+
+const dropLegacyTables = async (client) => {
+  await dropTableIfExists(client, 'courses')
+  await dropTableIfExists(client, 'practices')
 }
 
 const tableStatements = [
@@ -242,6 +257,7 @@ const tableStatements = [
       CREATE TABLE IF NOT EXISTS "course_completions" (
         "learner_id" uuid NOT NULL,
         "course_id" text NOT NULL,
+        "course_name" text,
         "completed_at" timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY ("learner_id", "course_id", "completed_at")
       );
@@ -272,8 +288,6 @@ const tableStatements = [
         "winner_id" uuid,
         "learner1_score" numeric,
         "learner2_score" numeric,
-        "learner1_timer" integer,
-        "learner2_timer" integer,
         "timer" integer,
         "status" text NOT NULL DEFAULT 'pending',
         "result" jsonb,
@@ -286,8 +300,6 @@ const tableStatements = [
         "questions" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "learner1_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "learner2_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "current_question" integer,
-        "analytics_snapshot" jsonb,
         "created_at" timestamptz NOT NULL DEFAULT now(),
         "updated_at" timestamptz NOT NULL DEFAULT now()
       );
@@ -327,42 +339,12 @@ const tableStatements = [
   },
   {
     create: `
-      CREATE TABLE IF NOT EXISTS "courses" (
-        "course_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "trainer_id" uuid,
-        "title" text NOT NULL,
-        "description" text,
-        "level" text NOT NULL DEFAULT 'beginner',
-        "ai_feedback" jsonb,
-        "metadata" jsonb,
-        "created_at" timestamptz NOT NULL DEFAULT now(),
-        "updated_at" timestamptz NOT NULL DEFAULT now()
-      );
-    `,
-    indexes: [
-      `CREATE INDEX IF NOT EXISTS courses_trainer_id_idx ON "courses" ("trainer_id");`,
-      `CREATE INDEX IF NOT EXISTS courses_level_idx ON "courses" ("level");`
-    ],
-    foreignKeys: [
-      foreignKeyStatement(
-        'courses_trainer_id_fkey',
-        '"courses"',
-        '"trainer_id"',
-        '"userProfiles"',
-        '"learner_id"',
-        'SET NULL'
-      )
-    ]
-  },
-  {
-    create: `
       CREATE TABLE IF NOT EXISTS "topics" (
         "topic_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "course_id" uuid NOT NULL,
         "topic_name" text NOT NULL,
         "nano_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "macro_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "summary" text,
         "created_at" timestamptz NOT NULL DEFAULT now(),
         "updated_at" timestamptz NOT NULL DEFAULT now()
       );
@@ -370,65 +352,6 @@ const tableStatements = [
     indexes: [
       `CREATE INDEX IF NOT EXISTS topics_course_id_idx ON "topics" ("course_id");`,
       `CREATE INDEX IF NOT EXISTS topics_topic_name_idx ON "topics" ("topic_name");`
-    ],
-    foreignKeys: [
-      foreignKeyStatement(
-        'topics_course_id_fkey',
-        '"topics"',
-        '"course_id"',
-        '"courses"',
-        '"course_id"',
-        'CASCADE'
-      )
-    ]
-  },
-  {
-    create: `
-      CREATE TABLE IF NOT EXISTS "practices" (
-        "practice_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "learner_id" uuid NOT NULL,
-        "course_id" uuid,
-        "topic_id" uuid,
-        "status" text NOT NULL DEFAULT 'in_progress',
-        "score" numeric,
-        "content" jsonb NOT NULL DEFAULT '{}'::jsonb,
-        "time_spent" integer NOT NULL DEFAULT 0,
-        "metadata" jsonb,
-        "created_at" timestamptz NOT NULL DEFAULT now(),
-        "updated_at" timestamptz NOT NULL DEFAULT now()
-      );
-    `,
-    indexes: [
-      `CREATE INDEX IF NOT EXISTS practices_learner_id_idx ON "practices" ("learner_id");`,
-      `CREATE INDEX IF NOT EXISTS practices_course_id_idx ON "practices" ("course_id");`,
-      `CREATE INDEX IF NOT EXISTS practices_topic_id_idx ON "practices" ("topic_id");`,
-      `CREATE INDEX IF NOT EXISTS practices_status_idx ON "practices" ("status");`
-    ],
-    foreignKeys: [
-      foreignKeyStatement(
-        'practices_learner_id_fkey',
-        '"practices"',
-        '"learner_id"',
-        '"userProfiles"',
-        '"learner_id"',
-        'CASCADE'
-      ),
-      foreignKeyStatement(
-        'practices_course_id_fkey',
-        '"practices"',
-        '"course_id"',
-        '"courses"',
-        '"course_id"',
-        'SET NULL'
-      ),
-      foreignKeyStatement(
-        'practices_topic_id_fkey',
-        '"practices"',
-        '"topic_id"',
-        '"topics"',
-        '"topic_id"',
-        'SET NULL'
-      )
     ]
   },
   {
@@ -464,22 +387,6 @@ const tableStatements = [
         '"topics"',
         '"topic_id"',
         'CASCADE'
-      ),
-      foreignKeyStatement(
-        'questions_course_id_fkey',
-        '"questions"',
-        '"course_id"',
-        '"courses"',
-        '"course_id"',
-        'SET NULL'
-      ),
-      foreignKeyStatement(
-        'questions_practice_id_fkey',
-        '"questions"',
-        '"practice_id"',
-        '"practices"',
-        '"practice_id"',
-        'SET NULL'
       )
     ]
   },
@@ -537,6 +444,9 @@ const ensureSupabaseCoreTables = async () => {
     await resetCompetitionsTable(client)
     await cleanupLegacyUserProfiles(client)
     await cleanupCourseCompletions(client)
+    await cleanupTopics(client)
+    await cleanupQuestions(client)
+    await dropLegacyTables(client)
 
     for (const table of tableStatements) {
       await client.query(table.create)

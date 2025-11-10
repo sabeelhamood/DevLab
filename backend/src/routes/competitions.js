@@ -319,7 +319,6 @@ router.get('/active/:userId', async (req, res) => {
         competition_id: "comp_active_1",
         opponent: "Jane Smith",
         status: "active",
-        current_question: 2,
         total_questions: 3,
         time_remaining: 180,
         your_score: 150,

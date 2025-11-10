@@ -38,18 +38,32 @@ const loadCompetitionRelations = async (competitions = []) => {
     }, {})
   }
 
-  return competitions.map((competition) => ({
-    ...competition,
-    course:
-      competition.course_id || competition.course_name
-        ? {
-            course_id: competition.course_id,
-            course_name: competition.course_name || null
-          }
-        : null,
-    learner1: competition.learner1_id ? learnersMap[competition.learner1_id] || null : null,
-    learner2: competition.learner2_id ? learnersMap[competition.learner2_id] || null : null
-  }))
+  return competitions.map((competition) => {
+    const learner1Answers = Array.isArray(competition.learner1_answers)
+      ? competition.learner1_answers
+      : []
+    const learner2Answers = Array.isArray(competition.learner2_answers)
+      ? competition.learner2_answers
+      : []
+
+    const currentQuestion = Math.max(learner1Answers.length, learner2Answers.length)
+
+    return {
+      ...competition,
+      learner1_answers: learner1Answers,
+      learner2_answers: learner2Answers,
+      current_question: currentQuestion,
+      course:
+        competition.course_id || competition.course_name
+          ? {
+              course_id: competition.course_id,
+              course_name: competition.course_name || null
+            }
+          : null,
+      learner1: competition.learner1_id ? learnersMap[competition.learner1_id] || null : null,
+      learner2: competition.learner2_id ? learnersMap[competition.learner2_id] || null : null
+    }
+  })
 }
 
 const defaultRelations = {
@@ -142,24 +156,11 @@ export class CompetitionModel {
       result?.learner2_score ??
       result?.performance_learner2?.score ??
       null
-    const learner1Timer =
-      result?.results?.learner1?.time_taken ??
-      result?.learner1_timer ??
-      result?.performance_learner1?.time_taken ??
-      null
-    const learner2Timer =
-      result?.results?.learner2?.time_taken ??
-      result?.learner2_timer ??
-      result?.performance_learner2?.time_taken ??
-      null
-
     const updatePayload = {
       result,
       winner_id: winnerId,
       learner1_score: learner1Score,
       learner2_score: learner2Score,
-      learner1_timer: learner1Timer,
-      learner2_timer: learner2Timer,
       updated_at: new Date().toISOString()
     }
 
@@ -276,22 +277,6 @@ export class CompetitionModel {
     return Boolean(learner1Submitted && learner2Submitted)
   }
 
-  static async updateCurrentQuestion(competitionId, questionNumber) {
-    const { rows } = await postgres.query(
-      `
-      UPDATE ${competitionsTable}
-      SET "current_question" = $1,
-          "updated_at" = now()
-      WHERE "competition_id" = $2
-      RETURNING *
-      `,
-      [questionNumber, competitionId]
-    )
-
-    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
-    return competition || null
-  }
-
   static async determineWinner(competitionId) {
     const { rows } = await postgres.query(
       `
@@ -348,15 +333,6 @@ export class CompetitionModel {
       summary.learner2_score ??
       summary.performance_learner2?.score ??
       null
-    const learner1Timer =
-      summary.learner1_timer ??
-      summary.performance_learner1?.time_taken ??
-      null
-    const learner2Timer =
-      summary.learner2_timer ??
-      summary.performance_learner2?.time_taken ??
-      null
-
     const updatePayload = {
       status: 'completed',
       timer: summary.timer || null,
@@ -364,13 +340,10 @@ export class CompetitionModel {
       performance_learner2: summary.performance_learner2 || null,
       score: summary.score ?? null,
       questions_answered: summary.questions_answered ?? null,
-      analytics_snapshot: summary.analytics_snapshot || summary,
       updated_at: new Date().toISOString(),
       winner_id: winnerId,
       learner1_score: learner1Score,
-      learner2_score: learner2Score,
-      learner1_timer: learner1Timer,
-      learner2_timer: learner2Timer
+      learner2_score: learner2Score
     }
 
     if (summary.course_name !== undefined) {
@@ -409,15 +382,12 @@ export class CompetitionModel {
       winner_id: winnerId,
       learner1_score: learner1Score,
       learner2_score: learner2Score,
-      learner1_timer: learner1Timer,
-      learner2_timer: learner2Timer,
       status: 'completed',
       timer: summary.timer || null,
       performance_learner1: summary.performance_learner1 || null,
       performance_learner2: summary.performance_learner2 || null,
       score: summary.score ?? null,
       questions_answered: summary.questions_answered ?? null,
-      analytics_snapshot: summary.analytics_snapshot || summary,
       created_at: summary.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     }

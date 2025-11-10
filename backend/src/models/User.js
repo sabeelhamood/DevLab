@@ -85,7 +85,7 @@ export class UserProfileModel {
   static async getCompletedCourses(learnerId) {
     const { rows } = await postgres.query(
       `
-      SELECT "course_id", "completed_at"
+      SELECT "course_id", "course_name", "completed_at"
       FROM ${courseCompletionsTable}
       WHERE "learner_id" = $1
       ORDER BY "completed_at" DESC

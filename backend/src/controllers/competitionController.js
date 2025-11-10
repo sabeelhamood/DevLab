@@ -106,7 +106,6 @@ export const competitionController = {
           status: 'active',
           question_count: 3,
           time_limit: 1800, // 30 minutes total
-          current_question: 1,
           questions: [],
           created_at: new Date().toISOString()
         }
@@ -330,13 +329,18 @@ export const competitionController = {
 
       // Check if both players submitted answers for current question
       const bothSubmitted = await CompetitionModel.checkBothAnswersSubmitted(id, questionId)
+      const answeredCount = Math.max(
+        updatedCompetition?.learner1_answers?.length ?? 0,
+        updatedCompetition?.learner2_answers?.length ?? 0
+      )
+      const totalQuestions =
+        updatedCompetition?.question_count ??
+        updatedCompetition?.questions?.length ??
+        answeredCount
       
       if (bothSubmitted) {
         // Move to next question or finish competition
-        const nextQuestion = competition.current_question + 1
-        if (nextQuestion <= competition.question_count) {
-          await CompetitionModel.updateCurrentQuestion(id, nextQuestion)
-        } else {
+        if (totalQuestions > 0 && answeredCount >= totalQuestions) {
           // Competition finished - evaluate winner
           const winner = await CompetitionModel.determineWinner(id)
           await CompetitionModel.updateResult(id, winner)
@@ -350,8 +354,11 @@ export const competitionController = {
           score: evaluation.isCorrect ? question.points : 0,
           feedback: evaluation.feedback,
           timeSpent,
-          nextQuestion: competition.current_question + 1,
-          competitionFinished: competition.current_question >= competition.question_count
+          nextQuestion:
+            totalQuestions > 0 && answeredCount >= totalQuestions
+              ? null
+              : answeredCount + 1,
+          competitionFinished: totalQuestions > 0 && answeredCount >= totalQuestions
         }
       })
     } catch (error) {
