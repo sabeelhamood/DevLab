@@ -41,13 +41,13 @@ const Feedback = ({ isCorrect, points }) => {
       className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white shadow-lg border border-gray-100"
     >
       {isCorrect ? (
-        <CheckCircle className="w-7 h-7 text-green-500" />
+        <CheckCircle className="w-7 h-7 text-[#4caf50]" />
       ) : (
-        <XCircle className="w-7 h-7 text-red-500" />
+        <XCircle className="w-7 h-7 text-[#f44336]" />
       )}
       <div className="flex flex-col leading-tight">
-        <span className="text-sm font-medium text-gray-500">{isCorrect ? 'Nice work!' : 'Keep going!'}</span>
-        <span className={`text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+        <span className="text-sm font-medium text-[#333333]">{isCorrect ? 'Nice work!' : 'Keep going!'}</span>
+        <span className={`text-lg font-semibold ${isCorrect ? 'text-[#4caf50]' : 'text-[#f44336]'}`}>
           {`${isCorrect ? '+' : ''}${points ?? 0} pts`}
         </span>
       </div>
@@ -61,7 +61,7 @@ const FloatingPoints = ({ points }) => (
     animate={{ opacity: 1, y: -24 }}
     exit={{ opacity: 0 }}
     transition={{ type: 'spring', stiffness: 300 }}
-    className="absolute right-6 -top-2 text-lg font-bold text-orange-500 drop-shadow"
+    className="absolute right-6 -top-2 text-lg font-bold text-[#ff9800] drop-shadow"
   >
     +{points} pts
   </motion.div>
@@ -76,11 +76,11 @@ const ProgressPointsDisplay = ({ progressPercent, scorePercent, score, totalPoin
         styles={buildStyles({
           textSize: '14px',
           pathColor: '#4caf50',
-          textColor: '#1f2937',
+          textColor: '#333333',
           trailColor: '#e5e7eb'
         })}
       />
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-[#333333]/70">
         Progress
       </div>
     </div>
@@ -90,15 +90,15 @@ const ProgressPointsDisplay = ({ progressPercent, scorePercent, score, totalPoin
         text={`${score}`}
         styles={buildStyles({
           textSize: '16px',
-          pathColor: '#6366f1',
-          textColor: '#1f2937',
-          trailColor: '#e5e7eb'
+          pathColor: '#ff9800',
+          textColor: '#333333',
+          trailColor: '#f0f0f0'
         })}
       />
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-[#333333]/70">
         Points
       </div>
-      <div className="absolute inset-x-0 -bottom-5 text-center text-xs text-gray-500">
+      <div className="absolute inset-x-0 -bottom-5 text-center text-xs text-[#333333]/70">
         {totalPoints ? `of ${totalPoints}` : 'No total set'}
       </div>
     </div>
@@ -375,9 +375,9 @@ function CompetitionQuestion() {
   }
 
   const getTimeColor = () => {
-    if (timeLeft <= 60) return 'text-red-600'
-    if (timeLeft <= 180) return 'text-yellow-600'
-    return 'text-green-600'
+    if (timeLeft <= 60) return 'text-[#f44336]'
+    if (timeLeft <= 180) return 'text-[#ff9800]'
+    return 'text-[#4caf50]'
   }
 
   const questionCardVariants = {
@@ -415,22 +415,22 @@ function CompetitionQuestion() {
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Question Not Found</h2>
-          <p className="text-gray-600">The requested question could not be found.</p>
+          <h2 className="text-2xl font-bold text-[#333333] mb-2">Question Not Found</h2>
+          <p className="text-[#333333]">The requested question could not be found.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#f0f0f0] py-8 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <motion.button 
               onClick={() => navigate(`/competition/${competitionId}`)}
-              className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center space-x-2"
+              className="text-[#333333] font-medium flex items-center space-x-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -441,7 +441,7 @@ function CompetitionQuestion() {
             <div className="flex items-center space-x-4">
               <motion.button
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+                className="p-2 rounded-lg bg-white border border-[#f0f0f0] text-[#333333]"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -451,9 +451,9 @@ function CompetitionQuestion() {
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6 text-[#333333]">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">Question {questionId} of {competition?.question_count}</h1>
+              <h1 className="text-2xl font-bold text-[#333333]">Question {questionId} of {competition?.question_count}</h1>
               <ProgressPointsDisplay
                 progressPercent={completionPercent}
                 scorePercent={scorePercent}
@@ -468,7 +468,7 @@ function CompetitionQuestion() {
                   {!isRunning && !isCompleted && (
                     <motion.button
                       onClick={handleStart}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                      className="bg-[#4caf50] text-white px-4 py-2 rounded-lg hover:bg-[#43a047] flex items-center space-x-2"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -479,7 +479,7 @@ function CompetitionQuestion() {
                   {isRunning && (
                     <motion.button
                       onClick={handlePause}
-                      className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 flex items-center space-x-2"
+                      className="bg-[#ff9800] text-white px-4 py-2 rounded-lg hover:bg-[#fb8c00] flex items-center space-x-2"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -501,11 +501,11 @@ function CompetitionQuestion() {
             </div>
             
             {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-[#f0f0f0] rounded-full h-3">
               <div 
                 className={`h-3 rounded-full transition-all duration-1000 ${
-                  progress > 80 ? 'bg-red-500' : 
-                  progress > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                  progress > 80 ? 'bg-[#f44336]' : 
+                  progress > 60 ? 'bg-[#ff9800]' : 'bg-[#4caf50]'
                 }`}
                 style={{ width: `${progress}%` }}
               ></div>
@@ -525,32 +525,39 @@ function CompetitionQuestion() {
                   animate="animate"
                   exit="exit"
                   transition={questionCardTransition}
-                  className="bg-white rounded-xl shadow-lg p-6 relative"
+                  className="bg-white rounded-xl shadow-lg p-6 relative text-[#333333]"
                 >
                   <div className="flex items-center space-x-2 mb-4">
                     <Target className="w-6 h-6 text-indigo-600" />
-                    <h2 className="text-xl font-bold text-gray-900">{question.title}</h2>
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full capitalize">
+                    <h2 className="text-xl font-bold text-[#333333]">{question.title}</h2>
+                    <span className="px-3 py-1 rounded-full text-sm capitalize border border-[#333333] text-[#333333] bg-[#f0f0f0]">
                       {question.difficulty}
                     </span>
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full flex items-center gap-1">
-                      <Sparkles className="w-4 h-4 text-yellow-600" />
+                    <span
+                      className="px-3 py-1 text-sm rounded-full flex items-center gap-1"
+                      style={{ backgroundColor: '#fff3e0', color: '#ff9800' }}
+                    >
+                      <Sparkles className="w-4 h-4" color="#ff9800" />
                       {question.points} pts
                     </span>
                   </div>
                   
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 mb-4">{question.description}</p>
+                  <div className="prose max-w-none text-[#333333]">
+                    <p className="mb-4">{question.description}</p>
                     
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Test Cases:</h3>
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2">Test Cases:</h3>
                     <div className="space-y-2">
                       {question.testCases.map((testCase, index) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                        <div
+                          key={index}
+                          className="p-3 rounded-lg"
+                          style={{ backgroundColor: '#f0f0f0', color: '#333333' }}
+                        >
                           <div className="text-sm">
-                            <span className="font-medium">Input:</span> {testCase.input}
+                            <span className="font-medium text-[#333333]">Input:</span> {testCase.input}
                           </div>
                           <div className="text-sm">
-                            <span className="font-medium">Expected:</span> {testCase.expected}
+                            <span className="font-medium text-[#333333]">Expected:</span> {testCase.expected}
                           </div>
                         </div>
                       ))}
@@ -568,25 +575,25 @@ function CompetitionQuestion() {
 
           {/* Code Editor Panel */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 text-[#333333]">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Code Editor</h3>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm text-gray-600">Time spent: {formatTime((question?.timeLimit || 600) - timeLeft)}</span>
+                <h3 className="text-lg font-bold text-[#333333]">Code Editor</h3>
+                <div className="flex items-center space-x-2 text-[#333333]">
+                  <Clock className="w-5 h-5" color="#333333" />
+                  <span className="text-sm">Time spent: {formatTime((question?.timeLimit || 600) - timeLeft)}</span>
                 </div>
               </div>
               
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                className="w-full h-96 p-4 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full h-96 p-4 border border-[#f0f0f0] rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-[#4caf50] focus:border-transparent text-[#333333]"
                 placeholder="Write your solution here..."
                 disabled={isCompleted}
               />
               
               <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-[#333333]">
                   Characters: {answer.length}
                 </div>
                 <motion.button
@@ -604,10 +611,13 @@ function CompetitionQuestion() {
 
             {/* Timer Warning */}
             {timeLeft <= 60 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div
+                className="rounded-lg p-4"
+                style={{ backgroundColor: '#fdecea', border: '1px solid #f44336', color: '#f44336' }}
+              >
                 <div className="flex items-center space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <span className="text-red-700 font-medium">
+                  <AlertCircle className="w-5 h-5" color="#f44336" />
+                  <span className="font-medium">
                     Warning: Less than 1 minute remaining!
                   </span>
                 </div>
