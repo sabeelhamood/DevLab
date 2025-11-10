@@ -26,13 +26,20 @@ const Feedback = ({ isCorrect, points }) => (
     initial={{ scale: 0 }}
     animate={{ scale: 1 }}
     exit={{ scale: 0 }}
-    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-lg border border-gray-100"
+    transition={{ type: 'spring', stiffness: 300 }}
+    className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white shadow-lg border border-gray-100"
   >
-    {isCorrect ? <CheckCircle color="#4caf50" size={28} /> : <XCircle color="#f44336" size={28} />}
-    <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-      {isCorrect ? `+${points} points` : 'Keep trying!'}
-    </span>
+    {isCorrect ? (
+      <CheckCircle className="w-7 h-7 text-green-500" />
+    ) : (
+      <XCircle className="w-7 h-7 text-red-500" />
+    )}
+    <div className="flex flex-col leading-tight">
+      <span className="text-sm font-medium text-gray-500">{isCorrect ? 'Nice work!' : 'Keep going!'}</span>
+      <span className={`text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+        {`${isCorrect ? '+' : ''}${points ?? 0} pts`}
+      </span>
+    </div>
   </motion.div>
 )
 
