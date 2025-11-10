@@ -1,7 +1,7 @@
 import { Howl } from 'howler'
 
-const correctSound = new Howl({ src: ['/sounds/correct.mp3'], volume: 0.6 })
-const wrongSound = new Howl({ src: ['/sounds/wrong.mp3'], volume: 0.6 })
+export const correctSound = new Howl({ src: ['/sounds/correct.mp3'], volume: 0.6 })
+export const wrongSound = new Howl({ src: ['/sounds/wrong.mp3'], volume: 0.6 })
 
 export const playFeedback = (isCorrect) => {
   try {
