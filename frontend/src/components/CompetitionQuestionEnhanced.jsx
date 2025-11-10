@@ -327,6 +327,14 @@ function CompetitionQuestion() {
     return 'text-green-600'
   }
 
+  const questionCardVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  }
+
+  const questionCardTransition = { duration: 0.4 }
+
   const completionPercent = competition?.question_count
     ? Math.round(((currentQuestionIndex + (isCompleted ? 1 : 0)) / competition.question_count) * 100)
     : questionProgress
@@ -465,10 +473,11 @@ function CompetitionQuestion() {
               {question && (
                 <motion.div
                   key={question.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4 }}
+                  variants={questionCardVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={questionCardTransition}
                   className="bg-white rounded-xl shadow-lg p-6 relative"
                 >
                   <div className="flex items-center space-x-2 mb-4">
