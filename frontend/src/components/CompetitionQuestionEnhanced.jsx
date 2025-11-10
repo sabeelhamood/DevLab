@@ -547,20 +547,30 @@ function CompetitionQuestion() {
                     
                     <h3 className="text-lg font-semibold text-[#333333] mb-2">Test Cases:</h3>
                     <div className="space-y-2">
-                      {question.testCases.map((testCase, index) => (
-                        <div
-                          key={index}
-                          className="p-3 rounded-lg"
-                          style={{ backgroundColor: '#f0f0f0', color: '#333333' }}
-                        >
-                          <div className="text-sm">
-                            <span className="font-medium text-[#333333]">Input:</span> {testCase.input}
+                      {question?.testCases?.length
+                        ? question.testCases.map((testCase, index) => (
+                            <div
+                              key={index}
+                              className="p-3 rounded-lg"
+                              style={{ backgroundColor: '#f0f0f0', color: '#333333' }}
+                            >
+                              <div className="text-sm">
+                                <span className="font-medium text-[#333333]">Input:</span> {testCase.input}
+                              </div>
+                              <div className="text-sm">
+                                <span className="font-medium text-[#333333]">Expected:</span> {testCase.expected}
+                              </div>
+                            </div>
+                          ))
+                        : (
+                          <div
+                            className="p-3 rounded-lg text-sm"
+                            style={{ backgroundColor: '#f0f0f0', color: '#333333' }}
+                          >
+                            No test cases available.
                           </div>
-                          <div className="text-sm">
-                            <span className="font-medium text-[#333333]">Expected:</span> {testCase.expected}
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      }
                     </div>
                   </div>
                   <AnimatePresence>
