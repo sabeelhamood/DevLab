@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Clock, 
@@ -10,10 +10,43 @@ import {
   Timer,
   Volume2,
   VolumeX,
+  Sparkles,
   AlertCircle,
   Trophy,
   Target
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
+import 'react-circular-progressbar/dist/styles.css'
+import confetti from 'canvas-confetti'
+import { playFeedback, preloadFeedbackSounds } from '../utils/soundManager.js'
+
+const Feedback = ({ isCorrect, points }) => (
+  <motion.div
+    initial={{ scale: 0 }}
+    animate={{ scale: 1 }}
+    exit={{ scale: 0 }}
+    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-lg border border-gray-100"
+  >
+    {isCorrect ? <CheckCircle color="#4caf50" size={28} /> : <XCircle color="#f44336" size={28} />}
+    <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+      {isCorrect ? `+${points} points` : 'Keep trying!'}
+    </span>
+  </motion.div>
+)
+
+const FloatingPoints = ({ points }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 0 }}
+    animate={{ opacity: 1, y: -24 }}
+    exit={{ opacity: 0 }}
+    transition={{ type: 'spring', stiffness: 300 }}
+    className="absolute right-6 -top-2 text-lg font-bold text-orange-500 drop-shadow"
+  >
+    +{points} pts
+  </motion.div>
+)
 
 function CompetitionQuestion() {
   const { competitionId, questionId } = useParams()
@@ -27,20 +60,28 @@ function CompetitionQuestion() {
   const [progress, setProgress] = useState(0)
   const [competition, setCompetition] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [score, setScore] = useState(0)
+  const [feedback, setFeedback] = useState(null)
+  const [questionProgress, setQuestionProgress] = useState(0)
+  const [lastPointsAwarded, setLastPointsAwarded] = useState(0)
   
   const timerRef = useRef(null)
-  const audioRef = useRef(null)
   const startSoundRef = useRef(null)
   const countdownSoundRef = useRef(null)
   const completeSoundRef = useRef(null)
+  const feedbackTimeoutRef = useRef(null)
 
   useEffect(() => {
     loadCompetitionData()
     initializeSounds()
+    preloadFeedbackSounds()
     
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current)
+      }
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current)
       }
     }
   }, [competitionId, questionId])
@@ -78,6 +119,22 @@ function CompetitionQuestion() {
       }
     }
   }, [isRunning, timeLeft, soundEnabled])
+
+  useEffect(() => {
+    if (!competition?.questions?.length) return
+
+    const currentIndex = competition.questions.findIndex((q) => q.id === questionId)
+    const percent = competition.question_count
+      ? Math.round(((currentIndex >= 0 ? currentIndex : 0) / competition.question_count) * 100)
+      : 0
+    setQuestionProgress(percent)
+  }, [competition, questionId])
+
+  const currentQuestionIndex = useMemo(() => {
+    if (!competition?.questions?.length) return 0
+    const index = competition.questions.findIndex((q) => q.id === questionId)
+    return index >= 0 ? index : 0
+  }, [competition, questionId])
 
   const initializeSounds = () => {
     // Create audio elements for different sounds
@@ -227,6 +284,24 @@ function CompetitionQuestion() {
       const result = await response.json()
       
       if (result.success) {
+        const isCorrect = result.data?.isCorrect ?? true
+        const pointsAwarded =
+          result.data?.pointsAwarded ?? result.data?.points ?? question?.points ?? 0
+
+        setLastPointsAwarded(pointsAwarded)
+        setScore((prev) => (isCorrect ? prev + pointsAwarded : prev))
+        setFeedback({ isCorrect, points: pointsAwarded })
+        playFeedback(isCorrect)
+
+        if (isCorrect) {
+          confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } })
+        }
+
+        if (feedbackTimeoutRef.current) {
+          clearTimeout(feedbackTimeoutRef.current)
+        }
+        feedbackTimeoutRef.current = setTimeout(() => setFeedback(null), 2500)
+
         // Move to next question or show results
         if (result.data.competitionFinished) {
           navigate(`/competition/${competitionId}/results`)
@@ -252,6 +327,10 @@ function CompetitionQuestion() {
     return 'text-green-600'
   }
 
+  const completionPercent = competition?.question_count
+    ? Math.round(((currentQuestionIndex + (isCompleted ? 1 : 0)) / competition.question_count) * 100)
+    : questionProgress
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -273,18 +352,20 @@ function CompetitionQuestion() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <button 
+            <motion.button 
               onClick={() => navigate(`/competition/${competitionId}`)}
               className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center space-x-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <RotateCcw className="w-4 h-4" />
               <span>Back to Competition</span>
-            </button>
+            </motion.button>
             
             <div className="flex items-center space-x-4">
               <button
@@ -300,36 +381,66 @@ function CompetitionQuestion() {
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-gray-900">Question {questionId} of {competition?.question_count}</h1>
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 relative">
+                  <CircularProgressbar
+                    value={completionPercent}
+                    text={`${completionPercent}%`}
+                    styles={buildStyles({
+                      textSize: '16px',
+                      pathColor: '#4caf50',
+                      textColor: '#333',
+                      trailColor: '#f0f0f0'
+                    })}
+                  />
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
+                    Progress
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm uppercase tracking-wide text-gray-500">Score</span>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <span className="text-xl font-bold text-gray-900">{score}</span>
+                  </div>
+                </div>
+              </div>
               <div className="flex items-center space-x-4">
                 <div className={`text-3xl font-bold ${getTimeColor()}`}>
                   {formatTime(timeLeft)}
                 </div>
                 <div className="flex space-x-2">
                   {!isRunning && !isCompleted && (
-                    <button
+                    <motion.button
                       onClick={handleStart}
                       className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Play className="w-4 h-4" />
                       <span>Start</span>
-                    </button>
+                    </motion.button>
                   )}
                   {isRunning && (
-                    <button
+                    <motion.button
                       onClick={handlePause}
                       className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 flex items-center space-x-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Pause className="w-4 h-4" />
                       <span>Pause</span>
-                    </button>
+                    </motion.button>
                   )}
-                  <button
+                  <motion.button
                     onClick={handleReset}
                     className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     <RotateCcw className="w-4 h-4" />
                     <span>Reset</span>
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </div>
@@ -350,36 +461,53 @@ function CompetitionQuestion() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Question Panel */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <Target className="w-6 h-6 text-indigo-600" />
-                <h2 className="text-xl font-bold text-gray-900">{question.title}</h2>
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full">
-                  {question.difficulty}
-                </span>
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-                  {question.points} pts
-                </span>
-              </div>
-              
-              <div className="prose max-w-none">
-                <p className="text-gray-700 mb-4">{question.description}</p>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Test Cases:</h3>
-                <div className="space-y-2">
-                  {question.testCases.map((testCase, index) => (
-                    <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-sm">
-                        <span className="font-medium">Input:</span> {testCase.input}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Expected:</span> {testCase.expected}
-                      </div>
+            <AnimatePresence mode="wait">
+              {question && (
+                <motion.div
+                  key={question.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="bg-white rounded-xl shadow-lg p-6 relative"
+                >
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Target className="w-6 h-6 text-indigo-600" />
+                    <h2 className="text-xl font-bold text-gray-900">{question.title}</h2>
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full capitalize">
+                      {question.difficulty}
+                    </span>
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full flex items-center gap-1">
+                      <Sparkles className="w-4 h-4 text-yellow-600" />
+                      {question.points} pts
+                    </span>
+                  </div>
+                  
+                  <div className="prose max-w-none">
+                    <p className="text-gray-700 mb-4">{question.description}</p>
+                    
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Test Cases:</h3>
+                    <div className="space-y-2">
+                      {question.testCases.map((testCase, index) => (
+                        <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm">
+                            <span className="font-medium">Input:</span> {testCase.input}
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium">Expected:</span> {testCase.expected}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+                  </div>
+                  <AnimatePresence>
+                    {feedback?.isCorrect && lastPointsAwarded > 0 && (
+                      <FloatingPoints points={lastPointsAwarded} />
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Code Editor Panel */}
@@ -405,14 +533,16 @@ function CompetitionQuestion() {
                 <div className="text-sm text-gray-600">
                   Characters: {answer.length}
                 </div>
-                <button
+                <motion.button
                   onClick={submitAnswer}
                   disabled={isCompleted || !answer.trim()}
                   className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                  whileHover={{ scale: isCompleted || !answer.trim() ? 1 : 1.05 }}
+                  whileTap={{ scale: isCompleted || !answer.trim() ? 1 : 0.95 }}
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Submit Answer</span>
-                </button>
+                </motion.button>
               </div>
             </div>
 
@@ -429,6 +559,14 @@ function CompetitionQuestion() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <AnimatePresence>
+          {feedback && (
+            <Feedback isCorrect={feedback.isCorrect} points={feedback.points} />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
