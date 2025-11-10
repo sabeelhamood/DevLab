@@ -15,7 +15,8 @@
     "test:integration": "jest --testPathPattern=integration",
     "test:e2e": "jest --testPathPattern=e2e",
     "lint": "eslint src --ext .js",
-    "lint:fix": "eslint src --ext .js --fix"
+    "lint:fix": "eslint src --ext .js --fix",
+    "seed:js-competition": "node scripts/seedCompetitionFromGemini.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
