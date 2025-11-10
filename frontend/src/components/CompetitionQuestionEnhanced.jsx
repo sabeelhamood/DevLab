@@ -439,12 +439,14 @@ function CompetitionQuestion() {
             </motion.button>
             
             <div className="flex items-center space-x-4">
-              <button
+              <motion.button
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 className="p-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-              </button>
+              </motion.button>
             </div>
           </div>
 
