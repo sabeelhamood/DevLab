@@ -200,7 +200,8 @@ function CompetitionQuestion() {
     completeSoundRef.current = new Audio('/sounds/complete.mp3')
     
     // Set volume
-    [startSoundRef.current, countdownSoundRef.current, completeSoundRef.current].forEach(audio => {
+    const sounds = [startSoundRef.current, countdownSoundRef.current, completeSoundRef.current]
+    sounds.filter(Boolean).forEach(audio => {
       audio.volume = 0.5
     })
   }

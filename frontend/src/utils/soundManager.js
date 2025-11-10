@@ -42,7 +42,9 @@ class SoundManager {
     };
 
     // Set volume and loop settings
-    Object.values(this.sounds).forEach(audio => {
+    const audioList = Object.values(this.sounds || {});
+    audioList.forEach(audio => {
+      if (!audio) return;
       audio.volume = this.volume;
       audio.preload = 'auto';
     });
@@ -88,7 +90,9 @@ class SoundManager {
 
   setVolume(volume) {
     this.volume = Math.max(0, Math.min(1, volume));
-    Object.values(this.sounds).forEach(audio => {
+    const audioList = Object.values(this.sounds || {});
+    audioList.forEach(audio => {
+      if (!audio) return;
       audio.volume = this.volume;
     });
   }
