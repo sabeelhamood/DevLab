@@ -23,13 +23,16 @@ router.get('/:learnerId', async (req, res) => {
 // Create new user profile
 router.post('/', async (req, res) => {
   try {
-    const { learner_id: learnerId, metadata } = req.body
+    const { learner_id: learnerId, learner_name: learnerName } = req.body
 
     if (!learnerId) {
       return res.status(400).json({ error: 'Missing required field: learner_id' })
     }
 
-    const userProfile = await UserProfileModel.create({ learner_id: learnerId, metadata })
+    const userProfile = await UserProfileModel.create({
+      learner_id: learnerId,
+      learner_name: learnerName
+    })
     res.status(201).json(userProfile)
   } catch (error) {
     console.error('Error creating user profile:', error)
@@ -41,9 +44,11 @@ router.post('/', async (req, res) => {
 router.put('/:learnerId', async (req, res) => {
   try {
     const { learnerId } = req.params
-    const { metadata } = req.body
+    const { learner_name: learnerName } = req.body
 
-    const updatedProfile = await UserProfileModel.update(learnerId, { metadata })
+    const updatedProfile = await UserProfileModel.update(learnerId, {
+      learner_name: learnerName
+    })
     res.json(updatedProfile)
   } catch (error) {
     console.error('Error updating user profile:', error)

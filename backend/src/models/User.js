@@ -18,7 +18,7 @@ export class UserProfileModel {
 
     const payload = {
       learner_id: userData.learner_id,
-      metadata: userData.metadata ?? {}
+      learner_name: userData.learner_name ?? null
     }
 
     const query = buildInsertStatement(profileTable, payload)
@@ -36,10 +36,13 @@ export class UserProfileModel {
   }
 
   static async update(learnerId, updateData) {
-    const fields = {
-      ...(updateData?.metadata !== undefined ? { metadata: updateData.metadata } : {}),
-      updated_at: new Date().toISOString()
+    const fields = {}
+
+    if (updateData?.learner_name !== undefined) {
+      fields.learner_name = updateData.learner_name
     }
+
+    fields.updated_at = new Date().toISOString()
 
     if (Object.keys(fields).length === 1 && fields.updated_at) {
       // nothing to update besides timestamp
@@ -82,7 +85,7 @@ export class UserProfileModel {
   static async getCompletedCourses(learnerId) {
     const { rows } = await postgres.query(
       `
-      SELECT "course_id", "completed_at", "source", "metadata"
+      SELECT "course_id", "completed_at"
       FROM ${courseCompletionsTable}
       WHERE "learner_id" = $1
       ORDER BY "completed_at" DESC

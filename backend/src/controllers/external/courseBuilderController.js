@@ -5,12 +5,14 @@ import { createRequestId } from '../../services/tempQuestionStore.js'
 const buildCompetitionRecord = ({
   competitionId,
   courseId,
+  courseName,
   learnerId,
   opponentId,
   createdAt
 }) => ({
   competition_id: competitionId,
   course_id: courseId,
+  course_name: courseName,
   learner1_id: learnerId,
   learner2_id: opponentId || null,
   status: 'pending',
@@ -62,6 +64,7 @@ export const courseBuilderController = {
           buildCompetitionRecord({
             competitionId,
             courseId: course_id,
+            courseName: course_name,
             learnerId: learner_id,
             opponentId: opponent?.id,
             createdAt

@@ -75,7 +75,7 @@ export const getCollections = () => {
 export const getSupabaseTables = () => {
   return {
     userProfiles: 'userProfiles',
-    competitions: 'competitions',
+    competitions: 'competition_participation',
     courses: 'courses',
     topics: 'topics',
     questions: 'questions',

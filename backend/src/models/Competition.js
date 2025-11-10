@@ -7,8 +7,8 @@ import {
 } from '../utils/postgresHelpers.js'
 
 const tables = getSupabaseTables()
-const competitionsTable = postgres.quoteIdentifier(tables.competitions)
-const coursesTable = postgres.quoteIdentifier(tables.courses)
+const competitionTableName = tables.competitionParticipation || tables.competitions
+const competitionsTable = postgres.quoteIdentifier(competitionTableName)
 const usersTable = postgres.quoteIdentifier(tables.userProfiles)
 const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions)
 
@@ -17,14 +17,6 @@ const loadCompetitionRelations = async (competitions = []) => {
     return []
   }
 
-  const courseIds = [
-    ...new Set(
-      competitions
-        .map((competition) => competition.course_id)
-        .filter(Boolean)
-    )
-  ]
-
   const learnerIds = [
     ...new Set(
       competitions
@@ -32,19 +24,6 @@ const loadCompetitionRelations = async (competitions = []) => {
         .filter(Boolean)
     )
   ]
-
-  let coursesMap = {}
-  if (courseIds.length) {
-    const { rows } = await postgres.query(
-      `SELECT * FROM ${coursesTable} WHERE "course_id" = ANY($1::uuid[])`,
-      [courseIds]
-    )
-
-    coursesMap = rows.reduce((acc, course) => {
-      acc[course.course_id] = course
-      return acc
-    }, {})
-  }
 
   let learnersMap = {}
   if (learnerIds.length) {
@@ -61,7 +40,13 @@ const loadCompetitionRelations = async (competitions = []) => {
 
   return competitions.map((competition) => ({
     ...competition,
-    course: competition.course_id ? coursesMap[competition.course_id] || null : null,
+    course:
+      competition.course_id || competition.course_name
+        ? {
+            course_id: competition.course_id,
+            course_name: competition.course_name || null
+          }
+        : null,
     learner1: competition.learner1_id ? learnersMap[competition.learner1_id] || null : null,
     learner2: competition.learner2_id ? learnersMap[competition.learner2_id] || null : null
   }))
@@ -146,13 +131,42 @@ export class CompetitionModel {
   }
 
   static async updateResult(competitionId, result) {
+    const winnerId = result?.winner?.user_id ?? result?.winner_id ?? null
+    const learner1Score =
+      result?.results?.learner1?.score ??
+      result?.learner1_score ??
+      result?.performance_learner1?.score ??
+      null
+    const learner2Score =
+      result?.results?.learner2?.score ??
+      result?.learner2_score ??
+      result?.performance_learner2?.score ??
+      null
+    const learner1Timer =
+      result?.results?.learner1?.time_taken ??
+      result?.learner1_timer ??
+      result?.performance_learner1?.time_taken ??
+      null
+    const learner2Timer =
+      result?.results?.learner2?.time_taken ??
+      result?.learner2_timer ??
+      result?.performance_learner2?.time_taken ??
+      null
+
+    const updatePayload = {
+      result,
+      winner_id: winnerId,
+      learner1_score: learner1Score,
+      learner2_score: learner2Score,
+      learner1_timer: learner1Timer,
+      learner2_timer: learner2Timer,
+      updated_at: new Date().toISOString()
+    }
+
     const query = buildUpdateStatement(
       competitionsTable,
-      {
-        result,
-        updated_at: new Date().toISOString()
-      },
-      'WHERE "competition_id" = $3',
+      updatePayload,
+      `WHERE "competition_id" = $${Object.keys(updatePayload).length + 1}`,
       [competitionId]
     )
 
@@ -321,6 +335,28 @@ export class CompetitionModel {
   }
 
   static async upsertSummary(summary) {
+    const winnerId =
+      summary.winner_id ??
+      summary.winner?.learner_id ??
+      summary.winner?.user_id ??
+      null
+    const learner1Score =
+      summary.learner1_score ??
+      summary.performance_learner1?.score ??
+      null
+    const learner2Score =
+      summary.learner2_score ??
+      summary.performance_learner2?.score ??
+      null
+    const learner1Timer =
+      summary.learner1_timer ??
+      summary.performance_learner1?.time_taken ??
+      null
+    const learner2Timer =
+      summary.learner2_timer ??
+      summary.performance_learner2?.time_taken ??
+      null
+
     const updatePayload = {
       status: 'completed',
       timer: summary.timer || null,
@@ -329,7 +365,25 @@ export class CompetitionModel {
       score: summary.score ?? null,
       questions_answered: summary.questions_answered ?? null,
       analytics_snapshot: summary.analytics_snapshot || summary,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      winner_id: winnerId,
+      learner1_score: learner1Score,
+      learner2_score: learner2Score,
+      learner1_timer: learner1Timer,
+      learner2_timer: learner2Timer
+    }
+
+    if (summary.course_name !== undefined) {
+      updatePayload.course_name = summary.course_name
+    }
+    if (summary.course_id !== undefined) {
+      updatePayload.course_id = summary.course_id
+    }
+    if (summary.learner1_id !== undefined) {
+      updatePayload.learner1_id = summary.learner1_id
+    }
+    if (summary.learner2_id !== undefined) {
+      updatePayload.learner2_id = summary.learner2_id
     }
 
     const updateQuery = buildUpdateStatement(
@@ -348,9 +402,15 @@ export class CompetitionModel {
 
     const insertPayload = {
       competition_id: summary.competition_id,
-      course_id: summary.course_id || null,
-      learner1_id: summary.learner1_id || null,
-      learner2_id: summary.learner2_id || null,
+      course_name: summary.course_name ?? null,
+      course_id: summary.course_id ?? null,
+      learner1_id: summary.learner1_id ?? null,
+      learner2_id: summary.learner2_id ?? null,
+      winner_id: winnerId,
+      learner1_score: learner1Score,
+      learner2_score: learner2Score,
+      learner1_timer: learner1Timer,
+      learner2_timer: learner2Timer,
       status: 'completed',
       timer: summary.timer || null,
       performance_learner1: summary.performance_learner1 || null,
