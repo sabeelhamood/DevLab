@@ -880,70 +880,100 @@ Return ONLY the JSON object.
     this._checkAvailability();
 
     const prompt = `
-You are an expert code analysis AI specialized in detecting AI-generated code submissions. Analyze this code submission for signs of AI assistance.
+You are an expert code analysis AI specialized in detecting AI-generated code submissions.
 
-QUESTION CONTEXT:
+🎯 GOAL:
+Determine whether the given code was written by a human student or generated (fully or partially) by an AI tool such as ChatGPT or Gemini. 
+Your output must be clear, structured, and concise.
+
+---
+
+📘 CONTEXT:
+This code was submitted as an answer to a coding question.
+
+QUESTION:
 ${question}
 
 SUBMITTED CODE:
 ${code}
 
-DETECTION CRITERIA - Look for these specific AI-generated code patterns:
+---
 
-1. **PERFECT SYNTAX & STRUCTURE**:
-   - Flawless syntax with no typos or common student mistakes
-   - Overly consistent formatting and naming conventions
-   - Professional-level code organization
+🔍 ANALYSIS CRITERIA:
+Evaluate the following dimensions carefully:
 
-2. **AI-CHARACTERISTIC PATTERNS**:
-   - Generic variable names (item, element, result, data)
-   - Overly descriptive comments that explain obvious things
-   - Perfect error handling that students typically miss
-   - Consistent use of modern JavaScript features without mistakes
+1. **Syntax & Structure**
+   - Is the syntax unusually clean, perfect, or standardized beyond the expected level for a student?
+   - Does it use consistent indentation and spacing without any variation or minor mistakes?
 
-3. **COMPLEXITY MISMATCH**:
-   - Code complexity far exceeds typical student level for this question type
-   - Advanced algorithms or patterns not taught at this level
-   - Perfect implementation of edge cases students usually miss
+2. **Naming & Style**
+   - Are variable/function names generic (e.g., \`calculateSomething\`, \`solveProblem\`, \`resultArray\`)?
+   - Is there a lack of creative or task-specific naming that students typically show?
+   - Are naming conventions uniform across all variables (a strong AI indicator)?
 
-4. **CODING STYLE INDICATORS**:
-   - Consistent use of best practices throughout
-   - No personal coding quirks or learning mistakes
-   - Perfect variable naming conventions
-   - Overly clean and professional code structure
+3. **Comments & Explanations**
+   - Are there comments explaining trivial steps (e.g., \`// Initialize variable\`, \`// Return result\`)?
+   - Are comments written in a formal, tutorial-like tone rather than a natural learning tone?
+   - Does the code contain no comments or overly perfect ones?
 
-5. **SOLUTION CHARACTERISTICS**:
-   - Solution is too optimal for a learning context
-   - Includes advanced techniques not typically used by students
-   - Perfect handling of edge cases
-   - Overly comprehensive error checking
+4. **Complexity & Efficiency**
+   - Is the code more optimized than needed for the task?
+   - Does it use advanced patterns (e.g., comprehensions, high-order functions) unlikely for a typical student at this level?
 
-ANALYSIS INSTRUCTIONS:
-- Be STRICT in detection - err on the side of flagging suspicious code
-- Look for patterns that indicate AI assistance rather than student work
-- Consider if the code quality exceeds what a student would typically produce
-- Focus on consistency, perfection, and advanced patterns
-- Check for generic AI-generated variable names and comments
+5. **Error Handling & Edge Cases**
+   - Does it include overly broad error handling or perfect edge case management not required by the problem?
 
-CRITICAL FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
-- NO extra text, explanations, or comments outside the JSON
-- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
+6. **Signature Patterns of AI Tools**
+   - Look for patterns commonly produced by ChatGPT or Gemini, such as:
+     - Consistent \`for (const item of arr)\` or similar idioms.
+     - Explicit step-by-step comments (“// Step 1: Initialize variables”).
+     - Overuse of blank lines between logical sections.
+     - Imports that are declared but never used (AI leftover pattern).
 
-\`\`\`json
+7. **Human Behavioral Patterns**
+   - Check for small human-like inconsistencies:
+     - Slight indentation misalignments.
+     - Unused or redundant variables.
+     - Minor inefficiencies.
+     - Comments in a learning tone (e.g., “not sure if this works”).
+   - The presence of these indicates a likely human author.
+
+8. **Comparison Against Student Baseline**
+   - Compare the code’s quality and sophistication to that of an average student solution for the same topic or difficulty level.
+   - If the code looks like a polished template or professionally formatted snippet — that’s a strong AI indicator.
+
+---
+
+🧠 THINKING PROCESS:
+Analyze all of the above before making a decision.
+Avoid bias toward “AI” just because the code is good — some students write clean code.
+
+---
+
+📊 OUTPUT FORMAT (JSON):
+Return your analysis as a valid JSON object exactly in this structure:
+
 {
-  "isAiGenerated": true,
-  "confidence": 95,
-  "reasons": ["specific AI pattern 1", "specific AI pattern 2", "specific AI pattern 3"],
-  "recommendations": ["Write your own solution from scratch", "Try to understand the problem step by step", "Ask for hints if you're stuck"],
-  "analysis": "Detailed analysis of why this appears to be AI-generated",
-  "rationale": "Specific explanation of AI-generated patterns detected",
-  "specificPatterns": ["pattern 1", "pattern 2", "pattern 3"],
-  "summary": "AI-generated code detected - please solve independently"
+  "aiLikelihood": <integer 0-100>,
+  "humanLikelihood": <integer 0-100>,
+  "explanation": "<short 3-4 sentence summary of reasoning>",
+  "verdict": "AI" | "Human" | "Unclear"
 }
-\`\`\`
 
-Return ONLY the JSON object in the specified format, no additional text.
+🧩 RULES:
+- Ensure the two likelihoods add up to ~100.
+- Base your reasoning only on the provided code and question context.
+- Be objective and explain the decision succinctly.
+
+---
+
+💬 EXAMPLE OUTPUT:
+{
+  "aiLikelihood": 92,
+  "humanLikelihood": 8,
+  "explanation": "The code is perfectly structured, uses generic variable names, formal comments, and advanced syntax uncommon for students. No trial-and-error signs found.",
+  "verdict": "AI"
+}
 `;
 
     try {
