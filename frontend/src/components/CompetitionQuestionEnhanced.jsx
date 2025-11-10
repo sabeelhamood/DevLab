@@ -12,7 +12,6 @@ import {
   VolumeX,
   Sparkles,
   AlertCircle,
-  Trophy,
   Target
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,27 +20,40 @@ import 'react-circular-progressbar/dist/styles.css'
 import confetti from 'canvas-confetti'
 import { playFeedback, preloadFeedbackSounds } from '../utils/soundManager.js'
 
-const Feedback = ({ isCorrect, points }) => (
-  <motion.div
-    initial={{ scale: 0 }}
-    animate={{ scale: 1 }}
-    exit={{ scale: 0 }}
-    transition={{ type: 'spring', stiffness: 300 }}
-    className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white shadow-lg border border-gray-100"
-  >
-    {isCorrect ? (
-      <CheckCircle className="w-7 h-7 text-green-500" />
-    ) : (
-      <XCircle className="w-7 h-7 text-red-500" />
-    )}
-    <div className="flex flex-col leading-tight">
-      <span className="text-sm font-medium text-gray-500">{isCorrect ? 'Nice work!' : 'Keep going!'}</span>
-      <span className={`text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-        {`${isCorrect ? '+' : ''}${points ?? 0} pts`}
-      </span>
-    </div>
-  </motion.div>
-)
+const Feedback = ({ isCorrect, points }) => {
+  useEffect(() => {
+    if (isCorrect) {
+      confetti({
+        particleCount: 80,
+        spread: 65,
+        ticks: 180,
+        origin: { y: 0.7 }
+      })
+    }
+  }, [isCorrect])
+
+  return (
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0 }}
+      transition={{ type: 'spring', stiffness: 300 }}
+      className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white shadow-lg border border-gray-100"
+    >
+      {isCorrect ? (
+        <CheckCircle className="w-7 h-7 text-green-500" />
+      ) : (
+        <XCircle className="w-7 h-7 text-red-500" />
+      )}
+      <div className="flex flex-col leading-tight">
+        <span className="text-sm font-medium text-gray-500">{isCorrect ? 'Nice work!' : 'Keep going!'}</span>
+        <span className={`text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+          {`${isCorrect ? '+' : ''}${points ?? 0} pts`}
+        </span>
+      </div>
+    </motion.div>
+  )
+}
 
 const FloatingPoints = ({ points }) => (
   <motion.div
@@ -53,6 +65,44 @@ const FloatingPoints = ({ points }) => (
   >
     +{points} pts
   </motion.div>
+)
+
+const ProgressPointsDisplay = ({ progressPercent, scorePercent, score, totalPoints }) => (
+  <div className="flex items-center gap-6">
+    <div className="w-24 h-24 relative">
+      <CircularProgressbar
+        value={progressPercent}
+        text={`${progressPercent}%`}
+        styles={buildStyles({
+          textSize: '14px',
+          pathColor: '#4caf50',
+          textColor: '#1f2937',
+          trailColor: '#e5e7eb'
+        })}
+      />
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
+        Progress
+      </div>
+    </div>
+    <div className="w-24 h-24 relative">
+      <CircularProgressbar
+        value={scorePercent}
+        text={`${score}`}
+        styles={buildStyles({
+          textSize: '16px',
+          pathColor: '#6366f1',
+          textColor: '#1f2937',
+          trailColor: '#e5e7eb'
+        })}
+      />
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
+        Points
+      </div>
+      <div className="absolute inset-x-0 -bottom-5 text-center text-xs text-gray-500">
+        {totalPoints ? `of ${totalPoints}` : 'No total set'}
+      </div>
+    </div>
+  </div>
 )
 
 function CompetitionQuestion() {
@@ -300,10 +350,6 @@ function CompetitionQuestion() {
         setFeedback({ isCorrect, points: pointsAwarded })
         playFeedback(isCorrect)
 
-        if (isCorrect) {
-          confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } })
-        }
-
         if (feedbackTimeoutRef.current) {
           clearTimeout(feedbackTimeoutRef.current)
         }
@@ -345,6 +391,16 @@ function CompetitionQuestion() {
   const completionPercent = competition?.question_count
     ? Math.round(((currentQuestionIndex + (isCompleted ? 1 : 0)) / competition.question_count) * 100)
     : questionProgress
+
+  const totalPossiblePoints = useMemo(() => {
+    if (!competition?.questions?.length) return 0
+    return competition.questions.reduce((sum, q) => sum + (q.points || 0), 0)
+  }, [competition])
+
+  const scorePercent = useMemo(() => {
+    if (!totalPossiblePoints) return 0
+    return Math.min(100, Math.round((score / totalPossiblePoints) * 100))
+  }, [score, totalPossiblePoints])
 
   if (loading) {
     return (
@@ -396,30 +452,12 @@ function CompetitionQuestion() {
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-gray-900">Question {questionId} of {competition?.question_count}</h1>
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 relative">
-                  <CircularProgressbar
-                    value={completionPercent}
-                    text={`${completionPercent}%`}
-                    styles={buildStyles({
-                      textSize: '16px',
-                      pathColor: '#4caf50',
-                      textColor: '#333',
-                      trailColor: '#f0f0f0'
-                    })}
-                  />
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500">
-                    Progress
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-sm uppercase tracking-wide text-gray-500">Score</span>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                    <span className="text-xl font-bold text-gray-900">{score}</span>
-                  </div>
-                </div>
-              </div>
+              <ProgressPointsDisplay
+                progressPercent={completionPercent}
+                scorePercent={scorePercent}
+                score={score}
+                totalPoints={totalPossiblePoints}
+              />
               <div className="flex items-center space-x-4">
                 <div className={`text-3xl font-bold ${getTimeColor()}`}>
                   {formatTime(timeLeft)}
