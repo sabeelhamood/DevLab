@@ -120,6 +120,11 @@ function CompetitionQuestion() {
     }
   }, [])
   const activeLearnerId = learnerIdFromQuery || storedLearnerId || null
+  const apiBase = useMemo(() => {
+    const rawBase =
+      import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api'
+    return rawBase.replace(/\/$/, '')
+  }, [])
   const [question, setQuestion] = useState(null)
   const [answer, setAnswer] = useState('')
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes default
@@ -355,7 +360,7 @@ function CompetitionQuestion() {
       }
 
       let fetchedCompetition = null
-      let response = await fetch(`/api/competitions/${competitionId}`, { headers })
+      let response = await fetch(`${apiBase}/competitions/${competitionId}`, { headers })
 
       if (response.ok) {
         fetchedCompetition = await response.json()
@@ -365,7 +370,7 @@ function CompetitionQuestion() {
           response.status === 404) &&
         activeLearnerId
       ) {
-        const fallbackResponse = await fetch(`/api/competitions/learner/${activeLearnerId}`)
+        const fallbackResponse = await fetch(`${apiBase}/competitions/learner/${activeLearnerId}`)
         if (!fallbackResponse.ok) {
           const fallbackText = await fallbackResponse.text()
           throw new Error(
@@ -470,7 +475,7 @@ function CompetitionQuestion() {
         console.warn('Unable to read auth token before submitting answer:', error)
       }
 
-      const response = await fetch(`/api/competitions/${competitionId}/submit`, {
+      const response = await fetch(`${apiBase}/competitions/${competitionId}/submit`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
