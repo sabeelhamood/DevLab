@@ -33,7 +33,6 @@ import geminiQuestionRoutes from './routes/gemini-question-generation.js'
 import judge0Routes from './routes/judge0.js'
 import legacyCompetitionRoutes from './routes/competitions.js'
 import competitionRoutes from './routes/competitions/competitionRoutes.js'
-import { CompetitionModel } from './models/Competition.js'
 
 // External service routes
 import assessmentRoutes from './routes/external/assessmentRoutes.js'
@@ -212,27 +211,20 @@ app.use(morgan('combined'))
 app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
-app.get('/api/competitions/learner/:learnerId', async (req, res) => {
-  try {
-    const competitions = await CompetitionModel.findByLearner(req.params.learnerId)
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching competitions by learner:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-app.get('/api/competitions/course/:courseId', async (req, res) => {
-  try {
-    const competitions = await CompetitionModel.findByCourse(req.params.courseId)
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching competitions by course:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
 app.use('/api/competitions', competitionRoutes)
+try {
+  const competitionRouteSummaries = competitionRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: `/api/competitions${layer.route.path === '/' ? '' : layer.route.path}`,
+      methods: Object.keys(layer.route.methods)
+        .filter((method) => layer.route.methods[method])
+        .map((method) => method.toUpperCase())
+    }))
+  console.log('✅ Registered competition routes:', competitionRouteSummaries)
+} catch (error) {
+  console.warn('⚠️ Unable to list competition routes:', error.message)
+}
 app.use('/api/competitions-mock', legacyCompetitionRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
