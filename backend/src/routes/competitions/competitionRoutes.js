@@ -28,6 +28,30 @@ const updateResultValidation = [
 router.post('/invite', authenticateToken, competitionController.createInvitation)
 router.post('/invitation/:invitationId/respond', authenticateToken, competitionController.respondToInvitation)
 router.post('/join', authenticateToken, joinCompetitionValidation, validateRequest, competitionController.joinCompetition)
+router.get('/course/:courseId', async (req, res) => {
+  try {
+    const { courseId } = req.params
+    const competitions = await CompetitionModel.findByCourse(courseId)
+
+    res.json(competitions)
+  } catch (error) {
+    console.error('Error fetching competitions by course:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/learner/:learnerId', async (req, res) => {
+  try {
+    const { learnerId } = req.params
+    const competitions = await CompetitionModel.findByLearner(learnerId)
+
+    res.json(competitions)
+  } catch (error) {
+    console.error('Error fetching competitions by learner:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.get('/:id', authenticateToken, competitionController.getCompetition)
 router.post('/:id/submit', authenticateToken, submitAnswerValidation, validateRequest, competitionController.submitAnswer)
 router.get('/:id/results', authenticateToken, competitionController.getResults)
@@ -49,30 +73,6 @@ router.post('/', async (req, res) => {
     res.status(201).json(competition)
   } catch (error) {
     console.error('Error creating competition:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-router.get('/course/:courseId', async (req, res) => {
-  try {
-    const { courseId } = req.params
-    const competitions = await CompetitionModel.findByCourse(courseId)
-    
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching competitions by course:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-router.get('/learner/:learnerId', async (req, res) => {
-  try {
-    const { learnerId } = req.params
-    const competitions = await CompetitionModel.findByLearner(learnerId)
-    
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching competitions by learner:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
