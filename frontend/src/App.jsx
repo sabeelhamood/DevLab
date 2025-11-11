@@ -10,6 +10,7 @@ import MockCompetitionGameplay from './pages/MockCompetitionGameplay'
 import './styles/theme-transitions.css'
 
 function App() {
+  console.log('VITE_API_URL =', import.meta.env.VITE_API_URL)
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout>
