@@ -685,6 +685,102 @@ export const competitionController = {
         error: error.message
       })
     }
+  },
+
+  async finalizeCompetition(req, res) {
+    try {
+      const { id } = req.params
+
+      const competition = await CompetitionModel.findById(id)
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          message: 'Competition not found.'
+        })
+      }
+
+      const questions = Array.isArray(competition.questions) ? competition.questions : []
+      if (!questions.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'Competition has no questions configured.'
+        })
+      }
+
+      const allCompleted = questions.every((question) => question?.state?.completed)
+      if (!allCompleted) {
+        return res.status(400).json({
+          success: false,
+          message: 'Competition not yet complete.'
+        })
+      }
+
+      const learner1Id =
+        competition.learner1_id ||
+        competition.learner1?.learner_id ||
+        competition.learner1?.id ||
+        'Player A'
+      const learner2Id =
+        competition.learner2_id ||
+        competition.learner2?.learner_id ||
+        competition.learner2?.id ||
+        'Player B'
+
+      const learner1Score =
+        (competition.learner1_answers || []).reduce(
+          (total, answer) => total + (answer.score || 0),
+          0
+        ) || 0
+      const learner2Score =
+        (competition.learner2_answers || []).reduce(
+          (total, answer) => total + (answer.score || 0),
+          0
+        ) || 0
+
+      let winnerId = null
+      if (learner1Score > learner2Score) {
+        winnerId = learner1Id
+      } else if (learner2Score > learner1Score) {
+        winnerId = learner2Id
+      } else {
+        winnerId = 'tie'
+      }
+
+      const summaryPayload = {
+        competition_id: competition.competition_id || competition.id || id,
+        winner_id: winnerId !== 'tie' ? winnerId : null,
+        winner: winnerId === 'tie' ? 'tie' : winnerId,
+        learner1_id: learner1Id,
+        learner2_id: learner2Id,
+        learner1_score: learner1Score,
+        learner2_score: learner2Score,
+        performance_learner1: {
+          score: learner1Score,
+          questions_answered: competition?.learner1_answers?.length ?? 0
+        },
+        performance_learner2: {
+          score: learner2Score,
+          questions_answered: competition?.learner2_answers?.length ?? 0
+        }
+      }
+
+      const updatedCompetition = await CompetitionModel.upsertSummary(summaryPayload)
+
+      return res.json({
+        success: true,
+        competitionId: updatedCompetition?.competition_id || id,
+        finalResults: [
+          { learnerId: learner1Id, totalScore: learner1Score },
+          { learnerId: learner2Id, totalScore: learner2Score }
+        ],
+        winner: winnerId
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
   }
 }
 
