@@ -80,6 +80,40 @@ const jsonColumns = [
   'performance_learner2'
 ]
 
+const DEFAULT_TURN_TIMER = 600
+
+const normalizeLearnerTurnState = (state = {}) => ({
+  submitted: Boolean(state.submitted),
+  score: Number(state.score ?? state.points ?? 0),
+  time_spent: Number(state.time_spent ?? state.timeSpent ?? 0),
+  submitted_at: state.submitted_at || null
+})
+
+const ensureQuestionTurnState = (question = {}, index = 0) => {
+  if (!question.state || typeof question.state !== 'object') {
+    question.state = {}
+  }
+
+  const state = question.state
+  state.index = index
+  state.learner1 = normalizeLearnerTurnState(state.learner1)
+  state.learner2 = normalizeLearnerTurnState(state.learner2)
+
+  if (state.timer === undefined || state.timer === null) {
+    state.timer = question.timeLimit || DEFAULT_TURN_TIMER
+  }
+
+  if (state.is_active === undefined) {
+    state.is_active = index === 0
+  }
+
+  if (state.completed === undefined) {
+    state.completed = false
+  }
+
+  return state
+}
+
 const normalizeCompetitionInsertPayload = (data = {}) => {
   const payload = { ...data }
 
@@ -235,19 +269,43 @@ export class CompetitionModel {
   }
 
   static async updateResult(competitionId, result) {
-    const winnerId = result?.winner?.user_id ?? result?.winner_id ?? null
+    const existing = await postgres.query(
+      `
+      SELECT "result"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
+      `,
+      [competitionId]
+    )
+
+    const existingResult = existing.rows?.[0]?.result || {}
+
+    const mergedResult = {
+      ...existingResult,
+      ...result,
+      per_question: {
+        ...(existingResult.per_question || {}),
+        ...(result?.per_question || {})
+      }
+    }
+
+    const winnerId =
+      mergedResult?.winner?.user_id ?? mergedResult?.winner_id ?? existingResult?.winner_id ?? null
     const learner1Score =
-      result?.results?.learner1?.score ??
-      result?.learner1_score ??
-      result?.performance_learner1?.score ??
+      mergedResult?.results?.learner1?.score ??
+      mergedResult?.learner1_score ??
+      mergedResult?.performance_learner1?.score ??
+      existingResult?.learner1_score ??
       null
     const learner2Score =
-      result?.results?.learner2?.score ??
-      result?.learner2_score ??
-      result?.performance_learner2?.score ??
+      mergedResult?.results?.learner2?.score ??
+      mergedResult?.learner2_score ??
+      mergedResult?.performance_learner2?.score ??
+      existingResult?.learner2_score ??
       null
     const updatePayload = {
-      result,
+      result: mergedResult,
       winner_id: winnerId,
       learner1_score: learner1Score,
       learner2_score: learner2Score,
@@ -325,23 +383,99 @@ export class CompetitionModel {
   }
 
   static async updateAnswer(competitionId, learnerId, questionId, answerData) {
-    const column =
-      learnerId === 'learner1_id'
-        ? '"learner1_answers"'
-        : '"learner2_answers"'
-
     const { rows } = await postgres.query(
       `
-      UPDATE ${competitionsTable}
-      SET ${column} = $1,
-          "updated_at" = now()
-      WHERE "competition_id" = $2
-      RETURNING *
+      SELECT
+        "learner1_id",
+        "learner2_id",
+        "learner1_answers",
+        "learner2_answers",
+        "questions",
+        "questions_answered"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
       `,
-      [answerData, competitionId]
+      [competitionId]
     )
 
-    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    if (!rows.length) {
+      return null
+    }
+
+    const competitionRow = rows[0]
+
+    const learnerKey =
+      learnerId && competitionRow.learner1_id === learnerId
+        ? 'learner1'
+        : competitionRow.learner2_id === learnerId
+        ? 'learner2'
+        : null
+
+    if (!learnerKey) {
+      throw new Error('Unable to map learner to competition participants.')
+    }
+
+    const answersKey = `${learnerKey}_answers`
+    const existingAnswers = Array.isArray(competitionRow[answersKey])
+      ? [...competitionRow[answersKey]]
+      : []
+
+    const enrichedAnswer = {
+      questionId,
+      ...answerData
+    }
+
+    const existingIndex = existingAnswers.findIndex(
+      (entry) => entry.questionId === questionId
+    )
+
+    if (existingIndex >= 0) {
+      existingAnswers[existingIndex] = enrichedAnswer
+    } else {
+      existingAnswers.push(enrichedAnswer)
+    }
+
+    const questions = Array.isArray(competitionRow.questions)
+      ? competitionRow.questions.map((question) => ({ ...question }))
+      : []
+
+    const questionIndex = questions.findIndex(
+      (question) => question.id === questionId || question.question_id === questionId
+    )
+
+    if (questionIndex >= 0) {
+      const question = questions[questionIndex]
+      const state = ensureQuestionTurnState(question, questionIndex)
+      const learnerState = normalizeLearnerTurnState({
+        submitted: true,
+        score: answerData.score ?? 0,
+        time_spent: answerData.timeSpent ?? 0,
+        submitted_at: new Date().toISOString()
+      })
+
+      state[learnerKey] = learnerState
+      state.last_updated = new Date().toISOString()
+      state.is_active = state.is_active ?? questionIndex === 0
+    }
+
+    const updateQuery = `
+      UPDATE ${competitionsTable}
+      SET "${answersKey}" = $1::jsonb,
+          "questions" = $2::jsonb,
+          "updated_at" = now()
+      WHERE "competition_id" = $3
+      RETURNING *
+    `
+
+    const updateParams = [
+      JSON.stringify(existingAnswers),
+      JSON.stringify(questions),
+      competitionId
+    ]
+
+    const { rows: updatedRows } = await postgres.query(updateQuery, updateParams)
+    const [competition] = await loadCompetitionRelations(updatedRows, defaultRelations)
     return competition || null
   }
 
@@ -367,10 +501,14 @@ export class CompetitionModel {
     return Boolean(learner1Submitted && learner2Submitted)
   }
 
-  static async determineWinner(competitionId) {
+  static async determineWinner(competitionId, questionId = null) {
     const { rows } = await postgres.query(
       `
-      SELECT "learner1_answers", "learner2_answers"
+      SELECT
+        "learner1_id",
+        "learner2_id",
+        "learner1_answers",
+        "learner2_answers"
       FROM ${competitionsTable}
       WHERE "competition_id" = $1
       LIMIT 1
@@ -384,29 +522,59 @@ export class CompetitionModel {
 
     const [data] = rows
 
-    const learner1Score =
-      data.learner1_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
-    const learner2Score =
-      data.learner2_answers?.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+    const filterAnswers = (answers = []) =>
+      questionId ? answers.filter((answer) => answer.questionId === questionId) : answers
 
-    const winner =
+    const learner1Answers = filterAnswers(data.learner1_answers || [])
+    const learner2Answers = filterAnswers(data.learner2_answers || [])
+
+    const learner1Score =
+      learner1Answers.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+    const learner2Score =
+      learner2Answers.reduce((total, answer) => total + (answer.score || 0), 0) || 0
+
+    const learner1Time =
+      learner1Answers.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
+    const learner2Time =
+      learner2Answers.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
+
+    let winner =
       learner1Score > learner2Score
         ? 'Player A'
         : learner2Score > learner1Score
         ? 'Player B'
         : 'Tie'
 
-    return {
+    if (winner === 'Tie' && learner1Score === learner2Score && learner1Score > 0) {
+      if (learner1Time !== learner2Time) {
+        winner = learner1Time < learner2Time ? 'Player A' : 'Player B'
+      }
+    }
+
+    const player1Rank =
+      learner1Score > learner2Score ? 1 : learner2Score > learner1Score ? 2 : 2
+    const player2Rank =
+      learner2Score > learner1Score ? 1 : learner1Score > learner2Score ? 2 : 2
+
+    const baseResult = {
       winner,
       player1Score: learner1Score,
       player2Score: learner2Score,
-      player1Rank: learner1Score > learner2Score ? 1 : 2,
-      player2Rank: learner2Score > learner1Score ? 1 : 2,
-      player1Time:
-        data.learner1_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0,
-      player2Time:
-        data.learner2_answers?.reduce((total, answer) => total + (answer.timeSpent || 0), 0) || 0
+      player1Rank,
+      player2Rank,
+      player1Time: learner1Time,
+      player2Time: learner2Time
     }
+
+    if (questionId) {
+      return {
+        questionId,
+        completed_at: new Date().toISOString(),
+        ...baseResult
+      }
+    }
+
+    return baseResult
   }
 
   static async upsertSummary(summary) {
@@ -463,8 +631,8 @@ export class CompetitionModel {
       return competition || null
     }
 
-    const insertPayload = {
-      competition_id: summary.competition_id,
+      const insertPayload = {
+        competition_id: summary.competition_id,
       course_name: summary.course_name ?? null,
       course_id: summary.course_id ?? null,
       learner1_id: summary.learner1_id ?? null,
@@ -472,20 +640,145 @@ export class CompetitionModel {
       winner_id: winnerId,
       learner1_score: learner1Score,
       learner2_score: learner2Score,
-      status: 'completed',
-      timer: summary.timer || null,
-      performance_learner1: summary.performance_learner1 || null,
-      performance_learner2: summary.performance_learner2 || null,
-      score: summary.score ?? null,
-      questions_answered: summary.questions_answered ?? null,
-      created_at: summary.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+        status: 'completed',
+        timer: summary.timer || null,
+        performance_learner1: summary.performance_learner1 || null,
+        performance_learner2: summary.performance_learner2 || null,
+        score: summary.score ?? null,
+        questions_answered: summary.questions_answered ?? null,
+        created_at: summary.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
 
     const insertQuery = buildInsertStatement(competitionsTable, insertPayload)
     const insertResult = await postgres.query(insertQuery.text, insertQuery.values)
     const [competition] = await loadCompetitionRelations(insertResult.rows, defaultRelations)
     return competition || insertPayload
   }
-}
 
+  static async saveQuestionsState(competitionId, questions, meta = {}) {
+    const updateFragments = ['"questions" = $1::jsonb', '"updated_at" = now()']
+    const params = [JSON.stringify(questions || [])]
+    let paramIndex = 2
+
+    if (meta.questions_answered !== undefined && meta.questions_answered !== null) {
+      updateFragments.push(`"questions_answered" = $${paramIndex}`)
+      params.push(meta.questions_answered)
+      paramIndex += 1
+    }
+
+    const updateQuery = `
+      UPDATE ${competitionsTable}
+      SET ${updateFragments.join(', ')}
+      WHERE "competition_id" = $${paramIndex}
+      RETURNING *
+    `
+
+    params.push(competitionId)
+
+    const { rows } = await postgres.query(updateQuery, params)
+    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
+    return competition || null
+  }
+
+  static async recordQuestionResult(competitionId, questionId, questionResult) {
+    const { rows } = await postgres.query(
+      `
+      SELECT "questions", "questions_answered"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
+      `,
+      [competitionId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const competitionRow = rows[0]
+    const questions = Array.isArray(competitionRow.questions)
+      ? competitionRow.questions.map((question) => ({ ...question }))
+      : []
+
+    const questionIndex = questions.findIndex(
+      (question) => question.id === questionId || question.question_id === questionId
+    )
+
+    if (questionIndex === -1) {
+      return null
+    }
+
+    const question = questions[questionIndex]
+    const state = ensureQuestionTurnState(question, questionIndex)
+
+    state.completed = true
+    state.is_active = false
+    state.result = {
+      ...(state.result || {}),
+      ...questionResult
+    }
+    state.completed_at = questionResult?.completed_at || new Date().toISOString()
+
+    const questionsAnswered = Math.max(
+      competitionRow.questions_answered ?? 0,
+      questionIndex + 1
+    )
+
+    const updatedCompetition = await this.saveQuestionsState(competitionId, questions, {
+      questions_answered: questionsAnswered
+    })
+
+    const resultPayload = {
+      per_question: {
+        [questionId]: {
+          ...questionResult,
+          recorded_at: new Date().toISOString()
+        }
+      }
+    }
+
+    const competitionWithResult = await this.updateResult(competitionId, resultPayload)
+    return competitionWithResult || updatedCompetition
+  }
+
+  static async setActiveQuestion(competitionId, nextIndex) {
+    const { rows } = await postgres.query(
+      `
+      SELECT "questions", "questions_answered"
+      FROM ${competitionsTable}
+      WHERE "competition_id" = $1
+      LIMIT 1
+      `,
+      [competitionId]
+    )
+
+    if (!rows.length) {
+      return null
+    }
+
+    const competitionRow = rows[0]
+    const questions = Array.isArray(competitionRow.questions)
+      ? competitionRow.questions.map((question) => ({ ...question }))
+      : []
+
+    questions.forEach((question, index) => {
+      const state = ensureQuestionTurnState(question, index)
+      state.is_active = index === nextIndex
+      if (index === nextIndex) {
+        state.started_at = new Date().toISOString()
+        state.timer = question.timeLimit || DEFAULT_TURN_TIMER
+        state.learner1 = normalizeLearnerTurnState({ submitted: false })
+        state.learner2 = normalizeLearnerTurnState({ submitted: false })
+        state.completed = false
+        state.result = null
+      }
+    })
+
+    const questionsAnswered = Math.max(competitionRow.questions_answered ?? 0, nextIndex)
+
+    return this.saveQuestionsState(competitionId, questions, {
+      questions_answered: questionsAnswered
+    })
+  }
+}

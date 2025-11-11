@@ -1,6 +1,28 @@
 import { CompetitionModel } from '../models/Competition.js'
 import { generateQuestions } from '../services/geminiQuestionGeneration.js'
 
+const DEFAULT_TURN_TIMER = 600
+
+const sanitizeQuestionForTurn = (question) => {
+  if (!question) {
+    return null
+  }
+
+  const state = question.state || {}
+
+  return {
+    id: question.id || question.question_id,
+    title: question.title,
+    description: question.description,
+    difficulty: question.difficulty,
+    language: question.language,
+    points: question.points ?? 0,
+    timeLimit: question.timeLimit ?? state.timer ?? DEFAULT_TURN_TIMER,
+    testCases: question.testCases || question.test_cases || [],
+    state
+  }
+}
+
 // Helper function to evaluate answers with Gemini
 async function evaluateAnswerWithGemini({ question, answer, testCases }) {
   try {
@@ -319,7 +341,7 @@ export const competitionController = {
       })
 
       // Update competition with answer
-      const updatedCompetition = await CompetitionModel.updateAnswer(id, learnerId, questionId, {
+      let updatedCompetition = await CompetitionModel.updateAnswer(id, learnerId, questionId, {
         answer,
         timeSpent,
         isCorrect: evaluation.isCorrect,
@@ -329,16 +351,28 @@ export const competitionController = {
 
       // Check if both players submitted answers for current question
       const bothSubmitted = await CompetitionModel.checkBothAnswersSubmitted(id, questionId)
-      const answeredCount = Math.max(
-        updatedCompetition?.learner1_answers?.length ?? 0,
-        updatedCompetition?.learner2_answers?.length ?? 0
-      )
       const totalQuestions =
-        updatedCompetition?.question_count ??
-        updatedCompetition?.questions?.length ??
-        answeredCount
-      
+        updatedCompetition?.question_count ?? updatedCompetition?.questions?.length ?? 0
+
+      let answeredCount =
+        updatedCompetition?.questions?.filter((item) => item?.state?.completed)?.length ?? 0
+      let questionResult = null
+
       if (bothSubmitted) {
+        const perQuestionResult = await CompetitionModel.determineWinner(id, questionId)
+        if (perQuestionResult) {
+          updatedCompetition = await CompetitionModel.recordQuestionResult(
+            id,
+            questionId,
+            perQuestionResult
+          )
+          questionResult = perQuestionResult
+        }
+
+        answeredCount =
+          updatedCompetition?.questions?.filter((item) => item?.state?.completed)?.length ??
+          answeredCount
+
         // Move to next question or finish competition
         if (totalQuestions > 0 && answeredCount >= totalQuestions) {
           // Competition finished - evaluate winner
@@ -358,7 +392,8 @@ export const competitionController = {
             totalQuestions > 0 && answeredCount >= totalQuestions
               ? null
               : answeredCount + 1,
-          competitionFinished: totalQuestions > 0 && answeredCount >= totalQuestions
+          competitionFinished: totalQuestions > 0 && answeredCount >= totalQuestions,
+          questionResult
         }
       })
     } catch (error) {
@@ -474,6 +509,94 @@ export const competitionController = {
       res.json({
         success: true,
         data: leaderboard
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
+  },
+
+  async nextTurn(req, res) {
+    try {
+      const { id } = req.params
+
+      const competition = await CompetitionModel.findById(id)
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          error: 'Competition not found'
+        })
+      }
+
+      const questions = Array.isArray(competition.questions) ? competition.questions : []
+
+      if (!questions.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Competition has no questions configured'
+        })
+      }
+
+      let activeIndex = questions.findIndex((question) => question?.state?.is_active)
+
+      if (activeIndex === -1) {
+        const updatedCompetition = await CompetitionModel.setActiveQuestion(id, 0)
+        const activeQuestion = updatedCompetition?.questions?.[0]
+
+        return res.json({
+          success: true,
+          data: {
+            questionIndex: 0,
+            totalQuestions: updatedCompetition?.questions?.length ?? questions.length,
+            timer: activeQuestion?.state?.timer ?? activeQuestion?.timeLimit ?? DEFAULT_TURN_TIMER,
+            question: sanitizeQuestionForTurn(activeQuestion),
+            competitionFinished: false,
+            turnStartedAt: activeQuestion?.state?.started_at
+          }
+        })
+      }
+
+      const currentQuestion = questions[activeIndex]
+      const state = currentQuestion?.state || {}
+      const learner1Submitted = state.learner1?.submitted ?? false
+      const learner2Submitted = state.learner2?.submitted ?? false
+
+      if (!learner1Submitted || !learner2Submitted) {
+        return res.status(409).json({
+          success: false,
+          error: 'Current question is still awaiting submissions from both learners.'
+        })
+      }
+
+      const nextIndex = activeIndex + 1
+
+      if (nextIndex >= questions.length) {
+        return res.json({
+          success: true,
+          data: {
+            questionIndex: nextIndex,
+            totalQuestions: questions.length,
+            question: null,
+            competitionFinished: true
+          }
+        })
+      }
+
+      const updatedCompetition = await CompetitionModel.setActiveQuestion(id, nextIndex)
+      const nextQuestion = updatedCompetition?.questions?.[nextIndex]
+
+      return res.json({
+        success: true,
+        data: {
+          questionIndex: nextIndex,
+          totalQuestions: updatedCompetition?.questions?.length ?? questions.length,
+          timer: nextQuestion?.state?.timer ?? nextQuestion?.timeLimit ?? DEFAULT_TURN_TIMER,
+          question: sanitizeQuestionForTurn(nextQuestion),
+          competitionFinished: false,
+          turnStartedAt: nextQuestion?.state?.started_at
+        }
       })
     } catch (error) {
       res.status(500).json({

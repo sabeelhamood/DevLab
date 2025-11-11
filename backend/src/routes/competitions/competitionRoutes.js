@@ -56,6 +56,7 @@ router.get('/:id', authenticateToken, competitionController.getCompetition)
 router.post('/:id/submit', authenticateToken, submitAnswerValidation, validateRequest, competitionController.submitAnswer)
 router.get('/:id/results', authenticateToken, competitionController.getResults)
 router.get('/leaderboard/:courseId', authenticateToken, competitionController.getLeaderboard)
+router.post('/:id/next-turn', authenticateToken, competitionController.nextTurn)
 
 // New routes for updated schema
 router.post('/', async (req, res) => {
