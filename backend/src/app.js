@@ -31,7 +31,8 @@ import geminiQuestionRoutes from './routes/gemini-question-generation.js'
 
 // Judge0 routes
 import judge0Routes from './routes/judge0.js'
-import competitionRoutes from './routes/competitions.js'
+import legacyCompetitionRoutes from './routes/competitions.js'
+import competitionRoutes from './routes/competitions/competitionRoutes.js'
 
 // External service routes
 import assessmentRoutes from './routes/external/assessmentRoutes.js'
@@ -211,6 +212,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
 app.use('/api/competitions', competitionRoutes)
+app.use('/api/competitions-mock', legacyCompetitionRoutes)
 app.use('/api/analytics', analyticsRoutes)
 
 // Gemini AI routes

@@ -346,6 +346,13 @@ function CompetitionQuestion() {
     setLoadError(null)
 
     try {
+      if (!competitionId) {
+        throw new Error('Missing competition identifier in route.')
+      }
+      if (!questionId) {
+        throw new Error('Missing question identifier in route.')
+      }
+
       const headers = {
         'Content-Type': 'application/json'
       }
