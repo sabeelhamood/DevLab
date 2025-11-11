@@ -604,6 +604,87 @@ export const competitionController = {
         error: error.message
       })
     }
+  },
+
+  async getProgress(req, res) {
+    try {
+      const { id } = req.params
+
+      const competition = await CompetitionModel.findById(id)
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          error: 'Competition not found'
+        })
+      }
+
+      const questions = Array.isArray(competition.questions) ? competition.questions : []
+      const activeIndex = questions.findIndex((question) => question?.state?.is_active)
+
+      let activeQuestionPayload = null
+      if (activeIndex >= 0) {
+        const activeQuestion = questions[activeIndex]
+        const state = activeQuestion?.state || {}
+
+        activeQuestionPayload = {
+          index: activeIndex,
+          questionId: activeQuestion?.id || activeQuestion?.question_id || null,
+          timerRemaining: state.timer ?? activeQuestion?.timeLimit ?? DEFAULT_TURN_TIMER,
+          startedAt: state.started_at || null
+        }
+      }
+
+      const learner1Id = competition.learner1_id || competition.learner1?.learner_id || null
+      const learner2Id = competition.learner2_id || competition.learner2?.learner_id || null
+
+      const learners = [
+        {
+          id: learner1Id,
+          submitted: Boolean(activeIndex >= 0 && questions[activeIndex]?.state?.learner1?.submitted),
+          score:
+            activeIndex >= 0
+              ? questions[activeIndex]?.state?.learner1?.score ?? null
+              : null
+        },
+        {
+          id: learner2Id,
+          submitted: Boolean(activeIndex >= 0 && questions[activeIndex]?.state?.learner2?.submitted),
+          score:
+            activeIndex >= 0
+              ? questions[activeIndex]?.state?.learner2?.score ?? null
+              : null
+        }
+      ].filter((learner) => learner.id)
+
+      const perQuestionResults = competition?.result?.per_question || {}
+      const resultsSoFar = Object.entries(perQuestionResults).map(([questionId, payload]) => ({
+        questionId,
+        winner:
+          payload?.winner_id ||
+          payload?.winner?.user_id ||
+          payload?.winner === 'Player A'
+            ? learner1Id
+            : payload?.winner === 'Player B'
+            ? learner2Id
+            : payload?.winner || null,
+        summary: payload
+      }))
+
+      return res.json({
+        success: true,
+        data: {
+          competitionId: competition?.competition_id || competition?.id || id,
+          activeQuestion: activeQuestionPayload,
+          learners,
+          resultsSoFar
+        }
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
   }
 }
 
