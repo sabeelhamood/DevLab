@@ -1,7 +1,80 @@
 import { CompetitionModel } from '../models/Competition.js'
 import { generateQuestions } from '../services/geminiQuestionGeneration.js'
+import { postgres, getSupabaseTables } from '../config/database.js'
 
 const DEFAULT_TURN_TIMER = 600
+const tables = getSupabaseTables()
+const learnerScoresTable = postgres.quoteIdentifier(tables.learnerScores || 'learner_scores')
+
+const upsertLearnerScore = async ({ learnerId, competitionId, score }) => {
+  if (!learnerId || !competitionId) {
+    throw new Error('Missing learnerId or competitionId for score upsert.')
+  }
+
+  const query = `
+    INSERT INTO ${learnerScoresTable} ("learner_id", "competition_id", "score", "updated_at")
+    VALUES ($1, $2, $3, now())
+    ON CONFLICT ("learner_id", "competition_id")
+    DO UPDATE SET "score" = EXCLUDED."score", "updated_at" = now()
+    RETURNING "score"
+  `
+
+  const { rows } = await postgres.query(query, [learnerId, competitionId, score])
+  return rows[0]?.score ?? null
+}
+
+const fetchLearnerScore = async ({ learnerId, competitionId }) => {
+  if (!learnerId || !competitionId) {
+    return null
+  }
+
+  const query = `
+    SELECT "score"
+    FROM ${learnerScoresTable}
+    WHERE "learner_id" = $1 AND "competition_id" = $2
+    LIMIT 1
+  `
+
+  const { rows } = await postgres.query(query, [learnerId, competitionId])
+  return rows[0]?.score ?? null
+}
+
+const sumAnswerScores = (answers = []) =>
+  answers.reduce((total, answer) => total + Number(answer?.score || 0), 0)
+
+const resolveLearnerScore = (competition, learnerId, learner1Id, learner2Id) => {
+  if (!competition) {
+    return null
+  }
+
+  const result = competition.result || {}
+
+  let learnerScore = null
+
+  if (learnerId === learner1Id) {
+    learnerScore =
+      result?.learner1_score ??
+      result?.results?.learner1?.score ??
+      result?.performance_learner1?.score ??
+      null
+
+    if (learnerScore === null) {
+      learnerScore = sumAnswerScores(competition.learner1_answers || [])
+    }
+  } else if (learnerId === learner2Id) {
+    learnerScore =
+      result?.learner2_score ??
+      result?.results?.learner2?.score ??
+      result?.performance_learner2?.score ??
+      null
+
+    if (learnerScore === null) {
+      learnerScore = sumAnswerScores(competition.learner2_answers || [])
+    }
+  }
+
+  return learnerScore !== null ? Number(learnerScore) : null
+}
 
 const sanitizeQuestionForTurn = (question) => {
   if (!question) {
@@ -678,6 +751,163 @@ export const competitionController = {
           learners,
           resultsSoFar
         }
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
+  },
+
+  async storeFinalScore(req, res) {
+    try {
+      const { id } = req.params
+      const { learnerId } = req.body || {}
+
+      if (!learnerId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing learnerId'
+        })
+      }
+
+      const competition = await CompetitionModel.findById(id)
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          message: 'Competition not found.'
+        })
+      }
+
+      const learner1Id =
+        competition.learner1_id ||
+        competition.learner1?.learner_id ||
+        competition.learner1?.id ||
+        null
+      const learner2Id =
+        competition.learner2_id ||
+        competition.learner2?.learner_id ||
+        competition.learner2?.id ||
+        null
+
+      if (learnerId !== learner1Id && learnerId !== learner2Id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Learner is not a participant of this competition.'
+        })
+      }
+
+      const learnerScore = resolveLearnerScore(competition, learnerId, learner1Id, learner2Id)
+
+      if (learnerScore === null) {
+        return res.status(400).json({
+          success: false,
+          message: 'Competition results are not available yet.'
+        })
+      }
+
+      await upsertLearnerScore({
+        learnerId,
+        competitionId: competition.competition_id || competition.id || id,
+        score: learnerScore
+      })
+
+      return res.json({
+        success: true,
+        learnerScore,
+        message: 'Score updated.'
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
+  },
+
+  async getOutcome(req, res) {
+    try {
+      const { id, learnerId } = req.params
+
+      const competition = await CompetitionModel.findById(id)
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          message: 'Competition not found.'
+        })
+      }
+
+      const learner1Id =
+        competition.learner1_id ||
+        competition.learner1?.learner_id ||
+        competition.learner1?.id ||
+        null
+      const learner2Id =
+        competition.learner2_id ||
+        competition.learner2?.learner_id ||
+        competition.learner2?.id ||
+        null
+
+      if (learnerId !== learner1Id && learnerId !== learner2Id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Learner is not a participant of this competition.'
+        })
+      }
+
+      const competitionId = competition.competition_id || competition.id || id
+
+      let learnerScore =
+        (await fetchLearnerScore({ learnerId, competitionId })) ??
+        resolveLearnerScore(competition, learnerId, learner1Id, learner2Id) ??
+        0
+
+      learnerScore = Number(learnerScore)
+
+      const opponentId = learnerId === learner1Id ? learner2Id : learner1Id
+      const opponentScore =
+        resolveLearnerScore(competition, opponentId, learner1Id, learner2Id) ?? 0
+
+      const result = competition.result || {}
+      let winnerId =
+        result?.winner_id ||
+        result?.winner?.learner_id ||
+        result?.winner?.user_id ||
+        result?.winner ||
+        null
+
+      if (winnerId === 'Player A') {
+        winnerId = learner1Id
+      } else if (winnerId === 'Player B') {
+        winnerId = learner2Id
+      } else if (winnerId && typeof winnerId === 'object') {
+        winnerId = winnerId?.learner_id || winnerId?.user_id || null
+      }
+
+      if (!winnerId || winnerId === 'tie') {
+        if (learnerScore > opponentScore) {
+          winnerId = learnerId
+        } else if (opponentScore > learnerScore) {
+          winnerId = opponentId
+        } else {
+          winnerId = 'tie'
+        }
+      }
+
+      let winnerMessage
+      if (winnerId === 'tie') {
+        winnerMessage = '🤝 It was a tie! Fantastic effort from both of you!'
+      } else if (winnerId === learnerId) {
+        winnerMessage = '🎉 Congratulations! You won!'
+      } else {
+        winnerMessage = 'Keep going! Better luck next time!'
+      }
+
+      return res.json({
+        success: true,
+        learnerScore,
+        winnerMessage
       })
     } catch (error) {
       res.status(500).json({

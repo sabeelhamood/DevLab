@@ -81,7 +81,8 @@ export const getSupabaseTables = () => {
     questions: 'questions',
     testCases: 'testCases',
     practices: 'practices',
-    courseCompletions: 'course_completions'
+    courseCompletions: 'course_completions',
+    learnerScores: 'learner_scores'
   }
 }
 
