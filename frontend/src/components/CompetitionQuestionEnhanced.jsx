@@ -106,7 +106,7 @@ const ProgressPointsDisplay = ({ progressPercent, scorePercent, score, totalPoin
 )
 
 function CompetitionQuestion() {
-  const { competitionId, questionId } = useParams()
+  const { id: competitionId, questionId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search])
