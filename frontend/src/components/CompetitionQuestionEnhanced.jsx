@@ -120,6 +120,7 @@ function CompetitionQuestion() {
     }
   }, [])
   const activeLearnerId = learnerIdFromQuery || storedLearnerId || null
+  console.log('Active learner ID:', activeLearnerId)
   const apiBase = useMemo(() => {
     const rawBase =
       import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api'
@@ -346,6 +347,7 @@ function CompetitionQuestion() {
     setLoadError(null)
 
     try {
+      console.log('Competition ID:', competitionId)
       if (!competitionId) {
         throw new Error('Missing competition identifier in route.')
       }
@@ -367,7 +369,13 @@ function CompetitionQuestion() {
       }
 
       let fetchedCompetition = null
-      let response = await fetch(`${apiBase}/competitions/${competitionId}`, { headers })
+      const competitionUrl = `${apiBase}/competitions/${competitionId}`
+      const learnerUrl = `${apiBase}/competitions/learner/${activeLearnerId}`
+      console.log('Fetching competition URL:', competitionUrl)
+      console.log('Fallback learner URL:', learnerUrl)
+
+      let response = await fetch(competitionUrl, { headers })
+      console.log('Competition fetch status:', response.status)
 
       if (response.ok) {
         fetchedCompetition = await response.json()
@@ -377,9 +385,13 @@ function CompetitionQuestion() {
           response.status === 404) &&
         activeLearnerId
       ) {
-        const fallbackResponse = await fetch(`${apiBase}/competitions/learner/${activeLearnerId}`)
+        console.log('Competition fetch text:', await response.text())
+
+        const fallbackResponse = await fetch(learnerUrl)
+        console.log('Learner fetch status:', fallbackResponse.status)
         if (!fallbackResponse.ok) {
           const fallbackText = await fallbackResponse.text()
+          console.log('Learner fetch text:', fallbackText)
           throw new Error(
             fallbackText || `Unable to load competitions for learner ${activeLearnerId}`
           )
@@ -401,6 +413,7 @@ function CompetitionQuestion() {
       }
 
       const normalizedCompetition = normalizeCompetitionData(fetchedCompetition)
+      console.log('Normalized competition:', normalizedCompetition)
 
       if (!normalizedCompetition?.questions?.length) {
         throw new Error('Competition is missing question data.')
@@ -425,6 +438,8 @@ function CompetitionQuestion() {
       if (!currentQuestion) {
         throw new Error('Unable to resolve the current question.')
       }
+
+      console.log('Resolved current question:', currentQuestion)
 
       setQuestion(currentQuestion)
       setTimeLeft(currentQuestion.timeLimit || normalizedCompetition.time_limit || 600)
