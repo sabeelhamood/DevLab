@@ -178,7 +178,14 @@ export const assessmentController = {
           difficulty: question.difficulty,
           programmingLanguage: programming_language,
           testCases: question.test_cases,
-          hints: []
+          hints: [],
+          features: {
+            hints: false,
+            submit: false,
+            proctoring: false,
+            sandbox: true,
+            runTests: true
+          }
         })
       )
 

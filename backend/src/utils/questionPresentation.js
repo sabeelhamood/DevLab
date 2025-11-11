@@ -172,16 +172,82 @@ export const buildQuestionPresentation = ({
   programmingLanguage,
   hints = [],
   testCases = [],
-  expectedAnswer
+  expectedAnswer,
+  features: incomingFeatures = {}
 }) => {
   const theme = THEMES[questionType] || THEMES.default
   const headerTitle =
     title || (questionType === 'code' ? 'Code Challenge' : 'Concept Check')
 
+  const defaultFeatures = {
+    hints: true,
+    submit: true,
+    proctoring: true,
+    sandbox: questionType === 'code',
+    runTests: questionType === 'code'
+  }
+
+  const features = {
+    ...defaultFeatures,
+    ...incomingFeatures
+  }
+
   const normalizedPrompt = formatMultiline(prompt || '')
   const testCasesHtml = buildTestCasesHtml(testCases, theme)
-  const hintsHtml = buildHintsHtml(hints, theme)
+  const hintsHtml = features.hints ? buildHintsHtml(hints, theme) : ''
   const expectedHtml = buildExpectedAnswerHtml(expectedAnswer, theme)
+
+  const actionsHtml = `
+    <section style="display: grid; gap: 16px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+        ${
+          features.hints
+            ? `<button data-action="hint" style="border: none; cursor: pointer; padding: 12px 18px; border-radius: 14px; background: ${theme.accent}; color: white; font-weight: 600; box-shadow: 0 14px 28px rgba(14, 165, 233, 0.32); transition: transform 120ms ease-out;">💡 Get Hint</button>`
+            : ''
+        }
+        ${
+          features.runTests
+            ? `<button data-action="run-tests" style="border: none; cursor: pointer; padding: 12px 18px; border-radius: 14px; background: ${theme.accentMuted}; color: ${theme.badgeText}; font-weight: 600; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); transition: transform 120ms ease-out;">🧪 Run Tests</button>`
+            : ''
+        }
+        ${
+          features.submit
+            ? `<button data-action="submit" style="border: none; cursor: pointer; padding: 12px 18px; border-radius: 14px; background: #22c55e; color: white; font-weight: 600; box-shadow: 0 16px 32px rgba(34, 197, 94, 0.28); transition: transform 120ms ease-out;">🚀 Submit Solution</button>`
+            : ''
+        }
+      </div>
+      ${
+        features.proctoring
+          ? `<div data-role="proctoring-indicator" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: rgba(14, 165, 233, 0.12); border: 1px dashed rgba(14, 165, 233, 0.36); color: rgba(15, 23, 42, 0.78); font-size: 0.9rem;">
+              <span style="font-size: 1rem;">🛡️</span>
+              <span>AI Fraud Detection is active for this session.</span>
+            </div>`
+          : ''
+      }
+    </section>
+  `
+
+  const sandboxHtml =
+    features.sandbox && questionType === 'code'
+      ? `
+    <section style="background: rgba(15, 23, 42, 0.84); border-radius: 22px; padding: 20px; color: white; display: grid; gap: 16px;">
+      <header style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(14, 165, 233, 0.28); color: #0ea5e9;">{ }</span>
+          <div>
+            <h2 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Judge0 Execution Sandbox</h2>
+            <p style="margin: 2px 0 0; font-size: 0.85rem; color: rgba(226, 232, 240, 0.75);">Compile and run your solution safely.</p>
+          </div>
+        </div>
+      </header>
+      <div style="background: rgba(15, 118, 110, 0.08); border-radius: 18px; padding: 18px; border: 1px solid rgba(14, 165, 233, 0.22); font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.45;">
+        // Your code goes here
+      </div>
+      <footer style="display: flex; gap: 10px;">
+        <span style="font-size: 0.8rem; color: rgba(226, 232, 240, 0.78);">Powered by Judge0</span>
+      </footer>
+    </section>`
+      : ''
 
   const html = `
     <article data-question-id="${escapeHtml(id || '')}" data-question-type="${escapeHtml(
@@ -220,6 +286,8 @@ export const buildQuestionPresentation = ({
       <section style="background: rgba(255, 255, 255, 0.94); border: 1px solid rgba(15, 23, 42, 0.07); border-radius: 20px; padding: 22px;">
         <p style="margin: 0; font-size: 1rem; line-height: 1.7;">${normalizedPrompt}</p>
       </section>
+      ${actionsHtml}
+      ${sandboxHtml}
       ${testCasesHtml}
       ${expectedHtml}
       ${hintsHtml}
@@ -304,9 +372,26 @@ export const buildQuestionPresentation = ({
           }
         : null
     ].filter(Boolean),
+    sandbox: {
+      enabled: Boolean(features.sandbox && questionType === 'code'),
+      provider: 'judge0',
+      language: programmingLanguage || null
+    },
+    interactions: {
+      allowHints: Boolean(features.hints),
+      allowSubmit: Boolean(features.submit),
+      allowProctoring: Boolean(features.proctoring),
+      allowRunTests: Boolean(features.runTests),
+      actions: [
+        features.runTests ? { id: 'run-tests', label: 'Run Tests', icon: '🧪' } : null,
+        features.hints ? { id: 'hint', label: 'Get Hint', icon: '💡' } : null,
+        features.submit ? { id: 'submit', label: 'Submit Solution', icon: '🚀' } : null
+      ].filter(Boolean)
+    },
     metadata: {
       difficulty: difficulty || null,
-      programmingLanguage: programmingLanguage || null
+      programmingLanguage: programmingLanguage || null,
+      features
     }
   }
 

@@ -110,7 +110,14 @@ const toAjaxCodingQuestion = ({
     difficulty,
     programmingLanguage,
     hints: safeHints,
-    testCases: baseQuestion.test_cases
+    testCases: baseQuestion.test_cases,
+    features: {
+      hints: true,
+      submit: true,
+      proctoring: true,
+      sandbox: true,
+      runTests: true
+    }
   })
 }
 
@@ -150,7 +157,14 @@ const toAjaxTheoreticalQuestion = ({
     prompt: question,
     topicName,
     difficulty: difficulty || null,
-    expectedAnswer
+    expectedAnswer,
+    features: {
+      hints: false,
+      submit: true,
+      proctoring: true,
+      sandbox: false,
+      runTests: false
+    }
   })
 }
 
