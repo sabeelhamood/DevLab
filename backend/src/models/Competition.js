@@ -71,12 +71,102 @@ const defaultRelations = {
   includeLearners: true
 }
 
+const jsonColumns = [
+  'questions',
+  'learner1_answers',
+  'learner2_answers',
+  'result',
+  'performance_learner1',
+  'performance_learner2'
+]
+
+const normalizeCompetitionInsertPayload = (data = {}) => {
+  const payload = { ...data }
+
+  for (const column of jsonColumns) {
+    if (payload[column] !== undefined && payload[column] !== null) {
+      if (typeof payload[column] !== 'string') {
+        payload[column] = JSON.stringify(payload[column])
+      }
+    }
+  }
+
+  return payload
+}
+
+const ensureCourseCompletion = async (client, learnerId, courseId, courseName) => {
+  if (!learnerId || !courseId) {
+    return
+  }
+
+  const { rows } = await client.query(
+    `
+    SELECT 1
+    FROM ${courseCompletionsTable}
+    WHERE "learner_id" = $1
+      AND "course_id" = $2
+    LIMIT 1
+    `,
+    [learnerId, courseId]
+  )
+
+  if (rows.length) {
+    return
+  }
+
+  await client.query(
+    `
+    INSERT INTO ${courseCompletionsTable} (
+      "learner_id",
+      "course_id",
+      "course_name"
+    )
+    VALUES ($1, $2, $3)
+    `,
+    [learnerId, courseId, courseName ?? null]
+  )
+}
+
 export class CompetitionModel {
-  static async create(competitionData) {
-    const query = buildInsertStatement(competitionsTable, competitionData)
-    const { rows } = await postgres.query(query.text, query.values)
-    const [competition] = await loadCompetitionRelations(rows, defaultRelations)
-    return competition
+  static async create(rawCompetitionData) {
+    const client = await postgres.getClient()
+
+    try {
+      await client.query('BEGIN')
+
+      const competitionData = normalizeCompetitionInsertPayload(rawCompetitionData)
+      const query = buildInsertStatement(competitionsTable, competitionData)
+      const { rows } = await client.query(query.text, query.values)
+
+      const competitionRow = rows[0]
+
+      if (competitionRow?.course_id) {
+        await Promise.all([
+          ensureCourseCompletion(
+            client,
+            competitionRow.learner1_id,
+            competitionRow.course_id,
+            competitionRow.course_name
+          ),
+          ensureCourseCompletion(
+            client,
+            competitionRow.learner2_id,
+            competitionRow.course_id,
+            competitionRow.course_name
+          )
+        ])
+      }
+
+      await client.query('COMMIT')
+
+      const [competition] = await loadCompetitionRelations([competitionRow], defaultRelations)
+      return competition
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   static async findById(competitionId) {

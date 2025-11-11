@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { 
   Clock, 
   Play, 
@@ -108,6 +108,18 @@ const ProgressPointsDisplay = ({ progressPercent, scorePercent, score, totalPoin
 function CompetitionQuestion() {
   const { competitionId, questionId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search])
+  const learnerIdFromQuery = useMemo(() => queryParams.get('learnerId'), [queryParams])
+  const storedLearnerId = useMemo(() => {
+    try {
+      return localStorage.getItem('learnerId')
+    } catch (error) {
+      console.warn('Unable to read learnerId from localStorage:', error)
+      return null
+    }
+  }, [])
+  const activeLearnerId = learnerIdFromQuery || storedLearnerId || null
   const [question, setQuestion] = useState(null)
   const [answer, setAnswer] = useState('')
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes default
@@ -117,6 +129,7 @@ function CompetitionQuestion() {
   const [progress, setProgress] = useState(0)
   const [competition, setCompetition] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [score, setScore] = useState(0)
   const [feedback, setFeedback] = useState(null)
   const [questionProgress, setQuestionProgress] = useState(0)
@@ -127,6 +140,16 @@ function CompetitionQuestion() {
   const countdownSoundRef = useRef(null)
   const completeSoundRef = useRef(null)
   const feedbackTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    if (learnerIdFromQuery) {
+      try {
+        localStorage.setItem('learnerId', learnerIdFromQuery)
+      } catch (error) {
+        console.warn('Unable to persist learnerId to localStorage:', error)
+      }
+    }
+  }, [learnerIdFromQuery])
 
   useEffect(() => {
     loadCompetitionData()
@@ -141,7 +164,7 @@ function CompetitionQuestion() {
         clearTimeout(feedbackTimeoutRef.current)
       }
     }
-  }, [competitionId, questionId])
+  }, [competitionId, questionId, activeLearnerId])
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -180,7 +203,19 @@ function CompetitionQuestion() {
   useEffect(() => {
     if (!competition?.questions?.length) return
 
-    const currentIndex = competition.questions.findIndex((q) => q.id === questionId)
+    let currentIndex = competition.questions.findIndex((q) => q.id === questionId)
+    if (currentIndex < 0) {
+      currentIndex = competition.questions.findIndex((q) => q.id === `${questionId}`)
+    }
+    if (currentIndex < 0) {
+      currentIndex = competition.questions.findIndex((q) => q.id === `q${questionId}`)
+    }
+    if (currentIndex < 0) {
+      const numeric = Number(questionId)
+      if (!Number.isNaN(numeric) && numeric > 0) {
+        currentIndex = numeric - 1
+      }
+    }
     const percent = competition.question_count
       ? Math.round(((currentIndex >= 0 ? currentIndex : 0) / competition.question_count) * 100)
       : 0
@@ -189,7 +224,19 @@ function CompetitionQuestion() {
 
   const currentQuestionIndex = useMemo(() => {
     if (!competition?.questions?.length) return 0
-    const index = competition.questions.findIndex((q) => q.id === questionId)
+    let index = competition.questions.findIndex((q) => q.id === questionId)
+    if (index < 0) {
+      index = competition.questions.findIndex((q) => q.id === `${questionId}`)
+    }
+    if (index < 0) {
+      index = competition.questions.findIndex((q) => q.id === `q${questionId}`)
+    }
+    if (index < 0) {
+      const numeric = Number(questionId)
+      if (!Number.isNaN(numeric) && numeric > 0) {
+        index = numeric - 1
+      }
+    }
     return index >= 0 ? index : 0
   }, [competition, questionId])
 
@@ -224,77 +271,161 @@ function CompetitionQuestion() {
     }
   }
 
+  const parseQuestions = (rawQuestions) => {
+    if (!rawQuestions) {
+      return []
+    }
+
+    if (Array.isArray(rawQuestions)) {
+      return rawQuestions
+    }
+
+    if (typeof rawQuestions === 'string') {
+      try {
+        const parsed = JSON.parse(rawQuestions)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (error) {
+        console.warn('Unable to parse questions JSON:', error)
+        return []
+      }
+    }
+
+    return []
+  }
+
+  const normalizeCompetitionData = (rawCompetition) => {
+    if (!rawCompetition) {
+      return null
+    }
+
+    const questions = parseQuestions(rawCompetition.questions)
+    const normalizedQuestions = questions.map((question, index) => {
+      const resolvedId =
+        question.id ??
+        question.question_id ??
+        question.slug ??
+        question.external_id ??
+        `${index + 1}`
+
+      return {
+        id: resolvedId.toString(),
+        title: question.title ?? question.name ?? question.question_title ?? `Question ${index + 1}`,
+        description: question.description ?? question.prompt ?? question.question_content ?? '',
+        difficulty: question.difficulty ?? question.level ?? 'unknown',
+        timeLimit:
+          question.timeLimit ??
+          question.time_limit ??
+          rawCompetition.time_limit ??
+          600,
+        points: question.points ?? question.score ?? 0,
+        starterCode: question.starterCode ?? question.starter_code ?? '',
+        hints: question.hints ?? [],
+        testCases: question.testCases ?? question.test_cases ?? []
+      }
+    })
+
+    const resolvedCompetitionId =
+      rawCompetition.competition_id ?? rawCompetition.id ?? competitionId
+
+    return {
+      ...rawCompetition,
+      competition_id: resolvedCompetitionId,
+      id: resolvedCompetitionId,
+      questions: normalizedQuestions,
+      question_count: rawCompetition.question_count ?? normalizedQuestions.length
+    }
+  }
+
   const loadCompetitionData = async () => {
+    setLoading(true)
+    setLoadError(null)
+
     try {
-      // Mock competition data - replace with actual API call
-      const mockCompetition = {
-        id: competitionId,
-        status: 'active',
-        current_question: parseInt(questionId),
-        question_count: 3,
-        questions: [
-          {
-            id: '1',
-            title: 'Array Manipulation Challenge',
-            description: 'Write a function that finds the longest increasing subsequence in an array. The function should return the length of the subsequence.',
-            difficulty: 'medium',
-            timeLimit: 600,
-            points: 100,
-            testCases: [
-              { input: '[1,3,2,4,5]', expected: 4 },
-              { input: '[5,4,3,2,1]', expected: 1 },
-              { input: '[1,2,3,4,5]', expected: 5 }
-            ],
-            starterCode: `function longestIncreasingSubsequence(arr) {
-  // Your code here
-  return 0;
-}`
-          },
-          {
-            id: '2',
-            title: 'String Processing',
-            description: 'Implement a function that checks if a string is a palindrome, ignoring case and non-alphanumeric characters.',
-            difficulty: 'easy',
-            timeLimit: 600,
-            points: 80,
-            testCases: [
-              { input: '"A man a plan a canal Panama"', expected: true },
-              { input: '"race a car"', expected: false },
-              { input: '"Madam"', expected: true }
-            ],
-            starterCode: `function isPalindrome(s) {
-  // Your code here
-  return false;
-}`
-          },
-          {
-            id: '3',
-            title: 'Dynamic Programming',
-            description: 'Solve the classic "House Robber" problem. You are a robber planning to rob houses along a street. Each house has a certain amount of money stashed. Adjacent houses have security systems connected, so you cannot rob two adjacent houses.',
-            difficulty: 'hard',
-            timeLimit: 600,
-            points: 150,
-            testCases: [
-              { input: '[2,7,9,3,1]', expected: 12 },
-              { input: '[1,2,3,1]', expected: 4 },
-              { input: '[2,1,1,2]', expected: 4 }
-            ],
-            starterCode: `function rob(nums) {
-  // Your code here
-  return 0;
-}`
-          }
-        ]
+      const headers = {
+        'Content-Type': 'application/json'
       }
 
-      setCompetition(mockCompetition)
-      const currentQuestion = mockCompetition.questions.find(q => q.id === questionId)
+      try {
+        const token = localStorage.getItem('token')
+        if (token) {
+          headers.Authorization = `Bearer ${token}`
+        }
+      } catch (error) {
+        console.warn('Unable to read auth token from localStorage:', error)
+      }
+
+      let fetchedCompetition = null
+      let response = await fetch(`/api/competitions/${competitionId}`, { headers })
+
+      if (response.ok) {
+        fetchedCompetition = await response.json()
+      } else if (
+        (response.status === 401 ||
+          response.status === 403 ||
+          response.status === 404) &&
+        activeLearnerId
+      ) {
+        const fallbackResponse = await fetch(`/api/competitions/learner/${activeLearnerId}`)
+        if (!fallbackResponse.ok) {
+          const fallbackText = await fallbackResponse.text()
+          throw new Error(
+            fallbackText || `Unable to load competitions for learner ${activeLearnerId}`
+          )
+        }
+
+        const competitionsByLearner = await fallbackResponse.json()
+        fetchedCompetition =
+          competitionsByLearner.find((item) => {
+            const itemId = item.competition_id ?? item.id
+            return itemId?.toString() === competitionId?.toString()
+          }) || null
+
+        if (!fetchedCompetition) {
+          throw new Error('Competition not found for the specified learner.')
+        }
+      } else {
+        const errorText = await response.text()
+        throw new Error(errorText || `Failed to load competition (${response.status})`)
+      }
+
+      const normalizedCompetition = normalizeCompetitionData(fetchedCompetition)
+
+      if (!normalizedCompetition?.questions?.length) {
+        throw new Error('Competition is missing question data.')
+      }
+
+      setCompetition(normalizedCompetition)
+
+      const resolvedScore =
+        activeLearnerId && normalizedCompetition.learner1_id === activeLearnerId
+          ? Number(normalizedCompetition.learner1_score || 0)
+          : activeLearnerId && normalizedCompetition.learner2_id === activeLearnerId
+            ? Number(normalizedCompetition.learner2_score || 0)
+            : Number(normalizedCompetition.score || 0)
+      setScore(Number.isFinite(resolvedScore) ? resolvedScore : 0)
+
+      const currentQuestion =
+        normalizedCompetition.questions.find((q) => q.id === questionId) ||
+        normalizedCompetition.questions.find((q) => q.id === `${questionId}`) ||
+        normalizedCompetition.questions[Number(questionId) - 1] ||
+        normalizedCompetition.questions[0]
+
+      if (!currentQuestion) {
+        throw new Error('Unable to resolve the current question.')
+      }
+
       setQuestion(currentQuestion)
-      setTimeLeft(currentQuestion?.timeLimit || 600)
-      setAnswer(currentQuestion?.starterCode || '')
+      setTimeLeft(currentQuestion.timeLimit || normalizedCompetition.time_limit || 600)
+      setAnswer(currentQuestion.starterCode || '')
+      setIsRunning(false)
+      setIsCompleted(false)
+      setProgress(0)
       setLoading(false)
     } catch (error) {
       console.error('Error loading competition:', error)
+      setCompetition(null)
+      setQuestion(null)
+      setLoadError(error.message)
       setLoading(false)
     }
   }
@@ -326,12 +457,22 @@ function CompetitionQuestion() {
 
   const submitAnswer = async () => {
     try {
+      const headers = {
+        'Content-Type': 'application/json'
+      }
+
+      try {
+        const token = localStorage.getItem('token')
+        if (token) {
+          headers.Authorization = `Bearer ${token}`
+        }
+      } catch (error) {
+        console.warn('Unable to read auth token before submitting answer:', error)
+      }
+
       const response = await fetch(`/api/competitions/${competitionId}/submit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify({
           questionId,
           answer,
@@ -360,8 +501,12 @@ function CompetitionQuestion() {
         if (result.data.competitionFinished) {
           navigate(`/competition/${competitionId}/results`)
         } else {
-          const nextQuestionId = parseInt(questionId) + 1
-          navigate(`/competition/${competitionId}/question/${nextQuestionId}`)
+          const nextQuestion = competition?.questions?.[currentQuestionIndex + 1]
+          if (nextQuestion?.id) {
+            navigate(`/competition/${competitionId}/question/${nextQuestion.id}`)
+          } else {
+            navigate(`/competition/${competitionId}/results`)
+          }
         }
       }
     } catch (error) {
@@ -407,6 +552,22 @@ function CompetitionQuestion() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-[#f0f0f0]">
+        <div className="text-center max-w-xl mx-auto px-6 py-8 bg-white shadow-xl rounded-2xl border border-gray-100">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-[#333333] mb-2">Unable to load competition</h2>
+          <p className="text-[#333333] mb-6">{loadError}</p>
+          <p className="text-sm text-[#666666]">
+            Make sure this learner is registered for the competition and that questions have been
+            generated. You can also refresh the page once the setup is complete.
+          </p>
+        </div>
       </div>
     )
   }
