@@ -5,6 +5,7 @@ import {
   confirmTempQuestions
 } from '../../services/tempQuestionStore.js'
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
+import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
 
 const DIFFICULTY_SEQUENCE = [
   'basic',
@@ -167,6 +168,20 @@ export const assessmentController = {
           }
         }))
 
+      const questionsWithPresentation = sanitizedQuestions.map((question) =>
+        addPresentationToQuestion(question, {
+          id: question.id,
+          questionType: 'code',
+          title: topic_name ? `${topic_name} Coding Challenge` : 'Coding Challenge',
+          prompt: question.question,
+          topicName: topic_name,
+          difficulty: question.difficulty,
+          programmingLanguage: programming_language,
+          testCases: question.test_cases,
+          hints: []
+        })
+      )
+
       if (!sanitizedQuestions.length) {
         return res.status(500).json({
           success: false,
@@ -180,7 +195,7 @@ export const assessmentController = {
         requestId,
         requesterService: 'assessment',
         action: 'code',
-        questions: sanitizedQuestions,
+        questions: questionsWithPresentation,
         metadata: {
           topic_name,
           programming_language,
@@ -191,7 +206,7 @@ export const assessmentController = {
       return res.json({
         success: true,
         data: {
-          questions: sanitizedQuestions,
+          questions: questionsWithPresentation,
           metadata: {
             topic_name,
             programming_language,

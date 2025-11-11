@@ -6,6 +6,7 @@ import {
   confirmTempQuestions
 } from '../../services/tempQuestionStore.js'
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
+import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
 
 const router = express.Router()
 
@@ -69,7 +70,7 @@ const toAjaxCodingQuestion = ({
 }) => {
   const safeHints = hints.filter(Boolean).slice(0, 3)
 
-  return {
+  const baseQuestion = {
     id,
     topic_id: topicId,
     topic_name: topicName,
@@ -99,6 +100,18 @@ const toAjaxCodingQuestion = ({
       difficulty
     }
   }
+
+  return addPresentationToQuestion(baseQuestion, {
+    id,
+    questionType: 'code',
+    title: topicName ? `${topicName} Coding Challenge` : 'Coding Challenge',
+    prompt: question,
+    topicName,
+    difficulty,
+    programmingLanguage,
+    hints: safeHints,
+    testCases: baseQuestion.test_cases
+  })
 }
 
 const toAjaxTheoreticalQuestion = ({
@@ -107,24 +120,39 @@ const toAjaxTheoreticalQuestion = ({
   topicId,
   topicName,
   humanLanguage,
-  expectedAnswer
-}) => ({
-  id,
-  topic_id: topicId,
-  topic_name: topicName,
-  question_type: 'theoretical',
-  programming_language: null,
-  question,
-  test_cases: [],
-  ajax: {
+  expectedAnswer,
+  difficulty
+}) => {
+  const baseQuestion = {
+    id,
+    topic_id: topicId,
+    topic_name: topicName,
+    question_type: 'theoretical',
+    difficulty: difficulty || null,
+    programming_language: null,
     question,
-    testCases: [],
-    judge0: null,
-    hints: [],
-    humanLanguage,
-    expectedAnswer
+    test_cases: [],
+    ajax: {
+      question,
+      testCases: [],
+      judge0: null,
+      hints: [],
+      humanLanguage,
+      expectedAnswer,
+      difficulty: difficulty || null
+    }
   }
-})
+
+  return addPresentationToQuestion(baseQuestion, {
+    id,
+    questionType: 'theoretical',
+    title: topicName ? `${topicName} Concept Check` : 'Concept Check',
+    prompt: question,
+    topicName,
+    difficulty: difficulty || null,
+    expectedAnswer
+  })
+}
 
 const fetchTheoreticalQuestionsFromAssessment = async ({
   topic_id,
@@ -161,6 +189,7 @@ const fetchTheoreticalQuestionsFromAssessment = async ({
         topicName: item.topic_name || topic_name,
         humanLanguage,
         expectedAnswer: item.expected_answer || item.expectedAnswer || null,
+        difficulty: item.difficulty || DEFAULT_DIFFICULTY,
         nanoSkills,
         microSkills
       })
