@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout'
 import SimpleQuestionPage from './pages/SimpleQuestionPage'
 import CompetitionPage from './pages/CompetitionPage'
 import CompetitionInvitation from './components/CompetitionInvitation'
+import AssessmentPreview from './pages/AssessmentPreview'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/question" element={<SimpleQuestionPage />} />
           <Route path="/competitions" element={<CompetitionPage />} />
           <Route path="/competition/invitation" element={<CompetitionInvitation />} />
+          <Route path="/dev/assessment-preview" element={<AssessmentPreview />} />
         </Routes>
       </Layout>
     </Router>
