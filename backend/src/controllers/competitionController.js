@@ -328,10 +328,13 @@ export const competitionController = {
   async getCompetition(req, res) {
     try {
       const { id } = req.params
+      console.log('📋 [competitions] Fetching competition by id:', id)
 
       const competition = await CompetitionModel.findById(id)
-      
+      console.log('📋 [competitions] Query result:', competition ? 'found' : 'not found')
+
       if (!competition) {
+        console.warn('⚠️ [competitions] Competition not found:', id)
         return res.status(404).json({
           success: false,
           error: 'Competition not found'
@@ -343,6 +346,7 @@ export const competitionController = {
         data: competition
       })
     } catch (error) {
+      console.error('❌ [competitions] Error in getCompetition:', error)
       res.status(500).json({
         success: false,
         error: error.message
