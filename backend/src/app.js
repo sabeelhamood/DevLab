@@ -23,6 +23,7 @@ import questionRoutes from './routes/questions/questionRoutes.js'
 import sessionRoutes from './routes/sessions/sessionRoutes.js'
 import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
 import dataRequestRoutes from './routes/dataRequestRoutes.js'
+import userProfileRoutes from './routes/userProfiles/userProfileRoutes.js'
 
 // Gemini AI routes
 import geminiRoutes from './routes/gemini.js'
@@ -212,6 +213,7 @@ app.use(morgan('combined'))
 app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
+app.use('/api/user-profiles', userProfileRoutes)
 app.use('/api/competitions', competitionRoutes)
 try {
   const competitionRouteSummaries = competitionRoutes.stack

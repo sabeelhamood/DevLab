@@ -3,7 +3,48 @@ import { UserProfileModel } from '../../models/User.js'
 
 const router = express.Router()
 
-// Get user profile by learner ID
+// Get all user profiles with pagination (must come before /:learnerId)
+router.get('/', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query
+    const result = await UserProfileModel.findAll(parseInt(page, 10), parseInt(limit, 10))
+
+    res.json(result)
+  } catch (error) {
+    console.error('Error fetching user profiles:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Get completed courses for a learner (must come before /:learnerId)
+router.get('/:learnerId/completed-courses', async (req, res) => {
+  try {
+    const { learnerId } = req.params
+    console.log('📋 Fetching completed courses for learner:', learnerId)
+    const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
+    console.log('✅ Found completed courses:', completedCourses?.length || 0)
+
+    res.json(completedCourses || [])
+  } catch (error) {
+    console.error('Error fetching completed courses:', error)
+    res.status(500).json({ error: 'Internal server error', message: error.message })
+  }
+})
+
+// Get active courses for a learner (must come before /:learnerId)
+router.get('/:learnerId/active-courses', async (req, res) => {
+  try {
+    const { learnerId } = req.params
+    const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
+
+    res.json(completedCourses || [])
+  } catch (error) {
+    console.error('Error fetching active courses:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Get user profile by learner ID (must come after specific routes)
 router.get('/:learnerId', async (req, res) => {
   try {
     const { learnerId } = req.params
@@ -69,44 +110,6 @@ router.delete('/:learnerId', async (req, res) => {
   }
 })
 
-// Get completed courses for a learner
-router.get('/:learnerId/completed-courses', async (req, res) => {
-  try {
-    const { learnerId } = req.params
-    const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
-
-    res.json(completedCourses)
-  } catch (error) {
-    console.error('Error fetching completed courses:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-// Get active courses for a learner (alias to completed courses for now)
-router.get('/:learnerId/active-courses', async (req, res) => {
-  try {
-    const { learnerId } = req.params
-    const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
-
-    res.json(completedCourses)
-  } catch (error) {
-    console.error('Error fetching active courses:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-// Get all user profiles with pagination
-router.get('/', async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query
-    const result = await UserProfileModel.findAll(parseInt(page, 10), parseInt(limit, 10))
-
-    res.json(result)
-  } catch (error) {
-    console.error('Error fetching user profiles:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
 
 export default router
 
