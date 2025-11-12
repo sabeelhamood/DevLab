@@ -2,6 +2,7 @@ import express from 'express'
 import { geminiService } from '../services/gemini.js'
 import { saveQuestionsToSupabase } from '../services/questionStorageService.js'
 import { saveTempQuestions, createRequestId } from '../services/tempQuestionStore.js'
+import { saveGeminiQuestionsToSupabase } from '../services/tempQuestionStorageService.js'
 
 const router = express.Router()
 
@@ -701,25 +702,23 @@ router.post('/generate-question-package', async (req, res) => {
       }
     }
     
-    // Save questions to temp_questions table (after Gemini generation, before response)
+    // Save questions to temp_questions, topics, and testCases tables (after Gemini generation, before response)
     // This runs asynchronously and doesn't block the response
     // Questions are saved when response appears on https://dev-lab-three.vercel.app/
     try {
-      console.log('\n📋 STEP: Saving questions to temp_questions table...')
+      console.log('\n📋 STEP: Saving questions to Supabase tables (temp_questions, topics, testCases)...')
       console.log(`   Question count: ${processedQuestions.length}`)
       console.log(`   Question type: ${questionType}`)
       console.log(`   Topic name: ${topicName}`)
       console.log(`   Course name: ${courseName}`)
       console.log(`   Source: dev-lab-three.vercel.app`)
       
-      // Generate request ID for temp_questions
-      const requestId = createRequestId()
-      console.log(`   Generated request ID: ${requestId}`)
-      
-      // Prepare metadata for temp_questions
-      const tempQuestionsMetadata = {
+      // Prepare metadata for saving questions
+      const saveMetadata = {
         courseName,
         topicName,
+        course_id: null, // Will be resolved from DEFAULT_COURSE_ID or lookup
+        courseId: null,
         nanoSkills: nanoSkills || [],
         macroSkills: macroSkills || [],
         difficulty,
@@ -731,49 +730,56 @@ router.post('/generate-question-package', async (req, res) => {
         geminiCount: geminiQuestions.length,
         fallbackCount: fallbackQuestions.length,
         isFallback: fallbackQuestions.length > 0,
-        source: 'dev-lab-three.vercel.app', // Mark source as the frontend app
+        source: 'dev-lab-three.vercel.app',
         frontendUrl: 'https://dev-lab-three.vercel.app/',
         endpoint: '/api/gemini-questions/generate-question-package'
       }
       
-      console.log(`   Metadata prepared:`, JSON.stringify(tempQuestionsMetadata, null, 2))
+      console.log(`   Metadata prepared:`, JSON.stringify(saveMetadata, null, 2))
       console.log(`   Preparing to save ${processedQuestions.length} question(s)...`)
       
-      // Save questions to temp_questions table asynchronously
+      // Save questions to temp_questions, topics, and testCases tables asynchronously
       // This does not block the response - questions are saved in background
-      saveTempQuestions({
-        requestId,
-        requesterService: 'dev-lab-three-frontend',
-        action: 'generate-question-package',
-        questions: processedQuestions, // Save all processed questions as-is
-        metadata: tempQuestionsMetadata
-      })
-        .then(() => {
-          console.log(`\n✅ Successfully saved ${processedQuestions.length} question(s) to temp_questions table`)
-          console.log(`   Request ID: ${requestId}`)
-          console.log(`   Status: pending`)
-          console.log(`   Table: temp_questions`)
-          console.log(`   Questions stored: ${processedQuestions.length}`)
-          console.log(`   Questions will be stored until confirmed or deleted`)
+      saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
+        .then((saveResults) => {
+          console.log(`\n✅ Successfully saved questions to Supabase tables`)
+          console.log(`   Saved questions: ${saveResults.savedQuestions.length}`)
+          console.log(`   Saved topics: ${saveResults.savedTopics.length}`)
+          console.log(`   Saved test cases: ${saveResults.savedTestCases.length}`)
+          console.log(`   Errors: ${saveResults.errors.length}`)
+          
+          if (saveResults.savedQuestions.length > 0) {
+            console.log(`   Question IDs saved:`)
+            saveResults.savedQuestions.forEach((q, idx) => {
+              console.log(`     ${idx + 1}. ${q.question_id}: ${q.title?.substring(0, 50)}...`)
+            })
+          }
+          
+          if (saveResults.errors.length > 0) {
+            console.warn(`   ⚠️ Errors during save:`)
+            saveResults.errors.forEach((err, idx) => {
+              console.warn(`     ${idx + 1}. [${err.step}] ${err.error} (code: ${err.code || 'N/A'})`)
+            })
+          }
         })
         .catch((error) => {
           // Log error but don't throw - questions were generated successfully
-          console.error('\n❌ Error saving questions to temp_questions table:')
+          console.error('\n❌ Error saving questions to Supabase tables:')
           console.error(`   Error message: ${error.message}`)
           console.error(`   Error code: ${error.code || 'N/A'}`)
           console.error(`   Error detail: ${error.detail || 'N/A'}`)
           console.error(`   Error hint: ${error.hint || 'N/A'}`)
           console.error(`   Error stack: ${error.stack || 'N/A'}`)
-          console.error('   Questions were generated successfully but not saved to temp_questions')
+          console.error('   Questions were generated successfully but not saved to Supabase')
           console.error('   This does not affect the API response - questions are still returned to frontend')
         })
     } catch (error) {
-      // Don't fail the request if temp_questions save fails - log error and continue
-      console.error('\n❌ Error initiating question save to temp_questions:')
+      // Don't fail the request if Supabase save fails - log error and continue
+      console.error('\n❌ Error initiating question save to Supabase:')
       console.error(`   Error message: ${error.message}`)
       console.error(`   Error code: ${error.code || 'N/A'}`)
       console.error(`   Error stack: ${error.stack || 'N/A'}`)
-      console.error('   Questions were generated successfully but temp_questions save was not initiated')
+      console.error('   Questions were generated successfully but Supabase save was not initiated')
       console.error('   This does not affect the API response - questions are still returned to frontend')
     }
     
