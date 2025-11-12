@@ -208,27 +208,7 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
-
-// API routes
-app.use('/api/auth', authRoutes)
-app.use('/api/questions', questionRoutes)
-app.use('/api/sessions', sessionRoutes)
-app.use('/api/user-profiles', userProfileRoutes)
-// Log registered user profile routes
-try {
-  const userProfileRouteSummaries = userProfileRoutes.stack
-    .filter((layer) => layer.route)
-    .map((layer) => ({
-      path: `/api/user-profiles${layer.route.path === '/' ? '' : layer.route.path}`,
-      methods: Object.keys(layer.route.methods)
-        .filter((method) => layer.route.methods[method])
-        .map((method) => method.toUpperCase())
-    }))
-  console.log('✅ Registered user-profile routes:', userProfileRouteSummaries)
-} catch (error) {
-  console.warn('⚠️ Unable to list user-profile routes:', error.message)
-}
-// Temporary test endpoint to verify Supabase data access - MUST come before other /api routes
+// Temporary test endpoint to verify Supabase data access - MUST come before ALL other /api routes
 app.get('/api/test-supabase', async (req, res) => {
   try {
     const { postgres } = await import('./config/database.js')
@@ -270,6 +250,27 @@ app.get('/api/test-supabase', async (req, res) => {
     })
   }
 })
+console.log('✅ Registered test endpoint: GET /api/test-supabase')
+
+// API routes
+app.use('/api/auth', authRoutes)
+app.use('/api/questions', questionRoutes)
+app.use('/api/sessions', sessionRoutes)
+app.use('/api/user-profiles', userProfileRoutes)
+// Log registered user profile routes
+try {
+  const userProfileRouteSummaries = userProfileRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: `/api/user-profiles${layer.route.path === '/' ? '' : layer.route.path}`,
+      methods: Object.keys(layer.route.methods)
+        .filter((method) => layer.route.methods[method])
+        .map((method) => method.toUpperCase())
+    }))
+  console.log('✅ Registered user-profile routes:', userProfileRouteSummaries)
+} catch (error) {
+  console.warn('⚠️ Unable to list user-profile routes:', error.message)
+}
 
 // Add logging middleware for competitions routes
 app.use('/api/competitions', (req, res, next) => {
