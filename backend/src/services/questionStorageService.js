@@ -55,7 +55,8 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
       title,
       topicId,
       topicName,
-      ajax // Nested ajax object that might contain additional data
+      ajax, // Nested ajax object that might contain additional data
+      _rawGeminiResponse // Raw Gemini API response (stored for debugging/analysis)
     } = questionData
 
     // Extract data from ajax object if it exists (for theoretical questions)
@@ -315,6 +316,11 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
       nano_skills: Array.isArray(nanoSkills) ? nanoSkills : [],
       micro_skills: Array.isArray(microSkills) ? microSkills : [],
       hints: resolvedHints,
+      // Store raw Gemini response if available (for debugging/analysis)
+      ...(_rawGeminiResponse && {
+        raw_gemini_response: _rawGeminiResponse,
+        has_raw_response: true
+      }),
       // Store options and correct_answer in metadata for theoretical questions
       ...(resolvedQuestionType === 'theoretical' && {
         options: Array.isArray(resolvedOptions) ? resolvedOptions : (resolvedOptions ? [resolvedOptions] : []),

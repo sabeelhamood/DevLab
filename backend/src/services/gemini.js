@@ -508,7 +508,8 @@ Return ONLY the JSON object in the specified format, no additional text.
           ...question,
           difficulty: question.difficulty || ladder[index] || 'basic',
           _source: 'gemini', // Mark as Gemini-generated
-          _isFallback: false // Explicitly mark as not fallback
+          _isFallback: false, // Explicitly mark as not fallback
+          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
         }));
         console.log(`✅ Successfully generated ${processedQuestions.length} question(s) from Gemini AI`);
         return processedQuestions;
@@ -629,7 +630,8 @@ Return ONLY the JSON object in the specified format, no additional text.
           ...parsed,
           difficulty: parsed.difficulty || difficultyLabel || 'basic',
           _source: 'gemini', // Mark as Gemini-generated
-          _isFallback: false // Explicitly mark as not fallback
+          _isFallback: false, // Explicitly mark as not fallback
+          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
         };
         console.log(`✅ Successfully generated question from Gemini AI: ${question.title || question.description?.substring(0, 50)}...`);
         return question;
@@ -643,7 +645,8 @@ Return ONLY the JSON object in the specified format, no additional text.
             ...fallback,
             difficulty: fallback.difficulty || difficultyLabel || 'basic',
             _source: 'gemini', // Mark as Gemini-generated (parsed from text)
-            _isFallback: false
+            _isFallback: false,
+            _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
           };
           console.log(`✅ Parsed question from Gemini AI response: ${question.title || question.description?.substring(0, 50)}...`);
           return question;
@@ -745,9 +748,21 @@ Return ONLY the JSON object in the specified format, no additional text.
     try {
       const text = await this._callModel(prompt);
       try {
-        return JSON.parse(this._cleanJsonResponse(text));
+        const parsed = JSON.parse(this._cleanJsonResponse(text));
+        return {
+          ...parsed,
+          _source: 'gemini',
+          _isFallback: false,
+          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
+        };
       } catch {
-        return this.parseStructuredResponse(text);
+        const fallback = this.parseStructuredResponse(text);
+        return {
+          ...fallback,
+          _source: 'gemini',
+          _isFallback: false,
+          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
+        };
       }
     } catch (err) {
       console.error("generateTheoreticalQuestion error:", err?.message || err);
