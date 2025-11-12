@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb'
 import { Pool } from 'pg'
 
-const connectionString = process.env.SUPABASE_URL
+let connectionString = process.env.SUPABASE_URL
 
 if (!connectionString) {
   throw new Error(
@@ -9,9 +9,14 @@ if (!connectionString) {
   )
 }
 
+// Remove sslmode from connection string if present, we'll handle SSL in Pool config
+connectionString = connectionString.replace(/[?&]sslmode=[^&]*/gi, '')
+
 const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false
+  }
 })
 
 pool.on('error', (error) => {
