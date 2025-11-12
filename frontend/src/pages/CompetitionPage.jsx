@@ -78,14 +78,18 @@ const CompetitionPage = () => {
                   ? activeCompetitions 
                   : (activeCompetitions.data || [])
                 
+                console.log('Fetched active competitions:', activeArray.length)
+                
                 // Filter competitions where Sabeel is a participant
                 competitionsArray = activeArray.filter(
-                  (comp) => 
-                    comp.learner1_id === SABEEL_USER_ID || 
-                    comp.learner2_id === SABEEL_USER_ID ||
-                    comp.learner1?.learner_id === SABEEL_USER_ID ||
-                    comp.learner2?.learner_id === SABEEL_USER_ID
+                  (comp) => {
+                    const learner1Id = comp.learner1_id || comp.learner1?.learner_id || comp.learner1?.id
+                    const learner2Id = comp.learner2_id || comp.learner2?.learner_id || comp.learner2?.id
+                    return learner1Id === SABEEL_USER_ID || learner2Id === SABEEL_USER_ID
+                  }
                 )
+                
+                console.log('Filtered competitions for Sabeel:', competitionsArray.length)
               } catch (fallbackError) {
                 console.error('Fallback also failed:', fallbackError)
                 competitionsArray = []
