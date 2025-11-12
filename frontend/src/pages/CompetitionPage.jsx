@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { apiClient } from '../services/api/client.js'
+import { Trophy, BookOpen, Users, ArrowRight } from 'lucide-react'
 
 // Sabeel's user ID - hardcoded for now
 const SABEEL_USER_ID = '3e3526c7-b8ae-4425-9128-5aa6897a895d'
@@ -19,9 +20,17 @@ const CompetitionPage = () => {
   const [timeRemaining, setTimeRemaining] = useState(600)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [completedCourses, setCompletedCourses] = useState([])
+  const [showCourseList, setShowCourseList] = useState(!id) // Show list if no competition ID
 
   useEffect(() => {
-    loadCompetition()
+    if (id) {
+      // If competition ID provided, load that competition
+      loadCompetition()
+    } else {
+      // Otherwise, load completed courses for competition selection
+      loadCompletedCourses()
+    }
   }, [id])
 
   useEffect(() => {
@@ -43,6 +52,31 @@ const CompetitionPage = () => {
       return () => clearInterval(interval)
     }
   }, [competition, progress])
+
+  const loadCompletedCourses = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Fetch completed courses for the learner
+      const courses = await apiClient.get(`/user-profiles/${SABEEL_USER_ID}/completed-courses`)
+      const coursesArray = Array.isArray(courses) ? courses : (courses.data || [])
+      
+      setCompletedCourses(coursesArray)
+      setShowCourseList(true)
+    } catch (err) {
+      console.error('Error loading completed courses:', err)
+      setError(err.message || 'Failed to load completed courses')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCourseClick = (course) => {
+    const courseId = course.course_id || course.id
+    const courseName = course.course_name || course.name || 'Competition'
+    navigate(`/competition/invitation?courseId=${courseId}&courseName=${encodeURIComponent(courseName)}`)
+  }
 
   const loadCompetition = async () => {
     try {
@@ -261,6 +295,90 @@ const CompetitionPage = () => {
     )
   }
 
+  // Show course list if no competition ID and courses are loaded
+  if (showCourseList && !id) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <header className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <Trophy className="w-10 h-10 text-emerald-400" />
+              <h1 className="text-4xl font-bold text-white">Competitions</h1>
+            </div>
+            <p className="text-lg text-slate-400">
+              Choose a completed course to start a competition
+            </p>
+          </header>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto"></div>
+                <p className="text-slate-400">Loading courses...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-red-400 mb-4">{error}</p>
+              <button
+                onClick={loadCompletedCourses}
+                className="inline-flex items-center gap-2 rounded-full bg-slate-800 px-6 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : completedCourses.length === 0 ? (
+            <div className="text-center py-20">
+              <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-slate-300 mb-2">No Completed Courses</h2>
+              <p className="text-slate-400 mb-6">
+                Complete a course first to participate in competitions.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {completedCourses.map((course) => {
+                const courseId = course.course_id || course.id
+                const courseName = course.course_name || course.name || 'Untitled Course'
+                const completedAt = course.completed_at || course.completedAt
+                
+                return (
+                  <button
+                    key={courseId}
+                    onClick={() => handleCourseClick(course)}
+                    className="group relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-left transition-all hover:border-emerald-500/50 hover:bg-slate-900 hover:shadow-lg hover:shadow-emerald-500/10"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                        <BookOpen className="w-6 h-6 text-emerald-400" />
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                    
+                    <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-emerald-300 transition-colors">
+                      {courseName}
+                    </h3>
+                    
+                    {completedAt && (
+                      <p className="text-sm text-slate-400">
+                        Completed {new Date(completedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                    
+                    <div className="mt-4 flex items-center gap-2 text-sm text-emerald-400">
+                      <Users className="w-4 h-4" />
+                      <span>Find Opponent</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (!competition || !activeQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
@@ -270,10 +388,10 @@ const CompetitionPage = () => {
             You don't have any active competitions at the moment.
           </p>
           <button
-            onClick={() => navigate('/competition/invitation')}
+            onClick={() => navigate('/competitions')}
             className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
-            Create Competition
+            Browse Courses
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { apiClient } from '../services/api/client.js'
 import { 
   Users, 
   Clock, 
@@ -13,12 +14,73 @@ import {
 } from 'lucide-react'
 import soundManager from '../utils/soundManager'
 
+// Sabeel's user ID - hardcoded for now
+const SABEEL_USER_ID = '3e3526c7-b8ae-4425-9128-5aa6897a895d'
+
 function CompetitionInvitation() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [responding, setResponding] = useState(false)
   const [isClient, setIsClient] = useState(false)
+
+  const loadInvitation = async () => {
+    try {
+      setLoading(true)
+      
+      // Get course info from URL params
+      const courseId = searchParams.get('courseId')
+      const courseName = searchParams.get('courseName') || 'Competition'
+      
+      if (!courseId) {
+        // If no courseId, redirect back to competitions
+        navigate('/competitions')
+        return
+      }
+
+      // Fetch eligible learners for this course using API
+      let eligibleLearners = []
+      try {
+        const response = await apiClient.post('/competitions/invite', {
+          courseId,
+          learnerId: SABEEL_USER_ID
+        })
+        eligibleLearners = response.data?.eligibleLearners || 
+                          response.eligible_learners || 
+                          response.data?.eligible_learners || 
+                          []
+      } catch (apiErr) {
+        console.error('Error fetching eligible learners:', apiErr)
+        // Use empty array - will show "No opponents available"
+      }
+
+      // Format eligible learners
+      const formattedLearners = eligibleLearners.map((learner) => ({
+        id: learner.id || learner.learner_id,
+        isAnonymous: true,
+        completedAt: learner.completedAt || learner.completed_at,
+        skillLevel: 'intermediate' // Default skill level
+      }))
+
+      const invitationData = {
+        id: `inv-${Date.now()}`,
+        courseId,
+        courseName: decodeURIComponent(courseName),
+        learnerId: SABEEL_USER_ID,
+        eligibleLearners: formattedLearners,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }
+
+      setInvitation(invitationData)
+    } catch (error) {
+      console.error('Error loading invitation:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     setIsClient(true)
@@ -30,48 +92,8 @@ function CompetitionInvitation() {
       // Stop background music when leaving
       soundManager.stopBackgroundMusic()
     }
-  }, [])
-
-  const loadInvitation = async () => {
-    try {
-      // Mock invitation data - replace with actual API call
-      const mockInvitation = {
-        id: 'inv-123',
-        courseId: 'course-1',
-        courseName: 'JavaScript Fundamentals',
-        learnerId: 'learner-123',
-        eligibleLearners: [
-          {
-            id: 'learner-456',
-            isAnonymous: true,
-            completedAt: '2024-01-15T10:30:00Z',
-            skillLevel: 'intermediate'
-          },
-          {
-            id: 'learner-789',
-            isAnonymous: true,
-            completedAt: '2024-01-15T09:15:00Z',
-            skillLevel: 'advanced'
-          },
-          {
-            id: 'learner-101',
-            isAnonymous: true,
-            completedAt: '2024-01-14T16:45:00Z',
-            skillLevel: 'intermediate'
-          }
-        ],
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-      }
-
-      setInvitation(mockInvitation)
-      setLoading(false)
-    } catch (error) {
-      console.error('Error loading invitation:', error)
-      setLoading(false)
-    }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const handleAcceptInvitation = async (competitorId) => {
     setResponding(true)
@@ -79,31 +101,32 @@ function CompetitionInvitation() {
     soundManager.playSound('join') || soundManager.playFallbackJoin()
     
     try {
-      const response = await fetch(`/api/competitions/invitation/${invitation.id}/respond`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          action: 'accept',
-          competitorId,
-          courseId: invitation.courseId,
-          courseName: invitation.courseName
-        })
+      const result = await apiClient.post(`/competitions/invitation/${invitation.id}/respond`, {
+        action: 'accept',
+        competitorId,
+        courseId: invitation.courseId,
+        courseName: invitation.courseName
       })
-
-      const result = await response.json()
       
       if (result.success) {
-        // Navigate to competition
-        navigate(`/competition/${result.data.competition.id}`)
+        // Navigate to competition page
+        const competitionId = result.data?.competition?.id || 
+                             result.data?.competition?.competition_id ||
+                             result.data?.competitionId ||
+                             result.competitionId
+        if (competitionId) {
+          navigate(`/competitions/${competitionId}`)
+        } else {
+          console.error('No competition ID in response:', result)
+          alert('Competition started but could not navigate. Please check your competitions.')
+          navigate('/competitions')
+        }
       } else {
-        alert('Failed to start competition. Please try again.')
+        alert(result.error || 'Failed to start competition. Please try again.')
       }
     } catch (error) {
       console.error('Error accepting invitation:', error)
-      alert('An error occurred. Please try again.')
+      alert(error.response?.data?.error || error.message || 'An error occurred. Please try again.')
     } finally {
       setResponding(false)
     }
@@ -112,18 +135,11 @@ function CompetitionInvitation() {
   const handleDeclineInvitation = async () => {
     setResponding(true)
     try {
-      await fetch(`/api/competitions/invitation/${invitation.id}/respond`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          action: 'decline'
-        })
+      await apiClient.post(`/competitions/invitation/${invitation.id}/respond`, {
+        action: 'decline'
       })
 
-      navigate('/competition')
+      navigate('/competitions')
     } catch (error) {
       console.error('Error declining invitation:', error)
     } finally {
