@@ -202,7 +202,27 @@ const cleanupCourseCompletions = async (client) => {
   }
 
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "learner_id" uuid;`)
-  await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_id" text;`)
+  // Change course_id from text to bigint if it exists as text
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'course_completions' 
+        AND column_name = 'course_id' 
+        AND data_type = 'text'
+      ) THEN
+        -- Convert text to bigint (handle existing data)
+        ALTER TABLE "course_completions" 
+        ALTER COLUMN "course_id" TYPE bigint USING CASE 
+          WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
+          ELSE NULL 
+        END;
+      ELSE
+        ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_id" bigint;
+      END IF;
+    END $$;
+  `)
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_name" text;`)
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "completed_at" timestamptz NOT NULL DEFAULT now();`)
 
@@ -213,6 +233,34 @@ const cleanupCourseCompletions = async (client) => {
 
   await client.query(`ALTER TABLE "course_completions" DROP CONSTRAINT IF EXISTS "course_completions_pkey";`)
   await client.query(`ALTER TABLE "course_completions" ADD PRIMARY KEY ("learner_id", "course_id", "completed_at");`)
+}
+
+const cleanupCompetitions = async (client) => {
+  if (!(await tableExists(client, 'competitions'))) {
+    return
+  }
+
+  // Change course_id from text to bigint if it exists as text
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'competitions' 
+        AND column_name = 'course_id' 
+        AND data_type = 'text'
+      ) THEN
+        -- Convert text to bigint (handle existing data)
+        ALTER TABLE "competitions" 
+        ALTER COLUMN "course_id" TYPE bigint USING CASE 
+          WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
+          ELSE NULL 
+        END;
+      ELSE
+        ALTER TABLE "competitions" ADD COLUMN IF NOT EXISTS "course_id" bigint;
+      END IF;
+    END $$;
+  `)
 }
 
 const cleanupTopics = async (client) => {
@@ -256,7 +304,7 @@ const tableStatements = [
     create: `
       CREATE TABLE IF NOT EXISTS "course_completions" (
         "learner_id" uuid NOT NULL,
-        "course_id" text NOT NULL,
+        "course_id" bigint NOT NULL,
         "course_name" text,
         "completed_at" timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY ("learner_id", "course_id", "completed_at")
@@ -282,7 +330,7 @@ const tableStatements = [
       CREATE TABLE IF NOT EXISTS "competitions" (
         "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "course_name" text,
-        "course_id" text,
+        "course_id" bigint,
         "learner1_id" uuid NOT NULL,
         "learner2_id" uuid,
         "winner_id" uuid,
@@ -444,6 +492,7 @@ const ensureSupabaseCoreTables = async () => {
     await resetCompetitionsTable(client)
     await cleanupLegacyUserProfiles(client)
     await cleanupCourseCompletions(client)
+    await cleanupCompetitions(client)
     await cleanupTopics(client)
     await cleanupQuestions(client)
     await dropLegacyTables(client)
@@ -467,6 +516,16 @@ const ensureSupabaseCoreTables = async () => {
     for (const statement of tempQuestionsStatements) {
       await client.query(statement)
     }
+
+    await client.query(`
+      INSERT INTO "userProfiles" ("learner_id", "learner_name")
+      VALUES
+        ('00000000-0000-0000-0000-000000000001', 'Sabeel'),
+        ('00000000-0000-0000-0000-000000000002', 'Dan')
+      ON CONFLICT ("learner_id") DO UPDATE
+      SET "learner_name" = EXCLUDED."learner_name",
+          "updated_at" = now();
+    `)
 
     await client.query('COMMIT')
     console.log('✅ Supabase tables verified')
