@@ -64,10 +64,17 @@ const CompetitionPage = () => {
           // Try the learner-specific endpoint first
           try {
             competitions = await apiClient.get(`/competitions/learner/${SABEEL_USER_ID}`)
-            // Handle both array and object responses
-            competitionsArray = Array.isArray(competitions) 
-              ? competitions 
-              : (competitions.data || [])
+            // Handle both array and object responses (with success/data structure)
+            if (competitions.success !== undefined) {
+              // New format: { success: true, data: [...] }
+              competitionsArray = Array.isArray(competitions.data) ? competitions.data : []
+            } else if (Array.isArray(competitions)) {
+              // Direct array response
+              competitionsArray = competitions
+            } else {
+              // Fallback: try data property
+              competitionsArray = competitions.data || []
+            }
           } catch (learnerError) {
             // If learner endpoint returns 404, fallback to active/all and filter
             if (learnerError.response?.status === 404) {

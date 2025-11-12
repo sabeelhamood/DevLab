@@ -41,17 +41,41 @@ router.get('/course/:courseId', async (req, res) => {
   }
 })
 
+// Get competitions by learner ID
 router.get('/learner/:learnerId', async (req, res) => {
   try {
     const { learnerId } = req.params
-    console.log('Fetching competitions for learner:', learnerId)
-    const competitions = await CompetitionModel.findByLearner(learnerId)
-    console.log('Found competitions:', competitions?.length || 0)
+    
+    if (!learnerId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Learner ID is required' 
+      })
+    }
 
-    res.json(competitions || [])
+    console.log('📋 Fetching competitions for learner:', learnerId)
+    const competitions = await CompetitionModel.findByLearner(learnerId)
+    console.log('✅ Found competitions:', competitions?.length || 0)
+
+    if (!competitions || competitions.length === 0) {
+      return res.status(200).json({ 
+        success: true, 
+        data: [],
+        message: 'No competitions found for this learner' 
+      })
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      data: competitions 
+    })
   } catch (error) {
-    console.error('Error fetching competitions by learner:', error)
-    res.status(500).json({ error: 'Internal server error', message: error.message })
+    console.error('❌ Error fetching competitions by learner:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error', 
+      message: error.message 
+    })
   }
 })
 
