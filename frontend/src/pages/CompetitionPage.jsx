@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { apiClient } from '../services/api/client.js'
-import { Trophy, BookOpen, Users, ArrowRight } from 'lucide-react'
+import { Trophy, BookOpen, Users, ArrowRight, Star, Award, Flame, Target, Zap, Crown, Medal, TrendingUp, Sparkles } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext.jsx'
 
 // Sabeel's user ID - hardcoded for now
 const SABEEL_USER_ID = '3e3526c7-b8ae-4425-9128-5aa6897a895d'
@@ -15,6 +16,7 @@ const formatTime = (totalSeconds) => {
 const CompetitionPage = () => {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { theme } = useTheme()
   const [competition, setCompetition] = useState(null)
   const [progress, setProgress] = useState(null)
   const [timeRemaining, setTimeRemaining] = useState(600)
@@ -22,6 +24,13 @@ const CompetitionPage = () => {
   const [error, setError] = useState(null)
   const [completedCourses, setCompletedCourses] = useState([])
   const [showCourseList, setShowCourseList] = useState(!id) // Show list if no competition ID
+  
+  // Gamification state
+  const [userScore, setUserScore] = useState(0)
+  const [userXP, setUserXP] = useState(0)
+  const [userLevel, setUserLevel] = useState(1)
+  const [streak, setStreak] = useState(0)
+  const [badges, setBadges] = useState([])
 
   useEffect(() => {
     if (id) {
@@ -305,12 +314,19 @@ const CompetitionPage = () => {
                         competition?.id || 
                         'N/A'
 
+  // Calculate gamification metrics
+  const totalQuestions = competition?.questions?.length || 0
+  const completedQuestions = progress?.completedQuestions || 0
+  const progressPercent = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0
+  const xpToNextLevel = userLevel * 1000
+  const xpProgress = (userXP % 1000) / 10
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'day-mode' ? 'bg-gray-50' : 'bg-gray-900'}`}>
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto"></div>
-          <p className="text-slate-400">Loading competition...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--gradient-primary)' }}></div>
+          <p className={theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}>Loading competition...</p>
         </div>
       </div>
     )
@@ -437,34 +453,152 @@ const CompetitionPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4 flex items-center justify-center">
+    <div className={`min-h-screen py-12 px-4 flex items-center justify-center ${theme === 'day-mode' ? 'bg-gray-50' : 'bg-gray-900'}`}>
       <div className="w-full max-w-5xl space-y-8">
-        <header className="space-y-3">
-          <p className="text-emerald-400/80 text-xs uppercase tracking-[0.3em]">
-            Active Competition
-          </p>
-          <h1 className="text-3xl font-semibold text-white">{courseName}</h1>
-        <p className="text-sm text-slate-400">
-            Competition ID:{' '}
-            <span className="font-mono text-white/80">{competitionId}</span>
-          </p>
-        </header>
+        {/* Gamification Header */}
+        <div className={`rounded-2xl p-6 shadow-xl ${theme === 'day-mode' ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-gray-700'}`}>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p 
+                className="text-xs uppercase tracking-[0.3em] mb-2"
+                style={{ 
+                  background: 'var(--gradient-primary)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
+                Active Competition
+              </p>
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ 
+                  background: 'var(--gradient-primary)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
+                {courseName}
+              </h1>
+              <p className={`text-sm ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>
+                Competition ID: <span className={`font-mono ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>{competitionId}</span>
+              </p>
+            </div>
+            
+            {/* XP and Level Display */}
+            <div className="text-right">
+              <div className="flex items-center space-x-4">
+                <div className={`p-4 rounded-xl ${theme === 'day-mode' ? 'bg-emerald-50' : 'bg-gray-700'}`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Star className="w-5 h-5" style={{ color: 'var(--accent-gold)' }} />
+                    <span className={`text-xs font-medium ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>XP</span>
+                  </div>
+                  <p className={`text-2xl font-bold ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
+                    {userXP.toLocaleString()}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-xl ${theme === 'day-mode' ? 'bg-emerald-50' : 'bg-gray-700'}`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Award className="w-5 h-5" style={{ color: 'var(--gradient-primary)' }} />
+                    <span className={`text-xs font-medium ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>Level</span>
+                  </div>
+                  <p className={`text-2xl font-bold ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
+                    {userLevel}
+                  </p>
+                </div>
+                {streak > 0 && (
+                  <div className={`p-4 rounded-xl ${theme === 'day-mode' ? 'bg-orange-50' : 'bg-orange-500/20'}`}>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Flame className="w-5 h-5 text-orange-500" />
+                      <span className={`text-xs font-medium ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>Streak</span>
+                    </div>
+                    <p className={`text-2xl font-bold ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
+                      {streak}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-sm font-medium ${theme === 'day-mode' ? 'text-gray-700' : 'text-gray-300'}`}>
+                Competition Progress
+              </span>
+              <span className={`text-sm font-bold ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
+                {completedQuestions}/{totalQuestions} Questions
+              </span>
+            </div>
+            <div className={`h-3 rounded-full overflow-hidden ${theme === 'day-mode' ? 'bg-gray-200' : 'bg-gray-700'}`}>
+              <div 
+                className="h-full rounded-full transition-all duration-500 relative overflow-hidden"
+                style={{ 
+                  width: `${progressPercent}%`,
+                  background: 'var(--gradient-primary)',
+                  boxShadow: '0 0 10px rgba(6, 95, 70, 0.5)'
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Badges */}
+          {badges.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className={`text-xs font-medium ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>Badges:</span>
+              {badges.map((badge, index) => (
+                <span 
+                  key={index}
+                  className="px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1"
+                  style={{ 
+                    background: 'var(--gradient-accent)',
+                    color: 'white',
+                    boxShadow: '0 2px 8px rgba(217, 119, 6, 0.3)'
+                  }}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>{badge}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-          <div className="space-y-6 rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
+          <div className={`space-y-6 rounded-2xl border p-8 shadow-xl ${theme === 'day-mode' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'}`}>
             <div className="flex items-start justify-between gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400/80">
+                <p 
+                  className="text-xs uppercase tracking-[0.3em] mb-2"
+                  style={{ 
+                    background: 'var(--gradient-primary)', 
+                    WebkitBackgroundClip: 'text', 
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                >
                   Current Question
                 </p>
-                <h2 className="text-2xl font-semibold text-white mt-1">
+                <h2 className={`text-2xl font-bold mt-1 ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
                   {activeQuestion.title || 'Question'}
                 </h2>
-                <p className="text-sm text-slate-400 mt-2">
+                <p className={`text-sm mt-2 ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>
                   {activeQuestion.difficulty && (
                     <>
                       Difficulty:{' '}
-                      <span className="text-emerald-300 capitalize">
+                      <span 
+                        className="font-semibold capitalize"
+                        style={{ 
+                          background: 'var(--gradient-primary)', 
+                          WebkitBackgroundClip: 'text', 
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
+                      >
                         {activeQuestion.difficulty}
                       </span>
                     </>
@@ -473,24 +607,60 @@ const CompetitionPage = () => {
                     <>
                       {activeQuestion.difficulty && ' · '}
                       Language:{' '}
-                      <span className="text-emerald-300">{activeQuestion.language}</span>
+                      <span 
+                        className="font-semibold"
+                        style={{ 
+                          background: 'var(--gradient-primary)', 
+                          WebkitBackgroundClip: 'text', 
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
+                      >
+                        {activeQuestion.language}
+                      </span>
                     </>
                   )}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400/80">
+              <div className={`text-right p-4 rounded-xl ${theme === 'day-mode' ? 'bg-emerald-50' : 'bg-gray-700'}`}>
+                <p 
+                  className="text-xs uppercase tracking-[0.3em] mb-2"
+                  style={{ 
+                    background: 'var(--gradient-primary)', 
+                    WebkitBackgroundClip: 'text', 
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                >
                   Time Remaining
                 </p>
-                <p className="text-3xl font-bold text-emerald-300">
+                <p 
+                  className="text-3xl font-bold"
+                  style={{ 
+                    background: 'var(--gradient-primary)', 
+                    WebkitBackgroundClip: 'text', 
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                >
                   {formatTime(timeRemaining)}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 space-y-4">
-              <h3 className="text-lg font-semibold text-white">Prompt</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
+            <div className={`rounded-xl border p-6 space-y-4 ${theme === 'day-mode' ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-700 border-gray-600'}`}>
+              <h3 
+                className="text-lg font-semibold"
+                style={{ 
+                  background: 'var(--gradient-primary)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
+                Prompt
+              </h3>
+              <p className={`text-sm leading-relaxed ${theme === 'day-mode' ? 'text-gray-700' : 'text-gray-300'}`}>
                 {activeQuestion.description || 'No description available'}
               </p>
 

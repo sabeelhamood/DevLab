@@ -686,6 +686,20 @@
   }
 }
 
+/* Shimmer Animation for Progress Bars */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -703,6 +717,10 @@
   }
   
   .progress-fill::after {
+    animation: none;
+  }
+  
+  .animate-shimmer {
     animation: none;
   }
 }
