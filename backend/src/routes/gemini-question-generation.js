@@ -117,11 +117,43 @@ router.post('/generate-hint', async (req, res) => {
   }
 
   try {
+    // Extract question text from question object or use as-is if it's already a string
+    // Frontend may send question object with fields like: question_content, title, description, question, etc.
+    let questionText = question
+    
+    if (typeof question === 'object' && question !== null) {
+      // Extract question text from various possible fields
+      questionText = question.question_content || 
+                     question.description || 
+                     question.title || 
+                     question.question || 
+                     question.prompt ||
+                     question.content ||
+                     (question.ajax && question.ajax.question) ||
+                     ''
+      
+      if (!questionText) {
+        console.error('❌ Cannot extract question text from question object:', Object.keys(question))
+        return res.status(400).json({
+          error: 'Question text not found in question object',
+          message: 'Question object must contain question_content, description, title, or question field'
+        })
+      }
+    }
+    
+    // Ensure questionText is a string
+    if (typeof questionText !== 'string') {
+      questionText = String(questionText)
+    }
+    
+    console.log('🔍 Generating hint for question:', questionText.substring(0, 50) + '...')
+    console.log(`   Hints used: ${hintsUsed}, All hints: ${allHints.length}`)
+    
     const hint = await geminiService.generateHints(
-      question,
-      userAttempt,
-      hintsUsed,
-      allHints
+      questionText,
+      userAttempt || '',
+      hintsUsed || 0,
+      Array.isArray(allHints) ? allHints : []
     )
 
     res.json({
@@ -136,38 +168,46 @@ router.post('/generate-hint', async (req, res) => {
     })
 
   } catch (error) {
-    console.error('Error generating hint:', error)
+    console.error('❌ Error generating hint:', error)
+    console.error('   Error message:', error.message)
+    console.error('   Error stack:', error.stack)
     
-    // Check if it's a rate limit error
-    if (error.message && error.message.includes('Rate limit exceeded')) {
-      // Provide fallback hints when rate limited
-      const fallbackHints = [
-        "Try breaking down the problem into smaller steps.",
-        "Consider what data structures might be helpful for this problem.",
-        "Think about edge cases and how to handle them.",
-        "Look at the test cases to understand the expected behavior.",
-        "Consider using helper functions to organize your code better."
-      ]
-      
-      const fallbackHint = fallbackHints[hintsUsed || 0] || fallbackHints[0]
-      
-      return res.json({
-        success: true,
-        hint: fallbackHint,
-        metadata: {
-          courseName,
-          topicName,
-          hintsUsed: hintsUsed + 1,
-          generatedAt: new Date().toISOString(),
-          fallback: true,
-          message: "Using fallback hint due to API rate limits"
-        }
-      })
-    }
+    // Check if it's a rate limit error or API error
+    const isRateLimit = error.message && (
+      error.message.includes('Rate limit exceeded') ||
+      error.message.includes('429') ||
+      error.message.includes('quota') ||
+      error.message.includes('Too Many Requests') ||
+      error.message.includes('overloaded') ||
+      error.message.includes('503') ||
+      error.message.includes('Service Unavailable')
+    )
     
-    res.status(500).json({
-      error: 'Failed to generate hint',
-      message: error.message
+    // Provide fallback hints for any error to avoid breaking the UI
+    console.warn('⚠️ Using fallback hint due to error:', error.message)
+    const fallbackHints = [
+      "Try breaking down the problem into smaller steps.",
+      "Consider what data structures might be helpful for this problem.",
+      "Think about edge cases and how to handle them.",
+      "Look at the test cases to understand the expected behavior.",
+      "Consider using helper functions to organize your code better."
+    ]
+    
+    const fallbackHint = fallbackHints[hintsUsed || 0] || fallbackHints[0]
+    
+    // Return fallback hint instead of error to avoid breaking the UI
+    return res.json({
+      success: true,
+      hint: fallbackHint,
+      metadata: {
+        courseName,
+        topicName,
+        hintsUsed: (hintsUsed || 0) + 1,
+        generatedAt: new Date().toISOString(),
+        fallback: true,
+        error: error.message,
+        message: isRateLimit ? "Using fallback hint due to API rate limits" : "Using fallback hint due to API error"
+      }
     })
   }
 })
