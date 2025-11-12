@@ -329,38 +329,13 @@ export const competitionController = {
     try {
       const { id } = req.params
 
-      const competition = {
-        id,
-        courseId: '1',
-        name: 'Weekly Python Challenge',
-        description: 'Test your Python skills against other learners',
-        maxParticipants: 2,
-        questionCount: 3,
-        timeLimit: 1800,
-        status: 'active',
-        startedAt: new Date().toISOString(),
-        participants: [
-          {
-            id: 'part-1',
-            competitionId: id,
-            learnerId: 'user-123',
-            score: 0,
-            rank: null,
-            joinedAt: new Date().toISOString()
-          }
-        ],
-        questions: [
-          {
-            id: 'q-1',
-            title: 'Python Hello World',
-            description: 'Write a Python program that prints "Hello, World!"',
-            type: 'code',
-            difficulty: 'beginner',
-            language: 'python'
-          }
-        ],
-        leaderboard: [],
-        createdAt: new Date().toISOString()
+      const competition = await CompetitionModel.findById(id)
+      
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          error: 'Competition not found'
+        })
       }
 
       res.json({

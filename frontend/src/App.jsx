@@ -16,6 +16,7 @@ function App() {
           <Route path="/" element={<SimpleQuestionPage />} />
           <Route path="/question" element={<SimpleQuestionPage />} />
           <Route path="/competitions" element={<CompetitionPage />} />
+          <Route path="/competitions/:id" element={<CompetitionPage />} />
           <Route path="/competition/invitation" element={<CompetitionInvitation />} />
           <Route
             path="/dev/competition-outcome/:competitionId/:learnerId"
