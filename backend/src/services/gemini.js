@@ -878,7 +878,13 @@ Return ONLY the JSON object in the specified format, no additional text.
 
   // Generate hints
   async generateHints(question, userAttempt, hintsUsed = 0, allHints = []) {
-    this._checkAvailability();
+    try {
+      this._checkAvailability();
+    } catch (availabilityError) {
+      console.error("❌ Gemini service not available:", availabilityError?.message);
+      console.warn("⚠️ Using fallback hints due to service unavailability");
+      return this.generateFallbackHints(question, userAttempt, hintsUsed);
+    }
 
     const prompt = `
 Generate a concise, direct hint for this coding question.
@@ -917,20 +923,52 @@ Return ONLY the JSON object.
     try {
       const text = await this._callModel(prompt);
       try {
-        return JSON.parse(this._cleanJsonResponse(text));
-      } catch {
-        return this.parseStructuredResponse(text);
+        const parsed = JSON.parse(this._cleanJsonResponse(text));
+        // Ensure we have a hint field
+        if (parsed && (parsed.hint || parsed.text || parsed.message)) {
+          return parsed;
+        } else {
+          console.warn("⚠️ Gemini returned invalid hint format, using fallback");
+          return this.generateFallbackHints(question, userAttempt, hintsUsed);
+        }
+      } catch (parseError) {
+        console.warn("⚠️ Failed to parse Gemini hint response:", parseError?.message);
+        console.warn("   Attempting to extract hint from text response");
+        // Try to extract hint from text response
+        const textLower = text.toLowerCase();
+        if (textLower.includes('hint') || text.length < 200) {
+          // Might be a direct hint text
+          return {
+            hint: text.trim().substring(0, 200),
+            hintLevel: hintsUsed + 1,
+            showSolution: false,
+            solution: null,
+            canShowSolution: hintsUsed >= 2
+          };
+        } else {
+          console.warn("⚠️ Could not extract hint from text, using fallback");
+          return this.generateFallbackHints(question, userAttempt, hintsUsed);
+        }
       }
     } catch (err) {
-      console.error("generateHints error:", err?.message || err);
+      console.error("❌ generateHints error:", err?.message || err);
+      console.error("   Error stack:", err?.stack);
       
-      // Handle rate limiting - provide fallback hints
-      if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('Too Many Requests') || err.message?.includes('Rate limit exceeded')) {
-        console.log('🔄 Gemini API rate limit exceeded, using fallback hints...');
+      // Handle rate limiting and all API errors - always return fallback hints
+      if (err.message?.includes('429') || 
+          err.message?.includes('quota') || 
+          err.message?.includes('Too Many Requests') || 
+          err.message?.includes('Rate limit exceeded') ||
+          err.message?.includes('503') ||
+          err.message?.includes('Service Unavailable') ||
+          err.message?.includes('overloaded')) {
+        console.warn('⚠️ Gemini API rate limit/error, using fallback hints...');
         return this.generateFallbackHints(question, userAttempt, hintsUsed);
       }
       
-      throw new Error(`Failed to generate hints: ${err?.message || err}`);
+      // For any other error, also return fallback hints instead of throwing
+      console.warn('⚠️ Unexpected error in generateHints, using fallback hints...');
+      return this.generateFallbackHints(question, userAttempt, hintsUsed);
     }
   }
 
