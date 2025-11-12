@@ -228,25 +228,7 @@ try {
 } catch (error) {
   console.warn('⚠️ Unable to list user-profile routes:', error.message)
 }
-// Add logging middleware for competitions routes
-app.use('/api/competitions', (req, res, next) => {
-  console.log('🚦 [competitions] Incoming request:', req.method, req.path, req.originalUrl)
-  next()
-}, competitionRoutes)
-try {
-  const competitionRouteSummaries = competitionRoutes.stack
-    .filter((layer) => layer.route)
-    .map((layer) => ({
-      path: `/api/competitions${layer.route.path === '/' ? '' : layer.route.path}`,
-      methods: Object.keys(layer.route.methods)
-        .filter((method) => layer.route.methods[method])
-        .map((method) => method.toUpperCase())
-    }))
-  console.log('✅ Registered competition routes:', competitionRouteSummaries)
-} catch (error) {
-  console.warn('⚠️ Unable to list competition routes:', error.message)
-}
-// Temporary test endpoint to verify Supabase data access
+// Temporary test endpoint to verify Supabase data access - MUST come before other /api routes
 app.get('/api/test-supabase', async (req, res) => {
   try {
     const { postgres } = await import('./config/database.js')
@@ -288,6 +270,25 @@ app.get('/api/test-supabase', async (req, res) => {
     })
   }
 })
+
+// Add logging middleware for competitions routes
+app.use('/api/competitions', (req, res, next) => {
+  console.log('🚦 [competitions] Incoming request:', req.method, req.path, req.originalUrl)
+  next()
+}, competitionRoutes)
+try {
+  const competitionRouteSummaries = competitionRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: `/api/competitions${layer.route.path === '/' ? '' : layer.route.path}`,
+      methods: Object.keys(layer.route.methods)
+        .filter((method) => layer.route.methods[method])
+        .map((method) => method.toUpperCase())
+    }))
+  console.log('✅ Registered competition routes:', competitionRouteSummaries)
+} catch (error) {
+  console.warn('⚠️ Unable to list competition routes:', error.message)
+}
 
 app.use('/api/competitions-mock', legacyCompetitionRoutes)
 app.use('/api/analytics', analyticsRoutes)
