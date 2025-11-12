@@ -338,7 +338,9 @@ export class GeminiService {
         topicName: topic,
         nanoSkills,
         macroSkills,
-        questionType: 'coding'
+        questionType: 'coding',
+        _source: 'fallback', // Mark as fallback question
+        _isFallback: true // Explicitly mark as fallback
       };
     });
   }
