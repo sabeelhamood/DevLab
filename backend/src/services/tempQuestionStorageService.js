@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import { postgres } from '../config/database.js'
+import { config } from '../config/environment.js'
 
 /**
  * Service to save Gemini-generated questions to temp_questions, topics, and testCases tables
@@ -9,10 +10,16 @@ import { postgres } from '../config/database.js'
  * - Saving questions to temp_questions table with question_id from Gemini
  * - Saving test cases to testCases table linked to question_id
  * - Proper error handling and logging
+ * - Authentication: Uses SUPABASE_URL connection string for database authentication
+ *   SERVICE_API_KEYS are checked for production environment logging
  */
 
 // Default course_id to use when course_id is not provided
 const DEFAULT_COURSE_ID = process.env.DEFAULT_COURSE_ID || null
+
+// Check if SERVICE_API_KEYS are configured (for logging purposes)
+const isProduction = config.nodeEnv === 'production'
+const hasServiceApiKeys = config.security.apiKeys && config.security.apiKeys.trim().length > 0
 
 /**
  * Save questions from Gemini response to Supabase tables
@@ -24,8 +31,31 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
   console.log('\n' + '='.repeat(80))
   console.log('📋 [tempQuestionStorage] saveGeminiQuestionsToSupabase called')
   console.log('='.repeat(80))
+  console.log(`   Environment: ${config.nodeEnv}`)
+  console.log(`   Production: ${isProduction}`)
+  console.log(`   SERVICE_API_KEYS configured: ${hasServiceApiKeys}`)
+  console.log(`   Database authentication: SUPABASE_URL (connection string)`)
   console.log(`   Questions count: ${questions.length}`)
   console.log(`   Metadata:`, JSON.stringify(metadata, null, 2))
+  
+  // Verify SUPABASE_URL is configured
+  if (!process.env.SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL not configured')
+    return {
+      success: false,
+      error: 'SUPABASE_URL not configured',
+      savedQuestions: [],
+      savedTopics: [],
+      savedTestCases: []
+    }
+  }
+  
+  // In production, verify SERVICE_API_KEYS are configured (for service authentication logging)
+  if (isProduction && !hasServiceApiKeys) {
+    console.warn('⚠️ SERVICE_API_KEYS not configured in production')
+    console.warn('   Database operations will still work using SUPABASE_URL')
+    console.warn('   Service authentication headers are not required for database operations')
+  }
   
   if (!Array.isArray(questions) || questions.length === 0) {
     console.warn('⚠️ No questions to save')
