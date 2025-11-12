@@ -91,11 +91,20 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
   // Resolve course_id
   let resolvedCourseId = metaCourseId || metaCourseIdAlt || DEFAULT_COURSE_ID
   
+  console.log('\n🔍 Resolving course_id and topic_id:')
+  console.log(`   metaCourseId: ${metaCourseId || 'null'}`)
+  console.log(`   metaCourseIdAlt: ${metaCourseIdAlt || 'null'}`)
+  console.log(`   DEFAULT_COURSE_ID: ${DEFAULT_COURSE_ID || 'null'}`)
+  console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+  
   if (!resolvedCourseId) {
     console.warn('⚠️ course_id not provided and DEFAULT_COURSE_ID not set')
     console.warn('   Will attempt to create topic without course_id (may fail if topics table requires it)')
+    console.warn('   Topic creation may fail, but question saving will continue')
   } else {
     console.log(`✅ Resolved course_id: ${resolvedCourseId}`)
+    console.log(`   Course ID type: ${typeof resolvedCourseId}`)
+    console.log(`   Course ID is UUID format: ${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedCourseId)}`)
   }
 
   const results = {
@@ -108,13 +117,19 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
 
   try {
     // Step 1: Create or update topic in topics table
-    console.log('\n📋 STEP 1: Creating/updating topic in topics table')
+    console.log('\n' + '='.repeat(80))
+    console.log('📋 STEP 1: Creating/updating topic in topics table')
+    console.log('='.repeat(80))
     console.log(`   Topic name: ${topicName}`)
     console.log(`   Course ID: ${resolvedCourseId || 'N/A'}`)
+    console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+    console.log(`   resolvedCourseId type: ${resolvedCourseId ? typeof resolvedCourseId : 'null'}`)
     
     let topicId = null
     try {
       if (resolvedCourseId) {
+        console.log(`   Checking if topic exists: topic_name="${topicName}", course_id="${resolvedCourseId}"`)
+        
         // Check if topic already exists
         const existingTopic = await postgres.query(
           `SELECT "topic_id", "course_id", "topic_name" 
@@ -125,9 +140,16 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
           [topicName, resolvedCourseId]
         )
 
+        console.log(`   Topic lookup result: ${existingTopic.rows.length} row(s) found`)
+        if (existingTopic.rows.length > 0) {
+          console.log(`   Existing topic data:`, JSON.stringify(existingTopic.rows[0], null, 2))
+        }
+
         if (existingTopic.rows.length > 0) {
           topicId = existingTopic.rows[0].topic_id
           console.log(`✅ Topic already exists: ${topicId}`)
+          console.log(`   topicId: ${topicId}`)
+          console.log(`   topicId type: ${typeof topicId}`)
           
           // Update topic with nano_skills and macro_skills if provided
           if (nanoSkills.length > 0 || macroSkills.length > 0) {
@@ -148,6 +170,15 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
         } else {
           // Create new topic
           topicId = randomUUID()
+          console.log(`   Creating new topic with ID: ${topicId}`)
+          console.log(`   Insert parameters:`, {
+            topic_id: topicId,
+            course_id: resolvedCourseId,
+            topic_name: topicName,
+            nano_skills: nanoSkills,
+            macro_skills: macroSkills
+          })
+          
           await postgres.query(
             `INSERT INTO "topics" (
               "topic_id",
@@ -173,23 +204,37 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
             ]
           )
           console.log(`✅ Created new topic: ${topicId}`)
+          console.log(`   topicId: ${topicId}`)
+          console.log(`   topicId type: ${typeof topicId}`)
         }
         results.savedTopics.push({ topic_id: topicId, topic_name: topicName })
+        console.log(`✅ Topic ID resolved: ${topicId}`)
       } else {
         console.warn('⚠️ Skipping topic creation: course_id is missing')
         console.warn('   Topics table requires course_id (NOT NULL constraint)')
+        console.warn('   topicId will be null - questions will be saved without topic_id')
+        console.warn('   resolvedCourseId:', resolvedCourseId)
+        console.warn('   DEFAULT_COURSE_ID:', DEFAULT_COURSE_ID)
       }
+      
+      console.log(`   Final topicId: ${topicId || 'null'}`)
+      console.log('='.repeat(80))
     } catch (topicError) {
       console.error('❌ Error creating/updating topic:')
       console.error(`   Error: ${topicError.message}`)
       console.error(`   Code: ${topicError.code || 'N/A'}`)
       console.error(`   Detail: ${topicError.detail || 'N/A'}`)
+      console.error(`   Hint: ${topicError.hint || 'N/A'}`)
+      console.error(`   Stack: ${topicError.stack || 'N/A'}`)
       results.errors.push({
         step: 'topic_creation',
         error: topicError.message,
-        code: topicError.code
+        code: topicError.code,
+        detail: topicError.detail,
+        hint: topicError.hint
       })
       // Continue with question saving even if topic creation fails
+      console.warn('   Continuing with question saving even though topic creation failed')
     }
 
     // Step 2: Ensure temp_questions table has the correct structure
@@ -343,7 +388,12 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
     }
 
     // Step 3: Save each question to temp_questions table
-    console.log('\n📋 STEP 3: Saving questions to temp_questions table')
+    console.log('\n' + '='.repeat(80))
+    console.log('📋 STEP 3: Saving questions to temp_questions table')
+    console.log('='.repeat(80))
+    console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+    console.log(`   topicId: ${topicId || 'null'}`)
+    console.log(`   Questions to save: ${questions.length}`)
     
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i]
@@ -362,14 +412,39 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
         
         console.log(`   Question ID: ${questionId}`)
         console.log(`   Title: ${title.substring(0, 50)}...`)
+        console.log(`   Question Content (first 50 chars): ${questionContent.substring(0, 50)}...`)
         console.log(`   Difficulty: ${difficulty}`)
         console.log(`   Language: ${language}`)
         console.log(`   Question Type: ${questionType}`)
         console.log(`   Hints: ${hints.length}`)
         console.log(`   Test Cases: ${(question.testCases || question.test_cases || []).length}`)
+        console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+        console.log(`   topicId: ${topicId || 'null'}`)
+        
+        // FORCE LOG: Log before insertion
+        console.log(`\n   🔍 FORCE LOG: Saving question to temp_questions`)
+        console.log(`      questionId: ${questionId}`)
+        console.log(`      questionContent: ${questionContent.substring(0, 50)}...`)
+        console.log(`      title: ${title.substring(0, 50)}...`)
+        console.log(`      course_id: ${resolvedCourseId || 'null'}`)
+        console.log(`      topic_id: ${topicId || 'null'}`)
 
         // Insert or update question in temp_questions
-        await postgres.query(
+        console.log(`   Executing INSERT query for question: ${questionId}`)
+        console.log(`   Query parameters:`, {
+          questionId,
+          questionContent: questionContent.substring(0, 50) + '...',
+          title: title.substring(0, 50) + '...',
+          difficulty,
+          language,
+          questionType,
+          solution: solution ? solution.substring(0, 50) + '...' : 'null',
+          hints: hints.length,
+          course_id: resolvedCourseId || 'null',
+          topic_id: topicId || 'null'
+        })
+        
+        const insertResult = await postgres.query(
           `INSERT INTO "temp_questions" (
             "question_id",
             "question_content",
@@ -396,7 +471,8 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
             "hints" = EXCLUDED."hints",
             "course_id" = EXCLUDED."course_id",
             "topic_id" = EXCLUDED."topic_id",
-            "updated_at" = now()`,
+            "updated_at" = now()
+          RETURNING "question_id", "title", "created_at", "updated_at"`,
           [
             questionId,
             questionContent,
@@ -411,8 +487,45 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
           ]
         )
         
+        console.log(`   ✅ INSERT query executed successfully`)
+        console.log(`   Rows returned: ${insertResult.rows ? insertResult.rows.length : 0}`)
+        console.log(`   Row count: ${insertResult.rowCount || 0}`)
+        if (insertResult.rows && insertResult.rows.length > 0) {
+          console.log(`   Saved question data:`, JSON.stringify(insertResult.rows[0], null, 2))
+        }
         console.log(`   ✅ Saved question to temp_questions: ${questionId}`)
+        
+        // FORCE LOG: Log after insertion
+        console.log(`   🔍 FORCE LOG: Question saved successfully`)
+        console.log(`      questionId: ${questionId}`)
+        console.log(`      questionContent: ${questionContent.substring(0, 50)}...`)
+        console.log(`      title: ${title.substring(0, 50)}...`)
+        console.log(`      course_id: ${resolvedCourseId || 'null'}`)
+        console.log(`      topic_id: ${topicId || 'null'}`)
+        
         results.savedQuestions.push({ question_id: questionId, title })
+        
+        // Verify insertion by querying the database
+        console.log(`   Verifying insertion by querying database...`)
+        try {
+          const verifyResult = await postgres.query(
+            `SELECT "question_id", "title", "question_content", "course_id", "topic_id", "created_at" 
+             FROM "temp_questions" 
+             WHERE "question_id" = $1`,
+            [questionId]
+          )
+          
+          console.log(`   Verification query result: ${verifyResult.rows.length} row(s) found`)
+          if (verifyResult.rows.length > 0) {
+            console.log(`   ✅ Verification successful - question found in database`)
+            console.log(`   Verified question data:`, JSON.stringify(verifyResult.rows[0], null, 2))
+          } else {
+            console.error(`   ❌ Verification failed - question NOT found in database`)
+            console.error(`   This indicates the INSERT did not actually save the question`)
+          }
+        } catch (verifyError) {
+          console.error(`   ❌ Verification query failed:`, verifyError.message)
+        }
 
         // Step 3: Save test cases to testCases table
         const testCases = question.testCases || question.test_cases || []

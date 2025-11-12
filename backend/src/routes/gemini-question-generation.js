@@ -3,6 +3,7 @@ import { geminiService } from '../services/gemini.js'
 import { saveQuestionsToSupabase } from '../services/questionStorageService.js'
 import { saveTempQuestions, createRequestId } from '../services/tempQuestionStore.js'
 import { saveGeminiQuestionsToSupabase } from '../services/tempQuestionStorageService.js'
+import { postgres } from '../config/database.js'
 
 const router = express.Router()
 
@@ -15,6 +16,156 @@ router.get('/test-cors', (req, res) => {
     origin: req.header('Origin'),
     timestamp: new Date().toISOString()
   })
+})
+
+// Test endpoint to verify Supabase connection and temp_questions insertion
+router.post('/test-supabase-insert', async (req, res) => {
+  console.log('\n' + '='.repeat(80))
+  console.log('🧪 TEST: Testing Supabase connection and temp_questions insertion')
+  console.log('='.repeat(80))
+  
+  try {
+    // Step 1: Test connection
+    console.log('\n📋 STEP 1: Testing Supabase connection')
+    const connectionTest = await postgres.query('SELECT NOW() as current_time, 1 as test')
+    console.log('✅ Connection test successful')
+    console.log('   Current database time:', connectionTest.rows[0].current_time)
+    
+    // Step 2: Test INSERT into temp_questions
+    console.log('\n📋 STEP 2: Testing INSERT into temp_questions table')
+    const testQuestionId = `test_${Date.now()}`
+    const testQuestionContent = 'This is a test question from /test-supabase-insert endpoint'
+    const testTitle = 'Test Question'
+    
+    console.log(`   Test question ID: ${testQuestionId}`)
+    console.log(`   Test question content: ${testQuestionContent}`)
+    console.log(`   Test title: ${testTitle}`)
+    
+    // Check if temp_questions table exists
+    const tableCheck = await postgres.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'temp_questions'
+    `)
+    
+    console.log(`   Table exists: ${tableCheck.rows.length > 0}`)
+    console.log(`   Table columns: ${tableCheck.rows.length}`)
+    if (tableCheck.rows.length > 0) {
+      console.log(`   Columns:`, tableCheck.rows.map(col => col.column_name).join(', '))
+    }
+    
+    // Try to insert test question
+    try {
+      const insertResult = await postgres.query(
+        `INSERT INTO "temp_questions" (
+          "question_id",
+          "question_content",
+          "title",
+          "created_at",
+          "updated_at"
+        )
+        VALUES ($1, $2, $3, now(), now())
+        ON CONFLICT ("question_id")
+        DO UPDATE SET
+          "question_content" = EXCLUDED."question_content",
+          "title" = EXCLUDED."title",
+          "updated_at" = now()
+        RETURNING "question_id", "title", "question_content", "created_at"`,
+        [testQuestionId, testQuestionContent, testTitle]
+      )
+      
+      console.log('✅ INSERT test successful')
+      console.log('   Rows returned:', insertResult.rows.length)
+      console.log('   Row count:', insertResult.rowCount)
+      if (insertResult.rows.length > 0) {
+        console.log('   Inserted data:', JSON.stringify(insertResult.rows[0], null, 2))
+      }
+      
+      // Verify insertion
+      console.log('\n📋 STEP 3: Verifying insertion')
+      const verifyResult = await postgres.query(
+        `SELECT "question_id", "title", "question_content", "created_at" 
+         FROM "temp_questions" 
+         WHERE "question_id" = $1`,
+        [testQuestionId]
+      )
+      
+      console.log('   Verification query result:', verifyResult.rows.length, 'row(s) found')
+      if (verifyResult.rows.length > 0) {
+        console.log('✅ Verification successful - test question found in database')
+        console.log('   Verified data:', JSON.stringify(verifyResult.rows[0], null, 2))
+      } else {
+        console.error('❌ Verification failed - test question NOT found in database')
+      }
+      
+      // Clean up test question
+      console.log('\n📋 STEP 4: Cleaning up test question')
+      await postgres.query(
+        `DELETE FROM "temp_questions" WHERE "question_id" = $1`,
+        [testQuestionId]
+      )
+      console.log('✅ Test question deleted')
+      
+      return res.json({
+        success: true,
+        message: 'Supabase connection and insertion test successful',
+        test: {
+          question_id: testQuestionId,
+          inserted: true,
+          verified: verifyResult.rows.length > 0,
+          cleaned_up: true
+        },
+        connection: {
+          connected: true,
+          database_time: connectionTest.rows[0].current_time
+        },
+        table: {
+          exists: tableCheck.rows.length > 0,
+          columns: tableCheck.rows.map(col => col.column_name)
+        }
+      })
+    } catch (insertError) {
+      console.error('❌ INSERT test failed:')
+      console.error('   Error:', insertError.message)
+      console.error('   Code:', insertError.code || 'N/A')
+      console.error('   Detail:', insertError.detail || 'N/A')
+      console.error('   Hint:', insertError.hint || 'N/A')
+      console.error('   Stack:', insertError.stack || 'N/A')
+      
+      return res.status(500).json({
+        success: false,
+        error: 'INSERT test failed',
+        message: insertError.message,
+        code: insertError.code,
+        detail: insertError.detail,
+        hint: insertError.hint,
+        connection: {
+          connected: true,
+          database_time: connectionTest.rows[0].current_time
+        },
+        table: {
+          exists: tableCheck.rows.length > 0,
+          columns: tableCheck.rows.map(col => col.column_name)
+        }
+      })
+    }
+  } catch (error) {
+    console.error('\n❌ TEST FAILED:')
+    console.error('   Error:', error.message)
+    console.error('   Code:', error.code || 'N/A')
+    console.error('   Detail:', error.detail || 'N/A')
+    console.error('   Stack:', error.stack || 'N/A')
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Test failed',
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint
+    })
+  }
 })
 
 // Health check endpoint for question generation service
@@ -105,16 +256,16 @@ router.post('/generate-question', async (req, res) => {
 router.post('/generate-hint', async (req, res) => {
   // Wrap entire handler in try-catch to ensure we always return a response
   try {
-    const { 
-      question, 
-      userAttempt = '', 
-      hintsUsed = 0, 
-      allHints = [],
-      courseName,
-      topicName
+  const { 
+    question, 
+    userAttempt = '', 
+    hintsUsed = 0, 
+    allHints = [],
+    courseName,
+    topicName
     } = req.body || {}
 
-    if (!question) {
+  if (!question) {
       console.warn('⚠️ Hint generation: Question is missing')
       // Return fallback hint instead of error to avoid breaking UI
       const fallbackHints = [
@@ -133,10 +284,10 @@ router.post('/generate-hint', async (req, res) => {
           fallback: true,
           message: "Using fallback hint - question not provided"
         }
-      })
-    }
+    })
+  }
 
-    try {
+  try {
       // Extract question text from question object or use as-is if it's already a string
       // Frontend may send question object with fields like: question_content, title, description, question, etc.
       let questionText = question
@@ -236,9 +387,9 @@ router.post('/generate-hint', async (req, res) => {
         console.log('✅ Successfully generated hint from Gemini:', hintText.substring(0, 50) + '...')
         
         return res.json({
-          success: true,
+      success: true,
           hint: hintText,
-          metadata: {
+      metadata: {
             courseName: courseName || null,
             topicName: topicName || null,
             hintsUsed: (hintsUsed || 0) + 1,
@@ -255,7 +406,7 @@ router.post('/generate-hint', async (req, res) => {
         throw geminiError // Re-throw to be caught by outer catch
       }
 
-    } catch (error) {
+  } catch (error) {
       console.error('❌ Error generating hint:', error)
       console.error('   Error message:', error?.message)
       console.error('   Error stack:', error?.stack)
@@ -703,10 +854,12 @@ router.post('/generate-question-package', async (req, res) => {
     }
     
     // Save questions to temp_questions, topics, and testCases tables (after Gemini generation, before response)
-    // This runs asynchronously and doesn't block the response
+    // TEMPORARILY BLOCKING to debug - will make async again after debugging
     // Questions are saved when response appears on https://dev-lab-three.vercel.app/
     try {
-      console.log('\n📋 STEP: Saving questions to Supabase tables (temp_questions, topics, testCases)...')
+      console.log('\n' + '='.repeat(80))
+      console.log('📋 STEP: Saving questions to Supabase tables (temp_questions, topics, testCases)...')
+      console.log('='.repeat(80))
       console.log(`   Question count: ${processedQuestions.length}`)
       console.log(`   Question type: ${questionType}`)
       console.log(`   Topic name: ${topicName}`)
@@ -737,50 +890,82 @@ router.post('/generate-question-package', async (req, res) => {
       
       console.log(`   Metadata prepared:`, JSON.stringify(saveMetadata, null, 2))
       console.log(`   Preparing to save ${processedQuestions.length} question(s)...`)
+      console.log(`   Questions to save:`, processedQuestions.map(q => ({
+        question_id: q.question_id || q.id,
+        title: q.title?.substring(0, 50),
+        description: q.description?.substring(0, 50)
+      })))
       
-      // Save questions to temp_questions, topics, and testCases tables asynchronously
-      // This does not block the response - questions are saved in background
-      saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
-        .then((saveResults) => {
-          console.log(`\n✅ Successfully saved questions to Supabase tables`)
-          console.log(`   Saved questions: ${saveResults.savedQuestions.length}`)
-          console.log(`   Saved topics: ${saveResults.savedTopics.length}`)
-          console.log(`   Saved test cases: ${saveResults.savedTestCases.length}`)
-          console.log(`   Errors: ${saveResults.errors.length}`)
-          
-          if (saveResults.savedQuestions.length > 0) {
-            console.log(`   Question IDs saved:`)
-            saveResults.savedQuestions.forEach((q, idx) => {
-              console.log(`     ${idx + 1}. ${q.question_id}: ${q.title?.substring(0, 50)}...`)
-            })
+      // TEMPORARILY BLOCKING: await save to debug errors before response is sent
+      // This ensures any errors throw before response is sent
+      console.log('\n🔒 BLOCKING MODE: Waiting for save to complete before sending response...')
+      const saveResults = await saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
+      
+      console.log(`\n✅ Save operation completed`)
+      console.log(`   Saved questions: ${saveResults.savedQuestions.length}`)
+      console.log(`   Saved topics: ${saveResults.savedTopics.length}`)
+      console.log(`   Saved test cases: ${saveResults.savedTestCases.length}`)
+      console.log(`   Errors: ${saveResults.errors.length}`)
+      
+      if (saveResults.savedQuestions.length > 0) {
+        console.log(`   ✅ Question IDs saved:`)
+        saveResults.savedQuestions.forEach((q, idx) => {
+          console.log(`     ${idx + 1}. ${q.question_id}: ${q.title?.substring(0, 50)}...`)
+        })
+      } else {
+        console.warn(`   ⚠️ No questions were saved to temp_questions table`)
+      }
+      
+      if (saveResults.savedTopics.length > 0) {
+        console.log(`   ✅ Topics saved:`)
+        saveResults.savedTopics.forEach((topic, idx) => {
+          console.log(`     ${idx + 1}. ${topic.topic_id}: ${topic.topic_name}`)
+        })
+      } else {
+        console.warn(`   ⚠️ No topics were saved to topics table`)
+      }
+      
+      if (saveResults.savedTestCases.length > 0) {
+        console.log(`   ✅ Test cases saved:`)
+        saveResults.savedTestCases.forEach((tc, idx) => {
+          console.log(`     ${idx + 1}. ${tc.test_case_id}: ${tc.question_id} (stored in: ${tc.stored_in || 'testCases table'})`)
+        })
+      } else {
+        console.warn(`   ⚠️ No test cases were saved`)
+      }
+      
+      if (saveResults.errors.length > 0) {
+        console.error(`   ❌ Errors during save:`)
+        saveResults.errors.forEach((err, idx) => {
+          console.error(`     ${idx + 1}. [${err.step}] ${err.error} (code: ${err.code || 'N/A'})`)
+          if (err.detail) {
+            console.error(`        Detail: ${err.detail}`)
           }
-          
-          if (saveResults.errors.length > 0) {
-            console.warn(`   ⚠️ Errors during save:`)
-            saveResults.errors.forEach((err, idx) => {
-              console.warn(`     ${idx + 1}. [${err.step}] ${err.error} (code: ${err.code || 'N/A'})`)
-            })
+          if (err.hint) {
+            console.error(`        Hint: ${err.hint}`)
           }
         })
-        .catch((error) => {
-          // Log error but don't throw - questions were generated successfully
-          console.error('\n❌ Error saving questions to Supabase tables:')
-          console.error(`   Error message: ${error.message}`)
-          console.error(`   Error code: ${error.code || 'N/A'}`)
-          console.error(`   Error detail: ${error.detail || 'N/A'}`)
-          console.error(`   Error hint: ${error.hint || 'N/A'}`)
-          console.error(`   Error stack: ${error.stack || 'N/A'}`)
-          console.error('   Questions were generated successfully but not saved to Supabase')
-          console.error('   This does not affect the API response - questions are still returned to frontend')
-        })
+      }
+      
+      console.log('='.repeat(80))
+      
     } catch (error) {
-      // Don't fail the request if Supabase save fails - log error and continue
-      console.error('\n❌ Error initiating question save to Supabase:')
+      // Log error and throw to ensure response indicates failure
+      console.error('\n' + '='.repeat(80))
+      console.error('❌ ERROR: Failed to save questions to Supabase')
+      console.error('='.repeat(80))
       console.error(`   Error message: ${error.message}`)
       console.error(`   Error code: ${error.code || 'N/A'}`)
+      console.error(`   Error detail: ${error.detail || 'N/A'}`)
+      console.error(`   Error hint: ${error.hint || 'N/A'}`)
       console.error(`   Error stack: ${error.stack || 'N/A'}`)
-      console.error('   Questions were generated successfully but Supabase save was not initiated')
-      console.error('   This does not affect the API response - questions are still returned to frontend')
+      console.error('='.repeat(80))
+      console.error('   Questions were generated successfully but NOT saved to Supabase')
+      console.error('   This is a CRITICAL ERROR - saving is now blocking, so this will delay the response')
+      console.error('='.repeat(80))
+      
+      // Don't throw error - still return questions to frontend, but log the failure
+      // In production, you might want to throw here to alert monitoring systems
     }
     
     // Save questions to Supabase automatically (after Gemini generation, before response)
