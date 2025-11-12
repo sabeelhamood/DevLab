@@ -7,6 +7,12 @@ import { CompetitionModel } from '../../models/Competition.js'
 
 const router = express.Router()
 
+// Log every request to this router for debugging
+router.use((req, res, next) => {
+  console.log('🚦 [competitions] Incoming request:', req.method, req.originalUrl)
+  next()
+})
+
 // Validation rules
 const joinCompetitionValidation = [
   body('course_id').trim().notEmpty().withMessage('Course ID is required'),
