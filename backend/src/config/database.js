@@ -9,11 +9,9 @@ if (!connectionString) {
   )
 }
 
-const sslRequired = /sslmode=require/i.test(connectionString)
-
 const pool = new Pool({
   connectionString,
-  ssl: sslRequired ? { rejectUnauthorized: false } : undefined
+  ssl: { rejectUnauthorized: false }
 })
 
 pool.on('error', (error) => {
