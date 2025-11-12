@@ -202,42 +202,40 @@ const cleanupCourseCompletions = async (client) => {
   }
 
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "learner_id" uuid;`)
+  
   // Change course_id from text to bigint if it exists as text
-  await client.query(`
-    DO $$
-    BEGIN
-      -- Check if course_id column exists and what type it is
-      IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public'
-          AND table_name = 'course_completions' 
-          AND column_name = 'course_id'
-      ) THEN
-        -- If it's text, convert to bigint
-        IF EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_schema = 'public'
-            AND table_name = 'course_completions' 
-            AND column_name = 'course_id'
-            AND data_type = 'text'
-        ) THEN
-          RAISE NOTICE 'Converting course_completions.course_id from text to bigint';
-          ALTER TABLE "course_completions" 
-          ALTER COLUMN "course_id" TYPE bigint USING CASE 
-            WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
-            ELSE NULL 
-          END;
-        ELSE
-          RAISE NOTICE 'course_completions.course_id is already bigint or different type';
-        END IF;
-      ELSE
-        -- Column doesn't exist, add it as bigint
-        RAISE NOTICE 'Adding course_completions.course_id as bigint';
-        ALTER TABLE "course_completions" ADD COLUMN "course_id" bigint;
-      END IF;
-    END $$;
+  console.log('🔄 Checking course_completions.course_id type...')
+  const { rows: courseCompletionsCheck } = await client.query(`
+    SELECT data_type 
+    FROM information_schema.columns 
+    WHERE table_schema = 'public'
+      AND table_name = 'course_completions' 
+      AND column_name = 'course_id'
   `)
-  console.log('✅ Cleaned up course_completions table course_id column')
+  
+  if (courseCompletionsCheck.length > 0) {
+    const currentType = courseCompletionsCheck[0].data_type
+    console.log(`📊 Current course_completions.course_id type: ${currentType}`)
+    
+    if (currentType === 'text' || currentType === 'character varying') {
+      console.log('🔄 Converting course_completions.course_id from text to bigint...')
+      await client.query(`
+        ALTER TABLE "course_completions" 
+        ALTER COLUMN "course_id" TYPE bigint USING CASE 
+          WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
+          ELSE NULL 
+        END;
+      `)
+      console.log('✅ Converted course_completions.course_id to bigint')
+    } else if (currentType === 'bigint') {
+      console.log('✅ course_completions.course_id is already bigint')
+    } else {
+      console.log(`⚠️ course_completions.course_id is ${currentType}, not converting`)
+    }
+  } else {
+    console.log('➕ Adding course_completions.course_id as bigint')
+    await client.query(`ALTER TABLE "course_completions" ADD COLUMN "course_id" bigint;`)
+  }
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "course_name" text;`)
   await client.query(`ALTER TABLE "course_completions" ADD COLUMN IF NOT EXISTS "completed_at" timestamptz NOT NULL DEFAULT now();`)
 
@@ -256,40 +254,38 @@ const cleanupCompetitions = async (client) => {
   }
 
   // Change course_id from text to bigint if it exists as text
-  await client.query(`
-    DO $$
-    BEGIN
-      -- Check if course_id column exists and what type it is
-      IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public'
-          AND table_name = 'competitions' 
-          AND column_name = 'course_id'
-      ) THEN
-        -- If it's text, convert to bigint
-        IF EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_schema = 'public'
-            AND table_name = 'competitions' 
-            AND column_name = 'course_id'
-            AND data_type = 'text'
-        ) THEN
-          RAISE NOTICE 'Converting competitions.course_id from text to bigint';
-          ALTER TABLE "competitions" 
-          ALTER COLUMN "course_id" TYPE bigint USING CASE 
-            WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
-            ELSE NULL 
-          END;
-        ELSE
-          RAISE NOTICE 'competitions.course_id is already bigint or different type';
-        END IF;
-      ELSE
-        -- Column doesn't exist, add it as bigint
-        RAISE NOTICE 'Adding competitions.course_id as bigint';
-        ALTER TABLE "competitions" ADD COLUMN "course_id" bigint;
-      END IF;
-    END $$;
+  console.log('🔄 Checking competitions.course_id type...')
+  const { rows: competitionsCheck } = await client.query(`
+    SELECT data_type 
+    FROM information_schema.columns 
+    WHERE table_schema = 'public'
+      AND table_name = 'competitions' 
+      AND column_name = 'course_id'
   `)
+  
+  if (competitionsCheck.length > 0) {
+    const currentType = competitionsCheck[0].data_type
+    console.log(`📊 Current competitions.course_id type: ${currentType}`)
+    
+    if (currentType === 'text' || currentType === 'character varying') {
+      console.log('🔄 Converting competitions.course_id from text to bigint...')
+      await client.query(`
+        ALTER TABLE "competitions" 
+        ALTER COLUMN "course_id" TYPE bigint USING CASE 
+          WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
+          ELSE NULL 
+        END;
+      `)
+      console.log('✅ Converted competitions.course_id to bigint')
+    } else if (currentType === 'bigint') {
+      console.log('✅ competitions.course_id is already bigint')
+    } else {
+      console.log(`⚠️ competitions.course_id is ${currentType}, not converting`)
+    }
+  } else {
+    console.log('➕ Adding competitions.course_id as bigint')
+    await client.query(`ALTER TABLE "competitions" ADD COLUMN "course_id" bigint;`)
+  }
   console.log('✅ Cleaned up competitions table course_id column')
 }
 

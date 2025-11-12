@@ -17,12 +17,22 @@ router.get('/', async (req, res) => {
 })
 
 // Get completed courses for a learner (must come before /:learnerId)
+// Express Router should match this before /:learnerId, but we add explicit check
 router.get('/:learnerId/completed-courses', async (req, res) => {
   try {
     const { learnerId } = req.params
+    const path = req.path || req.url || ''
+    
+    // Ensure we're on the right route (not just /:learnerId)
+    if (!path.includes('completed-courses')) {
+      // This shouldn't happen, but if it does, let the next route handle it
+      return res.status(404).json({ error: 'Route not found' })
+    }
+    
     console.log('📋 [user-profiles] Fetching completed courses for learner:', learnerId)
     console.log('📋 [user-profiles] Request path:', req.path)
     console.log('📋 [user-profiles] Request URL:', req.url)
+    console.log('📋 [user-profiles] Request originalUrl:', req.originalUrl)
     
     const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
     console.log('✅ [user-profiles] Found completed courses:', completedCourses?.length || 0)
