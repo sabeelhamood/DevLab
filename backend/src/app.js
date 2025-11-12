@@ -41,6 +41,7 @@ import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
 import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
 import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
 import { initializeDatabases } from './config/initDatabase.js'
+import { postgres } from './config/database.js'
 
 const app = express()
 
@@ -164,8 +165,6 @@ app.get('/health', (req, res) => {
 app.get('/api/test-supabase', async (req, res) => {
   console.log('🧪 [test-supabase] Route hit!', req.method, req.url, req.originalUrl)
   try {
-    const { postgres } = await import('./config/database.js')
-    
     // Test 1: Check if we can connect
     console.log('🧪 [test] Testing Supabase connection...')
     await postgres.query('SELECT 1 as test')
