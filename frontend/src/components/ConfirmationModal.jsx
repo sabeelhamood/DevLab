@@ -1,5 +1,5 @@
-import React from 'react'
 import { AlertTriangle, X } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext.jsx'
 
 const ConfirmationModal = ({ 
   isOpen, 
@@ -11,6 +11,8 @@ const ConfirmationModal = ({
   cancelText = 'Cancel',
   type = 'warning'
 }) => {
+  const { theme } = useTheme()
+  
   if (!isOpen) return null
 
   const getTypeStyles = (type) => {
@@ -27,8 +29,10 @@ const ConfirmationModal = ({
         }
       default:
         return {
-          icon: <AlertTriangle className="h-6 w-6 text-blue-500" />,
-          button: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+          icon: <AlertTriangle className="h-6 w-6 text-emerald-500" />,
+          button: theme === 'day-mode' 
+            ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500' 
+            : 'bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500'
         }
     }
   }
@@ -42,40 +46,48 @@ const ConfirmationModal = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleBackdropClick}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleBackdropClick}>
+      <div className={`rounded-2xl shadow-2xl max-w-md w-full mx-4 ${theme === 'day-mode' ? 'bg-white' : 'bg-gray-800'}`}>
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className={`flex items-center justify-between mb-4 ${theme === 'day-mode' ? 'border-b border-gray-200' : 'border-b border-gray-700'} pb-4`}>
             <div className="flex items-center">
               {typeStyles.icon}
-              <h3 className="ml-3 text-lg font-medium text-gray-900">
+              <h3 
+                className={`ml-3 text-lg font-semibold ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}
+                style={{ 
+                  background: 'var(--gradient-primary)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
                 {title}
               </h3>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+              className={`p-2 rounded-lg transition-colors ${theme === 'day-mode' ? 'text-gray-400 hover:text-gray-600' : 'text-gray-400 hover:text-gray-300'}`}
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
           </div>
           
           <div className="mb-6">
-            <p className="text-sm text-gray-600">
+            <p className={`text-sm ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-300'}`}>
               {message}
             </p>
           </div>
           
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${theme === 'day-mode' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-emerald-600/20 text-emerald-100 hover:bg-emerald-600/30 border border-emerald-500/30'}`}
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${typeStyles.button}`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${typeStyles.button}`}
             >
               {confirmText}
             </button>

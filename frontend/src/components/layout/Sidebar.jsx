@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore.js'
+import { useTheme } from '../../contexts/ThemeContext.jsx'
 import { 
   Home, 
   BookOpen, 
@@ -35,6 +36,7 @@ const navigation = {
 
 export default function Sidebar() {
   const { user } = useAuthStore()
+  const { theme } = useTheme()
   
   if (!user) return null
 
@@ -42,11 +44,7 @@ export default function Sidebar() {
 
   return (
     <div 
-      className="w-64 shadow-lg border-r transition-all duration-300"
-      style={{ 
-        background: 'var(--gradient-card)',
-        borderColor: 'rgba(255, 255, 255, 0.1)'
-      }}
+      className={`w-64 shadow-lg border-r transition-all duration-300 ${theme === 'day-mode' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-600'}`}
     >
       <nav className="mt-6 px-3">
         <div className="space-y-1">
@@ -59,12 +57,14 @@ export default function Sidebar() {
                   'group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 relative overflow-hidden',
                   isActive
                     ? 'text-white shadow-lg'
-                    : 'hover:scale-105'
+                    : theme === 'day-mode' 
+                      ? 'hover:bg-gray-100 text-gray-700' 
+                      : 'hover:bg-gray-700 text-gray-300'
                 )
               }
               style={({ isActive }) => ({
                 background: isActive ? 'var(--gradient-primary)' : 'transparent',
-                color: isActive ? 'white' : 'var(--text-secondary)',
+                color: isActive ? 'white' : undefined,
                 boxShadow: isActive ? 'var(--shadow-glow)' : 'none'
               })}
             >
@@ -73,7 +73,7 @@ export default function Sidebar() {
                   <item.icon
                     className={cn(
                       'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
-                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary-cyan'
+                      isActive ? 'text-white' : theme === 'day-mode' ? 'text-gray-500 group-hover:text-emerald-600' : 'text-gray-400 group-hover:text-emerald-400'
                     )}
                   />
                   {item.name}
@@ -87,18 +87,13 @@ export default function Sidebar() {
         </div>
         
         <div 
-          className="mt-8 pt-6"
-          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
+          className={`mt-8 pt-6 ${theme === 'day-mode' ? 'border-t border-gray-200' : 'border-t border-gray-700'}`}
         >
           <NavLink
             to="/help"
-            className="flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 hover:scale-105"
-            style={{ 
-              color: 'var(--text-secondary)',
-              background: 'transparent'
-            }}
+            className={`flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${theme === 'day-mode' ? 'hover:bg-gray-100 text-gray-700' : 'hover:bg-gray-700 text-gray-300'}`}
           >
-            <HelpCircle className="mr-3 h-5 w-5 text-gray-400" />
+            <HelpCircle className={`mr-3 h-5 w-5 ${theme === 'day-mode' ? 'text-gray-500' : 'text-gray-400'}`} />
             Help & Support
           </NavLink>
         </div>
