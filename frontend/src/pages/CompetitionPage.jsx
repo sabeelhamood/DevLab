@@ -58,12 +58,42 @@ const CompetitionPage = () => {
       } else {
         // Otherwise, fetch competitions for Sabeel and get the first active one
         try {
-          const competitions = await apiClient.get(`/competitions/learner/${SABEEL_USER_ID}`)
+          let competitions = null
+          let competitionsArray = []
           
-          // Handle both array and object responses
-          const competitionsArray = Array.isArray(competitions) 
-            ? competitions 
-            : (competitions.data || [])
+          // Try the learner-specific endpoint first
+          try {
+            competitions = await apiClient.get(`/competitions/learner/${SABEEL_USER_ID}`)
+            // Handle both array and object responses
+            competitionsArray = Array.isArray(competitions) 
+              ? competitions 
+              : (competitions.data || [])
+          } catch (learnerError) {
+            // If learner endpoint returns 404, fallback to active/all and filter
+            if (learnerError.response?.status === 404) {
+              console.warn('Learner endpoint not available, using active/all fallback')
+              try {
+                const activeCompetitions = await apiClient.get('/competitions/active/all')
+                const activeArray = Array.isArray(activeCompetitions) 
+                  ? activeCompetitions 
+                  : (activeCompetitions.data || [])
+                
+                // Filter competitions where Sabeel is a participant
+                competitionsArray = activeArray.filter(
+                  (comp) => 
+                    comp.learner1_id === SABEEL_USER_ID || 
+                    comp.learner2_id === SABEEL_USER_ID ||
+                    comp.learner1?.learner_id === SABEEL_USER_ID ||
+                    comp.learner2?.learner_id === SABEEL_USER_ID
+                )
+              } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError)
+                competitionsArray = []
+              }
+            } else {
+              throw learnerError
+            }
+          }
           
           if (competitionsArray.length > 0) {
             // Find active competition (no result means it's active)
