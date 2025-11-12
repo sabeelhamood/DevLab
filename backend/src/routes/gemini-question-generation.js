@@ -447,7 +447,19 @@ router.post('/generate-question-package', async (req, res) => {
         macroSkills,
         finalQuestionCount
       )
+      
+      // Check if questions are from Gemini or fallback
+      const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
+      const geminiCount = questions.length - fallbackCount
       console.log(`✅ Backend: Generated ${questions.length} questions total`)
+      if (fallbackCount > 0) {
+        console.warn(`⚠️ Backend: ${fallbackCount} question(s) are FALLBACK (NOT from Gemini AI)`)
+        console.warn(`   ${geminiCount} question(s) are from Gemini AI`)
+        console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
+        console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
+      } else {
+        console.log(`✅ Backend: All ${geminiCount} question(s) are from Gemini AI`)
+      }
     } else {
       // Generate questions one by one (for theoretical or single questions)
       for (let i = 0; i < finalQuestionCount; i++) {
