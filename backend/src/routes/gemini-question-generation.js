@@ -519,12 +519,17 @@ router.post('/check-solution', async (req, res) => {
 
 // Generate complete question package (question + hints + solution)
 router.post('/generate-question-package', async (req, res) => {
-  console.log('🚀 Backend: Received generate-question-package request')
-  console.log('📋 Backend: Request body:', req.body)
-  console.log('🌐 Backend: Request origin:', req.header('Origin'))
-  console.log('🌐 Backend: Request headers:', req.headers)
-  console.log('🔗 Backend: Request URL:', req.url)
-  console.log('🔗 Backend: Request method:', req.method)
+  console.log('\n' + '='.repeat(80))
+  console.log('🚀 BACKEND: Received generate-question-package request')
+  console.log('='.repeat(80))
+  console.log('📋 Request body:', JSON.stringify(req.body, null, 2))
+  console.log('🌐 Request origin:', req.header('Origin'))
+  console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))
+  console.log('🔗 Request URL:', req.url)
+  console.log('🔗 Request path:', req.path)
+  console.log('🔗 Request method:', req.method)
+  console.log('🔗 Request originalUrl:', req.originalUrl)
+  console.log('='.repeat(80) + '\n')
   
   try {
     const { 
