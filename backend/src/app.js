@@ -228,7 +228,11 @@ try {
 } catch (error) {
   console.warn('⚠️ Unable to list user-profile routes:', error.message)
 }
-app.use('/api/competitions', competitionRoutes)
+// Add logging middleware for competitions routes
+app.use('/api/competitions', (req, res, next) => {
+  console.log('🚦 [competitions] Incoming request:', req.method, req.path, req.originalUrl)
+  next()
+}, competitionRoutes)
 try {
   const competitionRouteSummaries = competitionRoutes.stack
     .filter((layer) => layer.route)
