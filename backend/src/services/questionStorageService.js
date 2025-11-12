@@ -79,14 +79,6 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
       humanLanguage = 'en',
       source = 'content-studio'
     } = metadata
-    
-    // Resolve course_id: priority order:
-    // 1. From metadata (explicit course_id)
-    // 2. From question data (course_id field)
-    // 3. Lookup by course_name
-    // 4. Use DEFAULT_COURSE_ID from environment
-    // 5. null (will fail topic creation if required)
-    let resolvedCourseId = metaCourseId || course_id || null
 
     // Resolve question content (check multiple possible fields)
     const questionContent = question || question_text || question_content || prompt || ajaxQuestion || ''
