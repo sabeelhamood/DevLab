@@ -204,12 +204,25 @@ export class CompetitionModel {
   }
 
   static async findById(competitionId) {
+    console.log('🔍 [CompetitionModel] findById called with:', competitionId)
+    console.log('🔍 [CompetitionModel] Table name:', competitionsTable)
+    
     const { rows } = await postgres.query(
       `SELECT * FROM ${competitionsTable} WHERE "competition_id" = $1 LIMIT 1`,
       [competitionId]
     )
 
+    console.log('🔍 [CompetitionModel] Query returned', rows.length, 'rows')
+    if (rows.length > 0) {
+      console.log('🔍 [CompetitionModel] First row competition_id:', rows[0].competition_id)
+    }
+
     if (!rows.length) {
+      // Try to see if there are any competitions at all
+      const { rows: allRows } = await postgres.query(
+        `SELECT "competition_id" FROM ${competitionsTable} LIMIT 5`
+      )
+      console.log('🔍 [CompetitionModel] Sample competition IDs in DB:', allRows.map(r => r.competition_id))
       return null
     }
 
