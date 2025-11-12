@@ -1,5 +1,6 @@
 import express from 'express'
 import { geminiService } from '../services/gemini.js'
+import { saveQuestionsToSupabase } from '../services/questionStorageService.js'
 
 const router = express.Router()
 
@@ -490,6 +491,123 @@ router.post('/generate-question-package', async (req, res) => {
         practiceQuestionsCount: finalQuestionCount,
         generatedAt: new Date().toISOString()
       }
+    }
+    
+    // Save questions to Supabase automatically (after Gemini generation, before response)
+    // This runs asynchronously and doesn't block the response
+    try {
+      console.log('🔍 Saving questions to Supabase...')
+      console.log(`   Question count: ${processedQuestions.length}`)
+      console.log(`   Question type: ${questionType}`)
+      console.log(`   Topic name: ${topicName}`)
+      console.log(`   Course name: ${courseName}`)
+      
+      // Transform questions to match storage service format
+      const questionsToSave = processedQuestions.map((q, index) => {
+        // Extract question text
+        const questionText = q.description || q.title || q.question || ''
+        
+        // Transform test cases to match storage service format
+        // Only include test cases that have an expected output
+        const testCases = (q.testCases || [])
+          .filter(tc => tc.expectedOutput || tc.expected_output || tc.output)
+          .map(tc => ({
+            input: tc.input || null,
+            expected_output: tc.expectedOutput || tc.expected_output || tc.output || null,
+            explanation: tc.explanation || null
+          }))
+        
+        // Transform question for storage service
+        const questionForStorage = {
+          id: `gemini_${topicName}_${index + 1}_${Date.now()}`,
+          question: questionText,
+          question_text: questionText,
+          question_content: questionText,
+          prompt: questionText,
+          question_type: questionType === 'coding' ? 'code' : 'theoretical',
+          topic_id: null, // Will be looked up by topic_name
+          topic_name: topicName,
+          topicName: topicName,
+          difficulty: q.difficulty || difficulty,
+          programming_language: questionType === 'coding' ? (q.language || language) : null,
+          language: questionType === 'coding' ? (q.language || language) : null,
+          test_cases: testCases,
+          testCases: testCases,
+          hints: q.hints || [],
+          clues: q.hints || [],
+          title: q.title || questionText.substring(0, 100),
+          // For theoretical questions, extract options and correct_answer if available
+          options: q.options || [],
+          correct_answer: q.correctAnswer || q.correct_answer || q.expectedAnswer || null,
+          expectedAnswer: q.correctAnswer || q.correct_answer || q.expectedAnswer || null,
+          // Include ajax structure if it exists
+          ajax: q.ajax || {
+            question: questionText,
+            testCases: testCases,
+            hints: q.hints || [],
+            humanLanguage: 'en',
+            difficulty: q.difficulty || difficulty
+          }
+        }
+        
+        return questionForStorage
+      })
+      
+      // Prepare metadata for storage service
+      const saveMetadata = {
+        topic_id: null, // Will be looked up by topic_name
+        topic_name: topicName,
+        topicName: topicName,
+        question_type: questionType === 'coding' ? 'code' : 'theoretical',
+        programming_language: questionType === 'coding' ? language : null,
+        course_id: null, // Can be looked up by course_name if needed
+        course_name: courseName,
+        nanoSkills: nanoSkills || [],
+        microSkills: macroSkills || [], // Note: storage service uses microSkills, not macroSkills
+        macroSkills: macroSkills || [],
+        humanLanguage: 'en',
+        source: 'gemini-question-generation'
+      }
+      
+      // Save questions asynchronously - don't await to avoid blocking response
+      saveQuestionsToSupabase(questionsToSave, saveMetadata)
+        .then((saveResults) => {
+          const savedCount = saveResults.filter(r => r.success).length
+          const failedCount = saveResults.filter(r => !r.success && !r.skipped).length
+          const skippedCount = saveResults.filter(r => r.skipped).length
+          
+          if (savedCount > 0) {
+            console.log(`✅ Successfully saved ${savedCount} question(s) to Supabase`)
+            saveResults
+              .filter(r => r.success)
+              .forEach((result, index) => {
+                console.log(`   ${index + 1}. Question ID: ${result.question_id}`)
+                console.log(`      Type: ${result.question_type}`)
+                console.log(`      Content: ${result.question_content?.substring(0, 50)}...`)
+              })
+          }
+          if (skippedCount > 0) {
+            console.log(`⏭️  Skipped ${skippedCount} question(s) (duplicates)`)
+          }
+          if (failedCount > 0) {
+            console.warn(`⚠️ Failed to save ${failedCount} question(s) to Supabase`)
+            saveResults
+              .filter(r => !r.success && !r.skipped)
+              .forEach((result, index) => {
+                console.warn(`   ${index + 1}. Error: ${result.error || result.message}`)
+              })
+          }
+        })
+        .catch((error) => {
+          // Log error but don't throw - questions were generated successfully
+          console.error('❌ Error saving questions to Supabase:', error.message)
+          console.error('   Questions were generated successfully but not saved to database')
+          console.error('   Error stack:', error.stack)
+        })
+    } catch (error) {
+      // Don't fail the request if Supabase save fails - log error and continue
+      console.error('❌ Error initiating question save to Supabase:', error.message)
+      console.error('   Questions were generated successfully but save was not initiated')
     }
     
     console.log('📤 Backend: Sending response:', responseData)
