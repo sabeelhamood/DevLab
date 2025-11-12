@@ -862,17 +862,22 @@ Return ONLY the JSON object in the specified format, no additional text.
       "Consider using helper functions to organize your code better."
     ];
     
-    const hintIndex = Math.min(hintsUsed, fallbackHints.length - 1);
+    // Ensure hintsUsed is a valid number and within bounds
+    const safeHintsUsed = Math.max(0, Math.min(Number(hintsUsed) || 0, fallbackHints.length - 1));
+    const hintIndex = safeHintsUsed;
     const hint = fallbackHints[hintIndex] || fallbackHints[0];
     
+    // Return hint as string or object with hint property (for consistency)
+    const hintText = typeof hint === 'string' ? hint : (hint.hint || hint.text || hint.message || 'Try breaking down the problem into smaller steps.');
+    
     return {
-      hint: hint,
-      hintLevel: hintsUsed + 1,
+      hint: hintText,
+      hintLevel: safeHintsUsed + 1,
       showSolution: false,
       solution: null,
-      canShowSolution: hintsUsed >= 2,
+      canShowSolution: safeHintsUsed >= 2,
       fallback: true,
-      message: "Using fallback hint due to API rate limits"
+      message: "Using fallback hint due to API unavailability"
     };
   }
 
