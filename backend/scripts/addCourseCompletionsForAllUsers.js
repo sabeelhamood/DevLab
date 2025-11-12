@@ -1,16 +1,57 @@
 import 'dotenv/config'
+import { Pool } from 'pg'
 
-import { postgres } from '../src/config/database.js'
+// Get SUPABASE_URL from command line argument, environment variable, or .env file
+let connectionString = process.argv[2] || process.env.SUPABASE_URL
 
-// Check if SUPABASE_URL is configured
-if (!process.env.SUPABASE_URL) {
-  console.error('❌ SUPABASE_URL is not configured. Please set it in Railway or your environment.')
+if (!connectionString) {
+  console.error('❌ SUPABASE_URL is not configured.')
+  console.error('Usage: node addCourseCompletionsForAllUsers.js [SUPABASE_URL] [course_id] [course_name]')
+  console.error('Or set SUPABASE_URL as environment variable')
   process.exit(1)
 }
 
+// Remove sslmode from connection string if present, we'll handle SSL in Pool config
+connectionString = connectionString.replace(/[?&]sslmode=[^&]*/gi, '')
+
+// Create a direct database connection for this script
+const pool = new Pool({
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false
+  },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000
+})
+
+pool.on('error', (error) => {
+  console.error('❌ Unexpected PostgreSQL error:', error)
+})
+
+const postgres = {
+  pool,
+  query: (text, params) => pool.query(text, params)
+}
+
 // Default course details (can be overridden via environment variables or command line)
-const DEFAULT_COURSE_ID = process.env.DEFAULT_COURSE_ID || 1
-const DEFAULT_COURSE_NAME = process.env.DEFAULT_COURSE_NAME || 'Introduction to Programming'
+// Command line args: [SUPABASE_URL] [course_id] [course_name]
+// If SUPABASE_URL is in env, then: [course_id] [course_name]
+const getCourseArgs = () => {
+  // If first arg is SUPABASE_URL (starts with postgresql://), then course_id is 2nd arg
+  if (process.argv[2] && process.argv[2].startsWith('postgresql://')) {
+    return {
+      courseId: process.argv[3] ? parseInt(process.argv[3], 10) : (process.env.DEFAULT_COURSE_ID || 1),
+      courseName: process.argv[4] || process.env.DEFAULT_COURSE_NAME || 'Introduction to Programming'
+    }
+  } else {
+    // SUPABASE_URL is in env, so course_id is 1st arg
+    return {
+      courseId: process.argv[2] ? parseInt(process.argv[2], 10) : (process.env.DEFAULT_COURSE_ID || 1),
+      courseName: process.argv[3] || process.env.DEFAULT_COURSE_NAME || 'Introduction to Programming'
+    }
+  }
+}
 
 /**
  * Get all users from userProfiles table
@@ -53,8 +94,7 @@ const addCourseCompletion = async (learnerId, courseId, courseName) => {
 const addCourseCompletionsForAllUsers = async () => {
   try {
     // Get course details from command line arguments or use defaults
-    const courseId = process.argv[2] ? parseInt(process.argv[2], 10) : DEFAULT_COURSE_ID
-    const courseName = process.argv[3] || DEFAULT_COURSE_NAME
+    const { courseId, courseName } = getCourseArgs()
 
     console.log('📋 Fetching all users from userProfiles...')
     const users = await getAllUsers()
@@ -130,5 +170,9 @@ addCourseCompletionsForAllUsers()
   .catch((error) => {
     console.error('\n❌ Script failed:', error)
     process.exit(1)
+  })
+  .finally(() => {
+    // Close the database connection
+    pool.end()
   })
 
