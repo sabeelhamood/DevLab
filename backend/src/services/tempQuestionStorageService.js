@@ -219,6 +219,14 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
       
       console.log(`   Final topicId: ${topicId || 'null'}`)
       console.log('='.repeat(80))
+      
+      // CRITICAL LOG: Log resolved IDs before question insertion
+      console.log(`\n🔍 CRITICAL LOG: Resolved IDs before question insertion`)
+      console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+      console.log(`   topicId: ${topicId || 'null'}`)
+      console.log(`   resolvedCourseId type: ${resolvedCourseId ? typeof resolvedCourseId : 'null'}`)
+      console.log(`   topicId type: ${topicId ? typeof topicId : 'null'}`)
+      
     } catch (topicError) {
       console.error('❌ Error creating/updating topic:')
       console.error(`   Error: ${topicError.message}`)
@@ -394,6 +402,17 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
     console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
     console.log(`   topicId: ${topicId || 'null'}`)
     console.log(`   Questions to save: ${questions.length}`)
+    
+    // CRITICAL LOG: Log resolved IDs at start of question insertion
+    console.log(`\n🔍 CRITICAL LOG: Starting question insertion with resolved IDs`)
+    console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
+    console.log(`   topicId: ${topicId || 'null'}`)
+    if (!resolvedCourseId) {
+      console.warn(`   ⚠️ WARNING: resolvedCourseId is null - questions will be saved without course_id`)
+    }
+    if (!topicId) {
+      console.warn(`   ⚠️ WARNING: topicId is null - questions will be saved without topic_id`)
+    }
     
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i]

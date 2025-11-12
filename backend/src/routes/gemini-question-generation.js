@@ -896,12 +896,18 @@ router.post('/generate-question-package', async (req, res) => {
         description: q.description?.substring(0, 50)
       })))
       
-      // TEMPORARILY BLOCKING: await save to debug errors before response is sent
-      // This ensures any errors throw before response is sent
-      console.log('\n🔒 BLOCKING MODE: Waiting for save to complete before sending response...')
-      const saveResults = await saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
-      
-      console.log(`\n✅ Save operation completed`)
+    // TEMPORARILY BLOCKING: await save to debug errors before response is sent
+    // This ensures any errors throw before response is sent
+    console.log('\n🔒 BLOCKING MODE: Waiting for save to complete before sending response...')
+    console.log(`   resolvedCourseId: ${saveMetadata.course_id || 'null'}`)
+    console.log(`   topicId: will be resolved in saveGeminiQuestionsToSupabase`)
+    
+    const saveResults = await saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
+    
+    // Log resolved IDs after save
+    console.log(`   After save - check logs above for resolvedCourseId and topicId`)
+    
+    console.log(`\n✅ Save operation completed`)
       console.log(`   Saved questions: ${saveResults.savedQuestions.length}`)
       console.log(`   Saved topics: ${saveResults.savedTopics.length}`)
       console.log(`   Saved test cases: ${saveResults.savedTestCases.length}`)
