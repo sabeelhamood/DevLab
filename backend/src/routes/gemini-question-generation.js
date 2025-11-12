@@ -1,6 +1,7 @@
 import express from 'express'
 import { geminiService } from '../services/gemini.js'
 import { saveQuestionsToSupabase } from '../services/questionStorageService.js'
+import { saveTempQuestions, createRequestId } from '../services/tempQuestionStore.js'
 
 const router = express.Router()
 
@@ -695,10 +696,86 @@ router.post('/generate-question-package', async (req, res) => {
       }
     }
     
+    // Save questions to temp_questions table (after Gemini generation, before response)
+    // This runs asynchronously and doesn't block the response
+    // Questions are saved when response appears on https://dev-lab-three.vercel.app/
+    try {
+      console.log('\n📋 STEP: Saving questions to temp_questions table...')
+      console.log(`   Question count: ${processedQuestions.length}`)
+      console.log(`   Question type: ${questionType}`)
+      console.log(`   Topic name: ${topicName}`)
+      console.log(`   Course name: ${courseName}`)
+      console.log(`   Source: dev-lab-three.vercel.app`)
+      
+      // Generate request ID for temp_questions
+      const requestId = createRequestId()
+      console.log(`   Generated request ID: ${requestId}`)
+      
+      // Prepare metadata for temp_questions
+      const tempQuestionsMetadata = {
+        courseName,
+        topicName,
+        nanoSkills: nanoSkills || [],
+        macroSkills: macroSkills || [],
+        difficulty,
+        language,
+        questionType,
+        questionCount: processedQuestions.length,
+        generatedAt: new Date().toISOString(),
+        questionsSource: questionsSource, // 'gemini', 'fallback', or 'mixed'
+        geminiCount: geminiQuestions.length,
+        fallbackCount: fallbackQuestions.length,
+        isFallback: fallbackQuestions.length > 0,
+        source: 'dev-lab-three.vercel.app', // Mark source as the frontend app
+        frontendUrl: 'https://dev-lab-three.vercel.app/',
+        endpoint: '/api/gemini-questions/generate-question-package'
+      }
+      
+      console.log(`   Metadata prepared:`, JSON.stringify(tempQuestionsMetadata, null, 2))
+      console.log(`   Preparing to save ${processedQuestions.length} question(s)...`)
+      
+      // Save questions to temp_questions table asynchronously
+      // This does not block the response - questions are saved in background
+      saveTempQuestions({
+        requestId,
+        requesterService: 'dev-lab-three-frontend',
+        action: 'generate-question-package',
+        questions: processedQuestions, // Save all processed questions as-is
+        metadata: tempQuestionsMetadata
+      })
+        .then(() => {
+          console.log(`\n✅ Successfully saved ${processedQuestions.length} question(s) to temp_questions table`)
+          console.log(`   Request ID: ${requestId}`)
+          console.log(`   Status: pending`)
+          console.log(`   Table: temp_questions`)
+          console.log(`   Questions stored: ${processedQuestions.length}`)
+          console.log(`   Questions will be stored until confirmed or deleted`)
+        })
+        .catch((error) => {
+          // Log error but don't throw - questions were generated successfully
+          console.error('\n❌ Error saving questions to temp_questions table:')
+          console.error(`   Error message: ${error.message}`)
+          console.error(`   Error code: ${error.code || 'N/A'}`)
+          console.error(`   Error detail: ${error.detail || 'N/A'}`)
+          console.error(`   Error hint: ${error.hint || 'N/A'}`)
+          console.error(`   Error stack: ${error.stack || 'N/A'}`)
+          console.error('   Questions were generated successfully but not saved to temp_questions')
+          console.error('   This does not affect the API response - questions are still returned to frontend')
+        })
+    } catch (error) {
+      // Don't fail the request if temp_questions save fails - log error and continue
+      console.error('\n❌ Error initiating question save to temp_questions:')
+      console.error(`   Error message: ${error.message}`)
+      console.error(`   Error code: ${error.code || 'N/A'}`)
+      console.error(`   Error stack: ${error.stack || 'N/A'}`)
+      console.error('   Questions were generated successfully but temp_questions save was not initiated')
+      console.error('   This does not affect the API response - questions are still returned to frontend')
+    }
+    
     // Save questions to Supabase automatically (after Gemini generation, before response)
     // This runs asynchronously and doesn't block the response
     try {
-      console.log('🔍 Saving questions to Supabase...')
+      console.log('🔍 Saving questions to Supabase (questions table)...')
       console.log(`   Question count: ${processedQuestions.length}`)
       console.log(`   Question type: ${questionType}`)
       console.log(`   Topic name: ${topicName}`)
@@ -742,6 +819,8 @@ router.post('/generate-question-package', async (req, res) => {
           options: q.options || [],
           correct_answer: q.correctAnswer || q.correct_answer || q.expectedAnswer || null,
           expectedAnswer: q.correctAnswer || q.correct_answer || q.expectedAnswer || null,
+          // Include raw Gemini response if available
+          _rawGeminiResponse: q._rawGeminiResponse || null,
           // Include ajax structure if it exists
           ajax: q.ajax || {
             question: questionText,
@@ -779,7 +858,7 @@ router.post('/generate-question-package', async (req, res) => {
           const skippedCount = saveResults.filter(r => r.skipped).length
           
           if (savedCount > 0) {
-            console.log(`✅ Successfully saved ${savedCount} question(s) to Supabase`)
+            console.log(`✅ Successfully saved ${savedCount} question(s) to Supabase (questions table)`)
             saveResults
               .filter(r => r.success)
               .forEach((result, index) => {
@@ -792,7 +871,7 @@ router.post('/generate-question-package', async (req, res) => {
             console.log(`⏭️  Skipped ${skippedCount} question(s) (duplicates)`)
           }
           if (failedCount > 0) {
-            console.warn(`⚠️ Failed to save ${failedCount} question(s) to Supabase`)
+            console.warn(`⚠️ Failed to save ${failedCount} question(s) to Supabase (questions table)`)
             saveResults
               .filter(r => !r.success && !r.skipped)
               .forEach((result, index) => {
@@ -802,13 +881,13 @@ router.post('/generate-question-package', async (req, res) => {
         })
         .catch((error) => {
           // Log error but don't throw - questions were generated successfully
-          console.error('❌ Error saving questions to Supabase:', error.message)
+          console.error('❌ Error saving questions to Supabase (questions table):', error.message)
           console.error('   Questions were generated successfully but not saved to database')
           console.error('   Error stack:', error.stack)
         })
     } catch (error) {
       // Don't fail the request if Supabase save fails - log error and continue
-      console.error('❌ Error initiating question save to Supabase:', error.message)
+      console.error('❌ Error initiating question save to Supabase (questions table):', error.message)
       console.error('   Questions were generated successfully but save was not initiated')
     }
     
