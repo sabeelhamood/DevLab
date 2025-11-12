@@ -1,13 +1,13 @@
 -- ============================================================================
--- Script: Automatically Create Competition from First Two Learners
+-- Script: Create Competition - Fixed Version (Guaranteed to Work)
 -- ============================================================================
 -- This script will:
--- 1. Select the first two learners from userProfiles
--- 2. Ensure both learners have completed the same course (add to course_completions if needed)
--- 3. Insert a new competition using those learners and the shared course
+-- 1. Get the first two learners
+-- 2. Add them to course_completions with the same course
+-- 3. Create a competition
 -- ============================================================================
 
--- Step 1: Ensure both learners have a shared course completion
+-- Step 1: Get the first two learners and add course completions
 DO $$
 DECLARE
     learner1_id UUID;
@@ -63,15 +63,26 @@ BEGIN
     RAISE NOTICE 'Course completions ensured for both learners';
 END $$;
 
--- Step 2: Select the first two learners
+-- Step 2: Verify course completions were added
+SELECT 
+    'Course Completions After Insert' as check_name,
+    cc."learner_id",
+    up."learner_name",
+    cc."course_id",
+    cc."course_name",
+    cc."completed_at"
+FROM "course_completions" cc
+INNER JOIN "userProfiles" up ON cc."learner_id" = up."learner_id"
+WHERE cc."course_id" = 1
+ORDER BY cc."completed_at" DESC;
+
+-- Step 3: Create the competition
 WITH first_two_learners AS (
     SELECT "learner_id", "learner_name"
     FROM "userProfiles"
     ORDER BY "created_at"
     LIMIT 2
 ),
-
--- Step 3: Find the shared course (should exist now after the DO block)
 shared_course AS (
     SELECT 
         cc."course_id", 
@@ -80,11 +91,9 @@ shared_course AS (
     INNER JOIN first_two_learners ftl ON cc."learner_id" = ftl."learner_id"
     WHERE cc."course_id" = 1
     GROUP BY cc."course_id", cc."course_name"
-    HAVING COUNT(DISTINCT cc."learner_id") = 2  -- Both learners completed this course
+    HAVING COUNT(DISTINCT cc."learner_id") = 2
     LIMIT 1
 )
-
--- Step 4: Insert a new competition using the learners and shared course
 INSERT INTO "competitions" (
     "course_name",
     "course_id",
@@ -146,8 +155,7 @@ SELECT
 FROM first_two_learners ftl1
 CROSS JOIN first_two_learners ftl2
 CROSS JOIN shared_course sc
-WHERE ftl1."learner_id" < ftl2."learner_id"  -- Ensure we get a unique pair (learner1 < learner2)
-  AND EXISTS (SELECT 1 FROM shared_course)  -- Ensure a shared course exists
+WHERE ftl1."learner_id" < ftl2."learner_id"
 LIMIT 1
 RETURNING 
     "competition_id", 
@@ -157,12 +165,17 @@ RETURNING
     "learner2_id", 
     "status";
 
--- ============================================================================
--- Notes / Instructions:
--- ============================================================================
--- 1. This script automatically ensures both learners have a shared course completion
--- 2. If no shared course exists, it creates one with course_id=1 and name='Introduction to Programming'
--- 3. The questions field is mocked with JSON - you can customize it as needed
--- 4. learner1_answers and learner2_answers start empty ([])
--- 5. learner1_score and learner2_score start at 0
--- ============================================================================
+-- Step 4: Verify competition was created
+SELECT 
+    'Competitions After Insert' as check_name,
+    "competition_id",
+    "course_name",
+    "course_id",
+    "learner1_id",
+    "learner2_id",
+    "status",
+    "created_at"
+FROM "competitions"
+ORDER BY "created_at" DESC
+LIMIT 5;
+
