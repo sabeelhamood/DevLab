@@ -419,10 +419,22 @@ if (requireServiceAuth) {
   console.log('   Environment:', config.nodeEnv)
   console.log('   SERVICE_API_KEYS configured:', hasServiceApiKeys)
   
-  // Apply service auth to all /api routes except /api/auth
+  // Apply service auth to all /api routes except /api/auth and public frontend endpoints
   app.use('/api', (req, res, next) => {
-    // Skip authentication for auth routes and health checks
-    if (req.path.startsWith('/auth') || req.path === '/health' || req.path === '/test-supabase') {
+    // Skip authentication for:
+    // - Auth routes (login, register, etc.)
+    // - Health checks
+    // - Test endpoints
+    // - Gemini question generation endpoints (used by frontend at dev-lab-three.vercel.app)
+    // - Judge0 endpoints (used by frontend for code execution)
+    if (
+      req.path.startsWith('/auth') || 
+      req.path === '/health' || 
+      req.path === '/test-supabase' ||
+      req.path.startsWith('/gemini-questions') || // Frontend calls this without service auth
+      req.path.startsWith('/gemini-test') || // Frontend test endpoints
+      req.path.startsWith('/judge0') // Frontend calls this without service auth
+    ) {
       console.log('🔓 [auth] Skipping service auth for:', req.path)
       return next()
     }
