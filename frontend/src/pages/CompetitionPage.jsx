@@ -58,15 +58,38 @@ const CompetitionPage = () => {
       setLoading(true)
       setError(null)
       
-      // Fetch completed courses for the learner
-      const courses = await apiClient.get(`/user-profiles/completed-courses/${SABEEL_USER_ID}`)
+      // Try new route pattern first
+      let courses = null
+      try {
+        courses = await apiClient.get(`/user-profiles/completed-courses/${SABEEL_USER_ID}`)
+      } catch (newRouteError) {
+        // If new route fails (404), try old route pattern as fallback
+        if (newRouteError.response?.status === 404) {
+          console.warn('New route pattern failed, trying old pattern...')
+          try {
+            courses = await apiClient.get(`/user-profiles/${SABEEL_USER_ID}/completed-courses`)
+          } catch (oldRouteError) {
+            // Both routes failed
+            throw newRouteError // Use the original error
+          }
+        } else {
+          throw newRouteError
+        }
+      }
+      
       const coursesArray = Array.isArray(courses) ? courses : (courses.data || [])
       
       setCompletedCourses(coursesArray)
       setShowCourseList(true)
     } catch (err) {
       console.error('Error loading completed courses:', err)
-      setError(err.message || 'Failed to load completed courses')
+      // Don't show error if it's just a 404 - might mean no courses yet
+      if (err.response?.status === 404) {
+        setCompletedCourses([])
+        setShowCourseList(true)
+      } else {
+        setError(err.message || 'Failed to load completed courses')
+      }
     } finally {
       setLoading(false)
     }
@@ -87,8 +110,23 @@ const CompetitionPage = () => {
 
       if (id) {
         // If competition ID is provided, fetch that specific competition
-        const response = await apiClient.get(`/competitions/${id}`)
-        competitionData = response.data || response
+        try {
+          const response = await apiClient.get(`/competitions/${id}`)
+          competitionData = response.data || response
+        } catch (compError) {
+          console.error('Error fetching competition:', compError)
+          // Handle different error cases
+          if (compError.response?.status === 404) {
+            setError('Competition not found')
+            setLoading(false)
+            return
+          } else if (compError.response?.status === 401) {
+            setError('Authentication required. Please log in.')
+            setLoading(false)
+            return
+          }
+          throw compError
+        }
       } else {
         // Otherwise, fetch competitions for Sabeel and get the first active one
         try {
