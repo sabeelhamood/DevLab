@@ -1,86 +1,111 @@
--- Add a competition row using existing users from userProfiles
+-- ============================================================================
+-- Script: Automatically Create Competition from First Two Learners
+-- ============================================================================
 -- This script will:
--- 1. Get the first two users from userProfiles
--- 2. Create a competition between them
+-- 1. Select the first two learners from userProfiles
+-- 2. Find a course they both completed in course_completions
+-- 3. Insert a new competition using those learners and the shared course
+-- ============================================================================
 
--- First, let's see what users we have
-SELECT "learner_id", "learner_name" FROM "userProfiles" ORDER BY "created_at" LIMIT 10;
+-- Step 1: Select the first two learners
+WITH first_two_learners AS (
+    SELECT "learner_id", "learner_name"
+    FROM "userProfiles"
+    ORDER BY "created_at"
+    LIMIT 2
+),
 
--- Insert a competition using the first two users
--- Replace the learner IDs below with actual IDs from the query above if needed
+-- Step 2: Find a course that both learners completed
+shared_course AS (
+    SELECT 
+        cc."course_id", 
+        cc."course_name"
+    FROM "course_completions" cc
+    INNER JOIN first_two_learners ftl ON cc."learner_id" = ftl."learner_id"
+    GROUP BY cc."course_id", cc."course_name"
+    HAVING COUNT(DISTINCT cc."learner_id") = 2  -- Both learners completed this course
+    LIMIT 1
+)
+
+-- Step 3: Insert a new competition using the learners and shared course
 INSERT INTO "competitions" (
-  "course_name",
-  "course_id",
-  "learner1_id",
-  "learner2_id",
-  "status",
-  "question_count",
-  "time_limit",
-  "questions",
-  "learner1_answers",
-  "learner2_answers",
-  "learner1_score",
-  "learner2_score"
+    "course_name",
+    "course_id",
+    "learner1_id",
+    "learner2_id",
+    "status",
+    "question_count",
+    "time_limit",
+    "questions",
+    "learner1_answers",
+    "learner2_answers",
+    "learner1_score",
+    "learner2_score"
 )
 SELECT 
-  'JavaScript Fundamentals Showdown' as "course_name",
-  123 as "course_id",
-  (SELECT "learner_id" FROM "userProfiles" ORDER BY "created_at" LIMIT 1 OFFSET 0) as "learner1_id",
-  (SELECT "learner_id" FROM "userProfiles" ORDER BY "created_at" LIMIT 1 OFFSET 1) as "learner2_id",
-  'active' as "status",
-  3 as "question_count",
-  1800 as "time_limit",
-  '[
-    {
-      "id": "q1",
-      "title": "Array Manipulation Challenge",
-      "points": 100,
-      "testCases": [
-        {"input": "[1, 3, 2, 4, 5]", "expected": 4},
-        {"input": "[5, 4, 3, 2, 1]", "expected": 1},
-        {"input": "[1, 2, 3, 4, 5]", "expected": 5}
-      ],
-      "timeLimit": 600,
-      "difficulty": "medium",
-      "description": "Write a function that finds the longest increasing subsequence in an array. Return the length of the subsequence.",
-      "starterCode": "function longestIncreasingSubsequence(arr) {\n  // TODO: implement dynamic programming solution\n  return 0;\n}"
-    },
-    {
-      "id": "q2",
-      "title": "String Processing",
-      "points": 80,
-      "testCases": [
-        {"input": "\"A man a plan a canal Panama\"", "expected": true},
-        {"input": "\"race a car\"", "expected": false},
-        {"input": "\"Madam\"", "expected": true}
-      ],
-      "timeLimit": 420,
-      "difficulty": "easy",
-      "description": "Implement a function that checks if a string is a palindrome, ignoring case and non-alphanumeric characters.",
-      "starterCode": "function isPalindrome(s) {\n  // TODO: normalize the string and check for palindrome\n  return false;\n}"
-    },
-    {
-      "id": "q3",
-      "title": "Dynamic Programming",
-      "points": 150,
-      "testCases": [
-        {"input": "[2, 7, 9, 3, 1]", "expected": 12},
-        {"input": "[1, 2, 3, 1]", "expected": 4},
-        {"input": "[2, 1, 1, 2]", "expected": 4}
-      ],
-      "timeLimit": 540,
-      "difficulty": "hard",
-      "description": "Solve the classic \"House Robber\" problem. Return the maximum amount you can rob without alerting the police.",
-      "starterCode": "function rob(nums) {\n  // TODO: use memoization or tabulation\n  return 0;\n}"
-    }
-  ]'::jsonb as "questions",
-  '[]'::jsonb as "learner1_answers",
-  '[]'::jsonb as "learner2_answers",
-  0 as "learner1_score",
-  0 as "learner2_score"
-WHERE EXISTS (
-  SELECT 1 FROM "userProfiles" 
-  HAVING COUNT(*) >= 2
-)
-RETURNING "competition_id", "course_name", "learner1_id", "learner2_id", "status";
+    sc."course_name",
+    sc."course_id",
+    ftl1."learner_id" as "learner1_id",
+    ftl2."learner_id" as "learner2_id",
+    'active' as "status",
+    3 as "question_count",
+    1800 as "time_limit",
+    '[
+      {
+        "id": "q1",
+        "title": "Mock Question 1",
+        "points": 100,
+        "testCases": [],
+        "timeLimit": 600,
+        "difficulty": "medium",
+        "description": "Mock question 1",
+        "starterCode": ""
+      },
+      {
+        "id": "q2",
+        "title": "Mock Question 2",
+        "points": 80,
+        "testCases": [],
+        "timeLimit": 420,
+        "difficulty": "easy",
+        "description": "Mock question 2",
+        "starterCode": ""
+      },
+      {
+        "id": "q3",
+        "title": "Mock Question 3",
+        "points": 120,
+        "testCases": [],
+        "timeLimit": 540,
+        "difficulty": "hard",
+        "description": "Mock question 3",
+        "starterCode": ""
+      }
+    ]'::jsonb as "questions",
+    '[]'::jsonb as "learner1_answers",
+    '[]'::jsonb as "learner2_answers",
+    0 as "learner1_score",
+    0 as "learner2_score"
+FROM first_two_learners ftl1
+CROSS JOIN first_two_learners ftl2
+CROSS JOIN shared_course sc
+WHERE ftl1."learner_id" < ftl2."learner_id"  -- Ensure we get a unique pair (learner1 < learner2)
+  AND EXISTS (SELECT 1 FROM shared_course)  -- Ensure a shared course exists
+LIMIT 1
+RETURNING 
+    "competition_id", 
+    "course_name", 
+    "course_id",
+    "learner1_id", 
+    "learner2_id", 
+    "status";
 
+-- ============================================================================
+-- Notes / Instructions:
+-- ============================================================================
+-- 1. Make sure the userProfiles table has at least two learners
+-- 2. Make sure both learners completed the same course in course_completions
+-- 3. The questions field is mocked with JSON - you can customize it as needed
+-- 4. learner1_answers and learner2_answers start empty ([])
+-- 5. learner1_score and learner2_score start at 0
+-- ============================================================================
