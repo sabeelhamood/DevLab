@@ -101,13 +101,14 @@ router.get('/completed/all', async (req, res) => {
 
 // Get competition by ID - no auth required for viewing
 // This must come AFTER all specific routes like /course/:courseId, /learner/:learnerId, etc.
-router.get('/:id', async (req, res, next) => {
-  console.log('🔍 [competitions] Route matched for /:id, params:', req.params)
-  console.log('🔍 [competitions] Request URL:', req.url)
-  console.log('🔍 [competitions] Request path:', req.path)
-  console.log('🔍 [competitions] Request originalUrl:', req.originalUrl)
+router.get('/:id', (req, res, next) => {
+  console.log('🔍 [competitions] Route matched for /:id')
+  console.log('🔍 [competitions] Params:', req.params)
+  console.log('🔍 [competitions] URL:', req.url)
+  console.log('🔍 [competitions] Path:', req.path)
+  console.log('🔍 [competitions] OriginalUrl:', req.originalUrl)
   // Call the controller
-  return competitionController.getCompetition(req, res, next)
+  competitionController.getCompetition(req, res, next)
 })
 router.post('/:id/submit', authenticateToken, submitAnswerValidation, validateRequest, competitionController.submitAnswer)
 router.get('/:id/results', authenticateToken, competitionController.getResults)
