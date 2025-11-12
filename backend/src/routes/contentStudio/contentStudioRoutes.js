@@ -7,6 +7,7 @@ import {
 } from '../../services/tempQuestionStore.js'
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
+import { saveQuestionsToSupabase } from '../../services/questionStorageService.js'
 
 const router = express.Router()
 
@@ -320,6 +321,7 @@ export const generateQuestionsHandler = async (req, res) => {
       amount = DEFAULT_AMOUNT,
       topic_id,
       topic_name,
+      course_id,
       skills = {},
       question_type,
       programming_language,
@@ -401,6 +403,68 @@ export const generateQuestionsHandler = async (req, res) => {
         humanLanguage
       }
     })
+
+    // Save questions to Supabase automatically
+    // This runs in the background and doesn't block the response
+    try {
+      console.log('🔍 Saving questions to Supabase...')
+      console.log(`   Question count: ${questions.length}`)
+      console.log(`   Question type: ${question_type}`)
+      console.log(`   Topic ID: ${topic_id}`)
+      console.log(`   Topic name: ${topic_name}`)
+      
+      const saveMetadata = {
+        topic_id,
+        topic_name,
+        question_type,
+        programming_language: question_type === 'code' ? programming_language : null,
+        course_id: course_id || null, // Extract from request if available
+        nanoSkills,
+        microSkills,
+        humanLanguage,
+        source: 'content-studio'
+      }
+      
+      // Save questions asynchronously - don't await to avoid blocking response
+      saveQuestionsToSupabase(questions, saveMetadata)
+        .then((saveResults) => {
+          const savedCount = saveResults.filter(r => r.success).length
+          const failedCount = saveResults.filter(r => !r.success && !r.skipped).length
+          const skippedCount = saveResults.filter(r => r.skipped).length
+          
+          if (savedCount > 0) {
+            console.log(`✅ Successfully saved ${savedCount} question(s) to Supabase`)
+            saveResults
+              .filter(r => r.success)
+              .forEach((result, index) => {
+                console.log(`   ${index + 1}. Question ID: ${result.question_id}`)
+                console.log(`      Type: ${result.question_type}`)
+                console.log(`      Content: ${result.question_content?.substring(0, 50)}...`)
+              })
+          }
+          if (skippedCount > 0) {
+            console.log(`⏭️  Skipped ${skippedCount} question(s) (duplicates)`)
+          }
+          if (failedCount > 0) {
+            console.warn(`⚠️ Failed to save ${failedCount} question(s) to Supabase`)
+            saveResults
+              .filter(r => !r.success && !r.skipped)
+              .forEach((result, index) => {
+                console.warn(`   ${index + 1}. Error: ${result.error || result.message}`)
+              })
+          }
+        })
+        .catch((error) => {
+          // Log error but don't throw - questions were generated successfully
+          console.error('❌ Error saving questions to Supabase:', error.message)
+          console.error('   Questions were generated successfully but not saved to database')
+          console.error('   Error stack:', error.stack)
+        })
+    } catch (error) {
+      // Don't fail the request if Supabase save fails - log error and continue
+      console.error('❌ Error initiating question save to Supabase:', error.message)
+      console.error('   Questions were generated successfully but save was not initiated')
+    }
 
     return res.json({
       success: true,
