@@ -99,12 +99,14 @@ router.get('/completed/all', async (req, res) => {
   }
 })
 
-router.get('/:id', authenticateToken, competitionController.getCompetition)
+// Get competition by ID - no auth required for viewing
+router.get('/:id', competitionController.getCompetition)
 router.post('/:id/submit', authenticateToken, submitAnswerValidation, validateRequest, competitionController.submitAnswer)
 router.get('/:id/results', authenticateToken, competitionController.getResults)
 router.get('/leaderboard/:courseId', authenticateToken, competitionController.getLeaderboard)
 router.post('/:id/next-turn', authenticateToken, competitionController.nextTurn)
-router.get('/:id/progress', authenticateToken, competitionController.getProgress)
+// Get competition progress - no auth required for viewing
+router.get('/:id/progress', competitionController.getProgress)
 router.post('/:id/finalize', authenticateToken, competitionController.finalizeCompetition)
 router.post('/:id/score', authenticateToken, competitionController.storeFinalScore)
 router.get('/:id/outcome/:learnerId', authenticateToken, competitionController.getOutcome)
