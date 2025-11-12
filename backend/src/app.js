@@ -24,6 +24,7 @@ import sessionRoutes from './routes/sessions/sessionRoutes.js'
 import analyticsRoutes from './routes/analytics/analyticsRoutes.js'
 import dataRequestRoutes from './routes/dataRequestRoutes.js'
 import userProfileRoutes from './routes/userProfiles/userProfileRoutes.js'
+import { authenticateService } from './middleware/auth.js'
 
 // Gemini AI routes
 import geminiRoutes from './routes/gemini.js'
@@ -406,6 +407,34 @@ app.use(compression())
 
 // Logging middleware
 app.use(morgan('combined'))
+
+// Apply service authentication to all /api routes in production
+// Skip for /api/auth routes (login, register, etc.) and /health endpoint
+const isProduction = config.nodeEnv === 'production'
+const hasServiceApiKeys = config.security.apiKeys && config.security.apiKeys.trim().length > 0
+const requireServiceAuth = isProduction || hasServiceApiKeys
+
+if (requireServiceAuth) {
+  console.log('🔒 [app] Service authentication enabled for /api routes')
+  console.log('   Environment:', config.nodeEnv)
+  console.log('   SERVICE_API_KEYS configured:', hasServiceApiKeys)
+  
+  // Apply service auth to all /api routes except /api/auth
+  app.use('/api', (req, res, next) => {
+    // Skip authentication for auth routes and health checks
+    if (req.path.startsWith('/auth') || req.path === '/health' || req.path === '/test-supabase') {
+      console.log('🔓 [auth] Skipping service auth for:', req.path)
+      return next()
+    }
+    // Apply service authentication
+    console.log('🔒 [auth] Applying service auth for:', req.path)
+    return authenticateService(req, res, next)
+  })
+} else {
+  console.log('🔓 [app] Service authentication disabled (development mode)')
+  console.log('   Environment:', config.nodeEnv)
+  console.log('   SERVICE_API_KEYS configured:', hasServiceApiKeys)
+}
 
 // Add request logging for all /api routes to debug routing
 app.use('/api', (req, res, next) => {
