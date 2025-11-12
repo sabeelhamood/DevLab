@@ -190,7 +190,6 @@ router.post('/test/add-bian', async (req, res) => {
     
     // Test connection with SELECT NOW()
     console.log('\n📡 Testing PostgreSQL connection with SELECT NOW()...')
-    
     try {
       console.log('   Connecting to Supabase...')
       const connectionTest = await postgres.query('SELECT NOW() as current_time, 1 as test')
@@ -504,6 +503,320 @@ router.post('/test/add-bian', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to add user',
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      connection: 'Railway SUPABASE_URL',
+      supabase_url_configured: !!process.env.SUPABASE_URL
+    })
+  }
+})
+
+// Test endpoint to add course completion for learner "bian"
+// This endpoint uses the Railway SUPABASE_URL to connect to Supabase
+// POST /api/user-profiles/test/add-course-completion
+router.post('/test/add-course-completion', async (req, res) => {
+  console.log('='.repeat(80))
+  console.log('🔍 TEST ENDPOINT: Adding course completion')
+  console.log('='.repeat(80))
+  
+  try {
+    // ============================================================================
+    // STEP 1: Environment Setup and Authentication Check
+    // ============================================================================
+    console.log('\n📋 STEP 1: Environment Setup and Authentication Check')
+    
+    const nodeEnv = process.env.NODE_ENV || 'development'
+    const serviceApiKeys = process.env.SERVICE_API_KEYS || ''
+    const hasServiceApiKeys = serviceApiKeys && serviceApiKeys.trim().length > 0
+    const isProduction = nodeEnv === 'production'
+    
+    console.log('   NODE_ENV:', nodeEnv)
+    console.log('   Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT')
+    console.log('   SERVICE_API_KEYS configured:', hasServiceApiKeys)
+    
+    // Get parameters from request body or query
+    const { learner_id: learnerId, course_id: courseId, course_name: courseName } = req.body || {}
+    
+    if (!learnerId || !courseId || !courseName) {
+      console.error('❌ Missing required parameters')
+      console.error('   Required: learner_id, course_id, course_name')
+      console.error('   Received:', { learnerId, courseId, courseName })
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters',
+        message: 'learner_id, course_id, and course_name are required',
+        received: { learnerId, courseId, courseName }
+      })
+    }
+    
+    console.log('   Parameters:')
+    console.log('     learner_id:', learnerId)
+    console.log('     course_id:', courseId)
+    console.log('     course_name:', courseName)
+    
+    const supabaseUrl = process.env.SUPABASE_URL
+    if (!supabaseUrl) {
+      console.error('❌ SUPABASE_URL is NOT defined in process.env')
+      return res.status(500).json({
+        success: false,
+        error: 'SUPABASE_URL not configured',
+        message: 'SUPABASE_URL environment variable is not set in Railway'
+      })
+    }
+    
+    const maskedUrl = supabaseUrl.replace(/:([^:@]+)@/, ':****@')
+    console.log('✅ SUPABASE_URL is defined:', maskedUrl)
+    
+    // ============================================================================
+    // STEP 2: Test Connection
+    // ============================================================================
+    console.log('\n📋 STEP 2: Testing Supabase Connection')
+    
+    try {
+      console.log('   Connecting to Supabase...')
+      const connectionTest = await postgres.query('SELECT NOW() as current_time, 1 as test')
+      console.log('✅ PostgreSQL connection test successful')
+      console.log('   Current database time:', connectionTest.rows[0].current_time)
+      console.log('   ✅ Connection to Supabase established')
+    } catch (connectionError) {
+      console.error('❌ PostgreSQL connection test FAILED')
+      console.error('   Connection error:', connectionError.message)
+      console.error('   Error code:', connectionError.code)
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection failed',
+        message: connectionError.message,
+        code: connectionError.code
+      })
+    }
+    
+    // ============================================================================
+    // STEP 3: Check if course completion already exists
+    // ============================================================================
+    console.log('\n📋 STEP 3: Checking if course completion already exists')
+    
+    try {
+      console.log('   Executing SELECT query to check for existing completion...')
+      const existingCompletionQuery = await postgres.query(
+        `SELECT "learner_id", "course_id", "course_name", "completed_at" 
+         FROM "course_completions" 
+         WHERE "learner_id" = $1::uuid 
+           AND "course_id" = $2::bigint 
+         ORDER BY "completed_at" DESC 
+         LIMIT 1`,
+        [learnerId, courseId]
+      )
+      
+      console.log('   Query executed successfully')
+      console.log('   Rows returned:', existingCompletionQuery.rows.length)
+      
+      if (existingCompletionQuery.rows.length > 0) {
+        const existingCompletion = existingCompletionQuery.rows[0]
+        console.log('⚠️ Course completion already exists:')
+        console.log('   Existing completion data:', JSON.stringify(existingCompletion, null, 2))
+        console.log('   learner_id:', existingCompletion.learner_id)
+        console.log('   course_id:', existingCompletion.course_id)
+        console.log('   course_name:', existingCompletion.course_name)
+        console.log('   completed_at:', existingCompletion.completed_at)
+        
+        return res.json({
+          success: true,
+          message: 'Course completion already exists',
+          learner_id: existingCompletion.learner_id,
+          course_id: existingCompletion.course_id,
+          course_name: existingCompletion.course_name,
+          completed_at: existingCompletion.completed_at,
+          existing: true,
+          connection: 'Railway SUPABASE_URL'
+        })
+      } else {
+        console.log('✅ No existing course completion found')
+        console.log('   Proceeding with insertion...')
+      }
+    } catch (queryError) {
+      console.error('❌ Error checking for existing course completion:')
+      console.error('   Query error:', queryError.message)
+      console.error('   Error code:', queryError.code)
+      console.error('   Error detail:', queryError.detail || 'N/A')
+      console.error('   Error hint:', queryError.hint || 'N/A')
+      console.error('   Error stack:', queryError.stack)
+      
+      if (queryError.message && queryError.message.includes('does not exist')) {
+        console.error('   ⚠️ Table "course_completions" might not exist')
+        console.error('   Check if migrations have been run')
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check for existing course completion',
+        message: queryError.message,
+        code: queryError.code
+      })
+    }
+    
+    // ============================================================================
+    // STEP 4: Insert course completion
+    // ============================================================================
+    console.log('\n📋 STEP 4: Inserting course completion')
+    console.log('   Attempting to insert course completion...')
+    console.log('   INSERT query: INSERT INTO "course_completions" ("learner_id", "course_id", "course_name", "completed_at") VALUES ($1::uuid, $2::bigint, $3::text, now())')
+    console.log('   Parameters:')
+    console.log('     learner_id:', learnerId)
+    console.log('     course_id:', courseId)
+    console.log('     course_name:', courseName)
+    
+    let insertResult = null
+    try {
+      insertResult = await postgres.query(
+        `INSERT INTO "course_completions" ("learner_id", "course_id", "course_name", "completed_at")
+         VALUES ($1::uuid, $2::bigint, $3::text, now())
+         RETURNING "learner_id", "course_id", "course_name", "completed_at"`,
+        [learnerId, courseId, courseName]
+      )
+      
+      console.log('✅ Insert query executed successfully')
+      console.log('   Rows returned:', insertResult.rows ? insertResult.rows.length : 0)
+      console.log('   Row count:', insertResult.rowCount || 0)
+      
+      if (insertResult.rows && insertResult.rows.length > 0) {
+        console.log('   Inserted row data:', JSON.stringify(insertResult.rows[0], null, 2))
+      } else {
+        console.error('❌ Insert query returned no rows')
+        console.error('   This might indicate a constraint violation or silent failure')
+        throw new Error('Failed to insert course completion - no rows returned from INSERT query')
+      }
+    } catch (insertError) {
+      console.error('❌ Insert query error:')
+      console.error('   Error message:', insertError.message)
+      console.error('   Error code:', insertError.code)
+      console.error('   Error detail:', insertError.detail || 'N/A')
+      console.error('   Error hint:', insertError.hint || 'N/A')
+      console.error('   Error stack:', insertError.stack)
+      
+      // Check for specific error types
+      if (insertError.code === '23505') {
+        console.error('   ⚠️ Unique constraint violation (duplicate key)')
+        console.error('   This means a course completion with this learner_id, course_id, and completed_at already exists')
+      } else if (insertError.code === '42P01') {
+        console.error('   ⚠️ Table does not exist')
+        console.error('   Table "course_completions" might not exist in the database')
+      } else if (insertError.code === '23503') {
+        console.error('   ⚠️ Foreign key constraint violation')
+        console.error('   This means the learner_id does not exist in userProfiles table')
+      } else if (insertError.code === '42501') {
+        console.error('   ⚠️ Permission denied')
+        console.error('   The database user does not have permission to insert into "course_completions"')
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to insert course completion',
+        message: insertError.message,
+        code: insertError.code,
+        detail: insertError.detail,
+        hint: insertError.hint
+      })
+    }
+    
+    // ============================================================================
+    // STEP 5: Verify the insertion
+    // ============================================================================
+    console.log('\n📋 STEP 5: Verifying the insertion')
+    
+    const newCompletion = insertResult.rows[0]
+    console.log('✅ Course completion successfully added:')
+    console.log('   Inserted completion data:', JSON.stringify(newCompletion, null, 2))
+    console.log('   learner_id:', newCompletion.learner_id)
+    console.log('   course_id:', newCompletion.course_id)
+    console.log('   course_name:', newCompletion.course_name)
+    console.log('   completed_at:', newCompletion.completed_at)
+    
+    // Verify by querying the database
+    console.log('\n   Verifying insertion with SELECT query...')
+    try {
+      const verifyResult = await postgres.query(
+        `SELECT "learner_id", "course_id", "course_name", "completed_at" 
+         FROM "course_completions" 
+         WHERE "learner_id" = $1::uuid 
+           AND "course_id" = $2::bigint 
+         ORDER BY "completed_at" DESC`,
+        [learnerId, courseId]
+      )
+      
+      console.log('   Verification query executed successfully')
+      console.log('   Rows returned:', verifyResult.rows ? verifyResult.rows.length : 0)
+      
+      if (verifyResult.rows && verifyResult.rows.length > 0) {
+        console.log('✅ Verification successful - course completion found in database')
+        console.log('   All completions for this learner and course:')
+        verifyResult.rows.forEach((completion, index) => {
+          console.log(`   Completion ${index + 1}:`, JSON.stringify(completion, null, 2))
+        })
+      } else {
+        console.warn('⚠️ Verification query returned no rows')
+        console.warn('   This means the completion was inserted but cannot be found with the verification query')
+      }
+    } catch (verifyError) {
+      console.error('❌ Verification query error:')
+      console.error('   Verification error:', verifyError.message)
+      console.error('   Error code:', verifyError.code)
+      console.error('   Error stack:', verifyError.stack)
+    }
+    
+    // ============================================================================
+    // STEP 6: Return success response
+    // ============================================================================
+    console.log('\n✅ TEST ENDPOINT COMPLETED SUCCESSFULLY')
+    console.log('='.repeat(80))
+    
+    return res.json({
+      success: true,
+      message: 'Course completion successfully added',
+      learner_id: newCompletion.learner_id,
+      course_id: newCompletion.course_id,
+      course_name: newCompletion.course_name,
+      completed_at: newCompletion.completed_at,
+      existing: false,
+      connection: 'Railway SUPABASE_URL',
+      verified: true,
+      supabase_url_configured: !!supabaseUrl,
+      connection_test: 'passed',
+      insertion: 'successful',
+      verification: 'passed'
+    })
+    
+  } catch (error) {
+    console.error('\n❌ TEST ENDPOINT FAILED')
+    console.error('='.repeat(80))
+    console.error('Error adding course completion:')
+    console.error('   Error message:', error.message)
+    console.error('   Error code:', error.code)
+    console.error('   Error detail:', error.detail || 'N/A')
+    console.error('   Error hint:', error.hint || 'N/A')
+    console.error('   Error stack:', error.stack)
+    
+    // Check if it's a duplicate key error
+    if (error.message && error.message.includes('duplicate key')) {
+      console.error('   ⚠️ Duplicate key error - course completion might already exist')
+    }
+    
+    // Check if it's a connection error
+    if (error.message && (error.message.includes('connection') || error.message.includes('timeout'))) {
+      console.error('   ⚠️ Connection error - check SUPABASE_URL in Railway')
+    }
+    
+    // Check if it's a table doesn't exist error
+    if (error.message && error.message.includes('does not exist')) {
+      console.error('   ⚠️ Table does not exist - check if migrations have been run')
+    }
+    
+    console.error('='.repeat(80))
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to add course completion',
       message: error.message,
       code: error.code,
       detail: error.detail,
