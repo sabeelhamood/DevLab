@@ -204,6 +204,161 @@ app.get('/api/test-supabase', async (req, res) => {
 })
 console.log('✅ Registered test endpoint: GET /api/test-supabase')
 
+// Endpoint to automatically add a competition using existing users
+app.post('/api/add-competition', async (req, res) => {
+  console.log('🧪 [add-competition] Route hit!')
+  try {
+    // Get existing users
+    const { rows: users } = await postgres.query(
+      'SELECT "learner_id", "learner_name" FROM "userProfiles" ORDER BY "created_at" LIMIT 10'
+    )
+    
+    if (users.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Need at least 2 users in userProfiles to create a competition',
+        availableUsers: users.length
+      })
+    }
+
+    const learner1 = users[0]
+    const learner2 = users[1]
+
+    // Create competition data
+    const competitionData = {
+      course_name: 'JavaScript Fundamentals Showdown',
+      course_id: 123,
+      learner1_id: learner1.learner_id,
+      learner2_id: learner2.learner_id,
+      status: 'active',
+      question_count: 3,
+      time_limit: 1800,
+      questions: JSON.stringify([
+        {
+          id: 'q1',
+          title: 'Array Manipulation Challenge',
+          points: 100,
+          testCases: [
+            { input: '[1, 3, 2, 4, 5]', expected: 4 },
+            { input: '[5, 4, 3, 2, 1]', expected: 1 },
+            { input: '[1, 2, 3, 4, 5]', expected: 5 }
+          ],
+          timeLimit: 600,
+          difficulty: 'medium',
+          description: 'Write a function that finds the longest increasing subsequence in an array. Return the length of the subsequence.',
+          starterCode: 'function longestIncreasingSubsequence(arr) {\n  // TODO: implement dynamic programming solution\n  return 0;\n}'
+        },
+        {
+          id: 'q2',
+          title: 'String Processing',
+          points: 80,
+          testCases: [
+            { input: '"A man a plan a canal Panama"', expected: true },
+            { input: '"race a car"', expected: false },
+            { input: '"Madam"', expected: true }
+          ],
+          timeLimit: 420,
+          difficulty: 'easy',
+          description: 'Implement a function that checks if a string is a palindrome, ignoring case and non-alphanumeric characters.',
+          starterCode: 'function isPalindrome(s) {\n  // TODO: normalize the string and check for palindrome\n  return false;\n}'
+        },
+        {
+          id: 'q3',
+          title: 'Dynamic Programming',
+          points: 150,
+          testCases: [
+            { input: '[2, 7, 9, 3, 1]', expected: 12 },
+            { input: '[1, 2, 3, 1]', expected: 4 },
+            { input: '[2, 1, 1, 2]', expected: 4 }
+          ],
+          timeLimit: 540,
+          difficulty: 'hard',
+          description: 'Solve the classic "House Robber" problem. Return the maximum amount you can rob without alerting the police.',
+          starterCode: 'function rob(nums) {\n  // TODO: use memoization or tabulation\n  return 0;\n}'
+        }
+      ]),
+      learner1_answers: JSON.stringify([]),
+      learner2_answers: JSON.stringify([]),
+      learner1_score: 0,
+      learner2_score: 0
+    }
+
+    console.log(`📝 Creating competition between ${learner1.learner_name} and ${learner2.learner_name}`)
+
+    // Insert competition
+    const insertQuery = `
+      INSERT INTO "competitions" (
+        "course_name",
+        "course_id",
+        "learner1_id",
+        "learner2_id",
+        "status",
+        "question_count",
+        "time_limit",
+        "questions",
+        "learner1_answers",
+        "learner2_answers",
+        "learner1_score",
+        "learner2_score"
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11, $12
+      )
+      RETURNING "competition_id", "course_name", "learner1_id", "learner2_id", "status", "created_at"
+    `
+
+    const { rows } = await postgres.query(insertQuery, [
+      competitionData.course_name,
+      competitionData.course_id,
+      competitionData.learner1_id,
+      competitionData.learner2_id,
+      competitionData.status,
+      competitionData.question_count,
+      competitionData.time_limit,
+      competitionData.questions,
+      competitionData.learner1_answers,
+      competitionData.learner2_answers,
+      competitionData.learner1_score,
+      competitionData.learner2_score
+    ])
+
+    const competition = rows[0]
+    
+    // Verify it was added
+    const { rows: verifyRows } = await postgres.query(
+      'SELECT "competition_id" FROM "competitions" WHERE "competition_id" = $1',
+      [competition.competition_id]
+    )
+
+    console.log(`✅ Competition created: ${competition.competition_id}`)
+    console.log(`✅ Verification: Found ${verifyRows.length} competition(s) with this ID`)
+
+    res.json({
+      success: true,
+      message: 'Competition added successfully',
+      competition: {
+        competition_id: competition.competition_id,
+        course_name: competition.course_name,
+        learner1_id: competition.learner1_id,
+        learner2_id: competition.learner2_id,
+        status: competition.status,
+        created_at: competition.created_at
+      },
+      verification: {
+        found: verifyRows.length > 0,
+        competition_id: competition.competition_id
+      }
+    })
+  } catch (error) {
+    console.error('❌ [add-competition] Error:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    })
+  }
+})
+console.log('✅ Registered endpoint: POST /api/add-competition')
+
 // CORS test endpoint
 app.get('/cors-test', (req, res) => {
   console.log('🧪 CORS Test: Request received');
