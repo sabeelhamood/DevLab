@@ -214,6 +214,20 @@ app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/sessions', sessionRoutes)
 app.use('/api/user-profiles', userProfileRoutes)
+// Log registered user profile routes
+try {
+  const userProfileRouteSummaries = userProfileRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: `/api/user-profiles${layer.route.path === '/' ? '' : layer.route.path}`,
+      methods: Object.keys(layer.route.methods)
+        .filter((method) => layer.route.methods[method])
+        .map((method) => method.toUpperCase())
+    }))
+  console.log('✅ Registered user-profile routes:', userProfileRouteSummaries)
+} catch (error) {
+  console.warn('⚠️ Unable to list user-profile routes:', error.message)
+}
 app.use('/api/competitions', competitionRoutes)
 try {
   const competitionRouteSummaries = competitionRoutes.stack

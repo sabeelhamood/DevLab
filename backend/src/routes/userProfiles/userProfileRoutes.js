@@ -20,13 +20,16 @@ router.get('/', async (req, res) => {
 router.get('/:learnerId/completed-courses', async (req, res) => {
   try {
     const { learnerId } = req.params
-    console.log('📋 Fetching completed courses for learner:', learnerId)
+    console.log('📋 [user-profiles] Fetching completed courses for learner:', learnerId)
+    console.log('📋 [user-profiles] Request path:', req.path)
+    console.log('📋 [user-profiles] Request URL:', req.url)
+    
     const completedCourses = await UserProfileModel.getCompletedCourses(learnerId)
-    console.log('✅ Found completed courses:', completedCourses?.length || 0)
+    console.log('✅ [user-profiles] Found completed courses:', completedCourses?.length || 0)
 
     res.json(completedCourses || [])
   } catch (error) {
-    console.error('Error fetching completed courses:', error)
+    console.error('❌ [user-profiles] Error fetching completed courses:', error)
     res.status(500).json({ error: 'Internal server error', message: error.message })
   }
 })
