@@ -160,6 +160,51 @@ app.get('/health', (req, res) => {
   })
 })
 
+// Temporary test endpoint to verify Supabase data access - MUST be registered early, before middleware
+app.get('/api/test-supabase', async (req, res) => {
+  console.log('🧪 [test-supabase] Route hit!', req.method, req.url, req.originalUrl)
+  try {
+    const { postgres } = await import('./config/database.js')
+    
+    // Test 1: Check if we can connect
+    console.log('🧪 [test] Testing Supabase connection...')
+    await postgres.query('SELECT 1 as test')
+    console.log('✅ [test] Connection successful')
+    
+    // Test 2: Get all competitions
+    console.log('🧪 [test] Querying competitions table...')
+    const { rows: allCompetitions } = await postgres.query(
+      'SELECT competition_id, course_name, course_id, status FROM competitions LIMIT 10'
+    )
+    console.log('✅ [test] Found', allCompetitions.length, 'competitions')
+    
+    // Test 3: Try to find the specific competition
+    console.log('🧪 [test] Looking for competition 1c8fe3d5-6b80-417f-a1aa-d3694d84d6ec...')
+    const { rows: specificCompetition } = await postgres.query(
+      'SELECT * FROM competitions WHERE competition_id = $1',
+      ['1c8fe3d5-6b80-417f-a1aa-d3694d84d6ec']
+    )
+    console.log('✅ [test] Specific competition found:', specificCompetition.length > 0)
+    
+    res.json({
+      success: true,
+      connection: 'working',
+      totalCompetitions: allCompetitions.length,
+      allCompetitions: allCompetitions,
+      specificCompetitionFound: specificCompetition.length > 0,
+      specificCompetition: specificCompetition.length > 0 ? specificCompetition[0] : null
+    })
+  } catch (error) {
+    console.error('❌ [test] Error:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    })
+  }
+})
+console.log('✅ Registered test endpoint: GET /api/test-supabase')
+
 // CORS test endpoint
 app.get('/cors-test', (req, res) => {
   console.log('🧪 CORS Test: Request received');
@@ -208,49 +253,11 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
-// Temporary test endpoint to verify Supabase data access - MUST come before ALL other /api routes
-app.get('/api/test-supabase', async (req, res) => {
-  try {
-    const { postgres } = await import('./config/database.js')
-    
-    // Test 1: Check if we can connect
-    console.log('🧪 [test] Testing Supabase connection...')
-    await postgres.query('SELECT 1 as test')
-    console.log('✅ [test] Connection successful')
-    
-    // Test 2: Get all competitions
-    console.log('🧪 [test] Querying competitions table...')
-    const { rows: allCompetitions } = await postgres.query(
-      'SELECT competition_id, course_name, course_id, status FROM competitions LIMIT 10'
-    )
-    console.log('✅ [test] Found', allCompetitions.length, 'competitions')
-    
-    // Test 3: Try to find the specific competition
-    console.log('🧪 [test] Looking for competition 1c8fe3d5-6b80-417f-a1aa-d3694d84d6ec...')
-    const { rows: specificCompetition } = await postgres.query(
-      'SELECT * FROM competitions WHERE competition_id = $1',
-      ['1c8fe3d5-6b80-417f-a1aa-d3694d84d6ec']
-    )
-    console.log('✅ [test] Specific competition found:', specificCompetition.length > 0)
-    
-    res.json({
-      success: true,
-      connection: 'working',
-      totalCompetitions: allCompetitions.length,
-      allCompetitions: allCompetitions,
-      specificCompetitionFound: specificCompetition.length > 0,
-      specificCompetition: specificCompetition.length > 0 ? specificCompetition[0] : null
-    })
-  } catch (error) {
-    console.error('❌ [test] Error:', error)
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: error.stack
-    })
-  }
+// Add request logging for all /api routes to debug routing
+app.use('/api', (req, res, next) => {
+  console.log('🔍 [api-router] Incoming request:', req.method, req.path, req.originalUrl)
+  next()
 })
-console.log('✅ Registered test endpoint: GET /api/test-supabase')
 
 // API routes
 app.use('/api/auth', authRoutes)
