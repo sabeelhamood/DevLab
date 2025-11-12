@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   CheckCircle, 
   XCircle, 
@@ -7,7 +7,8 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
-  Rocket
+  Rocket,
+  TestTube
 } from 'lucide-react'
 import { geminiAPI } from '../services/api/gemini.js'
 import { questionGenerationAPI } from '../services/api/questionGeneration.js'
@@ -15,8 +16,10 @@ import ErrorMessage from '../components/ErrorMessage.jsx'
 import LoadingSpinner from '../components/LoadingSpinner.jsx'
 import ConfirmationModal from '../components/ConfirmationModal.jsx'
 import Judge0Container from '../components/Judge0Container.jsx'
+import { useTheme } from '../contexts/ThemeContext.jsx'
 
 function SimpleQuestionPage() {
+  const { theme } = useTheme()
   const [questions, setQuestions] = useState([]) // Array to store all questions
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [question, setQuestion] = useState(null)
@@ -648,80 +651,87 @@ int sum(int a, int b) {
             })() && (
               <div className="mt-6">
                 <div 
-                  className="rounded-xl p-6 border-2 shadow-lg"
+                  className={`rounded-2xl p-6 shadow-2xl border transition-all duration-300 ${theme === 'day-mode' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-600'}`}
                   style={{ 
-                    background: 'linear-gradient(145deg, #f0fdfa, #ecfdf5)',
-                    borderColor: 'rgba(6, 95, 70, 0.2)',
-                    boxShadow: '0 8px 32px rgba(6, 95, 70, 0.15)'
+                    boxShadow: theme === 'day-mode' 
+                      ? '0 10px 40px rgba(6, 95, 70, 0.15)' 
+                      : '0 10px 40px rgba(0, 0, 0, 0.5)'
                   }}
                 >
-                  <div className="flex items-center space-x-3 mb-6">
+                  <div className={`flex items-center space-x-4 mb-6 pb-4 ${theme === 'day-mode' ? 'border-b border-gray-200' : 'border-b border-gray-700'}`}>
                     <div 
-                      className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                      className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 hover:scale-110"
                       style={{ 
-                        background: 'linear-gradient(135deg, #065f46, #047857)',
-                        boxShadow: '0 4px 12px rgba(6, 95, 70, 0.4)'
+                        background: 'var(--gradient-primary)',
+                        boxShadow: 'var(--shadow-glow)'
                       }}
                     >
-                      🧪
+                      <TestTube className="w-6 h-6" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 
-                        className="text-xl font-bold"
-                        style={{ color: '#065f46' }}
+                        className="text-2xl font-bold mb-1"
+                        style={{ 
+                          background: 'var(--gradient-primary)', 
+                          WebkitBackgroundClip: 'text', 
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text'
+                        }}
                       >
                         Test Cases
                       </h3>
-                      <p className="text-sm font-medium" style={{ color: '#047857' }}>
+                      <p className={`text-sm font-medium ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-400'}`}>
                         {(question.test_cases || question.testCases).length} test case{(question.test_cases || question.testCases).length !== 1 ? 's' : ''} • Run these to verify your solution
                       </p>
                     </div>
                   </div>
-                  <div className="grid gap-6">
+                  <div className="grid gap-4">
                     {(question.test_cases || question.testCases).map((testCase, index) => (
                       <div 
                         key={index} 
-                        className="rounded-xl p-5 border-2 shadow-md transition-all duration-200 hover:shadow-lg"
+                        className={`rounded-xl p-5 border transition-all duration-300 hover:shadow-lg ${theme === 'day-mode' ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300' : 'bg-gray-700 border-gray-600 hover:border-emerald-500/50'}`}
                         style={{ 
-                          background: 'linear-gradient(145deg, #ffffff, #f0fdfa)',
-                          borderColor: 'rgba(6, 95, 70, 0.2)',
-                          boxShadow: '0 4px 16px rgba(6, 95, 70, 0.1)'
+                          boxShadow: theme === 'day-mode' 
+                            ? '0 4px 16px rgba(6, 95, 70, 0.1)' 
+                            : '0 4px 16px rgba(0, 0, 0, 0.3)'
                         }}
                       >
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-3">
                             <div 
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md"
                               style={{ 
-                                background: 'linear-gradient(135deg, #065f46, #047857)'
+                                background: 'var(--gradient-primary)'
                               }}
                             >
                               {index + 1}
                             </div>
-                            <span className="font-semibold text-lg" style={{ color: '#1e293b' }}>Test Case {index + 1}</span>
+                            <span className={`font-semibold text-lg ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>
+                              Test Case {index + 1}
+                            </span>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div className="space-y-3">
                             <div className="flex items-center space-x-2">
                               <div 
                                 className="w-3 h-3 rounded-full"
-                                style={{ background: '#065f46' }}
+                                style={{ background: 'var(--gradient-primary)' }}
                               ></div>
                               <span 
-                                className="text-sm font-semibold"
-                                style={{ color: '#1e293b' }}
+                                className={`text-sm font-semibold ${theme === 'day-mode' ? 'text-gray-700' : 'text-gray-300'}`}
+                                style={{ 
+                                  background: theme === 'day-mode' ? undefined : 'var(--gradient-primary)', 
+                                  WebkitBackgroundClip: theme === 'day-mode' ? undefined : 'text', 
+                                  WebkitTextFillColor: theme === 'day-mode' ? undefined : 'transparent',
+                                  backgroundClip: theme === 'day-mode' ? undefined : 'text'
+                                }}
                               >
                                 Input
                               </span>
                             </div>
                             <div 
-                              className="font-mono text-sm p-4 rounded-lg border-2"
-                              style={{ 
-                                background: '#f8fafc',
-                                borderColor: 'rgba(6, 95, 70, 0.2)',
-                                color: '#1e293b'
-                              }}
+                              className={`font-mono text-sm p-4 rounded-lg border transition-colors ${theme === 'day-mode' ? 'bg-white border-gray-300 text-gray-900' : 'bg-gray-800 border-gray-600 text-gray-100'}`}
                             >
                               {typeof testCase.input === 'object' 
                                 ? JSON.stringify(testCase.input, null, 2)
@@ -732,34 +742,48 @@ int sum(int a, int b) {
                             <div className="flex items-center space-x-2">
                               <div 
                                 className="w-3 h-3 rounded-full"
-                                style={{ background: '#047857' }}
+                                style={{ background: 'var(--gradient-secondary)' }}
                               ></div>
                               <span 
-                                className="text-sm font-semibold"
-                                style={{ color: '#1e293b' }}
+                                className={`text-sm font-semibold ${theme === 'day-mode' ? 'text-gray-700' : 'text-gray-300'}`}
                               >
-                                <span className="font-bold" style={{ color: '#1e40af' }}>Expected Output:</span> {(() => {
-                                  if (testCase.expected_output !== undefined) {
-                                    return typeof testCase.expected_output === 'object' 
-                                      ? JSON.stringify(testCase.expected_output, null, 2)
-                                      : String(testCase.expected_output);
-                                  } else if (testCase.expectedOutput !== undefined) {
-                                    return typeof testCase.expectedOutput === 'object' 
-                                      ? JSON.stringify(testCase.expectedOutput, null, 2)
-                                      : String(testCase.expectedOutput);
-                                  } else if (testCase.expected !== undefined) {
-                                    return typeof testCase.expected === 'object' 
-                                      ? JSON.stringify(testCase.expected, null, 2)
-                                      : String(testCase.expected);
-                                  } else if (testCase.result !== undefined) {
-                                    return typeof testCase.result === 'object' 
-                                      ? JSON.stringify(testCase.result, null, 2)
-                                      : String(testCase.result);
-                                  } else {
-                                    return 'No expected output found';
-                                  }
-                                })()}
+                                <span 
+                                  className="font-bold"
+                                  style={{ 
+                                    background: 'var(--gradient-primary)', 
+                                    WebkitBackgroundClip: 'text', 
+                                    WebkitTextFillColor: 'transparent',
+                                    backgroundClip: 'text'
+                                  }}
+                                >
+                                  Expected Output:
+                                </span>
                               </span>
+                            </div>
+                            <div 
+                              className={`font-mono text-sm p-4 rounded-lg border transition-colors ${theme === 'day-mode' ? 'bg-white border-gray-300 text-gray-900' : 'bg-gray-800 border-gray-600 text-gray-100'}`}
+                            >
+                              {(() => {
+                                if (testCase.expected_output !== undefined) {
+                                  return typeof testCase.expected_output === 'object' 
+                                    ? JSON.stringify(testCase.expected_output, null, 2)
+                                    : String(testCase.expected_output);
+                                } else if (testCase.expectedOutput !== undefined) {
+                                  return typeof testCase.expectedOutput === 'object' 
+                                    ? JSON.stringify(testCase.expectedOutput, null, 2)
+                                    : String(testCase.expectedOutput);
+                                } else if (testCase.expected !== undefined) {
+                                  return typeof testCase.expected === 'object' 
+                                    ? JSON.stringify(testCase.expected, null, 2)
+                                    : String(testCase.expected);
+                                } else if (testCase.result !== undefined) {
+                                  return typeof testCase.result === 'object' 
+                                    ? JSON.stringify(testCase.result, null, 2)
+                                    : String(testCase.result);
+                                } else {
+                                  return 'No expected output found';
+                                }
+                              })()}
                             </div>
                           </div>
                         </div>
