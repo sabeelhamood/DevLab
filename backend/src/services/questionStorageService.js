@@ -147,15 +147,109 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
               console.log(`   Course ID: ${topicLookup.rows[0].course_id}`)
             }
           } else {
-            // Topic doesn't exist in database - we need to handle this
-            // Option 1: Skip saving this question (log warning)
-            // Option 2: Create a placeholder topic (not recommended)
-            // Option 3: Save with null topic_id (may fail foreign key constraint)
-            // For now, we'll log a warning and skip the question
-            console.warn(`⚠️ Topic not found in database for topic_name: "${topicNameToSearch}"`)
-            console.warn(`   Topic identifier: ${resolvedTopicId}`)
-            console.warn(`   Skipping question save - topic must exist in database first`)
-            throw new Error(`Topic "${topicNameToSearch}" not found in database. Question cannot be saved without a valid topic.`)
+            // Topic doesn't exist - try to create it automatically
+            console.log(`⚠️ Topic not found in database for topic_name: "${topicNameToSearch}"`)
+            console.log(`   Attempting to create topic automatically...`)
+            
+            try {
+              // First, try to find a course by course_name if provided
+              let courseIdForTopic = resolvedCourseId
+              if (!courseIdForTopic && metadata.course_name) {
+                try {
+                  // Try to find course by name (if courses table has a name or course_name field)
+                  // Note: This is a fallback - ideally course_id should be provided
+                  const courseLookup = await postgres.query(
+                    `SELECT "course_id" FROM "courses" 
+                     WHERE "course_name" = $1::text 
+                        OR "name" = $1::text
+                     LIMIT 1`,
+                    [metadata.course_name]
+                  )
+                  if (courseLookup.rows.length > 0) {
+                    courseIdForTopic = courseLookup.rows[0].course_id
+                    console.log(`   Found course: ${courseIdForTopic} for course_name: "${metadata.course_name}"`)
+                  } else {
+                    console.log(`   Course not found for course_name: "${metadata.course_name}"`)
+                    console.log(`   Creating topic without course_id (if allowed by schema)`)
+                  }
+                } catch (courseError) {
+                  console.warn(`   Could not lookup course: ${courseError.message}`)
+                  // Continue without course_id
+                }
+              }
+              
+              // Check if course_id is required but missing
+              if (!courseIdForTopic) {
+                // Topics table requires course_id (NOT NULL constraint)
+                // We cannot create a topic without a course_id
+                console.error(`❌ Cannot create topic: course_id is required but not provided`)
+                console.error(`   Topic: "${topicNameToSearch}"`)
+                console.error(`   Course name: "${metadata.course_name || 'N/A'}"`)
+                console.error(`   Please ensure topics exist in database or provide course_id in metadata`)
+                throw new Error(`Topic "${topicNameToSearch}" requires a course_id. Please create the topic manually or provide course_id in the request.`)
+              }
+              
+              // Create topic automatically with course_id
+              const newTopicId = randomUUID()
+              const createTopicQuery = `
+                INSERT INTO "topics" (
+                  "topic_id",
+                  "course_id",
+                  "topic_name",
+                  "nano_skills",
+                  "macro_skills",
+                  "created_at",
+                  "updated_at"
+                ) VALUES (
+                  $1::uuid,
+                  $2::uuid,
+                  $3::text,
+                  $4::jsonb,
+                  $5::jsonb,
+                  now(),
+                  now()
+                )
+                ON CONFLICT ("topic_id") DO NOTHING
+                RETURNING "topic_id", "course_id"
+              `
+              
+              const createTopicResult = await postgres.query(createTopicQuery, [
+                newTopicId,
+                courseIdForTopic,
+                topicNameToSearch,
+                JSON.stringify(Array.isArray(nanoSkills) ? nanoSkills : []),
+                JSON.stringify(Array.isArray(microSkills) ? microSkills : [])
+              ])
+              
+              if (createTopicResult.rows.length > 0) {
+                topicIdUuid = createTopicResult.rows[0].topic_id
+                resolvedCourseId = createTopicResult.rows[0].course_id
+                console.log(`✅ Created new topic: ${topicIdUuid} for topic_name: "${topicNameToSearch}"`)
+                console.log(`   Course ID: ${resolvedCourseId}`)
+              } else {
+                // Topic might have been created in a concurrent request, fetch it
+                const fetchTopic = await postgres.query(
+                  `SELECT "topic_id", "course_id" FROM "topics" WHERE "topic_name" = $1::text LIMIT 1`,
+                  [topicNameToSearch]
+                )
+                if (fetchTopic.rows.length > 0) {
+                  topicIdUuid = fetchTopic.rows[0].topic_id
+                  resolvedCourseId = fetchTopic.rows[0].course_id
+                  console.log(`✅ Found topic after creation: ${topicIdUuid}`)
+                } else {
+                  throw new Error(`Failed to create or fetch topic: "${topicNameToSearch}"`)
+                }
+              }
+            } catch (createError) {
+              // If topic creation fails, provide clear error message
+              console.error(`❌ Failed to create topic: ${createError.message}`)
+              if (createError.message.includes('course_id')) {
+                console.error(`   Topics table requires course_id. Please ensure courses exist in database.`)
+              } else if (createError.message.includes('constraint') || createError.message.includes('foreign key')) {
+                console.error(`   Database constraint violation. Please check course_id and topic_name.`)
+              }
+              throw createError
+            }
           }
         } catch (error) {
           // If it's our custom error, re-throw it
