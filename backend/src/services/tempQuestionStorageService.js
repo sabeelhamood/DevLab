@@ -71,17 +71,18 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
   const {
     courseName,
     topicName,
+    topic_id: metaTopicId, // Use topic_id from metadata if provided
     course_id: metaCourseId,
     courseId: metaCourseIdAlt,
     nanoSkills = [],
     macroSkills = []
   } = metadata
 
-  if (!courseName || !topicName) {
-    console.error('❌ Missing required metadata: courseName and topicName are required')
+  if (!topicName) {
+    console.error('❌ Missing required metadata: topicName is required')
     return {
       success: false,
-      error: 'Missing required metadata: courseName and topicName are required',
+      error: 'Missing required metadata: topicName is required',
       savedQuestions: [],
       savedTopics: [],
       savedTestCases: []
@@ -90,6 +91,9 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
 
   // Resolve course_id
   let resolvedCourseId = metaCourseId || metaCourseIdAlt || DEFAULT_COURSE_ID
+  
+  // Use topic_id from metadata if provided, otherwise will be created
+  let resolvedTopicId = metaTopicId || null
   
   console.log('\n🔍 Resolving course_id and topic_id:')
   console.log(`   metaCourseId: ${metaCourseId || 'null'}`)
@@ -120,17 +124,57 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
     console.log('\n' + '='.repeat(80))
     console.log('📋 STEP 1: Creating/updating topic in topics table')
     console.log('='.repeat(80))
+    console.log(`   Topic ID (from request): ${resolvedTopicId || 'null'}`)
     console.log(`   Topic name: ${topicName}`)
     console.log(`   Course ID: ${resolvedCourseId || 'N/A'}`)
     console.log(`   resolvedCourseId: ${resolvedCourseId || 'null'}`)
     console.log(`   resolvedCourseId type: ${resolvedCourseId ? typeof resolvedCourseId : 'null'}`)
     
-    let topicId = null
+    let topicId = resolvedTopicId // Use topic_id from request if provided
     try {
-      if (resolvedCourseId) {
+      // If topic_id is provided, verify it exists
+      if (topicId && resolvedCourseId) {
+        console.log(`   Verifying topic exists: topic_id="${topicId}", course_id="${resolvedCourseId}"`)
+        const existingTopic = await postgres.query(
+          `SELECT "topic_id", "course_id", "topic_name" 
+           FROM "topics" 
+           WHERE "topic_id" = $1::uuid
+           LIMIT 1`,
+          [topicId]
+        )
+        
+        if (existingTopic.rows.length > 0) {
+          console.log(`✅ Topic exists: ${topicId}`)
+          console.log(`   Topic data:`, JSON.stringify(existingTopic.rows[0], null, 2))
+          
+          // Update topic with nano_skills and macro_skills if provided
+          if (nanoSkills.length > 0 || macroSkills.length > 0) {
+            await postgres.query(
+              `UPDATE "topics" 
+               SET "nano_skills" = $1::jsonb,
+                   "macro_skills" = $2::jsonb,
+                   "updated_at" = now()
+               WHERE "topic_id" = $3::uuid`,
+              [
+                JSON.stringify(nanoSkills),
+                JSON.stringify(macroSkills),
+                topicId
+              ]
+            )
+            console.log(`✅ Updated topic with skills`)
+          }
+          results.savedTopics.push({ topic_id: topicId, topic_name: topicName })
+        } else {
+          console.warn(`⚠️ Topic ID ${topicId} not found in database, will create new topic`)
+          topicId = null // Reset to null so it will be created below
+        }
+      }
+      
+      // If topic_id is not provided or not found, create or find by name
+      if (!topicId && resolvedCourseId) {
         console.log(`   Checking if topic exists: topic_name="${topicName}", course_id="${resolvedCourseId}"`)
         
-        // Check if topic already exists
+        // Check if topic already exists by name
         const existingTopic = await postgres.query(
           `SELECT "topic_id", "course_id", "topic_name" 
            FROM "topics" 
@@ -209,7 +253,7 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
         }
         results.savedTopics.push({ topic_id: topicId, topic_name: topicName })
         console.log(`✅ Topic ID resolved: ${topicId}`)
-      } else {
+      } else if (!topicId) {
         console.warn('⚠️ Skipping topic creation: course_id is missing')
         console.warn('   Topics table requires course_id (NOT NULL constraint)')
         console.warn('   topicId will be null - questions will be saved without topic_id')

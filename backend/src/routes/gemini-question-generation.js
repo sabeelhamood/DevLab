@@ -4,6 +4,7 @@ import { saveQuestionsToSupabase } from '../services/questionStorageService.js'
 import { saveTempQuestions, createRequestId } from '../services/tempQuestionStore.js'
 import { saveGeminiQuestionsToSupabase } from '../services/tempQuestionStorageService.js'
 import { postgres } from '../config/database.js'
+import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClient.js'
 
 const router = express.Router()
 
@@ -669,6 +670,45 @@ router.post('/check-solution', async (req, res) => {
   }
 })
 
+// Helper function to parse skills from request
+const parseSkills = (skillsPayload = {}) => {
+  // If skills is an array, treat it as nanoSkills
+  if (Array.isArray(skillsPayload)) {
+    return {
+      nanoSkills: skillsPayload,
+      macroSkills: []
+    }
+  }
+  
+  // If skills is an object with nanoSkills/macroSkills
+  if (typeof skillsPayload === 'object' && skillsPayload !== null) {
+    const nano = skillsPayload.nanoSkills || skillsPayload.nano_skills || skillsPayload.nano || []
+    const macro = skillsPayload.macroSkills || skillsPayload.macro_skills || skillsPayload.macro || []
+    return {
+      nanoSkills: Array.isArray(nano) ? nano : nano ? [nano] : [],
+      macroSkills: Array.isArray(macro) ? macro : macro ? [macro] : []
+    }
+  }
+  
+  // If skills is a string, try to parse as JSON
+  if (typeof skillsPayload === 'string') {
+    try {
+      const parsed = JSON.parse(skillsPayload)
+      return parseSkills(parsed)
+    } catch {
+      return {
+        nanoSkills: [skillsPayload],
+        macroSkills: []
+      }
+    }
+  }
+  
+  return {
+    nanoSkills: [],
+    macroSkills: []
+  }
+}
+
 // Generate complete question package (question + hints + solution)
 router.post('/generate-question-package', async (req, res) => {
   console.log('\n' + '='.repeat(80))
@@ -684,44 +724,98 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('='.repeat(80) + '\n')
   
   try {
-    const { 
-      courseName, 
-      topicName, 
-      nanoSkills = [], 
-      macroSkills = [], 
-      difficulty = 'beginner',
-      language = 'javascript',
-      questionType = 'coding',
-      questionCount = 1,
-      userId = 'learner_1' // Default user ID for mock
+    // Extract new field names from request
+    const {
+      amount = 1,                      // Number of questions to generate (default: 1)
+      topic_id,                        // UUID of topic (optional, will be used for saving)
+      topic_name,                      // Name of topic (required)
+      skills = {},                     // Skills object or array (will be parsed)
+      question_type = 'code',          // 'code' or 'theoretical'
+      programming_language = 'javascript', // Programming language for code questions
+      humanLanguage = 'en'             // Human language for questions (default: 'en')
     } = req.body
-
-    if (!courseName || !topicName) {
-      console.log('❌ Backend: Missing required fields')
+    
+    // Support backward compatibility with old field names
+    const topicName = topic_name || req.body.topicName
+    const questionType = question_type || req.body.questionType || req.body.question_type || 'code'
+    const language = programming_language || req.body.programming_language || req.body.language || 'javascript'
+    const questionCount = amount || req.body.amount || req.body.questionCount || 1
+    const courseName = req.body.courseName || req.body.course_name || null // Optional for now
+    
+    // Parse skills from request
+    const skillsData = parseSkills(skills || req.body.skills || {})
+    const nanoSkills = skillsData.nanoSkills || req.body.nanoSkills || req.body.nano_skills || []
+    const macroSkills = skillsData.macroSkills || req.body.macroSkills || req.body.macro_skills || []
+    
+    // Validate required fields
+    if (!topicName) {
+      console.log('❌ Backend: Missing required field: topic_name')
       return res.status(400).json({
-        error: 'Course name and topic name are required'
+        success: false,
+        error: 'Missing required field: topic_name'
       })
     }
-
+    
+    // Validate question_type
+    if (questionType !== 'code' && questionType !== 'theoretical') {
+      console.log('❌ Backend: Invalid question_type. Must be "code" or "theoretical"')
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid question_type. Must be "code" or "theoretical"'
+      })
+    }
+    
     console.log('✅ Backend: Starting question generation process...')
+    console.log(`   Amount: ${questionCount}`)
+    console.log(`   Topic ID: ${topic_id || 'null'}`)
+    console.log(`   Topic Name: ${topicName}`)
+    console.log(`   Question Type: ${questionType}`)
+    console.log(`   Programming Language: ${language}`)
+    console.log(`   Human Language: ${humanLanguage}`)
+    console.log(`   Nano Skills: ${JSON.stringify(nanoSkills)}`)
+    console.log(`   Macro Skills: ${JSON.stringify(macroSkills)}`)
     
-    const finalQuestionCount = questionCount > 0 ? questionCount : 1
+    const finalQuestionCount = questionCount > 0 ? parseInt(questionCount) : 1
 
-    // Generate questions (single or multiple)
-    console.log(`🤖 Backend: Generating ${finalQuestionCount} question(s) with Gemini...`)
+    // Generate questions based on question_type
     let questions = []
+    let questionsSource = 'unknown'
+    let serviceUsed = null
     
-    if (questionType === 'coding' && finalQuestionCount > 1) {
-      // Use bulk generation for multiple coding questions
-      console.log('💻 Backend: Generating multiple coding questions at once')
-      questions = await geminiService.generateMultipleCodingQuestions(
-        topicName,
-        difficulty,
-        language,
-        nanoSkills,
-        macroSkills,
-        finalQuestionCount
-      )
+    if (questionType === 'code') {
+      // Route to Gemini for code questions
+      console.log(`🤖 Backend: Generating ${finalQuestionCount} code question(s) with Gemini...`)
+      serviceUsed = 'gemini'
+      
+      if (finalQuestionCount > 1) {
+        // Use bulk generation for multiple coding questions
+        console.log('💻 Backend: Generating multiple coding questions at once')
+        questions = await geminiService.generateMultipleCodingQuestions(
+          topicName,
+          'intermediate', // Default difficulty
+          language,
+          nanoSkills,
+          macroSkills,
+          finalQuestionCount,
+          {
+            humanLanguage
+          }
+        )
+      } else {
+        // Generate single coding question
+        console.log('💻 Backend: Generating single coding question')
+        const question = await geminiService.generateCodingQuestion(
+          topicName,
+          'intermediate', // Default difficulty
+          language,
+          nanoSkills,
+          macroSkills,
+          {
+            humanLanguage
+          }
+        )
+        questions = question ? [question] : []
+      }
       
       // Check if questions are from Gemini or fallback
       const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
@@ -732,51 +826,61 @@ router.post('/generate-question-package', async (req, res) => {
         console.warn(`   ${geminiCount} question(s) are from Gemini AI`)
         console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
         console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
+        questionsSource = 'mixed'
       } else {
         console.log(`✅ Backend: All ${geminiCount} question(s) are from Gemini AI`)
+        questionsSource = 'gemini'
       }
-    } else {
-      // Generate questions one by one (for theoretical or single questions)
-      for (let i = 0; i < finalQuestionCount; i++) {
-        console.log(`📝 Backend: Generating question ${i + 1} of ${finalQuestionCount}`)
-        let question
-        if (questionType === 'coding') {
-          console.log('💻 Backend: Generating coding question')
-          question = await geminiService.generateCodingQuestion(
-            topicName,
-            difficulty,
-            language,
-            nanoSkills,
-            macroSkills
-          )
-        } else {
-          console.log('📚 Backend: Generating theoretical question')
-          question = await geminiService.generateTheoreticalQuestion(
-            topicName,
-            difficulty,
-            nanoSkills,
-            macroSkills
-          )
-        }
-        
-        questions.push(question)
-        const isFallback = question._isFallback === true || question.summary?.includes('fallback') || question._source === 'fallback'
-        if (isFallback) {
-          console.warn(`⚠️ Backend: Question ${i + 1} is FALLBACK (NOT from Gemini AI):`, question.title || question.description?.substring(0, 50) + '...')
-        } else {
-          console.log(`✅ Backend: Generated question ${i + 1} from Gemini AI:`, question.title || question.description?.substring(0, 50) + '...')
-        }
-      }
+    } else if (questionType === 'theoretical') {
+      // Route to Assessment Microservice for theoretical questions
+      console.log(`📚 Backend: Generating ${finalQuestionCount} theoretical question(s) with Assessment Microservice...`)
+      serviceUsed = 'assessment'
       
-      // Check if any questions are fallback
-      const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
-      const geminiCount = questions.length - fallbackCount
-      console.log(`✅ Backend: Generated ${questions.length} questions total`)
-      if (fallbackCount > 0) {
-        console.warn(`⚠️ Backend: ${fallbackCount} question(s) are FALLBACK (NOT from Gemini AI)`)
-        console.warn(`   ${geminiCount} question(s) are from Gemini AI`)
-      } else {
-        console.log(`✅ Backend: All ${geminiCount} question(s) are from Gemini AI`)
+      try {
+        const assessmentQuestions = await fetchAssessmentTheoreticalQuestions({
+          topic_id: topic_id || null,
+          topic_name: topicName,
+          amount: finalQuestionCount,
+          difficulty: 'intermediate', // Default difficulty
+          humanLanguage: humanLanguage,
+          nanoSkills: nanoSkills,
+          microSkills: macroSkills // Assessment service uses microSkills instead of macroSkills
+        })
+        
+        console.log(`✅ Backend: Received ${assessmentQuestions.length} question(s) from Assessment Microservice`)
+        
+        // Transform Assessment Microservice response to match our question format
+        questions = (assessmentQuestions || []).map((item, index) => {
+          return {
+            question_id: item.id || item.question_id || `theoretical_${topic_id || topicName}_${index + 1}`,
+            title: item.title || item.question_title || `${topicName} Theoretical Question ${index + 1}`,
+            description: item.question_content || item.question || item.description || '',
+            difficulty: item.difficulty || 'intermediate',
+            language: null, // Theoretical questions don't have a programming language
+            question_type: 'theoretical',
+            questionType: 'theoretical',
+            testCases: [], // Theoretical questions don't have test cases
+            hints: item.hints || [],
+            solution: item.expected_answer || item.expectedAnswer || null,
+            explanation: item.explanation || null,
+            topic_id: item.topic_id || topic_id || null,
+            topic_name: item.topic_name || topicName,
+            _source: 'assessment',
+            _isFallback: false
+          }
+        })
+        
+        questionsSource = 'assessment'
+        console.log(`✅ Backend: Transformed ${questions.length} question(s) from Assessment Microservice`)
+      } catch (error) {
+        console.error('❌ Backend: Error fetching theoretical questions from Assessment Microservice:', error.message)
+        console.error('   Error stack:', error.stack)
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate theoretical questions',
+          message: error.message,
+          service: 'assessment'
+        })
       }
     }
 
@@ -784,51 +888,65 @@ router.post('/generate-question-package', async (req, res) => {
     const processedQuestions = []
     
     for (const question of questions) {
-      // Don't generate hints upfront - generate on-demand for better performance
-      const hints = [] // Empty array - hints will be generated when requested
-
-      // Generate solution explanation
+      // For code questions, generate hints on-demand (empty array for now)
+      // For theoretical questions, use hints from Assessment Microservice
+      const hints = question.hints || []
+      
+      // Generate solution explanation for code questions
       let solution = null
-      try {
-        if (questionType === 'coding' && question.solution) {
-          solution = {
-            code: question.solution,
-            explanation: await geminiService.generateLearningRecommendations(
-              { courseName, topicName, difficulty },
-              { solution: question.solution }
-            )
+      if (questionType === 'code' && question.solution) {
+        try {
+          if (typeof question.solution === 'string') {
+            solution = {
+              code: question.solution,
+              explanation: question.explanation || null
+            }
+          } else {
+            solution = question.solution
           }
+        } catch (error) {
+          console.warn('Failed to process solution:', error.message)
+          solution = typeof question.solution === 'string' ? question.solution : JSON.stringify(question.solution)
         }
-      } catch (error) {
-        console.warn('Failed to generate solution explanation:', error.message)
+      } else if (questionType === 'theoretical') {
+        // For theoretical questions, solution is the expected answer
+        solution = question.solution || question.expected_answer || null
       }
 
       // Add metadata to question
-      question.courseName = courseName
+      question.courseName = courseName || null
       question.topicName = topicName
+      question.topic_id = topic_id || question.topic_id || null
       question.nanoSkills = nanoSkills
       question.macroSkills = macroSkills
-      question.difficulty = difficulty
-      question.language = language
+      question.difficulty = question.difficulty || 'intermediate'
+      question.language = questionType === 'code' ? language : null
+      question.programming_language = questionType === 'code' ? language : null
       question.questionType = questionType
+      question.question_type = questionType
       question.hints = hints
       question.solution = solution
+      question.humanLanguage = humanLanguage
 
       processedQuestions.push(question)
     }
     
-    // Check if questions are from Gemini or fallback
+    // Log source information
     const fallbackQuestions = processedQuestions.filter(q => q._isFallback === true || q._source === 'fallback')
-    const geminiQuestions = processedQuestions.filter(q => q._isFallback !== true && q._source !== 'fallback')
-    const questionsSource = fallbackQuestions.length > 0 ? 'mixed' : (geminiQuestions.length > 0 ? 'gemini' : 'unknown')
+    const geminiQuestions = processedQuestions.filter(q => q._source === 'gemini' || (!q._source && !q._isFallback))
+    const assessmentQuestions = processedQuestions.filter(q => q._source === 'assessment')
     
-    if (fallbackQuestions.length > 0) {
-      console.warn(`⚠️ WARNING: ${fallbackQuestions.length} question(s) are FALLBACK (NOT from Gemini AI)`)
-      console.warn(`   ${geminiQuestions.length} question(s) are from Gemini AI`)
-      console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
-      console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
-    } else {
-      console.log(`✅ All ${geminiQuestions.length} question(s) are from Gemini AI`)
+    if (questionType === 'code') {
+      if (fallbackQuestions.length > 0) {
+        console.warn(`⚠️ WARNING: ${fallbackQuestions.length} question(s) are FALLBACK (NOT from Gemini AI)`)
+        console.warn(`   ${geminiQuestions.length} question(s) are from Gemini AI`)
+        console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
+        console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
+      } else {
+        console.log(`✅ All ${geminiQuestions.length} question(s) are from Gemini AI`)
+      }
+    } else if (questionType === 'theoretical') {
+      console.log(`✅ All ${assessmentQuestions.length} question(s) are from Assessment Microservice`)
     }
 
     const responseData = {
@@ -836,18 +954,29 @@ router.post('/generate-question-package', async (req, res) => {
       questions: processedQuestions,
       question: processedQuestions[0], // Keep backward compatibility
       metadata: {
-        courseName,
-        topicName,
-        nanoSkills,
-        macroSkills,
-        difficulty,
-        language,
-        questionType,
+        amount: finalQuestionCount,
+        topic_id: topic_id || null,
+        topic_name: topicName,
+        topicName: topicName, // Keep backward compatibility
+        courseName: courseName || null,
+        skills: {
+          nanoSkills: nanoSkills,
+          macroSkills: macroSkills
+        },
+        nanoSkills: nanoSkills, // Keep backward compatibility
+        macroSkills: macroSkills, // Keep backward compatibility
+        question_type: questionType,
+        questionType: questionType, // Keep backward compatibility
+        programming_language: questionType === 'code' ? language : null,
+        language: questionType === 'code' ? language : null, // Keep backward compatibility
+        humanLanguage: humanLanguage,
         questionCount: processedQuestions.length,
         practiceQuestionsCount: finalQuestionCount,
         generatedAt: new Date().toISOString(),
-        questionsSource: questionsSource, // 'gemini', 'fallback', or 'mixed'
+        questionsSource: questionsSource, // 'gemini', 'assessment', 'fallback', or 'mixed'
+        serviceUsed: serviceUsed, // 'gemini' or 'assessment'
         geminiCount: geminiQuestions.length,
+        assessmentCount: assessmentQuestions.length,
         fallbackCount: fallbackQuestions.length,
         isFallback: fallbackQuestions.length > 0 // Indicates if any questions are fallback
       }
@@ -868,19 +997,25 @@ router.post('/generate-question-package', async (req, res) => {
       
       // Prepare metadata for saving questions
       const saveMetadata = {
-        courseName,
-        topicName,
+        courseName: courseName || null,
+        topicName: topicName,
+        topic_id: topic_id || null, // Use topic_id from request if provided
         course_id: null, // Will be resolved from DEFAULT_COURSE_ID or lookup
         courseId: null,
         nanoSkills: nanoSkills || [],
         macroSkills: macroSkills || [],
-        difficulty,
-        language,
-        questionType,
+        difficulty: 'intermediate', // Default difficulty
+        language: questionType === 'code' ? language : null,
+        programming_language: questionType === 'code' ? language : null,
+        questionType: questionType,
+        question_type: questionType,
+        humanLanguage: humanLanguage,
         questionCount: processedQuestions.length,
         generatedAt: new Date().toISOString(),
-        questionsSource: questionsSource, // 'gemini', 'fallback', or 'mixed'
+        questionsSource: questionsSource, // 'gemini', 'assessment', 'fallback', or 'mixed'
+        serviceUsed: serviceUsed, // 'gemini' or 'assessment'
         geminiCount: geminiQuestions.length,
+        assessmentCount: assessmentQuestions.length,
         fallbackCount: fallbackQuestions.length,
         isFallback: fallbackQuestions.length > 0,
         source: 'dev-lab-three.vercel.app',
