@@ -187,6 +187,10 @@ export class GeminiService {
   // Generate coding question
   // Generate multiple fallback coding questions when API is unavailable
   generateFallbackMultipleCodingQuestions(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = [], questionCount = 4) {
+    console.warn('⚠️ GENERATING FALLBACK QUESTIONS - These are NOT from Gemini AI');
+    console.warn(`   Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
+    console.warn('   Reason: Gemini API unavailable, rate-limited, or error occurred');
+    
     const fallbackQuestions = {
       'javascript': {
         'beginner': [
@@ -341,6 +345,10 @@ export class GeminiService {
 
   // Generate fallback coding question when API is unavailable
   generateFallbackCodingQuestion(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = []) {
+    console.warn('⚠️ GENERATING FALLBACK QUESTION - This is NOT from Gemini AI');
+    console.warn(`   Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
+    console.warn('   Reason: Gemini API unavailable, rate-limited, or error occurred');
+    
     const fallbackQuestions = {
       'javascript': {
         'beginner': {
@@ -399,7 +407,9 @@ export class GeminiService {
       topicName: topic,
       nanoSkills,
       macroSkills,
-      questionType: 'coding'
+      questionType: 'coding',
+      _source: 'fallback', // Mark as fallback question
+      _isFallback: true // Explicitly mark as fallback
     };
   }
 
@@ -492,33 +502,52 @@ Return ONLY the JSON object in the specified format, no additional text.
         const parsed = JSON.parse(this._cleanJsonResponse(text));
         const questionsArray = Array.isArray(parsed.questions) ? parsed.questions : parsed;
         const ladder = buildDifficultyLadder(questionsArray.length || questionCount);
-        return questionsArray.map((question, index) => ({
+        const processedQuestions = questionsArray.map((question, index) => ({
           ...question,
-          difficulty: question.difficulty || ladder[index] || 'basic'
+          difficulty: question.difficulty || ladder[index] || 'basic',
+          _source: 'gemini', // Mark as Gemini-generated
+          _isFallback: false // Explicitly mark as not fallback
         }));
+        console.log(`✅ Successfully generated ${processedQuestions.length} question(s) from Gemini AI`);
+        return processedQuestions;
       } catch (parseErr) {
-        console.warn("Gemini returned non-JSON; using fallback questions");
-        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn("⚠️ Gemini returned non-JSON; using fallback questions");
+        console.warn("   Parse error:", parseErr.message);
+        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn(`⚠️ Using ${fallbackQuestions.length} fallback question(s) instead of Gemini-generated questions`);
+        return fallbackQuestions;
       }
     } catch (err) {
       console.error("generateMultipleCodingQuestions error:", err?.message || err);
       
       // Handle rate limiting specifically - go straight to fallback, no retry
       if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
-        console.log('🔄 Gemini API rate limit exceeded, using fallback questions immediately...');
-        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn('⚠️ Gemini API rate limit exceeded, using fallback questions immediately...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
+        return fallbackQuestions;
       }
       
       // Handle specific Gemini API errors
       if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
-        console.log('🔄 Gemini API overloaded, using fallback questions...');
-        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn('⚠️ Gemini API overloaded, using fallback questions...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
+        return fallbackQuestions;
       } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
-        console.log('🔄 Gemini API quota exceeded, using fallback questions...');
-        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn('⚠️ Gemini API quota exceeded, using fallback questions...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
+        return fallbackQuestions;
       } else if (err?.message?.includes('timeout')) {
-        console.log('🔄 Gemini API timeout, using fallback questions...');
-        return this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn('⚠️ Gemini API timeout, using fallback questions...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
+        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
+        return fallbackQuestions;
       }
       
       throw new Error(`Failed to generate multiple coding questions: ${err?.message || err}`);
@@ -594,38 +623,66 @@ Return ONLY the JSON object in the specified format, no additional text.
       try {
         const parsed = JSON.parse(this._cleanJsonResponse(text));
         const [difficultyLabel] = buildDifficultyLadder(1);
-        return {
+        const question = {
           ...parsed,
-          difficulty: parsed.difficulty || difficultyLabel || 'basic'
+          difficulty: parsed.difficulty || difficultyLabel || 'basic',
+          _source: 'gemini', // Mark as Gemini-generated
+          _isFallback: false // Explicitly mark as not fallback
         };
+        console.log(`✅ Successfully generated question from Gemini AI: ${question.title || question.description?.substring(0, 50)}...`);
+        return question;
       } catch (parseErr) {
-        console.warn("Gemini returned non-JSON; returning structured fallback object");
-        const fallback = this.parseStructuredResponse(text);
-        const [difficultyLabel] = buildDifficultyLadder(1);
-        return {
-          ...fallback,
-          difficulty: fallback.difficulty || difficultyLabel || 'basic'
-        };
+        console.warn("⚠️ Gemini returned non-JSON; attempting to parse as structured response");
+        console.warn("   Parse error:", parseErr.message);
+        try {
+          const fallback = this.parseStructuredResponse(text);
+          const [difficultyLabel] = buildDifficultyLadder(1);
+          const question = {
+            ...fallback,
+            difficulty: fallback.difficulty || difficultyLabel || 'basic',
+            _source: 'gemini', // Mark as Gemini-generated (parsed from text)
+            _isFallback: false
+          };
+          console.log(`✅ Parsed question from Gemini AI response: ${question.title || question.description?.substring(0, 50)}...`);
+          return question;
+        } catch (parseError2) {
+          console.warn("⚠️ Failed to parse Gemini response, using fallback question");
+          const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+          return fallbackQuestion;
+        }
       }
     } catch (err) {
-      console.error("generateCodingQuestion error:", err?.message || err);
+      console.error("❌ generateCodingQuestion error:", err?.message || err);
+      console.error("   Error stack:", err.stack);
       
       // Handle rate limiting specifically - go straight to fallback, no retry
       if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
-        console.log('🔄 Gemini API rate limit exceeded, using fallback question immediately...');
-        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Gemini API rate limit exceeded, using fallback question immediately...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
+        return fallbackQuestion;
       }
       
       // Handle specific Gemini API errors
       if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
-        console.log('🔄 Gemini API overloaded, using fallback question...');
-        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Gemini API overloaded, using fallback question...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
+        return fallbackQuestion;
       } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
-        console.log('🔄 Gemini API quota exceeded, using fallback question...');
-        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Gemini API quota exceeded, using fallback question...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
+        return fallbackQuestion;
       } else if (err?.message?.includes('timeout')) {
-        console.log('🔄 Gemini API timeout, using fallback question...');
-        return this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Gemini API timeout, using fallback question...');
+        console.warn('   Error:', err.message);
+        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
+        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
+        return fallbackQuestion;
       }
       
       throw new Error(`Failed to generate coding question: ${err?.message || err}`);

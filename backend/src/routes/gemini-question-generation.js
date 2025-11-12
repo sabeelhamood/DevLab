@@ -473,9 +473,24 @@ router.post('/generate-question-package', async (req, res) => {
         }
         
         questions.push(question)
-        console.log(`✅ Backend: Generated question ${i + 1}:`, question.title || question.description?.substring(0, 50) + '...')
+        const isFallback = question._isFallback === true || question.summary?.includes('fallback') || question._source === 'fallback'
+        if (isFallback) {
+          console.warn(`⚠️ Backend: Question ${i + 1} is FALLBACK (NOT from Gemini AI):`, question.title || question.description?.substring(0, 50) + '...')
+        } else {
+          console.log(`✅ Backend: Generated question ${i + 1} from Gemini AI:`, question.title || question.description?.substring(0, 50) + '...')
+        }
       }
+      
+      // Check if any questions are fallback
+      const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
+      const geminiCount = questions.length - fallbackCount
       console.log(`✅ Backend: Generated ${questions.length} questions total`)
+      if (fallbackCount > 0) {
+        console.warn(`⚠️ Backend: ${fallbackCount} question(s) are FALLBACK (NOT from Gemini AI)`)
+        console.warn(`   ${geminiCount} question(s) are from Gemini AI`)
+      } else {
+        console.log(`✅ Backend: All ${geminiCount} question(s) are from Gemini AI`)
+      }
     }
 
     // Process each question to add metadata and structure
@@ -514,6 +529,20 @@ router.post('/generate-question-package', async (req, res) => {
 
       processedQuestions.push(question)
     }
+    
+    // Check if questions are from Gemini or fallback
+    const fallbackQuestions = processedQuestions.filter(q => q._isFallback === true || q._source === 'fallback')
+    const geminiQuestions = processedQuestions.filter(q => q._isFallback !== true && q._source !== 'fallback')
+    const questionsSource = fallbackQuestions.length > 0 ? 'mixed' : (geminiQuestions.length > 0 ? 'gemini' : 'unknown')
+    
+    if (fallbackQuestions.length > 0) {
+      console.warn(`⚠️ WARNING: ${fallbackQuestions.length} question(s) are FALLBACK (NOT from Gemini AI)`)
+      console.warn(`   ${geminiQuestions.length} question(s) are from Gemini AI`)
+      console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
+      console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
+    } else {
+      console.log(`✅ All ${geminiQuestions.length} question(s) are from Gemini AI`)
+    }
 
     const responseData = {
       success: true,
@@ -529,7 +558,11 @@ router.post('/generate-question-package', async (req, res) => {
         questionType,
         questionCount: processedQuestions.length,
         practiceQuestionsCount: finalQuestionCount,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
+        questionsSource: questionsSource, // 'gemini', 'fallback', or 'mixed'
+        geminiCount: geminiQuestions.length,
+        fallbackCount: fallbackQuestions.length,
+        isFallback: fallbackQuestions.length > 0 // Indicates if any questions are fallback
       }
     }
     
