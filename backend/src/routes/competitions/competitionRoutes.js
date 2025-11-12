@@ -28,6 +28,7 @@ const updateResultValidation = [
 router.post('/invite', authenticateToken, competitionController.createInvitation)
 router.post('/invitation/:invitationId/respond', authenticateToken, competitionController.respondToInvitation)
 router.post('/join', authenticateToken, joinCompetitionValidation, validateRequest, competitionController.joinCompetition)
+// Specific routes must come before parameterized routes like /:id
 router.get('/course/:courseId', async (req, res) => {
   try {
     const { courseId } = req.params
@@ -43,11 +44,33 @@ router.get('/course/:courseId', async (req, res) => {
 router.get('/learner/:learnerId', async (req, res) => {
   try {
     const { learnerId } = req.params
+    console.log('Fetching competitions for learner:', learnerId)
     const competitions = await CompetitionModel.findByLearner(learnerId)
+    console.log('Found competitions:', competitions?.length || 0)
 
-    res.json(competitions)
+    res.json(competitions || [])
   } catch (error) {
     console.error('Error fetching competitions by learner:', error)
+    res.status(500).json({ error: 'Internal server error', message: error.message })
+  }
+})
+
+router.get('/active/all', async (req, res) => {
+  try {
+    const competitions = await CompetitionModel.getActive()
+    res.json(competitions)
+  } catch (error) {
+    console.error('Error fetching active competitions:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/completed/all', async (req, res) => {
+  try {
+    const competitions = await CompetitionModel.getCompleted()
+    res.json(competitions)
+  } catch (error) {
+    console.error('Error fetching completed competitions:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -91,26 +114,6 @@ router.put('/:competitionId/result', authenticateToken, updateResultValidation, 
     res.json(updatedCompetition)
   } catch (error) {
     console.error('Error updating competition result:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-router.get('/active/all', async (req, res) => {
-  try {
-    const competitions = await CompetitionModel.getActive()
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching active competitions:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-router.get('/completed/all', async (req, res) => {
-  try {
-    const competitions = await CompetitionModel.getCompleted()
-    res.json(competitions)
-  } catch (error) {
-    console.error('Error fetching completed competitions:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

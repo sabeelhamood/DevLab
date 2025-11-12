@@ -57,22 +57,41 @@ const CompetitionPage = () => {
         competitionData = response.data || response
       } else {
         // Otherwise, fetch competitions for Sabeel and get the first active one
-        const competitions = await apiClient.get(`/competitions/learner/${SABEEL_USER_ID}`)
-        
-        if (Array.isArray(competitions) && competitions.length > 0) {
-          // Find active competition (no result means it's active)
-          const activeCompetition = competitions.find(
-            (comp) => !comp.result && comp.status !== 'completed'
-          ) || competitions[0]
+        try {
+          const competitions = await apiClient.get(`/competitions/learner/${SABEEL_USER_ID}`)
           
-          competitionData = activeCompetition
-        } else {
-          throw new Error('No competitions found')
+          // Handle both array and object responses
+          const competitionsArray = Array.isArray(competitions) 
+            ? competitions 
+            : (competitions.data || [])
+          
+          if (competitionsArray.length > 0) {
+            // Find active competition (no result means it's active)
+            const activeCompetition = competitionsArray.find(
+              (comp) => !comp.result && comp.status !== 'completed'
+            ) || competitionsArray[0]
+            
+            competitionData = activeCompetition
+          } else {
+            // No competitions found - this is okay, just show empty state
+            competitionData = null
+          }
+        } catch (fetchError) {
+          console.error('Error fetching competitions:', fetchError)
+          // If it's a 404, it means the route doesn't exist or user has no competitions
+          if (fetchError.response?.status === 404) {
+            competitionData = null
+          } else {
+            throw fetchError
+          }
         }
       }
 
+      // If no competition data, set to null (will show empty state)
       if (!competitionData) {
-        throw new Error('Competition not found')
+        setCompetition(null)
+        setLoading(false)
+        return
       }
 
       setCompetition(competitionData)
@@ -228,7 +247,7 @@ const CompetitionPage = () => {
             Active Competition
           </p>
           <h1 className="text-3xl font-semibold text-white">{courseName}</h1>
-          <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-400">
             Competition ID:{' '}
             <span className="font-mono text-white/80">{competitionId}</span>
           </p>
