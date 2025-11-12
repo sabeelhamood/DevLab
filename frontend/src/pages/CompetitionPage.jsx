@@ -59,7 +59,7 @@ const CompetitionPage = () => {
       setError(null)
       
       // Fetch completed courses for the learner
-      const courses = await apiClient.get(`/user-profiles/${SABEEL_USER_ID}/completed-courses`)
+      const courses = await apiClient.get(`/user-profiles/completed-courses/${SABEEL_USER_ID}`)
       const coursesArray = Array.isArray(courses) ? courses : (courses.data || [])
       
       setCompletedCourses(coursesArray)
