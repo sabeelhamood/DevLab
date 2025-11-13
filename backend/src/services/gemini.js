@@ -321,21 +321,27 @@ export class GeminiService {
     console.log('   3. Validate and filter out any theoretical questions')
     console.log('   4. Return only CODING questions with testCases')
     console.log('='.repeat(80) + '\n')
-    console.log('   Parameter 1 (topic):', topic, '(type:', typeof topic, ', valid:', !!topic, ')')
-    console.log('   Parameter 2 (skills):', JSON.stringify(skills), '(type:', typeof skills, ', isArray:', Array.isArray(skills), ', length:', Array.isArray(skills) ? skills.length : 'N/A', ')')
-    console.log('   Parameter 3 (amount):', amount, '(type:', typeof amount, ', valid:', amount > 0, ')')
-    console.log('   Parameter 4 (language):', language, '(type:', typeof language, ', valid:', !!language, ')')
-    console.log('   Parameter 5 (options):', JSON.stringify(options), '(type:', typeof options, ')')
-    console.log('='.repeat(80) + '\n')
     
     this._checkAvailability();
 
     const { humanLanguage = 'en', seedQuestion = null, topic_id = null } = options;
     
-    console.log('🔍 [GEMINI-SERVICE] Extracted options:')
-    console.log('   - humanLanguage:', humanLanguage)
-    console.log('   - seedQuestion:', seedQuestion ? 'provided' : 'null')
-    console.log('   - topic_id:', topic_id || 'null')
+    console.log('\n' + '='.repeat(80))
+    console.log('🔍 [GEMINI-SERVICE] Processing parameters...')
+    console.log('='.repeat(80))
+    console.log('   Final Parameters:')
+    console.log('   - topic:', topic, '(type:', typeof topic, ')')
+    console.log('   - skills:', JSON.stringify(skills), '(length:', Array.isArray(skills) ? skills.length : 'N/A', ')')
+    console.log('   - amount:', amount, '(type:', typeof amount, ')')
+    console.log('   - language:', language, '(type:', typeof language, ')')
+    console.log('   - topic_id:', topic_id, '(type:', typeof topic_id, ')')
+    console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
+    console.log('   - courseName:', options?.courseName, '(type:', typeof options?.courseName, ')')
+    console.log('')
+    console.log('   ✅ Question Type: CODING (NOT theoretical)')
+    console.log('   ✅ Will generate questions that require CODE (NOT multiple choice)')
+    console.log('   ✅ Will include testCases and hints (NOT options/correctAnswer)')
+    console.log('='.repeat(80) + '\n')
 
     const prompt = `
 You are an expert programming instructor. Generate CODING questions ONLY.
