@@ -772,6 +772,7 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('\n' + '='.repeat(80))
   console.log('🚀 BACKEND: Received generate-question-package request')
   console.log('='.repeat(80))
+  console.log('🔍 [DEBUG] Route handler is executing!')
   console.log('📋 Request body:', JSON.stringify(req.body, null, 2))
   console.log('🌐 Request origin:', req.header('Origin'))
   console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))
@@ -782,6 +783,7 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('='.repeat(80) + '\n')
   
   try {
+    console.log('🔍 [DEBUG] Entering try block')
     // Extract new field names from request
     const {
       amount = 1,                      // Number of questions to generate (default: 1)
@@ -838,6 +840,16 @@ router.post('/generate-question-package', async (req, res) => {
     if (!macroSkills.length && legacyMacro.length === 0 && (!skillsData.macroSkills || !skillsData.macroSkills.length)) {
       macroSkills = []
     }
+    
+    console.log('🔍 [DEBUG] After parameter extraction:')
+    console.log('   - topicName:', topicName)
+    console.log('   - questionType:', questionType)
+    console.log('   - language:', language)
+    console.log('   - questionCount:', questionCount)
+    console.log('   - courseName:', courseName)
+    console.log('   - normalizedSkills:', JSON.stringify(normalizedSkills))
+    console.log('   - nanoSkills:', JSON.stringify(nanoSkills))
+    console.log('   - macroSkills:', JSON.stringify(macroSkills))
     
     // Validate required fields
     if (!topicName) {
@@ -903,7 +915,17 @@ router.post('/generate-question-package', async (req, res) => {
         }
       })
       
+      console.log('🔍 [DEBUG] About to call geminiService.generateCodingQuestion')
+      console.log('🔍 [DEBUG] Call parameters:')
+      console.log('   - topic:', topicName)
+      console.log('   - skills:', JSON.stringify(combinedSkills))
+      console.log('   - amount:', finalQuestionCount)
+      console.log('   - language:', language)
+      console.log('   - humanLanguage:', humanLanguage)
+      console.log('   - topic_id:', topic_id || null)
+      
       try {
+        console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
         const generated = await geminiService.generateCodingQuestion(
           topicName,
           combinedSkills,
@@ -914,7 +936,12 @@ router.post('/generate-question-package', async (req, res) => {
             topic_id: topic_id || null
           }
         )
+        console.log('🔍 [DEBUG] geminiService.generateCodingQuestion returned successfully')
+        console.log('🔍 [DEBUG] Generated result type:', typeof generated)
+        console.log('🔍 [DEBUG] Generated is array:', Array.isArray(generated))
+        console.log('🔍 [DEBUG] Generated length:', Array.isArray(generated) ? generated.length : 'N/A')
         questions = Array.isArray(generated) ? generated : generated ? [generated] : []
+        console.log('🔍 [DEBUG] Questions array after processing:', questions.length, 'questions')
       } catch (geminiError) {
         console.error('❌ Backend: Error calling geminiService.generateCodingQuestion:', geminiError)
         console.error('   Error message:', geminiError.message)
@@ -1340,14 +1367,28 @@ router.post('/generate-question-package', async (req, res) => {
     res.json(responseData)
 
   } catch (error) {
-    console.error('❌ Backend: Error generating question package:', error)
+    console.error('\n' + '='.repeat(80))
+    console.error('❌ Backend: Error generating question package')
+    console.error('='.repeat(80))
+    console.error('🔍 [DEBUG] Error caught in outer catch block')
     console.error('   Error name:', error.name)
     console.error('   Error message:', error.message)
-    console.error('   Error stack:', error.stack)
+    console.error('   Error code:', error.code || 'N/A')
+    console.error('   Error type:', typeof error)
+    console.error('   Error constructor:', error.constructor?.name || 'N/A')
+    if (error.stack) {
+      console.error('   Error stack:', error.stack)
+    }
+    if (error.cause) {
+      console.error('   Error cause:', error.cause)
+    }
+    console.error('='.repeat(80) + '\n')
+    
     res.status(500).json({
       success: false,
       error: 'Failed to generate question package',
       message: error.message || 'Unknown error occurred',
+      errorName: error.name || 'Error',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
