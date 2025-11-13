@@ -142,7 +142,25 @@ const corsOptions = {
   preflightContinue: false
 };
 
-app.use(cors(corsOptions));
+// CORS with error handling
+app.use((req, res, next) => {
+  console.log('🔍 [CORS-MIDDLEWARE] Before CORS check:', req.method, req.originalUrl)
+  cors(corsOptions)(req, res, (err) => {
+    if (err) {
+      console.error('❌ [CORS-MIDDLEWARE] CORS error:', err.message)
+      console.error('   Request origin:', req.header('Origin'))
+      console.error('   Request URL:', req.originalUrl)
+      return res.status(403).json({
+        success: false,
+        error: 'CORS not allowed',
+        message: err.message,
+        origin: req.header('Origin')
+      })
+    }
+    console.log('✅ [CORS-MIDDLEWARE] CORS check passed')
+    next()
+  })
+})
 
 // Additional CORS middleware for debugging
 app.use((req, res, next) => {
@@ -411,15 +429,25 @@ app.use(helmet({
   },
 }))
 
-// Rate limiting
+// Rate limiting with logging
 const limiter = rateLimit({
   windowMs: config.rateLimitWindowMs,
   max: config.rateLimitMaxRequests,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    console.error('❌ [RATE-LIMIT] Rate limit exceeded for:', req.ip, req.originalUrl)
+    res.status(429).json({
+      success: false,
+      error: 'Too many requests from this IP, please try again later.'
+    })
+  }
 })
-app.use(limiter)
+app.use((req, res, next) => {
+  console.log('🔍 [RATE-LIMIT] Checking rate limit for:', req.method, req.originalUrl, req.ip)
+  limiter(req, res, next)
+})
 
 // Top-level request logger - logs ALL requests BEFORE any other processing
 app.use((req, res, next) => {
