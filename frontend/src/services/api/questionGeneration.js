@@ -121,7 +121,28 @@ class QuestionGenerationAPI {
 
       if (!response.ok) {
         console.error('❌ API: Response not OK:', response.status, response.statusText)
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        // Try to read the error message from response body
+        let errorMessage = `${response.status}: ${response.statusText}`
+        try {
+          const errorData = await response.clone().json()
+          console.error('❌ API: Error response body:', errorData)
+          if (errorData.error) {
+            errorMessage = `HTTP ${response.status}: ${errorData.error}`
+          }
+          if (errorData.missingFields && Array.isArray(errorData.missingFields)) {
+            errorMessage += ` (Missing fields: ${errorData.missingFields.join(', ')})`
+          }
+        } catch (parseError) {
+          console.error('❌ API: Failed to parse error response:', parseError)
+          try {
+            const errorText = await response.clone().text()
+            console.error('❌ API: Error response text:', errorText)
+            errorMessage = `HTTP ${response.status}: ${errorText.substring(0, 200)}`
+          } catch (textError) {
+            console.error('❌ API: Failed to read error response as text:', textError)
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()

@@ -935,11 +935,22 @@ router.post('/generate-question-package', async (req, res) => {
     // Note: topic_id is optional
     
     if (missingFields.length > 0) {
-      console.log('❌ Backend: Missing required field(s):', missingFields)
+      console.log('\n' + '='.repeat(80))
+      console.log('❌ [400 ERROR] Missing required field(s):', missingFields)
+      console.log('='.repeat(80))
+      console.log('   Request body keys:', Object.keys(req.body || {}))
+      console.log('   Request body:', JSON.stringify(req.body, null, 2))
+      console.log('   Normalized topicName:', topicName)
+      console.log('   topic_name from body:', topic_name)
+      console.log('   bodyTopicName:', bodyTopicName)
+      console.log('   req.body?.topicName:', req.body?.topicName)
+      console.log('='.repeat(80) + '\n')
       return res.status(400).json({
         success: false,
         error: 'Missing one or more required parameters in request body',
-        missingFields
+        missingFields,
+        receivedFields: Object.keys(req.body || {}),
+        receivedBody: req.body
       })
     }
     
@@ -950,10 +961,21 @@ router.post('/generate-question-package', async (req, res) => {
     
     // Validate question_type - only code questions are supported
     if (questionType !== 'code') {
-      console.log('❌ Backend: Invalid question_type. Only "code" questions are supported')
+      console.log('\n' + '='.repeat(80))
+      console.log('❌ [400 ERROR] Invalid question_type. Only "code" questions are supported')
+      console.log('='.repeat(80))
+      console.log('   Received questionType:', questionType)
+      console.log('   Received question_type:', question_type)
+      console.log('   Received questionType (from body):', req.body?.questionType)
+      console.log('   Normalized questionType:', questionType)
+      console.log('   Expected: "code"')
+      console.log('='.repeat(80) + '\n')
       return res.status(400).json({
         success: false,
-        error: 'Invalid question_type. Only "code" questions are supported'
+        error: 'Invalid question_type. Only "code" questions are supported',
+        receivedQuestionType: questionType,
+        receivedQuestion_type: question_type,
+        receivedQuestionTypeFromBody: req.body?.questionType
       })
     }
     
@@ -1325,6 +1347,11 @@ router.post('/generate-question-package', async (req, res) => {
     console.error('   Error code:', error.code || 'N/A')
     console.error('   Error type:', typeof error)
     console.error('   Error constructor:', error.constructor?.name || 'N/A')
+    console.error('   Request method:', req.method)
+    console.error('   Request URL:', req.originalUrl)
+    console.error('   Request body exists:', !!req.body)
+    console.error('   Request body keys:', req.body ? Object.keys(req.body) : 'N/A')
+    console.error('   Request body:', JSON.stringify(req.body, null, 2))
     if (error.stack) {
       console.error('   Error stack:', error.stack)
     }
@@ -1333,11 +1360,22 @@ router.post('/generate-question-package', async (req, res) => {
     }
     console.error('='.repeat(80) + '\n')
     
-    res.status(500).json({
+    // If error message suggests validation issue, return 400 instead of 500
+    const isValidationError = error.message && (
+      error.message.includes('required') ||
+      error.message.includes('missing') ||
+      error.message.includes('invalid') ||
+      error.message.includes('Missing')
+    )
+    
+    const statusCode = isValidationError ? 400 : 500
+    
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to generate question package',
       message: error.message || 'Unknown error occurred',
       errorName: error.name || 'Error',
+      requestBody: req.body,
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
