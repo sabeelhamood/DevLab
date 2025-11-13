@@ -283,7 +283,12 @@ router.post('/generate-question', async (req, res) => {
     delete question.macroSkills
     delete question.nano_skills
     delete question.macro_skills
-    delete question.courseName // Remove courseName - no longer used
+    // Keep courseName - don't delete (workaround for Railway validation)
+    // delete question.courseName // Keep courseName for Railway compatibility
+    // Ensure courseName exists (workaround)
+    if (!question.courseName) {
+      question.courseName = ' '
+    }
     // Ensure skills field exists
     if (!question.skills) {
       question.skills = []
