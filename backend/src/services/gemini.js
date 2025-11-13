@@ -362,7 +362,41 @@ REMEMBER: Generate CODING questions where users write code, NOT theoretical/mult
       try {
         const parsedArray = JSON.parse(this._cleanJsonResponse(text));
         const questionsArray = Array.isArray(parsedArray) ? parsedArray : [parsedArray];
-        const questions = questionsArray.map((q, index) => ({
+        
+        // Validate that questions are coding questions, not theoretical
+        const validatedQuestions = questionsArray.filter((q, index) => {
+          const hasOptions = q.options !== undefined;
+          const hasCorrectAnswer = q.correctAnswer !== undefined;
+          const hasTestCases = q.testCases && Array.isArray(q.testCases) && q.testCases.length > 0;
+          
+          if (hasOptions || hasCorrectAnswer) {
+            console.warn(`⚠️ [GEMINI-SERVICE] Question ${index + 1} is theoretical (has options/correctAnswer) - REJECTING`);
+            console.warn(`   Title: ${q.title}`);
+            console.warn(`   Has options: ${hasOptions}`);
+            console.warn(`   Has correctAnswer: ${hasCorrectAnswer}`);
+            console.warn(`   Has testCases: ${hasTestCases}`);
+            return false; // Reject theoretical questions
+          }
+          
+          if (!hasTestCases) {
+            console.warn(`⚠️ [GEMINI-SERVICE] Question ${index + 1} missing testCases - rejecting as invalid coding question`);
+            console.warn(`   Title: ${q.title}`);
+            return false; // Reject questions without testCases
+          }
+          
+          return true;
+        });
+        
+        if (validatedQuestions.length === 0) {
+          console.error('❌ [GEMINI-SERVICE] All questions were rejected - Gemini returned theoretical questions instead of coding questions');
+          throw new Error('Gemini returned theoretical questions instead of coding questions. All questions were rejected.');
+        }
+        
+        if (validatedQuestions.length < questionsArray.length) {
+          console.warn(`⚠️ [GEMINI-SERVICE] Rejected ${questionsArray.length - validatedQuestions.length} theoretical question(s), keeping ${validatedQuestions.length} coding question(s)`);
+        }
+        
+        const questions = validatedQuestions.map((q, index) => ({
           ...q,
           _source: 'gemini',
           _isFallback: false,
@@ -371,7 +405,7 @@ REMEMBER: Generate CODING questions where users write code, NOT theoretical/mult
           topic_id: topic_id || q.topic_id || null,
           question_type: "code"
         }));
-        console.log(`✅ Successfully generated ${questions.length} questions from Gemini AI.`);
+        console.log(`✅ Successfully generated ${questions.length} CODING questions from Gemini AI.`);
         return questions;
       } catch (parseErr) {
         console.warn("⚠️ Gemini returned non-JSON; attempting to parse as structured response");
