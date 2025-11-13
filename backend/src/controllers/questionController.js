@@ -1,5 +1,6 @@
 import { QuestionModel } from '../models/Question.js'
 import { geminiService } from '../services/gemini.js'
+import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClient.js'
 
 export const questionController = {
 
@@ -19,13 +20,17 @@ export const questionController = {
           const macroSkills = [] // Can be populated from course/topic data
 
           if (type === 'code') {
-            const question = await geminiService.generateCodingQuestion(
+            const generated = await geminiService.generateCodingQuestion(
               topicName,
-              difficulty,
+              [...nanoSkills, ...macroSkills],
+              1,
               language,
-              nanoSkills,
-              macroSkills
+              {
+                humanLanguage: 'en',
+                topic_id: topicId
+              }
             )
+            const question = Array.isArray(generated) ? generated[0] || {} : generated || {}
             questions = [{
               id: `gemini-${Date.now()}`,
               title: question.title || 'AI Generated Coding Question',
@@ -44,12 +49,16 @@ export const questionController = {
               updatedAt: new Date().toISOString(),
             }]
           } else {
-            const question = await geminiService.generateTheoreticalQuestion(
-              topicName,
+            const theoreticalQuestions = await fetchAssessmentTheoreticalQuestions({
+              topic_id: topicId,
+              topic_name: topicName,
+              amount: 1,
               difficulty,
+              humanLanguage: 'en',
               nanoSkills,
-              macroSkills
-            )
+              microSkills: macroSkills
+            })
+            const question = theoreticalQuestions?.[0] || {}
             questions = [{
               id: `gemini-${Date.now()}`,
               title: question.title || 'AI Generated Theoretical Question',
@@ -169,24 +178,34 @@ export const questionController = {
         
         if (question.type === 'code') {
           // Generate coding solution
-          const solutionData = await geminiService.generateCodingQuestion(
+          const solutionCandidates = await geminiService.generateCodingQuestion(
             question.description || question.question_content,
-            question.difficulty || 'beginner',
-            question.language || 'javascript',
             [],
-            []
+            1,
+            question.language || 'javascript',
+            {
+              humanLanguage: 'en',
+              topic_id: question.topicId || question.topic_id || null
+            }
           )
+          const solutionData = Array.isArray(solutionCandidates)
+            ? solutionCandidates[0] || {}
+            : solutionCandidates || {}
           solution = solutionData.solution
           explanation = solutionData.explanation
         } else {
           // Generate theoretical solution
-          const solutionData = await geminiService.generateTheoreticalQuestion(
-            question.description || question.question_content,
-            question.difficulty || 'beginner',
-            [],
-            []
-          )
-          solution = solutionData.correctAnswer
+          const theoreticalQuestions = await fetchAssessmentTheoreticalQuestions({
+            topic_id: question.topicId || question.topic_id || null,
+            topic_name: question.topicName || question.topic_name || question.description || question.question_content,
+            amount: 1,
+            difficulty: question.difficulty || 'beginner',
+            humanLanguage: 'en',
+            nanoSkills: [],
+            microSkills: []
+          })
+          const solutionData = theoreticalQuestions?.[0] || {}
+          solution = solutionData.correctAnswer || solutionData.correct_answer || null
           explanation = solutionData.explanation
         }
 

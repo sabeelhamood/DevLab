@@ -13,35 +13,22 @@ async function testGeminiIntegration() {
   try {
     // Test 1: Generate Coding Question
     console.log('1️⃣ Testing Coding Question Generation...')
-    const codingQuestion = await geminiService.generateCodingQuestion(
+    const codingQuestions = await geminiService.generateCodingQuestion(
       'JavaScript Arrays',
-      'beginner',
-      'javascript',
       ['Array methods', 'Iteration'],
-      ['JavaScript Basics', 'Data Manipulation']
+      1,
+      'javascript',
+      { humanLanguage: 'en' }
     )
+    const codingQuestion = codingQuestions?.[0] || {}
     console.log('✅ Coding Question Generated:', codingQuestion.title || 'Untitled')
     console.log('   Description:', codingQuestion.description?.substring(0, 100) + '...')
     console.log('   Test Cases:', codingQuestion.testCases?.length || 0)
     console.log('   Hints:', codingQuestion.hints?.length || 0)
     console.log()
 
-    // Test 2: Generate Theoretical Question
-    console.log('2️⃣ Testing Theoretical Question Generation...')
-    const theoreticalQuestion = await geminiService.generateTheoreticalQuestion(
-      'JavaScript Closures',
-      'intermediate',
-      ['Scope understanding', 'Function behavior'],
-      ['Advanced JavaScript', 'Function Concepts']
-    )
-    console.log('✅ Theoretical Question Generated:', theoreticalQuestion.title || 'Untitled')
-    console.log('   Description:', theoreticalQuestion.description?.substring(0, 100) + '...')
-    console.log('   Options:', Object.keys(theoreticalQuestion.options || {}).length)
-    console.log('   Correct Answer:', theoreticalQuestion.correctAnswer)
-    console.log()
-
-    // Test 3: Generate Hint
-    console.log('3️⃣ Testing Hint Generation...')
+    // Test 2: Generate Hint
+    console.log('2️⃣ Testing Hint Generation...')
     const hint = await geminiService.generateHints(
       'Write a function that finds the largest number in an array',
       'I tried using a for loop but got stuck',
@@ -53,8 +40,8 @@ async function testGeminiIntegration() {
     console.log('   Encouragement:', hint.encouragement)
     console.log()
 
-    // Test 4: Evaluate Code
-    console.log('4️⃣ Testing Code Evaluation...')
+    // Test 3: Evaluate Code
+    console.log('3️⃣ Testing Code Evaluation...')
     const evaluation = await geminiService.evaluateCodeSubmission(
       'function findLargest(arr) { return Math.max(...arr); }',
       'Write a function that finds the largest number in an array',
@@ -67,8 +54,8 @@ async function testGeminiIntegration() {
     console.log('   Feedback:', evaluation.feedback?.substring(0, 100) + '...')
     console.log()
 
-    // Test 5: Detect Cheating
-    console.log('5️⃣ Testing Cheating Detection...')
+    // Test 4: Detect Cheating
+    console.log('4️⃣ Testing Cheating Detection...')
     const cheatingDetection = await geminiService.detectCheating(
       'function findLargest(arr) { return Math.max(...arr); }',
       'Write a function that finds the largest number in an array'
@@ -79,8 +66,8 @@ async function testGeminiIntegration() {
     console.log('   Reasons:', cheatingDetection.reasons?.length || 0)
     console.log()
 
-    // Test 6: Generate Learning Recommendations
-    console.log('6️⃣ Testing Learning Recommendations...')
+    // Test 5: Generate Learning Recommendations
+    console.log('5️⃣ Testing Learning Recommendations...')
     const recommendations = await geminiService.generateLearningRecommendations(
       {
         userId: 'test-user',

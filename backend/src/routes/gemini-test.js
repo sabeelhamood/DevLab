@@ -9,11 +9,14 @@ router.get('/test-simple', async (req, res) => {
     const { geminiService } = await import('../services/gemini.js')
     
     // Test basic question generation
-    const question = await geminiService.generateCodingQuestion(
-      'JavaScript Arrays', 
-      'beginner', 
-      'javascript'
+    const questions = await geminiService.generateCodingQuestion(
+      'JavaScript Arrays',
+      [],
+      1,
+      'javascript',
+      { humanLanguage: 'en' }
     )
+    const question = Array.isArray(questions) ? questions[0] || {} : questions || {}
     
     res.json({
       success: true,

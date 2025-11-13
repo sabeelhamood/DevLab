@@ -44,6 +44,7 @@ try {
 }
 
 export class GeminiService {
+  
   constructor() {
     this.isMockMode = false; // Always use real Gemini API
     // Always create model handle
@@ -184,592 +185,216 @@ export class GeminiService {
     }
   }
 
-  // Generate coding question
-  // Generate multiple fallback coding questions when API is unavailable
-  generateFallbackMultipleCodingQuestions(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = [], questionCount = 4) {
-    console.warn('⚠️ GENERATING FALLBACK QUESTIONS - These are NOT from Gemini AI');
-    console.warn(`   Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
-    console.warn('   Reason: Gemini API unavailable, rate-limited, or error occurred');
-    
-    const fallbackQuestions = {
-      'javascript': {
-        'beginner': [
-          {
-            title: 'Basic Function Declaration',
-            description: `Create a JavaScript function called 'greet' that takes a name parameter and returns a greeting message. The function should return "Hello, [name]!" where [name] is the provided parameter.`,
-            testCases: [
-              { input: { name: 'Alice' }, expected_output: 'Hello, Alice!' },
-              { input: { name: 'Bob' }, expected_output: 'Hello, Bob!' }
-            ],
-            solution: {
-              code: `function greet(name) {
-  return \`Hello, \${name}!\`;
-}`,
-              explanation: 'This function uses template literals to create a greeting message with the provided name.'
-            }
-          },
-          {
-            title: 'Simple Calculator',
-            description: `Create a JavaScript function called 'add' that takes two numbers as parameters and returns their sum.`,
-            testCases: [
-              { input: { a: 2, b: 3 }, expected_output: 5 },
-              { input: { a: -1, b: 1 }, expected_output: 0 }
-            ],
-            solution: {
-              code: `function add(a, b) {
-  return a + b;
-}`,
-              explanation: 'This function performs basic addition of two numbers.'
-            }
-          },
-          {
-            title: 'String Length Checker',
-            description: `Create a JavaScript function called 'isLongString' that takes a string parameter and returns true if the string is longer than 10 characters, false otherwise.`,
-            testCases: [
-              { input: { str: 'Hello World' }, expected_output: false },
-              { input: { str: 'This is a very long string' }, expected_output: true }
-            ],
-            solution: {
-              code: `function isLongString(str) {
-  return str.length > 10;
-}`,
-              explanation: 'This function checks if the string length is greater than 10 characters.'
-            }
-          },
-          {
-            title: 'Number Doubler',
-            description: `Create a JavaScript function called 'double' that takes a number parameter and returns the number multiplied by 2.`,
-            testCases: [
-              { input: { num: 5 }, expected_output: 10 },
-              { input: { num: -3 }, expected_output: -6 }
-            ],
-            solution: {
-              code: `function double(num) {
-  return num * 2;
-}`,
-              explanation: 'This function multiplies the input number by 2.'
-            }
-          }
-        ],
-        'intermediate': [
-          {
-            title: 'Array Processing Function',
-            description: `Create a JavaScript function called 'calculateSum' that takes an array of numbers and returns the sum of all positive numbers in the array. If the array is empty or contains no positive numbers, return 0.`,
-            testCases: [
-              { input: { numbers: [1, -2, 3, -4, 5] }, expected_output: 9 },
-              { input: { numbers: [-1, -2, -3] }, expected_output: 0 },
-              { input: { numbers: [] }, expected_output: 0 }
-            ],
-            solution: {
-              code: `function calculateSum(numbers) {
-  return numbers
-    .filter(num => num > 0)
-    .reduce((sum, num) => sum + num, 0);
-}`,
-              explanation: 'This function filters positive numbers and uses reduce to calculate their sum.'
-            }
-          },
-          {
-            title: 'String Reverser',
-            description: `Create a JavaScript function called 'reverseString' that takes a string parameter and returns the string reversed.`,
-            testCases: [
-              { input: { str: 'hello' }, expected_output: 'olleh' },
-              { input: { str: 'world' }, expected_output: 'dlrow' }
-            ],
-            solution: {
-              code: `function reverseString(str) {
-  return str.split('').reverse().join('');
-}`,
-              explanation: 'This function splits the string into an array, reverses it, and joins it back.'
-            }
-          },
-          {
-            title: 'Find Maximum Number',
-            description: `Create a JavaScript function called 'findMax' that takes an array of numbers and returns the maximum number in the array.`,
-            testCases: [
-              { input: { numbers: [1, 5, 3, 9, 2] }, expected_output: 9 },
-              { input: { numbers: [-1, -5, -3] }, expected_output: -1 }
-            ],
-            solution: {
-              code: `function findMax(numbers) {
-  return Math.max(...numbers);
-}`,
-              explanation: 'This function uses the spread operator with Math.max to find the maximum number.'
-            }
-          },
-          {
-            title: 'Count Vowels',
-            description: `Create a JavaScript function called 'countVowels' that takes a string parameter and returns the number of vowels (a, e, i, o, u) in the string.`,
-            testCases: [
-              { input: { str: 'hello' }, expected_output: 2 },
-              { input: { str: 'programming' }, expected_output: 3 }
-            ],
-            solution: {
-              code: `function countVowels(str) {
-  return str.toLowerCase().split('').filter(char => 'aeiou'.includes(char)).length;
-}`,
-              explanation: 'This function converts to lowercase, filters for vowels, and counts them.'
-            }
-          }
-        ]
-      }
-    };
+  // Unified fallback question generator (used when Gemini API unavailable)
+  generateFallbackCodingQuestions(ctx = {}) {
+    console.warn('⚠️ GENERATING FALLBACK QUESTIONS - Gemini API unavailable');
+    const {
+      topic_name = 'General Programming',
+      topic_id = 'mock-topic-id',
+      skills = ['logic', 'basics'],
+      programming_language = 'javascript',
+      humanLanguage = 'English',
+      amount = 4
+    } = ctx;
 
-    const languageQuestions = fallbackQuestions[language] || fallbackQuestions.javascript;
-    const difficultyQuestions = languageQuestions[difficulty] || languageQuestions.intermediate;
-    
-    // Return the requested number of questions
-    const selectedQuestions = difficultyQuestions.slice(0, questionCount);
-    const ladder = buildDifficultyLadder(selectedQuestions.length || questionCount);
-    
-    return selectedQuestions.map((question, index) => {
-      const assignedDifficulty = ladder[index] || difficulty;
-      return {
-        ...question,
-        difficulty: assignedDifficulty,
-        language,
-        hints: [
-          'Think about the function structure and parameters',
-          'Consider what the function should return',
-          'Test your function with the provided examples'
-        ],
-        summary: `Fallback question ${index + 1} for ${topic}. Difficulty tier: ${assignedDifficulty}.`,
-        courseName: 'JavaScript Programming',
-        topicName: topic,
-        nanoSkills,
-        macroSkills,
-        questionType: 'coding',
-        _source: 'fallback', // Mark as fallback question
-        _isFallback: true // Explicitly mark as fallback
-      };
-    });
-  }
-
-  // Generate fallback coding question when API is unavailable
-  generateFallbackCodingQuestion(topic, difficulty, language = "javascript", nanoSkills = [], macroSkills = []) {
-    console.warn('⚠️ GENERATING FALLBACK QUESTION - This is NOT from Gemini AI');
-    console.warn(`   Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
-    console.warn('   Reason: Gemini API unavailable, rate-limited, or error occurred');
-    
-    const fallbackQuestions = {
-      'javascript': {
-        'beginner': {
-          title: 'Basic Function Declaration',
-          description: `Create a JavaScript function called 'greet' that takes a name parameter and returns a greeting message. The function should return "Hello, [name]!" where [name] is the provided parameter.`,
+    const fallbackTemplates = {
+      javascript: [
+        {
+          title: 'Basic Function Creation',
+          description: `Write a JavaScript function called 'sum' that takes two numbers and returns their sum.`,
           testCases: [
-            { input: { name: 'Alice' }, expected_output: 'Hello, Alice!' },
-            { input: { name: 'Bob' }, expected_output: 'Hello, Bob!' }
+            { input: '2,3', expectedOutput: '5' },
+            { input: '-1,5', expectedOutput: '4' }
           ],
-          solution: {
-            code: `function greet(name) {
-  return \`Hello, \${name}!\`;
-}`,
-            explanation: 'This function uses template literals to create a greeting message with the provided name.'
-          }
+          hints: ['Use the + operator', 'Return the result directly']
         },
-        'intermediate': {
-          title: 'Array Processing Function',
-          description: `Create a JavaScript function called 'calculateSum' that takes an array of numbers and returns the sum of all positive numbers in the array. If the array is empty or contains no positive numbers, return 0.`,
+        {
+          title: 'String Reversal',
+          description: `Write a JavaScript function that takes a string and returns it reversed.`,
           testCases: [
-            { input: { numbers: [1, -2, 3, -4, 5] }, expected_output: 9 },
-            { input: { numbers: [-1, -2, -3] }, expected_output: 0 },
-            { input: { numbers: [] }, expected_output: 0 }
+            { input: 'hello', expectedOutput: 'olleh' },
+            { input: 'abc', expectedOutput: 'cba' }
           ],
-          solution: {
-            code: `function calculateSum(numbers) {
-  return numbers
-    .filter(num => num > 0)
-    .reduce((sum, num) => sum + num, 0);
-}`,
-            explanation: 'This function filters positive numbers and uses reduce to calculate their sum.'
-          }
+          hints: ['Use split, reverse, and join']
+        },
+        {
+          title: 'Find Maximum',
+          description: `Write a function that receives an array of numbers and returns the maximum value.`,
+          testCases: [
+            { input: '[1,5,3,9]', expectedOutput: '9' },
+            { input: '[-2,-5,-1]', expectedOutput: '-1' }
+          ],
+          hints: ['Use Math.max and the spread operator']
+        },
+        {
+          title: 'Count Vowels',
+          description: `Write a function that counts how many vowels (a, e, i, o, u) appear in a string.`,
+          testCases: [
+            { input: 'hello', expectedOutput: '2' },
+            { input: 'programming', expectedOutput: '3' }
+          ],
+          hints: ['Convert to lowercase', 'Filter for vowels']
         }
-      }
+      ],
+      python: [
+        {
+          title: 'Sum of Two Numbers',
+          description: `Write a Python function that returns the sum of two numbers.`,
+          testCases: [
+            { input: '2,3', expectedOutput: '5' },
+            { input: '-2,5', expectedOutput: '3' }
+          ],
+          hints: ['Use the + operator', 'Return the result']
+        },
+        {
+          title: 'Reverse String',
+          description: `Write a Python function that takes a string and returns it reversed.`,
+          testCases: [
+            { input: "'hello'", expectedOutput: "'olleh'" }
+          ],
+          hints: ['Use slicing with [::-1]']
+        }
+      ]
     };
 
-    const languageQuestions = fallbackQuestions[language] || fallbackQuestions.javascript;
-    const difficultyQuestions = languageQuestions[difficulty] || languageQuestions.intermediate;
-    const [difficultyLabel] = buildDifficultyLadder(1);
-    
-    return {
-      title: difficultyQuestions.title,
-      description: difficultyQuestions.description,
-      difficulty: difficultyLabel || difficulty,
-      language,
-      testCases: difficultyQuestions.testCases,
-      hints: [
-        'Think about the function structure and parameters',
-        'Consider what the function should return',
-        'Test your function with the provided examples'
-      ],
-      solution: difficultyQuestions.solution,
-      explanation: difficultyQuestions.solution.explanation,
-      summary: `This is a fallback question for ${topic} at ${difficultyLabel || difficulty} level. The Gemini API is currently unavailable.`,
-      courseName: 'JavaScript Programming',
-      topicName: topic,
-      nanoSkills,
-      macroSkills,
-      questionType: 'coding',
-      _source: 'fallback', // Mark as fallback question
-      _isFallback: true // Explicitly mark as fallback
+    const languageSet = fallbackTemplates[programming_language.toLowerCase()] || fallbackTemplates.javascript;
+    const selected = languageSet.slice(0, amount);
+    const difficultyLevels = Array.from({ length: amount }, (_, i) => i + 1);
+
+    const result = {
+      questions: selected.map((q, i) => ({
+        question: {
+          title: q.title,
+          description: q.description,
+          difficultyLevel: difficultyLevels[i] || 1
+        },
+        testCases: q.testCases,
+        hints: q.hints
+      }))
     };
-  }
 
-  // Generate multiple coding questions at once
-  async generateMultipleCodingQuestions(
-    topic,
-    difficulty,
-    language = "javascript",
-    nanoSkills = [],
-    macroSkills = [],
-    questionCount = 4,
-    options = {}
-  ) {
-    this._checkAvailability();
-
-    const { humanLanguage = 'en', seedQuestion = null } = options
-
-    const prompt = `
-You are an expert programming instructor. Generate ${questionCount} coding questions for ${difficulty} level ${language} developers.
-
-Course Context:
-- Topic: ${topic}
-- Nano Skills: ${nanoSkills.join(", ")}
-- Macro Skills: ${macroSkills.join(", ")}
-- Difficulty Level: ${difficulty}
-- Programming Language: ${language}
-- Number of Questions: ${questionCount}
-- Natural Language Output: ${humanLanguage}
-- Trainer Provided Question Context (optional): ${seedQuestion ? seedQuestion : 'N/A'}
-
-Create ${questionCount} practical coding questions that:
-1. Test the specific nano skills: ${nanoSkills.join(", ")}
-2. Relate to the macro skills: ${macroSkills.join(", ")}
-3. Target developers around the ${difficulty} band while gradually increasing difficulty per question
-4. Are practical and real-world relevant
-5. Have clear problem statements
-6. Each question includes 2-3 test cases with inputs and expected outputs
-7. Each question provides 2-3 short, direct hints
-8. Each question includes the complete solution that follows best practices
-9. Assign a difficulty label for each question so that Q1 is "basic", Q2 is slightly harder, and the last question is the most challenging (e.g., basic -> intermediate -> advanced -> expert)
-10. If a trainer context is provided, align the question set with that context while improving clarity and assessment rigor.
-
-CRITICAL FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
-- NO extra text, explanations, or comments outside the JSON
-- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
-- The solution code must be syntactically correct and executable
-- Use proper ${language} syntax and best practices
-- All natural language text must be written in ${humanLanguage}.
-
-\`\`\`json
-{
-  "questions": [
-    {
-      "title": "Question 1 title",
-      "description": "Clear problem statement with specific requirements",
-      "difficulty": "${difficulty}",
-      "language": "${language}",
-      "testCases": [
-        {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
-      ],
-      "hints": ["short concept hint", "specific approach hint", "implementation direction"],
-      "solution": "complete, executable code solution following best practices",
-      "explanation": "detailed explanation of the solution approach and logic",
-      "summary": "Brief one-line summary of what this question tests"
-    },
-    {
-      "title": "Question 2 title",
-      "description": "Clear problem statement with specific requirements",
-      "difficulty": "${difficulty}",
-      "language": "${language}",
-      "testCases": [
-        {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
-      ],
-      "hints": ["short concept hint", "specific approach hint", "implementation direction"],
-      "solution": "complete, executable code solution following best practices",
-      "explanation": "detailed explanation of the solution approach and logic",
-      "summary": "Brief one-line summary of what this question tests"
-    }
-  ]
-}
-\`\`\`
-
-Return ONLY the JSON object in the specified format, no additional text.
-`;
-
-    try {
-      const text = await this._callModel(prompt);
-      try {
-        const parsed = JSON.parse(this._cleanJsonResponse(text));
-        const questionsArray = Array.isArray(parsed.questions) ? parsed.questions : parsed;
-        const ladder = buildDifficultyLadder(questionsArray.length || questionCount);
-        const processedQuestions = questionsArray.map((question, index) => ({
-          ...question,
-          difficulty: question.difficulty || ladder[index] || 'basic',
-          _source: 'gemini', // Mark as Gemini-generated
-          _isFallback: false, // Explicitly mark as not fallback
-          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
-        }));
-        console.log(`✅ Successfully generated ${processedQuestions.length} question(s) from Gemini AI`);
-        return processedQuestions;
-      } catch (parseErr) {
-        console.warn("⚠️ Gemini returned non-JSON; using fallback questions");
-        console.warn("   Parse error:", parseErr.message);
-        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
-        console.warn(`⚠️ Using ${fallbackQuestions.length} fallback question(s) instead of Gemini-generated questions`);
-        return fallbackQuestions;
-      }
-    } catch (err) {
-      console.error("generateMultipleCodingQuestions error:", err?.message || err);
-      
-      // Handle rate limiting specifically - go straight to fallback, no retry
-      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
-        console.warn('⚠️ Gemini API rate limit exceeded, using fallback questions immediately...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
-        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
-        return fallbackQuestions;
-      }
-      
-      // Handle specific Gemini API errors
-      if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
-        console.warn('⚠️ Gemini API overloaded, using fallback questions...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
-        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
-        return fallbackQuestions;
-      } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
-        console.warn('⚠️ Gemini API quota exceeded, using fallback questions...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
-        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
-        return fallbackQuestions;
-      } else if (err?.message?.includes('timeout')) {
-        console.warn('⚠️ Gemini API timeout, using fallback questions...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestions = this.generateFallbackMultipleCodingQuestions(topic, difficulty, language, nanoSkills, macroSkills, questionCount);
-        console.warn(`⚠️ Using ${fallbackQuestions.length} FALLBACK question(s) - NOT from Gemini AI`);
-        return fallbackQuestions;
-      }
-      
-      throw new Error(`Failed to generate multiple coding questions: ${err?.message || err}`);
-    }
+    return result;
   }
 
   async generateCodingQuestion(
     topic,
-    difficulty,
+    skills = [],
+    amount = 4,
     language = "javascript",
-    nanoSkills = [],
-    macroSkills = [],
     options = {}
   ) {
     this._checkAvailability();
 
-    const { humanLanguage = 'en', seedQuestion = null } = options
+    const { humanLanguage = 'en', seedQuestion = null, topic_id = null } = options;
 
     const prompt = `
-You are an expert programming instructor. Generate a coding question for a ${difficulty} level ${language} developer.
+You are an expert programming instructor. Generate a set of ${amount} practical coding questions for a developer.
 
 Course Context:
 - Topic: ${topic}
-- Nano Skills: ${nanoSkills.join(", ")}
-- Macro Skills: ${macroSkills.join(", ")}
-- Difficulty Level: ${difficulty}
+- Skills: ${skills.join(", ")}
 - Programming Language: ${language}
 - Natural Language Output: ${humanLanguage}
 - Trainer Provided Question Context (optional): ${seedQuestion ? seedQuestion : 'N/A'}
 
-Create a practical coding question that:
-1. Tests the specific nano skills: ${nanoSkills.join(", ")}
-2. Relates to the macro skills: ${macroSkills.join(", ")}
-3. Is appropriate for ${difficulty} level
-4. Is practical and real-world relevant
-5. Has clear problem statement
-6. Includes 2-3 test cases with inputs and expected outputs
-7. Provides 2-3 short, direct hints (don't give away the solution)
-8. Includes the complete solution that follows best practices and runs correctly
-9. Assign an explicit difficulty label (e.g., basic, intermediate, advanced, expert) that reflects the challenge level of this single question
-10. If a trainer question is provided, keep the thematic context but improve clarity, evaluability, and test coverage.
-
-CRITICAL FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
-- NO extra text, explanations, or comments outside the JSON
-- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
-- The solution code must be syntactically correct and executable
-- Use proper ${language} syntax and best practices
-- All natural language text must be written in ${humanLanguage}.
+Requirements:
+1. Generate exactly ${amount} questions in a JSON array.
+2. The questions should increase in difficulty gradually; the last question should be the hardest.
+3. All questions must be coding questions (no theoretical questions).
+4. Each question must include:
+   - title
+   - description (clear problem statement with requirements)
+   - testCases: 2-3 test cases with input, expectedOutput, and explanation
+   - hints: 2-3 concise hints
+   - topic_id: use the provided topic_id if any
+   - question_type: "code"
+5. DO NOT include "solution" or "summary".
+6. The questions must be practical, real-world relevant, fully executable if implemented.
+7. Use proper ${language} syntax and best practices.
+8. All natural language text must be in ${humanLanguage}.
+9. Return ONLY a valid JSON array of questions wrapped in triple backticks with "json" language identifier.
+10. NO extra text, explanations, or comments outside the JSON.
 
 \`\`\`json
-{
-  "title": "Question title",
-  "description": "Clear problem statement with specific requirements",
-  "difficulty": "${difficulty}",
-  "language": "${language}",
-  "testCases": [
-    {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
-  ],
-  "hints": ["short concept hint", "specific approach hint", "implementation direction"],
-  "solution": "complete, executable code solution following best practices",
-  "explanation": "detailed explanation of the solution approach and logic",
-  "summary": "Brief one-line summary of what this question tests"
-}
+[
+  {
+    "title": "Question title",
+    "description": "Clear problem statement with specific requirements",
+    "language": "${language}",
+    "topic_id": "${topic_id || ''}",
+    "question_type": "code",
+    "testCases": [
+      {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+    ],
+    "hints": ["short concept hint", "specific approach hint", "implementation direction"]
+  }
+]
 \`\`\`
-
-Return ONLY the JSON object in the specified format, no additional text.
 `;
 
     try {
       const text = await this._callModel(prompt);
-      // try parse
+
       try {
-        const parsed = JSON.parse(this._cleanJsonResponse(text));
-        const [difficultyLabel] = buildDifficultyLadder(1);
-        const question = {
-          ...parsed,
-          difficulty: parsed.difficulty || difficultyLabel || 'basic',
-          _source: 'gemini', // Mark as Gemini-generated
-          _isFallback: false, // Explicitly mark as not fallback
-          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
-        };
-        console.log(`✅ Successfully generated question from Gemini AI: ${question.title || question.description?.substring(0, 50)}...`);
-        return question;
+        const parsedArray = JSON.parse(this._cleanJsonResponse(text));
+        const questionsArray = Array.isArray(parsedArray) ? parsedArray : [parsedArray];
+        const questions = questionsArray.map((q, index) => ({
+          ...q,
+          _source: 'gemini',
+          _isFallback: false,
+          _rawGeminiResponse: text,
+          _difficultyIndex: index + 1,
+          topic_id: topic_id || q.topic_id || null,
+          question_type: "code"
+        }));
+        console.log(`✅ Successfully generated ${questions.length} questions from Gemini AI.`);
+        return questions;
       } catch (parseErr) {
         console.warn("⚠️ Gemini returned non-JSON; attempting to parse as structured response");
-        console.warn("   Parse error:", parseErr.message);
-        try {
-          const fallback = this.parseStructuredResponse(text);
-          const [difficultyLabel] = buildDifficultyLadder(1);
-          const question = {
-            ...fallback,
-            difficulty: fallback.difficulty || difficultyLabel || 'basic',
-            _source: 'gemini', // Mark as Gemini-generated (parsed from text)
-            _isFallback: false,
-            _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
-          };
-          console.log(`✅ Parsed question from Gemini AI response: ${question.title || question.description?.substring(0, 50)}...`);
-          return question;
-        } catch (parseError2) {
-          console.warn("⚠️ Failed to parse Gemini response, using fallback question");
-          const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
-          return fallbackQuestion;
-        }
+        const fallback = this.parseStructuredResponse(text);
+        const fallbackArray = Array.isArray(fallback) ? fallback : [fallback];
+        const questions = fallbackArray.map((q, index) => ({
+          ...q,
+          _source: 'gemini',
+          _isFallback: false,
+          _rawGeminiResponse: text,
+          _difficultyIndex: index + 1,
+          topic_id: topic_id || q.topic_id || null,
+          question_type: "code"
+        }));
+        console.log(`✅ Parsed ${questions.length} question(s) from Gemini AI response.`);
+        return questions;
       }
     } catch (err) {
       console.error("❌ generateCodingQuestion error:", err?.message || err);
       console.error("   Error stack:", err.stack);
-      
-      // Handle rate limiting specifically - go straight to fallback, no retry
-      if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('Too Many Requests') || err.message.includes('Rate limit exceeded')) {
-        console.warn('⚠️ Gemini API rate limit exceeded, using fallback question immediately...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
-        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
-        return fallbackQuestion;
-      }
-      
-      // Handle specific Gemini API errors
-      if (err?.message?.includes('overloaded') || err?.message?.includes('503')) {
-        console.warn('⚠️ Gemini API overloaded, using fallback question...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
-        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
-        return fallbackQuestion;
-      } else if (err?.message?.includes('quota') || err?.message?.includes('limit')) {
-        console.warn('⚠️ Gemini API quota exceeded, using fallback question...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
-        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
-        return fallbackQuestion;
-      } else if (err?.message?.includes('timeout')) {
-        console.warn('⚠️ Gemini API timeout, using fallback question...');
-        console.warn('   Error:', err.message);
-        const fallbackQuestion = this.generateFallbackCodingQuestion(topic, difficulty, language, nanoSkills, macroSkills);
-        console.warn('⚠️ Using FALLBACK question - NOT from Gemini AI');
-        return fallbackQuestion;
-      }
-      
-      throw new Error(`Failed to generate coding question: ${err?.message || err}`);
+
+      // fallback logic for rate limits, overloads, timeouts
+      const fallbackResult = this.generateFallbackCodingQuestions({
+        topic_name: topic,
+        topic_id,
+        skills,
+        programming_language: language,
+        humanLanguage,
+        amount
+      });
+      const fallbackQuestions = Array.isArray(fallbackResult.questions) ? fallbackResult.questions : [];
+      return fallbackQuestions.map((entry, index) => ({
+        ...entry.question,
+        language,
+        testCases: entry.testCases || [],
+        hints: entry.hints || [],
+        _source: 'fallback',
+        _isFallback: true,
+        _rawGeminiResponse: null,
+        _difficultyIndex: index + 1,
+        topic_id: topic_id || entry.question?.topic_id || null,
+        question_type: "code"
+      }));
     }
   }
 
   // Generate theoretical question
-  async generateTheoreticalQuestion(topic, difficulty, nanoSkills = [], macroSkills = []) {
-    this._checkAvailability();
-
-    const prompt = `
-You are an expert programming instructor. Generate a theoretical question about ${topic} for ${difficulty} level.
-
-Course Context:
-- Topic: ${topic}
-- Nano Skills: ${nanoSkills.join(", ")}
-- Macro Skills: ${macroSkills.join(", ")}
-- Difficulty Level: ${difficulty}
-
-Create a theoretical question that:
-1. Tests understanding of nano skills: ${nanoSkills.join(", ")}
-2. Relates to macro skills: ${macroSkills.join(", ")}
-3. Is appropriate for ${difficulty} level
-4. Is educational and thought-provoking
-5. Has 4 multiple choice options (A, B, C, D) with only ONE correct answer
-6. Includes detailed explanation
-7. Provides 2-3 short, direct hints
-8. Includes the complete answer
-
-CRITICAL FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier
-- NO extra text, explanations, or comments outside the JSON
-- ALL JSON fields must be strictly valid (no trailing commas, proper quotes, etc.)
-- Ensure only ONE option is correct
-- Make incorrect options plausible but clearly wrong
-
-\`\`\`json
-{
-  "title": "Question title",
-  "description": "The question text with clear context",
-  "difficulty": "${difficulty}",
-  "options": {
-    "A": "option A text",
-    "B": "option B text", 
-    "C": "option C text",
-    "D": "option D text"
-  },
-  "correctAnswer": "A",
-  "explanation": "detailed explanation of why this answer is correct and why others are wrong",
-  "hints": ["basic concept", "thinking approach", "specific direction"],
-  "summary": "Brief one-line summary of what this question tests"
-}
-\`\`\`
-
-Return ONLY the JSON object in the specified format, no additional text.
-`;
-
-    try {
-      const text = await this._callModel(prompt);
-      try {
-        const parsed = JSON.parse(this._cleanJsonResponse(text));
-        return {
-          ...parsed,
-          _source: 'gemini',
-          _isFallback: false,
-          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
-        };
-      } catch {
-        const fallback = this.parseStructuredResponse(text);
-        return {
-          ...fallback,
-          _source: 'gemini',
-          _isFallback: false,
-          _rawGeminiResponse: text // Store raw Gemini response for Supabase storage
-        };
-      }
-    } catch (err) {
-      console.error("generateTheoreticalQuestion error:", err?.message || err);
-      throw new Error(`Failed to generate theoretical question: ${err?.message || err}`);
-    }
-  }
-
   // Evaluate code submission
   async evaluateCodeSubmission(code, question, language = "javascript", testCases = []) {
     this._checkAvailability();

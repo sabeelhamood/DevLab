@@ -1,47 +1,88 @@
 import express from 'express'
 import { geminiService } from '../services/gemini.js'
+import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClient.js'
 
 const router = express.Router()
 
 // Generate question (unified endpoint)
 router.post('/generate-question', async (req, res) => {
   try {
-    const { topic, difficulty, language, type, nanoSkills = [], macroSkills = [] } = req.body
-    
-    if (!topic || !difficulty) {
-      return res.status(400).json({ 
-        error: 'Topic and difficulty are required' 
+    const {
+      topic,
+      type = 'code',
+      language = 'javascript',
+      skills = [],
+      amount = 1,
+      humanLanguage = 'en',
+      topic_id = null,
+      difficulty = 'intermediate',
+      nanoSkills = [],
+      macroSkills = []
+    } = req.body
+
+    if (!topic) {
+      return res.status(400).json({
+        error: 'Topic is required'
       })
     }
 
+    const normalizedAmount = Math.max(1, parseInt(amount, 10) || 1)
+    const normalizedSkills = Array.isArray(skills) && skills.length
+      ? skills
+      : [
+          ...new Set(
+            [
+              ...(Array.isArray(nanoSkills) ? nanoSkills : []),
+              ...(Array.isArray(macroSkills) ? macroSkills : [])
+            ].filter(Boolean)
+          )
+        ]
+
     let question
+    let source = 'gemini'
+
     if (type === 'code') {
-      question = await geminiService.generateCodingQuestion(
-        topic, 
-        difficulty, 
+      const generated = await geminiService.generateCodingQuestion(
+        topic,
+        normalizedSkills,
+        normalizedAmount,
         language || 'javascript',
-        nanoSkills,
-        macroSkills
+        {
+          humanLanguage,
+          topic_id
+        }
       )
-    } else {
-      question = await geminiService.generateTheoreticalQuestion(
-        topic, 
+      const generatedArray = Array.isArray(generated) ? generated : generated ? [generated] : []
+      question = normalizedAmount === 1 ? generatedArray[0] || null : generatedArray
+    } else if (type === 'theoretical') {
+      source = 'assessment'
+      const theoretical = await fetchAssessmentTheoreticalQuestions({
+        topic_id: topic_id || null,
+        topic_name: topic,
+        amount: normalizedAmount,
         difficulty,
-        nanoSkills,
-        macroSkills
-      )
+        humanLanguage,
+        nanoSkills: normalizedSkills,
+        microSkills: normalizedSkills
+      })
+      question = normalizedAmount === 1 ? theoretical?.[0] : theoretical
+    } else {
+      return res.status(400).json({
+        error: 'Invalid question type'
+      })
     }
-    
+
     res.json({
       success: true,
       question,
+      source,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     console.error('Error generating question:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate question',
-      message: error.message 
+      message: error.message
     })
   }
 })

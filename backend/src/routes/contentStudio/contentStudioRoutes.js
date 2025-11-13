@@ -226,70 +226,40 @@ const generateCodingQuestions = async ({
   seedQuestion
 }) => {
   try {
-    if (amount > 1) {
-      const batch = await geminiService.generateMultipleCodingQuestions(
-        topic_name,
-        DEFAULT_DIFFICULTY,
-        programming_language,
-        nanoSkills,
-        microSkills,
-        amount,
-        {
-          humanLanguage,
-          seedQuestion
-        }
-      )
-
-      const ladder = buildDifficultyLadder(batch.length || amount)
-
-      return batch
-        .filter(Boolean)
-        .map((item, index) =>
-          toAjaxCodingQuestion({
-            id: `code_${topic_id}_${index + 1}`,
-            question: item.description || item.title,
-            testCases: item.testCases || [],
-            hints: item.hints || [],
-            programmingLanguage: programming_language,
-            topicId: topic_id,
-            topicName: topic_name,
-            humanLanguage,
-            difficulty: item.difficulty || ladder[index] || ladder[ladder.length - 1] || DEFAULT_DIFFICULTY
-          })
-        )
-    }
-
-    const singleQuestion = await geminiService.generateCodingQuestion(
+    const generated = await geminiService.generateCodingQuestion(
       topic_name,
-      DEFAULT_DIFFICULTY,
+      [...nanoSkills, ...microSkills],
+      amount,
       programming_language,
-      nanoSkills,
-      microSkills,
       {
         humanLanguage,
         seedQuestion
       }
     )
 
-    if (!singleQuestion) {
+    const questionArray = Array.isArray(generated) ? generated : generated ? [generated] : []
+
+    if (!questionArray.length) {
       return []
     }
 
-    const [difficultyLabel] = buildDifficultyLadder(1)
+    const ladder = buildDifficultyLadder(questionArray.length || amount)
 
-    return [
-      toAjaxCodingQuestion({
-        id: `code_${topic_id}_1`,
-        question: singleQuestion.description || singleQuestion.title,
-        testCases: singleQuestion.testCases || [],
-        hints: singleQuestion.hints || [],
-        programmingLanguage: programming_language,
-        topicId: topic_id,
-        topicName: topic_name,
-        humanLanguage,
-        difficulty: singleQuestion.difficulty || difficultyLabel || DEFAULT_DIFFICULTY
-      })
-    ]
+    return questionArray
+      .filter(Boolean)
+      .map((item, index) =>
+        toAjaxCodingQuestion({
+          id: `code_${topic_id}_${index + 1}`,
+          question: item.description || item.title,
+          testCases: item.testCases || [],
+          hints: item.hints || [],
+          programmingLanguage: programming_language,
+          topicId: topic_id,
+          topicName: topic_name,
+          humanLanguage,
+          difficulty: item.difficulty || ladder[index] || ladder[ladder.length - 1] || DEFAULT_DIFFICULTY
+        })
+      )
   } catch (error) {
     console.error('Gemini coding generation error:', error)
     return []

@@ -7,27 +7,19 @@ const testGeminiAPI = async () => {
   try {
     // Test 1: Generate a coding question
     console.log('1️⃣ Testing: Generate Coding Question')
-    const codingQuestion = await geminiService.generateCodingQuestion(
-      'JavaScript Arrays', 
-      'beginner', 
-      'javascript'
+    const codingQuestions = await geminiService.generateCodingQuestion(
+      'JavaScript Arrays',
+      ['Array basics', 'Iteration'],
+      1,
+      'javascript',
+      { humanLanguage: 'en' }
     )
     console.log('✅ Coding Question Generated:')
-    console.log(JSON.stringify(codingQuestion, null, 2))
+    console.log(JSON.stringify(codingQuestions?.[0] || {}, null, 2))
     console.log('\n' + '='.repeat(50) + '\n')
 
-    // Test 2: Generate a theoretical question
-    console.log('2️⃣ Testing: Generate Theoretical Question')
-    const theoreticalQuestion = await geminiService.generateTheoreticalQuestion(
-      'JavaScript Closures', 
-      'intermediate'
-    )
-    console.log('✅ Theoretical Question Generated:')
-    console.log(JSON.stringify(theoreticalQuestion, null, 2))
-    console.log('\n' + '='.repeat(50) + '\n')
-
-    // Test 3: Evaluate code
-    console.log('3️⃣ Testing: Evaluate Code Submission')
+    // Test 2: Evaluate code
+    console.log('2️⃣ Testing: Evaluate Code Submission')
     const codeEvaluation = await geminiService.evaluateCodeSubmission(
       'function sum(a, b) { return a + b; }',
       'Write a function that adds two numbers',
@@ -37,8 +29,8 @@ const testGeminiAPI = async () => {
     console.log(JSON.stringify(codeEvaluation, null, 2))
     console.log('\n' + '='.repeat(50) + '\n')
 
-    // Test 4: Generate hint
-    console.log('4️⃣ Testing: Generate Hint')
+    // Test 3: Generate hint
+    console.log('3️⃣ Testing: Generate Hint')
     const hint = await geminiService.generateHints(
       'Write a function that finds the largest number in an array',
       'I tried using a for loop but got stuck',

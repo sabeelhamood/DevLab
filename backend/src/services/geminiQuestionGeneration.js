@@ -93,13 +93,11 @@ export const generateQuestions = async ({
 
   let generated
   try {
-    generated = await geminiService.generateMultipleCodingQuestions(
+    generated = await geminiService.generateCodingQuestion(
       topicName || courseName,
-      difficulty,
-      language,
-      nanoSkills,
-      macroSkills,
+      [...nanoSkills, ...macroSkills],
       questionCount,
+      language,
       { humanLanguage }
     )
   } catch (error) {

@@ -7,11 +7,15 @@ async function testGemini() {
     console.log('Is available:', geminiService.isAvailable)
     console.log('Is mock mode:', geminiService.isMockMode)
     
-    const question = await geminiService.generateCodingQuestion(
-      'JavaScript Arrays', 
-      'beginner', 
-      'javascript'
+    const questions = await geminiService.generateCodingQuestion(
+      'JavaScript Arrays',
+      [],
+      1,
+      'javascript',
+      { humanLanguage: 'en' }
     )
+    
+    const question = Array.isArray(questions) ? questions[0] || {} : questions || {}
     
     console.log('✅ Success!')
     console.log('Generated question:', JSON.stringify(question, null, 2))

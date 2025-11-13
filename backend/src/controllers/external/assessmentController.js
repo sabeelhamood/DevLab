@@ -127,29 +127,22 @@ export const assessmentController = {
 
       const questionCount = Number(number_of_questions) > 0 ? Number(number_of_questions) : 1
 
-      const questionPayload =
-        questionCount > 1
-          ? await geminiService.generateMultipleCodingQuestions(
-              topic_name,
-              'intermediate',
-              programming_language,
-              nano_skills,
-              micro_skills,
-              questionCount
-            )
-          : [
-              await geminiService.generateCodingQuestion(
-                topic_name,
-                'intermediate',
-                programming_language,
-                nano_skills,
-                micro_skills
-              )
-            ]
+      const generated = await geminiService.generateCodingQuestion(
+        topic_name,
+        [...nano_skills, ...micro_skills],
+        questionCount,
+        programming_language,
+        {
+          humanLanguage: 'en',
+          topic_id: null
+        }
+      )
 
-      const ladder = buildDifficultyLadder(questionPayload.length || questionCount)
+      const questionArray = Array.isArray(generated) ? generated : generated ? [generated] : []
 
-      const sanitizedQuestions = questionPayload
+      const ladder = buildDifficultyLadder(questionArray.length || questionCount)
+
+      const sanitizedQuestions = questionArray
         .filter(Boolean)
         .map((item, index) => ({
           id: `assessment_code_${index + 1}`,

@@ -204,20 +204,28 @@ router.post('/generate-question', async (req, res) => {
 
     let question
     if (questionType === 'coding') {
-      question = await geminiService.generateCodingQuestion(
+      const generated = await geminiService.generateCodingQuestion(
         topicName,
-        difficulty,
+        [...nanoSkills, ...macroSkills],
+        1,
         language,
-        nanoSkills,
-        macroSkills
+        {
+          humanLanguage: 'en',
+          topic_id: null
+        }
       )
+      question = generated?.[0] || {}
     } else {
-      question = await geminiService.generateTheoreticalQuestion(
-        topicName,
+      const theoretical = await fetchAssessmentTheoreticalQuestions({
+        topic_id: null,
+        topic_name: topicName,
+        amount: 1,
         difficulty,
+        humanLanguage: 'en',
         nanoSkills,
-        macroSkills
-      )
+        microSkills: macroSkills
+      })
+      question = theoretical?.[0] || {}
     }
 
     // Add course and topic context to the question
@@ -787,35 +795,18 @@ router.post('/generate-question-package', async (req, res) => {
       console.log(`🤖 Backend: Generating ${finalQuestionCount} code question(s) with Gemini...`)
       serviceUsed = 'gemini'
       
-      if (finalQuestionCount > 1) {
-        // Use bulk generation for multiple coding questions
-        console.log('💻 Backend: Generating multiple coding questions at once')
-        questions = await geminiService.generateMultipleCodingQuestions(
-          topicName,
-          'intermediate', // Default difficulty
-          language,
-          nanoSkills,
-          macroSkills,
-          finalQuestionCount,
-          {
-            humanLanguage
-          }
-        )
-      } else {
-        // Generate single coding question
-        console.log('💻 Backend: Generating single coding question')
-        const question = await geminiService.generateCodingQuestion(
-          topicName,
-          'intermediate', // Default difficulty
-          language,
-          nanoSkills,
-          macroSkills,
-          {
-            humanLanguage
-          }
-        )
-        questions = question ? [question] : []
-      }
+      console.log('💻 Backend: Generating coding question(s) via unified flow')
+      const generated = await geminiService.generateCodingQuestion(
+        topicName,
+        [...nanoSkills, ...macroSkills],
+        finalQuestionCount,
+        language,
+        {
+          humanLanguage,
+          topic_id: topic_id || null
+        }
+      )
+      questions = Array.isArray(generated) ? generated : generated ? [generated] : []
       
       // Check if questions are from Gemini or fallback
       const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
@@ -1279,14 +1270,20 @@ router.post('/reveal-solution', async (req, res) => {
       }
     } else {
       // Generate solution if not provided
-      const generatedSolution = await geminiService.generateCodingQuestion(
+      const solutionCandidates = await geminiService.generateCodingQuestion(
         question.topicName || 'Programming',
-        question.difficulty || 'beginner',
+        [...(question.nanoSkills || []), ...(question.macroSkills || [])],
+        1,
         language,
-        question.nanoSkills || [],
-        question.macroSkills || []
+        {
+          humanLanguage: humanLanguage || 'en',
+          topic_id: question.topicId || question.topic_id || null
+        }
       )
-      
+      const generatedSolution = Array.isArray(solutionCandidates)
+        ? solutionCandidates[0] || {}
+        : solutionCandidates || {}
+
       solution = {
         code: generatedSolution.solution,
         explanation: generatedSolution.explanation
