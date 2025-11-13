@@ -499,7 +499,9 @@ app.use('/api/analytics', analyticsRoutes)
 // Gemini AI routes
 app.use('/api/gemini', geminiRoutes)
 app.use('/api/gemini-test', geminiTestRoutes)
+console.log('🔍 [app] Registering gemini-questions routes...')
 app.use('/api/gemini-questions', geminiQuestionRoutes)
+console.log('✅ [app] gemini-questions routes registered')
 app.use('/api', dataRequestRoutes)
 
 // Judge0 routes

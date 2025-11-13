@@ -8,6 +8,14 @@ import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClien
 
 const router = express.Router()
 
+console.log('🔍 [gemini-question-generation] Route file loaded and router created')
+
+// Middleware to log all requests to this router
+router.use((req, res, next) => {
+  console.log('🔍 [gemini-question-generation] Request received:', req.method, req.path, req.originalUrl)
+  next()
+})
+
 // Health check endpoint to verify route is registered
 router.get('/health', (req, res) => {
   res.json({
