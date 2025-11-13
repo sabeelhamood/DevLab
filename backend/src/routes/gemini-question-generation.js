@@ -1294,7 +1294,7 @@ router.post('/generate-question-package', async (req, res) => {
         questionsSource: questionsSource, // 'gemini', 'assessment', 'fallback', or 'mixed'
         serviceUsed: serviceUsed, // 'gemini' or 'assessment'
         geminiCount: geminiQuestions.length,
-        assessmentCount: assessmentQuestions.length,
+        assessmentCount: 0, // Assessment questions not used in this endpoint
         fallbackCount: fallbackQuestions.length,
         isFallback: fallbackQuestions.length > 0 // Indicates if any questions are fallback
       }
