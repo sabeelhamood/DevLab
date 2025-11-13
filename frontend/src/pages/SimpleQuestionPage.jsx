@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { geminiAPI } from '../services/api/gemini.js'
 import { questionGenerationAPI } from '../services/api/questionGeneration.js'
+import { mockMicroservices } from '../services/mockMicroservices.js'
 import ErrorMessage from '../components/ErrorMessage.jsx'
 import LoadingSpinner from '../components/LoadingSpinner.jsx'
 import ConfirmationModal from '../components/ConfirmationModal.jsx'
@@ -74,19 +75,51 @@ function SimpleQuestionPage() {
       console.log('🔄 Setting loading state to true...')
       setLoading(true)
       
-      // Get learner profile to determine number of questions
-      const questionCount = 1 // Reduced to 1 question to avoid rate limits - in real app, get from Directory microservice
+      // Get mock data from Content Studio
+      const courses = mockMicroservices.contentStudio.getCourses()
+      // Use course with ID 2 (has topics keyed by 201) or first available course
+      const defaultCourse = courses.find(c => c.course_id === 2) || courses[0]
+      // Get the first topic key from the course's topics array
+      const topicKey = defaultCourse?.topics?.[0] || 201
+      
+      const topics = mockMicroservices.contentStudio.getTopics(topicKey)
+      const defaultTopic = topics[0]
+      
+      if (!defaultTopic) {
+        throw new Error('No topics found in Content Studio mock data')
+      }
+      
+      // Get question parameters from mock data
+      const topicName = defaultTopic.topic_name
+      const topicId = defaultTopic.topic_id
+      const skills = defaultTopic.skills || []
+      
+      // Get question metadata (defaults for coding questions)
+      const questionCount = 4 // Default amount from Content Studio
+      const questionType = 'code' // Default to coding questions
+      const programmingLanguage = language || 'javascript'
+      const humanLanguage = 'en'
+      
+      console.log('📡 Using Content Studio mock data:', {
+        topicName,
+        topicId,
+        skills,
+        questionCount,
+        questionType,
+        programmingLanguage,
+        humanLanguage
+      })
       
       console.log('📡 Calling questionGenerationAPI.generateQuestionPackage...')
+      // Pass skills array - backend will parse it correctly (treats array as nanoSkills)
       const generatedQuestion = await questionGenerationAPI.generateQuestionPackage({
-        courseName: 'JavaScript Programming',
-        topicName: 'Functions and Basic Operations',
-        nanoSkills: ['Function Declaration', 'Parameters', 'Return Statements'],
-        macroSkills: ['JavaScript Fundamentals', 'Programming Logic'],
-        difficulty: 'intermediate',
-        language: language,
-        questionType: 'coding',
-        questionCount: questionCount // Pass question count to generate multiple questions
+        courseName: defaultCourse?.name || 'JavaScript Programming',
+        topicName: topicName,
+        nanoSkills: skills, // Pass skills array as nanoSkills (backend combines with macroSkills)
+        macroSkills: [], // Empty macroSkills as per new structure
+        language: programmingLanguage,
+        questionType: questionType,
+        questionCount: questionCount
       }, signal)
       
       console.log('📦 Received generated questions:', generatedQuestion)
@@ -114,7 +147,7 @@ function SimpleQuestionPage() {
         question_type: 'code',
         questionType: 'coding',
         question_content: q.description || q.title,
-        difficulty: q.difficulty || 'intermediate',
+        difficulty: q.difficulty || 'intermediate', // Display only, not sent to Gemini
         language: q.language || language,
         test_cases: (() => {
           console.log('Raw testCases from backend:', q.testCases);
@@ -123,8 +156,8 @@ function SimpleQuestionPage() {
         hints: q.hints || [],
         solution: q.solution?.code || q.solution || '',
         title: q.title,
-        courseName: q.courseName || 'JavaScript Programming',
-        topicName: q.topicName || 'Functions and Basic Operations'
+        courseName: q.courseName || defaultCourse?.name || 'JavaScript Programming',
+        topicName: q.topicName || topicName || 'Unknown Topic'
       }))
       
       console.log('🔄 Setting questions array:', transformedQuestions)
