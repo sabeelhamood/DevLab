@@ -17,6 +17,21 @@ import { config } from './config/environment.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { notFound } from './middleware/notFound.js'
 
+// Global error handlers to catch unhandled errors
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ [GLOBAL] Unhandled Rejection at:', promise)
+  console.error('   Reason:', reason)
+  if (reason instanceof Error) {
+    console.error('   Error stack:', reason.stack)
+  }
+})
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ [GLOBAL] Uncaught Exception:', error)
+  console.error('   Error stack:', error.stack)
+  // Don't exit in production, let the error handler deal with it
+})
+
 // Import routes
 import authRoutes from './routes/auth/authRoutes.js'
 import questionRoutes from './routes/questions/questionRoutes.js'
@@ -45,6 +60,14 @@ import { initializeDatabases } from './config/initDatabase.js'
 import { postgres } from './config/database.js'
 
 const app = express()
+
+// Ultra-early request logger - catches ALL requests before any middleware
+app.use((req, res, next) => {
+  console.log('🚨 [ULTRA-EARLY] Request received:', req.method, req.originalUrl)
+  console.log('🚨 [ULTRA-EARLY] Request path:', req.path)
+  console.log('🚨 [ULTRA-EARLY] Request IP:', req.ip)
+  next()
+})
 
 const logDatabaseEnvStatus = () => {
   if (config.nodeEnv !== 'development') {
@@ -398,8 +421,32 @@ const limiter = rateLimit({
 })
 app.use(limiter)
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }))
+// Top-level request logger - logs ALL requests BEFORE any other processing
+app.use((req, res, next) => {
+  console.log('🌐 [TOP-LEVEL] Incoming request:', req.method, req.originalUrl, req.path)
+  console.log('🌐 [TOP-LEVEL] Request headers:', JSON.stringify(req.headers, null, 2))
+  next()
+})
+
+// Body parsing middleware with error handling
+const jsonParser = express.json({ limit: '10mb' })
+app.use((req, res, next) => {
+  jsonParser(req, res, (err) => {
+    if (err) {
+      console.error('❌ [DEBUG] JSON body parsing error:', err.message)
+      console.error('   Error stack:', err.stack)
+      console.error('   Request URL:', req.originalUrl)
+      console.error('   Request method:', req.method)
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid JSON in request body',
+        message: err.message
+      })
+    }
+    next()
+  })
+})
+
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 // Compression middleware
@@ -407,13 +454,6 @@ app.use(compression())
 
 // Logging middleware
 app.use(morgan('combined'))
-
-// Top-level request logger - logs ALL requests before any other processing
-app.use((req, res, next) => {
-  console.log('🌐 [TOP-LEVEL] Incoming request:', req.method, req.originalUrl, req.path)
-  console.log('🌐 [TOP-LEVEL] Request headers:', JSON.stringify(req.headers, null, 2))
-  next()
-})
 
 // Apply service authentication to all /api routes in production
 // Skip for /api/auth routes (login, register, etc.) and /health endpoint
@@ -459,6 +499,26 @@ if (requireServiceAuth) {
 // Add request logging for all /api routes to debug routing
 app.use('/api', (req, res, next) => {
   console.log('🔍 [api-router] Incoming request:', req.method, req.path, req.originalUrl)
+  console.log('🔍 [api-router] Request body exists:', !!req.body)
+  console.log('🔍 [api-router] Request body type:', typeof req.body)
+  next()
+})
+
+// Error catching middleware for all /api routes
+app.use('/api', (err, req, res, next) => {
+  if (err) {
+    console.error('❌ [api-router] Error caught in API middleware:')
+    console.error('   Error name:', err.name || 'N/A')
+    console.error('   Error message:', err.message || 'N/A')
+    console.error('   Error stack:', err.stack || 'N/A')
+    console.error('   Request URL:', req.originalUrl)
+    console.error('   Request method:', req.method)
+    return res.status(err.status || 500).json({
+      success: false,
+      error: err.message || 'Internal server error',
+      errorName: err.name || 'Error'
+    })
+  }
   next()
 })
 
@@ -510,6 +570,21 @@ app.use('/api/gemini-test', geminiTestRoutes)
 console.log('🔍 [app] Registering gemini-questions routes...')
 app.use('/api/gemini-questions', geminiQuestionRoutes)
 console.log('✅ [app] gemini-questions routes registered')
+
+// List all registered routes in gemini-questions router
+try {
+  const geminiQuestionRouteSummaries = geminiQuestionRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: `/api/gemini-questions${layer.route.path === '/' ? '' : layer.route.path}`,
+      methods: Object.keys(layer.route.methods)
+        .filter((method) => layer.route.methods[method])
+        .map((method) => method.toUpperCase())
+    }))
+  console.log('✅ [app] Registered gemini-questions routes:', geminiQuestionRouteSummaries)
+} catch (error) {
+  console.warn('⚠️ Unable to list gemini-questions routes:', error.message)
+}
 app.use('/api', dataRequestRoutes)
 
 // Judge0 routes
