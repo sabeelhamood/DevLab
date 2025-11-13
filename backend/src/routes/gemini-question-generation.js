@@ -1113,13 +1113,31 @@ router.post('/generate-question-package', async (req, res) => {
           console.log('🔍 [DEBUG] First question from Gemini:', {
             keys: Object.keys(firstQ),
             hasTestCases: !!firstQ.testCases,
+            hasTestCasesArray: Array.isArray(firstQ.testCases),
+            testCasesLength: firstQ.testCases?.length || 0,
             hasOptions: !!firstQ.options,
             hasCorrectAnswer: !!firstQ.correctAnswer,
             _source: firstQ._source,
             _isFallback: firstQ._isFallback,
             questionType: firstQ.question_type || firstQ.questionType,
-            title: firstQ.title
+            title: firstQ.title,
+            description: firstQ.description?.substring(0, 100)
           })
+          
+          // CRITICAL CHECK: Verify this is a CODING question, not theoretical
+          if (firstQ.options || firstQ.correctAnswer) {
+            console.error('❌ [CRITICAL ERROR] First question from Gemini is THEORETICAL!');
+            console.error('   This should NEVER happen - we ONLY generate CODING questions');
+            console.error('   Question has options:', !!firstQ.options);
+            console.error('   Question has correctAnswer:', !!firstQ.correctAnswer);
+            console.error('   Full question:', JSON.stringify(firstQ, null, 2));
+          } else if (!firstQ.testCases || !Array.isArray(firstQ.testCases) || firstQ.testCases.length === 0) {
+            console.error('❌ [CRITICAL ERROR] First question from Gemini is missing testCases!');
+            console.error('   Coding questions MUST have testCases');
+            console.error('   Full question:', JSON.stringify(firstQ, null, 2));
+          } else {
+            console.log('✅ [DEBUG] First question is valid CODING question with testCases');
+          }
         }
       } catch (geminiError) {
         console.error('❌ [DEBUG] Error calling geminiService.generateCodingQuestion')

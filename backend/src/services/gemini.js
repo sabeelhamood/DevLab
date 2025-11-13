@@ -363,37 +363,57 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
         const parsedArray = JSON.parse(this._cleanJsonResponse(text));
         const questionsArray = Array.isArray(parsedArray) ? parsedArray : [parsedArray];
         
-        // Validate that questions are coding questions, not theoretical
+        // STRICT VALIDATION: Reject ALL theoretical questions - we ONLY generate CODING questions
+        console.log(`🔍 [GEMINI-SERVICE] Validating ${questionsArray.length} question(s) from Gemini...`);
+        
         const validatedQuestions = questionsArray.filter((q, index) => {
           const hasOptions = q.options !== undefined;
           const hasCorrectAnswer = q.correctAnswer !== undefined;
           const hasTestCases = q.testCases && Array.isArray(q.testCases) && q.testCases.length > 0;
           
+          console.log(`🔍 [GEMINI-SERVICE] Validating question ${index + 1}:`, {
+            title: q.title,
+            hasOptions,
+            hasCorrectAnswer,
+            hasTestCases,
+            testCasesCount: q.testCases?.length || 0
+          });
+          
+          // STRICT: Reject if has theoretical question fields
           if (hasOptions || hasCorrectAnswer) {
-            console.warn(`⚠️ [GEMINI-SERVICE] Question ${index + 1} is theoretical (has options/correctAnswer) - REJECTING`);
-            console.warn(`   Title: ${q.title}`);
-            console.warn(`   Has options: ${hasOptions}`);
-            console.warn(`   Has correctAnswer: ${hasCorrectAnswer}`);
-            console.warn(`   Has testCases: ${hasTestCases}`);
+            console.error(`❌ [GEMINI-SERVICE] Question ${index + 1} is THEORETICAL - REJECTING`);
+            console.error(`   Title: ${q.title}`);
+            console.error(`   This is a theoretical question, but we ONLY generate CODING questions`);
+            console.error(`   Question object:`, JSON.stringify(q, null, 2));
             return false; // Reject theoretical questions
           }
           
+          // STRICT: Reject if missing testCases (coding questions MUST have testCases)
           if (!hasTestCases) {
-            console.warn(`⚠️ [GEMINI-SERVICE] Question ${index + 1} missing testCases - rejecting as invalid coding question`);
-            console.warn(`   Title: ${q.title}`);
+            console.error(`❌ [GEMINI-SERVICE] Question ${index + 1} missing testCases - REJECTING`);
+            console.error(`   Title: ${q.title}`);
+            console.error(`   Coding questions MUST have testCases - this question is invalid`);
             return false; // Reject questions without testCases
           }
           
+          console.log(`✅ [GEMINI-SERVICE] Question ${index + 1} is valid CODING question with ${q.testCases.length} testCases`);
           return true;
         });
         
         if (validatedQuestions.length === 0) {
-          console.error('❌ [GEMINI-SERVICE] All questions were rejected - Gemini returned theoretical questions instead of coding questions');
-          throw new Error('Gemini returned theoretical questions instead of coding questions. All questions were rejected.');
+          console.error('\n' + '='.repeat(80));
+          console.error('❌ [GEMINI-SERVICE] CRITICAL ERROR: All questions were rejected!');
+          console.error('='.repeat(80));
+          console.error(`   Total questions from Gemini: ${questionsArray.length}`);
+          console.error(`   All were rejected because they are THEORETICAL or missing testCases`);
+          console.error('   We ONLY generate CODING questions with testCases and hints');
+          console.error('   Gemini returned theoretical questions instead of coding questions');
+          console.error('='.repeat(80) + '\n');
+          throw new Error(`All ${questionsArray.length} question(s) from Gemini were rejected - they are THEORETICAL questions. We ONLY generate CODING questions with testCases.`);
         }
         
         if (validatedQuestions.length < questionsArray.length) {
-          console.warn(`⚠️ [GEMINI-SERVICE] Rejected ${questionsArray.length - validatedQuestions.length} theoretical question(s), keeping ${validatedQuestions.length} coding question(s)`);
+          console.warn(`⚠️ [GEMINI-SERVICE] Rejected ${questionsArray.length - validatedQuestions.length} THEORETICAL question(s), keeping ${validatedQuestions.length} CODING question(s)`);
         }
         
         // Clean and ensure only coding question fields are present
