@@ -1106,6 +1106,21 @@ router.post('/generate-question-package', async (req, res) => {
           questions = Array.isArray(generated) ? generated : generated ? [generated] : []
         }
         console.log('🔍 [DEBUG] Questions array after processing:', questions.length, 'questions')
+        
+        // Log first question structure to debug
+        if (questions.length > 0) {
+          const firstQ = questions[0]
+          console.log('🔍 [DEBUG] First question from Gemini:', {
+            keys: Object.keys(firstQ),
+            hasTestCases: !!firstQ.testCases,
+            hasOptions: !!firstQ.options,
+            hasCorrectAnswer: !!firstQ.correctAnswer,
+            _source: firstQ._source,
+            _isFallback: firstQ._isFallback,
+            questionType: firstQ.question_type || firstQ.questionType,
+            title: firstQ.title
+          })
+        }
       } catch (geminiError) {
         console.error('❌ [DEBUG] Error calling geminiService.generateCodingQuestion')
         console.error('   Error name:', geminiError?.name || 'N/A')
