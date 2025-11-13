@@ -354,26 +354,6 @@ EXAMPLE CORRECT CODING QUESTION:
 \`\`\`
 
 Generate exactly ${amount} CODING questions in a JSON array. Questions should gradually increase in difficulty.
-
-EXAMPLE FORMAT (CODING QUESTION):
-\`\`\`json
-[
-  {
-    "title": "Sum Two Numbers",
-    "description": "Write a JavaScript function called 'sum' that takes two numbers as parameters and returns their sum.",
-    "language": "${language}",
-    "topic_id": "${topic_id || ''}",
-    "question_type": "code",
-    "testCases": [
-      {"input": "sum(2, 3)", "expectedOutput": "5", "explanation": "2 + 3 = 5"},
-      {"input": "sum(-1, 5)", "expectedOutput": "4", "explanation": "-1 + 5 = 4"}
-    ],
-    "hints": ["Use the + operator", "Return the result directly"]
-  }
-]
-\`\`\`
-
-REMEMBER: Generate CODING questions where users write code, NOT theoretical/multiple-choice questions!
 `;
 
     try {
