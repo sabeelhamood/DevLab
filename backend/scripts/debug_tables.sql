@@ -52,3 +52,4 @@ SELECT
 FROM "competitions"
 ORDER BY "created_at" DESC;
 
+
