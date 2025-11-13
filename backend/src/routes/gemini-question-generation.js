@@ -12,18 +12,26 @@ console.log('🔍 [gemini-question-generation] Route file loaded and router crea
 
 // Middleware to log all requests to this router
 router.use((req, res, next) => {
-  console.log('\n' + '='.repeat(80))
-  console.log('🔍 [gemini-question-generation] Router middleware - Request received')
-  console.log('='.repeat(80))
-  console.log('   Method:', req.method)
-  console.log('   Path:', req.path)
-  console.log('   Original URL:', req.originalUrl)
-  console.log('   Body exists:', !!req.body)
-  console.log('   Body type:', typeof req.body)
-  console.log('   Body keys:', req.body ? Object.keys(req.body) : 'N/A')
-  console.log('   Headers:', JSON.stringify(req.headers, null, 2))
-  console.log('='.repeat(80) + '\n')
-  next()
+  try {
+    console.log('[DEBUG] Middleware passed for gemini route')
+    console.log('\n' + '='.repeat(80))
+    console.log('🔍 [gemini-question-generation] Router middleware - Request received')
+    console.log('='.repeat(80))
+    console.log('   Method:', req.method)
+    console.log('   Path:', req.path)
+    console.log('   Original URL:', req.originalUrl)
+    console.log('   Body exists:', !!req.body)
+    console.log('   Body type:', typeof req.body)
+    console.log('   Body keys:', req.body ? Object.keys(req.body) : 'N/A')
+    console.log('   Headers:', JSON.stringify(req.headers, null, 2))
+    console.log('='.repeat(80) + '\n')
+    next()
+  } catch (middlewareError) {
+    console.error('[ERROR] Router middleware error:', middlewareError)
+    console.error('   Error message:', middlewareError.message)
+    console.error('   Error stack:', middlewareError.stack)
+    next(middlewareError)
+  }
 })
 
 // Health check endpoint to verify route is registered
@@ -787,11 +795,18 @@ const parseSkills = (skillsPayload = {}) => {
 
 // Generate complete question package (question + hints + solution)
 router.post('/generate-question-package', async (req, res) => {
+  // CRITICAL: First log to confirm route is reached
+  console.log('[DEBUG] /generate-question-package route reached')
+  console.log('[DEBUG] Request method:', req.method)
+  console.log('[DEBUG] Request path:', req.path)
+  console.log('[DEBUG] Request originalUrl:', req.originalUrl)
+  
   try {
     console.log('\n' + '='.repeat(80))
     console.log('🚀 BACKEND: Received generate-question-package request')
     console.log('='.repeat(80))
     console.log('🔍 [DEBUG] Route handler is executing!')
+    console.log('[DEBUG] Payload received:', JSON.stringify(req.body, null, 2))
     console.log('🧾 Received payload:', JSON.stringify(req.body, null, 2))
     console.log('🌐 Request origin:', req.header('Origin'))
     console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))

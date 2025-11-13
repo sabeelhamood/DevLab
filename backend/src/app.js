@@ -549,10 +549,21 @@ if (requireServiceAuth) {
 
 // Add request logging for all /api routes to debug routing
 app.use('/api', (req, res, next) => {
-  console.log('🔍 [api-router] Incoming request:', req.method, req.path, req.originalUrl)
-  console.log('🔍 [api-router] Request body exists:', !!req.body)
-  console.log('🔍 [api-router] Request body type:', typeof req.body)
-  next()
+  try {
+    console.log('[DEBUG] API router middleware reached')
+    console.log('🔍 [api-router] Incoming request:', req.method, req.path, req.originalUrl)
+    console.log('🔍 [api-router] Request body exists:', !!req.body)
+    console.log('🔍 [api-router] Request body type:', typeof req.body)
+    if (req.path.includes('gemini-questions')) {
+      console.log('[DEBUG] Request is for gemini-questions route')
+    }
+    next()
+  } catch (apiRouterError) {
+    console.error('[ERROR] API router middleware error:', apiRouterError)
+    console.error('   Error message:', apiRouterError.message)
+    console.error('   Error stack:', apiRouterError.stack)
+    next(apiRouterError)
+  }
 })
 
 // Error catching middleware for all /api routes
@@ -646,6 +657,36 @@ app.use('/api/external/assessment', assessmentRoutes)
 app.use('/api/external/content-studio', contentStudioRoutes)
 app.use('/api/external/analytics', learningAnalyticsRoutes)
 app.use('/api/external/course-builder', courseBuilderRoutes)
+
+// Global error handler - catches ALL unhandled errors
+app.use((err, req, res, next) => {
+  console.error('\n' + '='.repeat(80))
+  console.error('[GLOBAL ERROR HANDLER] Unhandled error caught')
+  console.error('='.repeat(80))
+  console.error('   Error name:', err?.name || 'N/A')
+  console.error('   Error message:', err?.message || 'N/A')
+  console.error('   Error code:', err?.code || 'N/A')
+  console.error('   Request URL:', req?.originalUrl || 'N/A')
+  console.error('   Request method:', req?.method || 'N/A')
+  console.error('   Request path:', req?.path || 'N/A')
+  if (err?.stack) {
+    console.error('   Error stack:', err.stack)
+  }
+  if (err?.cause) {
+    console.error('   Error cause:', err.cause)
+  }
+  console.error('='.repeat(80) + '\n')
+  
+  // Don't send response if already sent
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: 'Internal Server Error',
+      error: err.message || 'Unknown error occurred',
+      errorName: err.name || 'Error'
+    })
+  }
+})
 
 // Error handling middleware
 app.use(notFound)
