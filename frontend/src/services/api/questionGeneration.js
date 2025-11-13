@@ -66,7 +66,7 @@ class QuestionGenerationAPI {
     macroSkills = [],
     difficulty = 'beginner',
     language = 'javascript',
-    questionType = 'code',
+    questionType = 'coding',
     questionCount = 1,
     humanLanguage = 'en'
   }, externalSignal = null) {

@@ -58,7 +58,7 @@ function PracticePage() {
         skills: currentTopic.skills || [],
         difficulty: 'intermediate',
         language: language,
-        questionType: questionType === 'code' ? 'code' : 'theoretical'
+        questionType: questionType === 'code' ? 'coding' : 'theoretical'
       })
       
       console.log('Generated AI question:', aiQuestion)

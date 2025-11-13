@@ -96,7 +96,7 @@ function SimpleQuestionPage() {
       
       // Get question metadata (defaults for coding questions)
       const questionCount = 4 // Default amount from Content Studio
-      const questionType = 'code' // Default to coding questions
+      const questionType = 'coding' // Default to coding questions
       const programmingLanguage = language || 'javascript'
       const humanLanguage = 'en'
       
