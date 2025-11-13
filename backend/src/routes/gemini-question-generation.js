@@ -8,6 +8,20 @@ import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClien
 
 const router = express.Router()
 
+// Health check endpoint to verify route is registered
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Gemini question generation routes are active',
+    timestamp: new Date().toISOString(),
+    routes: [
+      'GET /api/gemini-questions/health',
+      'GET /api/gemini-questions/test-cors',
+      'POST /api/gemini-questions/generate-question-package'
+    ]
+  })
+})
+
 // Test endpoint to verify CORS is working
 router.get('/test-cors', (req, res) => {
   console.log('🧪 CORS Test: Request received from origin:', req.header('Origin'))
