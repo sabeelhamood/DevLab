@@ -1366,19 +1366,37 @@ router.post('/generate-question-package', async (req, res) => {
     // Keep courseName for Railway compatibility (workaround)
     const cleanedQuestions = processedQuestions.map(q => {
       const cleaned = { ...q }
-      // Remove deprecated fields (keep courseName - workaround for Railway)
-      delete cleaned.nanoSkills
-      delete cleaned.macroSkills
-      delete cleaned.nano_skills
-      delete cleaned.macro_skills
+      
+      // STRICT: Remove ALL theoretical question fields - we ONLY return CODING questions
+      delete cleaned.options  // Theoretical field - MUST be removed
+      delete cleaned.correctAnswer  // Theoretical field - MUST be removed
+      delete cleaned.nanoSkills  // Deprecated
+      delete cleaned.macroSkills  // Deprecated
+      delete cleaned.nano_skills  // Deprecated
+      delete cleaned.macro_skills  // Deprecated
+      
       // Keep courseName - don't delete (workaround for Railway validation)
       if (!cleaned.courseName) {
         cleaned.courseName = req.body?.courseName || ' '
       }
+      
       // Ensure skills field exists (use existing skills or empty array)
       if (!cleaned.skills) {
         cleaned.skills = []
       }
+      
+      // CRITICAL: Ensure testCases exist for CODING questions
+      if (!cleaned.testCases || !Array.isArray(cleaned.testCases) || cleaned.testCases.length === 0) {
+        console.error(`❌ [CRITICAL] Question "${cleaned.title}" is missing testCases in final response!`)
+        console.error('   This should NEVER happen - we only process CODING questions with testCases')
+        // Set empty array as fallback (but log error)
+        cleaned.testCases = []
+        cleaned.test_cases = []
+      } else {
+        // Ensure both camelCase and snake_case formats exist
+        cleaned.test_cases = cleaned.testCases
+      }
+      
       return cleaned
     })
     
