@@ -4,15 +4,24 @@ export const errorHandler = (err, req, res, next) => {
   let error = { ...err }
   error.message = err.message
 
-  // Log error
-  console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-  })
+  // Log error with detailed information
+  console.error('\n' + '='.repeat(80))
+  console.error('❌ [ERROR-HANDLER] Error caught in error handler middleware')
+  console.error('='.repeat(80))
+  console.error('   Error name:', err.name || 'N/A')
+  console.error('   Error message:', err.message || 'N/A')
+  console.error('   Error code:', err.code || 'N/A')
+  console.error('   Error type:', typeof err)
+  console.error('   Request URL:', req.url || 'N/A')
+  console.error('   Request originalUrl:', req.originalUrl || 'N/A')
+  console.error('   Request method:', req.method || 'N/A')
+  console.error('   Request IP:', req.ip || 'N/A')
+  console.error('   Request path:', req.path || 'N/A')
+  console.error('   User Agent:', req.get('User-Agent') || 'N/A')
+  if (err.stack) {
+    console.error('   Error stack:', err.stack)
+  }
+  console.error('='.repeat(80) + '\n')
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {

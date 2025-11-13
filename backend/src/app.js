@@ -496,27 +496,38 @@ if (requireServiceAuth) {
   
   // Apply service auth to all /api routes except /api/auth and public frontend endpoints
   app.use('/api', (req, res, next) => {
-    console.log('🔍 [auth-middleware] Request received:', req.method, req.path, req.originalUrl)
-    // Skip authentication for:
-    // - Auth routes (login, register, etc.)
-    // - Health checks
-    // - Test endpoints
-    // - Gemini question generation endpoints (used by frontend at dev-lab-three.vercel.app)
-    // - Judge0 endpoints (used by frontend for code execution)
-    if (
-      req.path.startsWith('/auth') || 
-      req.path === '/health' || 
-      req.path === '/test-supabase' ||
-      req.path.startsWith('/gemini-questions') || // Frontend calls this without service auth
-      req.path.startsWith('/gemini-test') || // Frontend test endpoints
-      req.path.startsWith('/judge0') // Frontend calls this without service auth
-    ) {
-      console.log('🔓 [auth] Skipping service auth for:', req.path)
-      return next()
+    try {
+      console.log('🔍 [auth-middleware] Request received:', req.method, req.path, req.originalUrl)
+      // Skip authentication for:
+      // - Auth routes (login, register, etc.)
+      // - Health checks
+      // - Test endpoints
+      // - Gemini question generation endpoints (used by frontend at dev-lab-three.vercel.app)
+      // - Judge0 endpoints (used by frontend for code execution)
+      if (
+        req.path.startsWith('/auth') || 
+        req.path === '/health' || 
+        req.path === '/test-supabase' ||
+        req.path.startsWith('/gemini-questions') || // Frontend calls this without service auth
+        req.path.startsWith('/gemini-test') || // Frontend test endpoints
+        req.path.startsWith('/judge0') // Frontend calls this without service auth
+      ) {
+        console.log('🔓 [auth] Skipping service auth for:', req.path)
+        return next()
+      }
+      // Apply service authentication
+      console.log('🔒 [auth] Applying service auth for:', req.path)
+      return authenticateService(req, res, next)
+    } catch (authError) {
+      console.error('❌ [auth-middleware] Error in auth middleware:', authError)
+      console.error('   Error message:', authError.message)
+      console.error('   Error stack:', authError.stack)
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication middleware error',
+        message: authError.message
+      })
     }
-    // Apply service authentication
-    console.log('🔒 [auth] Applying service auth for:', req.path)
-    return authenticateService(req, res, next)
   })
 } else {
   console.log('🔓 [app] Service authentication disabled (development mode)')
