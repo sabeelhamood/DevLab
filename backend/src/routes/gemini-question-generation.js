@@ -225,6 +225,11 @@ router.get('/health', (req, res) => {
 
 // Generate question based on topic and skills (courseName removed - no longer used)
 router.post('/generate-question', async (req, res) => {
+  console.log('[DEBUG] /generate-question route reached (NOT /generate-question-package)')
+  console.log('[DEBUG] Request path:', req.path)
+  console.log('[DEBUG] Request originalUrl:', req.originalUrl)
+  console.log('[DEBUG] Request body:', JSON.stringify(req.body, null, 2))
+  
   try {
     const { 
       topicName, 
@@ -235,6 +240,7 @@ router.post('/generate-question', async (req, res) => {
     } = req.body
 
     if (!topicName) {
+      console.log('❌ [DEBUG] /generate-question: topicName is missing')
       return res.status(400).json({
         error: 'Topic name is required'
       })
