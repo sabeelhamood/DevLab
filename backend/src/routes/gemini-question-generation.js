@@ -854,7 +854,11 @@ router.post('/generate-question-package', async (req, res) => {
     
     // Support backward compatibility with old field names
     console.log('🔍 [DEBUG] Normalizing field names with backward compatibility...')
+    console.log('   - topic_name:', topic_name, '(type:', typeof topic_name, ')')
+    console.log('   - bodyTopicName:', bodyTopicName, '(type:', typeof bodyTopicName, ')')
+    console.log('   - req.body?.topicName:', req.body?.topicName, '(type:', typeof req.body?.topicName, ')')
     const topicName = topic_name || bodyTopicName || req.body?.topicName || null
+    console.log('   - Final topicName:', topicName, '(type:', typeof topicName, ', isTruthy:', !!topicName, ')')
     const rawQuestionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
     // Normalize questionType: 'coding' -> 'code', 'theoretical' -> 'theoretical'
     const questionType = rawQuestionType === 'coding' ? 'code' : rawQuestionType
@@ -898,8 +902,18 @@ router.post('/generate-question-package', async (req, res) => {
     
     // Validate required fields
     const missingFields = []
+    console.log('🔍 [DEBUG] Validating topicName:')
+    console.log('   - topicName value:', topicName)
+    console.log('   - topicName type:', typeof topicName)
+    console.log('   - topicName isTruthy:', !!topicName)
+    console.log('   - topicName isString:', typeof topicName === 'string')
+    console.log('   - topicName trimmed:', typeof topicName === 'string' ? topicName.trim() : 'N/A')
+    console.log('   - topicName isEmpty:', typeof topicName === 'string' && topicName.trim() === '')
     if (!topicName || (typeof topicName === 'string' && topicName.trim() === '')) {
+      console.log('❌ [DEBUG] topicName validation FAILED - adding to missingFields')
       missingFields.push('topicName')
+    } else {
+      console.log('✅ [DEBUG] topicName validation PASSED')
     }
     // Note: skills is optional - if not provided, use empty array
     // Note: learnerId is optional
