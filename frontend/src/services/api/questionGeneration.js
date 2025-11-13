@@ -102,7 +102,8 @@ class QuestionGenerationAPI {
         questionType: normalizedQuestionType,
         questionCount,
         amount: questionCount,
-        humanLanguage
+        humanLanguage,
+        courseName: ' ' // Temporary workaround: sending space to bypass old validation if Railway still running old code
       }
 
       console.log('📦 API: Payload sent to backend:', payload)
