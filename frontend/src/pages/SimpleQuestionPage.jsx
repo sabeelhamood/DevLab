@@ -122,6 +122,8 @@ function SimpleQuestionPage() {
       }, signal)
       
       console.log('📦 Received generated questions:', generatedQuestion)
+      console.log('🔍 DEBUG: Generated questions type:', typeof generatedQuestion)
+      console.log('🔍 DEBUG: Generated questions is array:', Array.isArray(generatedQuestion))
       
       // Check if request was aborted
       if (signal?.aborted) {
@@ -140,8 +142,23 @@ function SimpleQuestionPage() {
         questionsArray = [generatedQuestion]
       }
       
+      console.log('🔍 DEBUG: Questions array length:', questionsArray.length)
+      console.log('🔍 DEBUG: First question before transform:', questionsArray[0])
+      console.log('🔍 DEBUG: First question keys:', questionsArray[0] ? Object.keys(questionsArray[0]) : 'N/A')
+      
       // Transform questions to match component expectations
-      const transformedQuestions = questionsArray.map((q, index) => ({
+      const transformedQuestions = questionsArray.map((q, index) => {
+        console.log(`🔍 DEBUG: Transforming question ${index + 1}:`, {
+          title: q.title,
+          description: q.description,
+          testCases: q.testCases,
+          test_cases: q.test_cases,
+          _source: q._source,
+          _isFallback: q._isFallback,
+          allKeys: Object.keys(q)
+        })
+        
+        return {
         question_id: q.question_id || `demo_${Date.now()}_${index}`,
         question_type: 'code',
         questionType: 'coding',
@@ -149,17 +166,29 @@ function SimpleQuestionPage() {
         difficulty: q.difficulty || 'intermediate', // Display only, not sent to Gemini
         language: q.language || language,
         test_cases: (() => {
-          console.log('Raw testCases from backend:', q.testCases);
-          console.log('Raw test_cases from backend:', q.test_cases);
+          console.log(`🔍 DEBUG: Question ${index + 1} testCases check:`, {
+            'q.testCases': q.testCases,
+            'q.test_cases': q.test_cases,
+            'typeof testCases': typeof q.testCases,
+            'isArray testCases': Array.isArray(q.testCases),
+            'testCases length': q.testCases?.length,
+            'Raw testCases from backend': q.testCases,
+            'Raw test_cases from backend': q.test_cases
+          });
           // Support both camelCase and snake_case
-          return q.testCases || q.test_cases || [];
+          const testCases = q.testCases || q.test_cases || [];
+          console.log(`🔍 DEBUG: Question ${index + 1} final testCases:`, testCases);
+          return testCases;
         })(),
         hints: q.hints || [],
         solution: q.solution?.code || q.solution || '',
         title: q.title,
         topicName: q.topicName || topicName || 'Unknown Topic',
-        skills: q.skills || skills
-      }))
+        skills: q.skills || skills,
+        _source: q._source,
+        _isFallback: q._isFallback
+      };
+      })
       
       console.log('🔄 Setting questions array:', transformedQuestions)
       setQuestions(transformedQuestions)

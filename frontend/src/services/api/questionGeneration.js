@@ -149,9 +149,44 @@ class QuestionGenerationAPI {
       const result = await response.json()
       console.log('📦 API: Parsed response:', result)
       
+      // Check if questions are from Gemini or fallback
+      if (result.metadata) {
+        console.log('🔍 API: Response metadata:', {
+          questionsSource: result.metadata.questionsSource,
+          serviceUsed: result.metadata.serviceUsed,
+          geminiCount: result.metadata.geminiCount,
+          fallbackCount: result.metadata.fallbackCount,
+          isFallback: result.metadata.isFallback
+        })
+        
+        if (result.metadata.isFallback) {
+          console.warn('⚠️ API: Questions are FALLBACK (NOT from Gemini AI)')
+          console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
+        } else {
+          console.log('✅ API: Questions are from Gemini AI')
+        }
+      }
+      
       // Return questions array if available, otherwise return single question for backward compatibility
       if (result.questions && Array.isArray(result.questions)) {
         console.log('🎯 API: Returning questions array:', result.questions.length, 'questions')
+        
+        // Log first question structure to debug testCases
+        if (result.questions.length > 0) {
+          const firstQuestion = result.questions[0]
+          console.log('🔍 API: First question structure:', {
+            keys: Object.keys(firstQuestion),
+            hasTestCases: !!firstQuestion.testCases,
+            hasTest_cases: !!firstQuestion.test_cases,
+            testCases: firstQuestion.testCases,
+            test_cases: firstQuestion.test_cases,
+            _source: firstQuestion._source,
+            _isFallback: firstQuestion._isFallback,
+            title: firstQuestion.title,
+            description: firstQuestion.description
+          })
+        }
+        
         return result.questions
       } else {
         console.log('🎯 API: Returning single question:', result.question)
