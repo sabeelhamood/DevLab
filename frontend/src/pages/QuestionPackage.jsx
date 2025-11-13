@@ -43,8 +43,7 @@ function QuestionPackage() {
         course_id: '1',
         topic_name: 'Functions and Scope',
         topic_id: '301',
-        nano_skills: ['Function Declaration', 'Scope Understanding', 'Closures'],
-        macro_skills: ['JavaScript Functions', 'Scope Management'],
+        skills: ['Function Declaration', 'Scope Understanding', 'Closures', 'JavaScript Functions', 'Scope Management'],
         question_type: 'code' // or 'theoretical'
       }
       
@@ -354,9 +353,9 @@ int main() {
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span>Difficulty: {question.difficulty}</span>
-                {question.nano_skills && (
+                {question.skills && question.skills.length > 0 && (
                   <div className="flex space-x-1">
-                    {question.nano_skills.slice(0, 2).map((skill, index) => (
+                    {question.skills.slice(0, 2).map((skill, index) => (
                       <span key={index} className="px-2 py-1 bg-gray-100 rounded text-xs">
                         {skill}
                       </span>

@@ -27,9 +27,7 @@ const mockQuestion = {
       description: 'Should print Hello, World!'
     }
   ],
-  macroSkills: ['Programming Fundamentals'],
-  microSkills: ['Python Basics'],
-  nanoSkills: ['Print Statements'],
+  skills: ['Programming Fundamentals', 'Python Basics', 'Print Statements'],
   courseId: '1',
   topicId: '1',
   createdBy: 'system',

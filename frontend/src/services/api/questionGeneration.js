@@ -20,13 +20,13 @@ class QuestionGenerationAPI {
   async generateQuestion({
     courseName,
     topicName,
-    nanoSkills = [],
-    macroSkills = [],
+    skills = [],
     difficulty = 'beginner',
     language = 'javascript',
     questionType = 'coding'
   }) {
     try {
+      const normalizedSkills = Array.isArray(skills) ? skills : skills ? [skills] : []
       const response = await fetch(`${API_BASE_URL}/gemini-questions/generate-question`, {
         method: 'POST',
         headers: {
@@ -35,8 +35,7 @@ class QuestionGenerationAPI {
         body: JSON.stringify({
           courseName,
           topicName,
-          nanoSkills,
-          macroSkills,
+          skills: normalizedSkills,
           difficulty,
           language,
           questionType
@@ -62,8 +61,6 @@ class QuestionGenerationAPI {
     topicId = null,
     topic_id = null,
     skills = [],
-    nanoSkills = [],
-    macroSkills = [],
     language = 'javascript',
     questionType = 'coding',
     questionCount = 1,
@@ -74,8 +71,6 @@ class QuestionGenerationAPI {
       topicName,
       topicId,
       skills,
-      nanoSkills,
-      macroSkills,
       language,
       questionType,
       questionCount
@@ -309,8 +304,7 @@ class QuestionGenerationAPI {
   async generatePracticeQuestions({
     courseName,
     topicName,
-    nanoSkills = [],
-    macroSkills = [],
+    skills = [],
     difficulty = 'beginner',
     language = 'javascript',
     questionType = 'coding',
@@ -324,8 +318,7 @@ class QuestionGenerationAPI {
           const question = await this.generateQuestion({
             courseName,
             topicName,
-            nanoSkills,
-            macroSkills,
+            skills,
             difficulty,
             language,
             questionType

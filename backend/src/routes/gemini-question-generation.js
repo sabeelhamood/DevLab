@@ -229,8 +229,7 @@ router.post('/generate-question', async (req, res) => {
     const { 
       courseName, 
       topicName, 
-      nanoSkills = [], 
-      macroSkills = [], 
+      skills = [],
       difficulty = 'beginner',
       language = 'javascript',
       questionType = 'coding'
@@ -242,11 +241,14 @@ router.post('/generate-question', async (req, res) => {
       })
     }
 
+    // Normalize skills to array
+    const normalizedSkills = Array.isArray(skills) ? skills : skills ? [skills] : []
+
     let question
     if (questionType === 'coding') {
       const generated = await geminiService.generateCodingQuestion(
         topicName,
-        [...nanoSkills, ...macroSkills],
+        normalizedSkills,
         1,
         language,
         {
@@ -262,8 +264,7 @@ router.post('/generate-question', async (req, res) => {
         amount: 1,
         difficulty,
         humanLanguage: 'en',
-        nanoSkills,
-        microSkills: macroSkills
+        skills: normalizedSkills
       })
       question = theoretical?.[0] || {}
     }
@@ -271,8 +272,7 @@ router.post('/generate-question', async (req, res) => {
     // Add course and topic context to the question
     question.courseName = courseName
     question.topicName = topicName
-    question.nanoSkills = nanoSkills
-    question.macroSkills = macroSkills
+    question.skills = normalizedSkills
     question.difficulty = difficulty
     question.language = language
     question.questionType = questionType
@@ -283,8 +283,7 @@ router.post('/generate-question', async (req, res) => {
       metadata: {
         courseName,
         topicName,
-        nanoSkills,
-        macroSkills,
+        skills: normalizedSkills,
         difficulty,
         language,
         questionType,

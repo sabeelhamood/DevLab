@@ -70,7 +70,7 @@ function PracticePage() {
         question_content: aiQuestion.description || aiQuestion.question || aiQuestion.title || aiQuestion.question_content,
         difficulty: aiQuestion.difficulty || 'intermediate',
         language: aiQuestion.language || language,
-        tags: aiQuestion.skills || aiQuestion.nanoSkills || currentTopic.skills,
+        tags: aiQuestion.skills || currentTopic.skills,
         test_cases: aiQuestion.testCases || [],
         hints: aiQuestion.hints || [],
         solution: aiQuestion.solution || '',

@@ -39,9 +39,7 @@
  * @property {string[]} hints
  * @property {string} [solution]
  * @property {string} [explanation]
- * @property {string[]} macroSkills
- * @property {string[]} microSkills
- * @property {string[]} nanoSkills
+ * @property {string[]} skills
  * @property {string} courseId
  * @property {string} topicId
  * @property {string} createdBy

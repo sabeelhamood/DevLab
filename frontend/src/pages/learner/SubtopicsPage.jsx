@@ -30,8 +30,8 @@ function SubtopicsPage() {
       topicId: topic.topic_id,
       name: topic.topic_name,
       description: `Master ${topic.topic_name.toLowerCase()} concepts and techniques`,
-      macroSkills: topic.macro_skills,
-      microSkillsPractices: topic.nano_skills.map((skill, index) => ({
+      skills: topic.skills || [],
+      microSkillsPractices: (topic.skills || []).map((skill, index) => ({
         practiceId: parseInt(`${topic.topic_id}${index + 1}`),
         name: `${skill} Practice`,
         description: `Practice ${skill.toLowerCase()} concepts and implementations`,
@@ -149,9 +149,9 @@ function SubtopicsPage() {
               {/* Subtopic Details */}
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h5 className="font-semibold text-gray-900 mb-3">Macro Skills:</h5>
+                  <h5 className="font-semibold text-gray-900 mb-3">Skills:</h5>
                   <div className="flex flex-wrap gap-2">
-                    {subtopic.macroSkills.map((skill, index) => (
+                    {subtopic.skills && subtopic.skills.map((skill, index) => (
                       <span 
                         key={index}
                         className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"

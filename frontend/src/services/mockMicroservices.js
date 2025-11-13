@@ -520,16 +520,17 @@ export const mockMicroservices = {
 
   // Gemini API - AI-powered features (Real Integration via Backend)
   geminiService: {
-    generateQuestion: async (topic, difficulty, language, type, nanoSkills = [], macroSkills = []) => {
+    generateQuestion: async (topic, difficulty, language, type, skills = []) => {
       try {
-        console.log('Calling Gemini API with:', { topic, difficulty, language, type, nanoSkills, macroSkills })
+        const normalizedSkills = Array.isArray(skills) ? skills : skills ? [skills] : []
+        console.log('Calling Gemini API with:', { topic, difficulty, language, type, skills: normalizedSkills })
 
         const response = await fetch(`${API_BASE_URL}/gemini/generate-question`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ topic, difficulty, language, type, nanoSkills, macroSkills })
+          body: JSON.stringify({ topic, difficulty, language, type, skills: normalizedSkills })
         })
 
         if (!response.ok) {
