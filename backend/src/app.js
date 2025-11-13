@@ -550,13 +550,22 @@ if (requireServiceAuth) {
 // Add request logging for all /api routes to debug routing
 app.use('/api', (req, res, next) => {
   try {
+    console.log('\n' + '='.repeat(80))
     console.log('[DEBUG] API router middleware reached')
+    console.log('='.repeat(80))
     console.log('🔍 [api-router] Incoming request:', req.method, req.path, req.originalUrl)
     console.log('🔍 [api-router] Request body exists:', !!req.body)
     console.log('🔍 [api-router] Request body type:', typeof req.body)
     if (req.path.includes('gemini-questions')) {
       console.log('[DEBUG] Request is for gemini-questions route')
+      console.log('[DEBUG] Full path:', req.path)
+      console.log('[DEBUG] Full originalUrl:', req.originalUrl)
+      if (req.body) {
+        console.log('[DEBUG] Request body keys:', Object.keys(req.body))
+        console.log('[DEBUG] Request body:', JSON.stringify(req.body, null, 2))
+      }
     }
+    console.log('='.repeat(80) + '\n')
     next()
   } catch (apiRouterError) {
     console.error('[ERROR] API router middleware error:', apiRouterError)
@@ -569,12 +578,19 @@ app.use('/api', (req, res, next) => {
 // Error catching middleware for all /api routes
 app.use('/api', (err, req, res, next) => {
   if (err) {
+    console.error('\n' + '='.repeat(80))
     console.error('❌ [api-router] Error caught in API middleware:')
+    console.error('='.repeat(80))
     console.error('   Error name:', err.name || 'N/A')
     console.error('   Error message:', err.message || 'N/A')
     console.error('   Error stack:', err.stack || 'N/A')
     console.error('   Request URL:', req.originalUrl)
     console.error('   Request method:', req.method)
+    console.error('   Request path:', req.path)
+    if (req.body) {
+      console.error('   Request body:', JSON.stringify(req.body, null, 2))
+    }
+    console.error('='.repeat(80) + '\n')
     return res.status(err.status || 500).json({
       success: false,
       error: err.message || 'Internal server error',
