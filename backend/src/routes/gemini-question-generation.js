@@ -680,38 +680,74 @@ router.post('/check-solution', async (req, res) => {
 
 // Helper function to parse skills from request
 const parseSkills = (skillsPayload = {}) => {
-  // If skills is an array, treat it as nanoSkills
+  const ensureArray = (value) => {
+    if (!value && value !== 0) return []
+    if (Array.isArray(value)) return value.filter((item) => typeof item === 'string' ? item.trim() !== '' : !!item)
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      return trimmed ? [trimmed] : []
+    }
+    return []
+  }
+
   if (Array.isArray(skillsPayload)) {
+    const unique = Array.from(new Set(ensureArray(skillsPayload)))
     return {
-      nanoSkills: skillsPayload,
+      skills: unique,
+      nanoSkills: unique,
       macroSkills: []
     }
   }
-  
-  // If skills is an object with nanoSkills/macroSkills
-  if (typeof skillsPayload === 'object' && skillsPayload !== null) {
-    const nano = skillsPayload.nanoSkills || skillsPayload.nano_skills || skillsPayload.nano || []
-    const macro = skillsPayload.macroSkills || skillsPayload.macro_skills || skillsPayload.macro || []
-    return {
-      nanoSkills: Array.isArray(nano) ? nano : nano ? [nano] : [],
-      macroSkills: Array.isArray(macro) ? macro : macro ? [macro] : []
-    }
-  }
-  
-  // If skills is a string, try to parse as JSON
+
   if (typeof skillsPayload === 'string') {
     try {
       const parsed = JSON.parse(skillsPayload)
       return parseSkills(parsed)
     } catch {
+      const arrayValue = ensureArray(skillsPayload)
       return {
-        nanoSkills: [skillsPayload],
+        skills: arrayValue,
+        nanoSkills: arrayValue,
         macroSkills: []
       }
     }
   }
-  
+
+  if (typeof skillsPayload === 'object' && skillsPayload !== null) {
+    const directSkills = ensureArray(
+      skillsPayload.skills ||
+      skillsPayload.items ||
+      skillsPayload.values
+    )
+
+    const nano = ensureArray(
+      skillsPayload.nanoSkills ||
+      skillsPayload.nano_skills ||
+      skillsPayload.nano
+    )
+
+    const macro = ensureArray(
+      skillsPayload.macroSkills ||
+      skillsPayload.macro_skills ||
+      skillsPayload.macro
+    )
+
+    let combined = [...directSkills]
+    if (!combined.length) {
+      combined = [...nano, ...macro]
+    }
+
+    const unique = Array.from(new Set(combined.filter(Boolean)))
+
+    return {
+      skills: unique,
+      nanoSkills: nano.length ? nano : unique,
+      macroSkills: macro
+    }
+  }
+
   return {
+    skills: [],
     nanoSkills: [],
     macroSkills: []
   }
@@ -751,9 +787,43 @@ router.post('/generate-question-package', async (req, res) => {
     const courseName = req.body.courseName || req.body.course_name || null // Optional for now
     
     // Parse skills from request
-    const skillsData = parseSkills(skills || req.body.skills || {})
-    const nanoSkills = Array.isArray(skillsData.nanoSkills) ? skillsData.nanoSkills : (Array.isArray(req.body.nanoSkills) ? req.body.nanoSkills : (Array.isArray(req.body.nano_skills) ? req.body.nano_skills : []))
-    const macroSkills = Array.isArray(skillsData.macroSkills) ? skillsData.macroSkills : (Array.isArray(req.body.macroSkills) ? req.body.macroSkills : (Array.isArray(req.body.macro_skills) ? req.body.macro_skills : []))
+    const ensureArray = (value) => {
+      if (!value && value !== 0) return []
+      if (Array.isArray(value)) return value
+      if (typeof value === 'string') return value.trim() ? [value.trim()] : []
+      return []
+    }
+
+    const skillsPayload = skills ?? req.body.skills ?? {}
+    const skillsData = parseSkills(skillsPayload)
+
+    let nanoSkills = ensureArray(skillsData.nanoSkills)
+    let macroSkills = ensureArray(skillsData.macroSkills)
+
+    const legacyNano = ensureArray(req.body.nanoSkills || req.body.nano_skills)
+    const legacyMacro = ensureArray(req.body.macroSkills || req.body.macro_skills)
+
+    if (!nanoSkills.length && legacyNano.length) {
+      nanoSkills = legacyNano
+    }
+
+    if (!macroSkills.length && legacyMacro.length) {
+      macroSkills = legacyMacro
+    }
+
+    const combinedSkills = skillsData.skills && skillsData.skills.length
+      ? ensureArray(skillsData.skills)
+      : [...nanoSkills, ...macroSkills]
+
+    const normalizedSkills = Array.from(new Set((combinedSkills || []).filter(Boolean)))
+
+    if (!nanoSkills.length && normalizedSkills.length) {
+      nanoSkills = normalizedSkills
+    }
+
+    if (!macroSkills.length && legacyMacro.length === 0 && (!skillsData.macroSkills || !skillsData.macroSkills.length)) {
+      macroSkills = []
+    }
     
     // Validate required fields
     if (!topicName) {
@@ -780,8 +850,11 @@ router.post('/generate-question-package', async (req, res) => {
     console.log(`   Question Type: ${questionType}`)
     console.log(`   Programming Language: ${language}`)
     console.log(`   Human Language: ${humanLanguage}`)
-    console.log(`   Nano Skills: ${JSON.stringify(nanoSkills)}`)
-    console.log(`   Macro Skills: ${JSON.stringify(macroSkills)}`)
+    console.log(`   Skills: ${JSON.stringify(normalizedSkills)}`)
+    if (legacyNano.length || legacyMacro.length) {
+      console.log(`   Legacy Nano Skills: ${JSON.stringify(legacyNano)}`)
+      console.log(`   Legacy Macro Skills: ${JSON.stringify(legacyMacro)}`)
+    }
     
     const finalQuestionCount = questionCount > 0 ? parseInt(questionCount) : 1
 
@@ -798,10 +871,12 @@ router.post('/generate-question-package', async (req, res) => {
       console.log('💻 Backend: Generating coding question(s) via unified flow')
       
       // Ensure skills arrays are valid before combining
-      const combinedSkills = [
-        ...(Array.isArray(nanoSkills) ? nanoSkills : []),
-        ...(Array.isArray(macroSkills) ? macroSkills : [])
-      ]
+      const combinedSkills = normalizedSkills.length
+        ? normalizedSkills
+        : [
+            ...(Array.isArray(nanoSkills) ? nanoSkills : []),
+            ...(Array.isArray(macroSkills) ? macroSkills : [])
+          ]
       
       console.log('   Parameters:', {
         topic: topicName,
@@ -935,6 +1010,7 @@ router.post('/generate-question-package', async (req, res) => {
       question.topic_id = topic_id || question.topic_id || null
       question.nanoSkills = nanoSkills
       question.macroSkills = macroSkills
+      question.skills = normalizedSkills
       question.difficulty = question.difficulty || 'intermediate'
       question.language = questionType === 'code' ? language : null
       question.programming_language = questionType === 'code' ? language : null
@@ -976,9 +1052,11 @@ router.post('/generate-question-package', async (req, res) => {
         topicName: topicName, // Keep backward compatibility
         courseName: courseName || null,
         skills: {
+          list: normalizedSkills,
           nanoSkills: nanoSkills,
           macroSkills: macroSkills
         },
+        skillsList: normalizedSkills,
         nanoSkills: nanoSkills, // Keep backward compatibility
         macroSkills: macroSkills, // Keep backward compatibility
         question_type: questionType,

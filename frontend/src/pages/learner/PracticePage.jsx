@@ -54,11 +54,11 @@ function PracticePage() {
       const aiQuestion = await questionGenerationAPI.generateQuestionPackage({
         courseName: currentTopic.course_name || 'Programming Course',
         topicName: currentTopic.topic_name,
-        nanoSkills: currentTopic.nano_skills || [],
-        macroSkills: currentTopic.macro_skills || [],
+        topicId: currentTopic.topic_id,
+        skills: currentTopic.skills || [],
         difficulty: 'intermediate',
         language: language,
-        questionType: questionType === 'code' ? 'coding' : 'theoretical'
+        questionType: questionType === 'code' ? 'code' : 'theoretical'
       })
       
       console.log('Generated AI question:', aiQuestion)
@@ -70,7 +70,7 @@ function PracticePage() {
         question_content: aiQuestion.description || aiQuestion.question || aiQuestion.title || aiQuestion.question_content,
         difficulty: aiQuestion.difficulty || 'intermediate',
         language: aiQuestion.language || language,
-        tags: aiQuestion.nanoSkills || currentTopic.nano_skills,
+        tags: aiQuestion.skills || aiQuestion.nanoSkills || currentTopic.skills,
         test_cases: aiQuestion.testCases || [],
         hints: aiQuestion.hints || [],
         solution: aiQuestion.solution || '',

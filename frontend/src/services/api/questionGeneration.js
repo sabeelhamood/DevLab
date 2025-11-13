@@ -59,16 +59,22 @@ class QuestionGenerationAPI {
   async generateQuestionPackage({
     courseName,
     topicName,
+    topicId = null,
+    topic_id = null,
+    skills = [],
     nanoSkills = [],
     macroSkills = [],
     difficulty = 'beginner',
     language = 'javascript',
-    questionType = 'coding',
-    questionCount = 1
+    questionType = 'code',
+    questionCount = 1,
+    humanLanguage = 'en'
   }, externalSignal = null) {
     console.log('🔧 API: generateQuestionPackage called with params:', {
       courseName,
       topicName,
+      topicId,
+      skills,
       nanoSkills,
       macroSkills,
       difficulty,
@@ -88,21 +94,46 @@ class QuestionGenerationAPI {
       const signal = externalSignal || controller.signal
 
       console.log('📡 API: Making fetch request to:', `${API_BASE_URL}/gemini-questions/generate-question-package`)
+      const normalizedSkills = Array.isArray(skills)
+        ? skills
+        : skills
+          ? [skills]
+          : []
+
+      const normalizedQuestionType = questionType === 'coding' ? 'code' : questionType
+
+      const payload = {
+        courseName,
+        topicName,
+        topic_id: topicId ?? topic_id ?? null,
+        topic_name: topicName,
+        skills: normalizedSkills,
+        language,
+        programming_language: language,
+        question_type: normalizedQuestionType,
+        questionType: normalizedQuestionType,
+        questionCount,
+        amount: questionCount,
+        difficulty,
+        humanLanguage
+      }
+
+      if (Array.isArray(nanoSkills) && nanoSkills.length > 0) {
+        payload.nanoSkills = nanoSkills
+      }
+
+      if (Array.isArray(macroSkills) && macroSkills.length > 0) {
+        payload.macroSkills = macroSkills
+      }
+
+      console.log('📦 API: Payload sent to backend:', payload)
+
       const response = await safeFetch(`${API_BASE_URL}/gemini-questions/generate-question-package`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          courseName,
-          topicName,
-          nanoSkills,
-          macroSkills,
-          difficulty,
-          language,
-          questionType,
-          questionCount
-        }),
+        body: JSON.stringify(payload),
         signal
       })
 

@@ -111,15 +111,15 @@ function SimpleQuestionPage() {
       })
       
       console.log('📡 Calling questionGenerationAPI.generateQuestionPackage...')
-      // Pass skills array - backend will parse it correctly (treats array as nanoSkills)
       const generatedQuestion = await questionGenerationAPI.generateQuestionPackage({
         courseName: defaultCourse?.name || 'JavaScript Programming',
         topicName: topicName,
-        nanoSkills: skills, // Pass skills array as nanoSkills (backend combines with macroSkills)
-        macroSkills: [], // Empty macroSkills as per new structure
+        topicId: topicId,
+        skills: skills,
         language: programmingLanguage,
         questionType: questionType,
-        questionCount: questionCount
+        questionCount: questionCount,
+        humanLanguage
       }, signal)
       
       console.log('📦 Received generated questions:', generatedQuestion)
@@ -157,7 +157,8 @@ function SimpleQuestionPage() {
         solution: q.solution?.code || q.solution || '',
         title: q.title,
         courseName: q.courseName || defaultCourse?.name || 'JavaScript Programming',
-        topicName: q.topicName || topicName || 'Unknown Topic'
+        topicName: q.topicName || topicName || 'Unknown Topic',
+        skills: q.skills || skills
       }))
       
       console.log('🔄 Setting questions array:', transformedQuestions)
