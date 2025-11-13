@@ -837,7 +837,11 @@ router.post('/generate-question-package', async (req, res) => {
     const topicName = topic_name || bodyTopicName || req.body?.topicName || null
     const questionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
     const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
-    const questionCount = amount || req.body?.amount || req.body?.questionCount || 1
+    // Extract questionCount/amount - ensure it's a number
+    const rawQuestionCount = amount || req.body?.amount || req.body?.questionCount || 1
+    const questionCount = typeof rawQuestionCount === 'number' 
+      ? rawQuestionCount 
+      : parseInt(rawQuestionCount) || 1
     const courseName = req.body?.courseName || req.body?.course_name || null // Optional for now
     const rawDifficulty = bodyDifficulty ?? req.body?.difficulty ?? null
     const difficulty = rawDifficulty || 'intermediate'
@@ -951,7 +955,8 @@ router.post('/generate-question-package', async (req, res) => {
       console.log(`   Legacy Macro Skills: ${JSON.stringify(legacyMacro)}`)
     }
     
-    const finalQuestionCount = questionCount > 0 ? parseInt(questionCount) : 1
+    // questionCount is already a number from the normalization above
+    const finalQuestionCount = questionCount > 0 ? questionCount : 1
 
     // Generate questions based on question_type
     let questions = []
@@ -965,13 +970,11 @@ router.post('/generate-question-package', async (req, res) => {
       
       console.log('💻 Backend: Generating coding question(s) via unified flow')
       
-      // Ensure skills arrays are valid before combining
-      const combinedSkills = normalizedSkills.length
+      // Use normalizedSkills directly - it already contains all skills (from skills array or combined nanoSkills + macroSkills)
+      // No need to combine again, as normalizedSkills is already the final combined array
+      const combinedSkills = normalizedSkills && normalizedSkills.length > 0
         ? normalizedSkills
-        : [
-            ...(Array.isArray(nanoSkills) ? nanoSkills : []),
-            ...(Array.isArray(macroSkills) ? macroSkills : [])
-          ]
+        : []
       
       console.log('   Parameters:', {
         topic: topicName,
@@ -1033,7 +1036,7 @@ router.post('/generate-question-package', async (req, res) => {
           language,
           {
             humanLanguage,
-            topic_id: topic_id || null
+            topic_id: topic_id ?? null
           }
         )
         
