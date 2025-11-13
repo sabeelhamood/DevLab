@@ -847,6 +847,13 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('🔍 [DEBUG] req.body keys:', req.body ? Object.keys(req.body) : 'N/A')
     
     // Extract new field names from request
+    console.log('\n' + '='.repeat(80))
+    console.log('🚀 [BACKEND ROUTE] /generate-question-package ENDPOINT HIT')
+    console.log('='.repeat(80))
+    console.log('📥 Raw req.body received:')
+    console.log(JSON.stringify(req.body, null, 2))
+    console.log('='.repeat(80) + '\n')
+    
     console.log('🔍 [DEBUG] Extracting fields from req.body...')
     const {
       amount = 1,                      // Number of questions to generate (default: 1)
@@ -871,15 +878,24 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - learnerId:', bodyLearnerId, '(type:', typeof bodyLearnerId, ')')
     
     // Support backward compatibility with old field names
-    console.log('🔍 [DEBUG] Normalizing field names with backward compatibility...')
-    console.log('   - topic_name:', topic_name, '(type:', typeof topic_name, ')')
-    console.log('   - bodyTopicName:', bodyTopicName, '(type:', typeof bodyTopicName, ')')
-    console.log('   - req.body?.topicName:', req.body?.topicName, '(type:', typeof req.body?.topicName, ')')
+    console.log('\n' + '='.repeat(80))
+    console.log('🔍 [BACKEND ROUTE] Normalizing field names...')
+    console.log('='.repeat(80))
+    console.log('   - Raw question_type from body:', question_type, '(type:', typeof question_type, ')')
+    console.log('   - req.body?.questionType:', req.body?.questionType, '(type:', typeof req.body?.questionType, ')')
+    console.log('   - req.body?.question_type:', req.body?.question_type, '(type:', typeof req.body?.question_type, ')')
+    
     const topicName = topic_name || bodyTopicName || req.body?.topicName || null
     console.log('   - Final topicName:', topicName, '(type:', typeof topicName, ', isTruthy:', !!topicName, ')')
+    
     const rawQuestionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
     // Normalize questionType: 'coding' -> 'code', 'theoretical' -> 'theoretical'
     const questionType = rawQuestionType === 'coding' ? 'code' : rawQuestionType
+    
+    console.log('   - Raw questionType:', rawQuestionType)
+    console.log('   - Final questionType:', questionType)
+    console.log('   - Will route to:', questionType === 'code' ? '✅ CODING (Gemini)' : questionType === 'theoretical' ? '❌ THEORETICAL (Assessment)' : '❓ UNKNOWN')
+    console.log('='.repeat(80) + '\n')
     const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
     // Extract questionCount/amount - ensure it's a number
     const rawQuestionCount = amount || req.body?.amount || req.body?.questionCount || 1
@@ -1004,7 +1020,13 @@ router.post('/generate-question-package', async (req, res) => {
     
     if (questionType === 'code') {
       // Route to Gemini for code questions
-      console.log(`🤖 Backend: Generating ${finalQuestionCount} code question(s) with Gemini...`)
+      console.log('\n' + '='.repeat(80))
+      console.log('✅ [BACKEND ROUTE] questionType === "code" → ROUTING TO GEMINI')
+      console.log('='.repeat(80))
+      console.log(`🤖 Backend: Generating ${finalQuestionCount} CODING question(s) with Gemini...`)
+      console.log('   ✅ Route: CODING questions → Gemini API')
+      console.log('   ❌ Route: NOT theoretical questions → NOT Assessment Service')
+      console.log('='.repeat(80) + '\n')
       serviceUsed = 'gemini'
       
       console.log('💻 Backend: Generating coding question(s) via unified flow')
@@ -1067,18 +1089,44 @@ router.post('/generate-question-package', async (req, res) => {
         console.log('✅ [DEBUG] Added courseName to Gemini payload:', courseNameFromBody)
         
         console.log('\n' + '='.repeat(80))
-        console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
+        console.log('🚀 [BACKEND ROUTE] Calling geminiService.generateCodingQuestion NOW...')
         console.log('='.repeat(80))
-        console.log('📦 Gemini payload:', JSON.stringify(geminiPayload, null, 2))
-        console.log('   Parameter 1 (topic):', topicName, '(type:', typeof topicName, ', valid:', !!topicName, ')')
-        console.log('   Parameter 2 (skills):', JSON.stringify(combinedSkills), '(type:', typeof combinedSkills, ', isArray:', Array.isArray(combinedSkills), ', length:', Array.isArray(combinedSkills) ? combinedSkills.length : 'N/A', ')')
-        console.log('   Parameter 3 (amount):', finalQuestionCount, '(type:', typeof finalQuestionCount, ', valid:', finalQuestionCount > 0, ')')
-        console.log('   Parameter 4 (language):', language, '(type:', typeof language, ', valid:', !!language, ')')
-        console.log('   Parameter 5 (options):', JSON.stringify({
+        console.log('📦 Complete Gemini Payload:')
+        console.log(JSON.stringify(geminiPayload, null, 2))
+        console.log('')
+        console.log('📋 Function Parameters Breakdown:')
+        console.log('   Parameter 1 (topic):', topicName)
+        console.log('      - Type:', typeof topicName)
+        console.log('      - Valid:', !!topicName)
+        console.log('      - Value:', topicName)
+        console.log('')
+        console.log('   Parameter 2 (skills):', JSON.stringify(combinedSkills))
+        console.log('      - Type:', typeof combinedSkills)
+        console.log('      - Is Array:', Array.isArray(combinedSkills))
+        console.log('      - Length:', Array.isArray(combinedSkills) ? combinedSkills.length : 'N/A')
+        console.log('      - Value:', JSON.stringify(combinedSkills))
+        console.log('')
+        console.log('   Parameter 3 (amount):', finalQuestionCount)
+        console.log('      - Type:', typeof finalQuestionCount)
+        console.log('      - Valid:', finalQuestionCount > 0)
+        console.log('      - Value:', finalQuestionCount)
+        console.log('')
+        console.log('   Parameter 4 (language):', language)
+        console.log('      - Type:', typeof language)
+        console.log('      - Valid:', !!language)
+        console.log('      - Value:', language)
+        console.log('')
+        console.log('   Parameter 5 (options):')
+        console.log('      - humanLanguage:', humanLanguage)
+        console.log('      - topic_id:', topic_id || null)
+        console.log('      - Full object:', JSON.stringify({
           humanLanguage,
           topic_id: topic_id || null
-        }), '(type: object)')
-        console.log('   Starting Gemini API request at:', new Date().toISOString())
+        }, null, 2))
+        console.log('')
+        console.log('   ✅ Function: geminiService.generateCodingQuestion')
+        console.log('   ✅ This will generate CODING questions (NOT theoretical)')
+        console.log('   ✅ Starting Gemini API request at:', new Date().toISOString())
         console.log('='.repeat(80) + '\n')
         
         const generated = await geminiService.generateCodingQuestion(

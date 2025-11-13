@@ -63,14 +63,19 @@ class QuestionGenerationAPI {
     questionCount = 1,
     humanLanguage = 'en'
   }, externalSignal = null) {
-    console.log('🔧 API: generateQuestionPackage called with params:', {
-      topicName,
-      topicId,
-      skills,
-      language,
-      questionType,
-      questionCount
-    })
+    console.log('\n' + '='.repeat(80))
+    console.log('🚀 [FRONTEND] generateQuestionPackage CALLED')
+    console.log('='.repeat(80))
+    console.log('📋 Received Parameters:')
+    console.log('   - topicName:', topicName, '(type:', typeof topicName, ')')
+    console.log('   - topicId:', topicId, '(type:', typeof topicId, ')')
+    console.log('   - topic_id:', topic_id, '(type:', typeof topic_id, ')')
+    console.log('   - skills:', JSON.stringify(skills), '(type:', typeof skills, ', isArray:', Array.isArray(skills), ', length:', Array.isArray(skills) ? skills.length : 'N/A', ')')
+    console.log('   - language:', language, '(type:', typeof language, ')')
+    console.log('   - questionType:', questionType, '(type:', typeof questionType, ')')
+    console.log('   - questionCount:', questionCount, '(type:', typeof questionCount, ')')
+    console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
+    console.log('='.repeat(80) + '\n')
     
     try {
       const controller = new AbortController()
@@ -91,6 +96,14 @@ class QuestionGenerationAPI {
 
       const normalizedQuestionType = questionType === 'coding' ? 'code' : questionType
 
+      console.log('\n' + '='.repeat(80))
+      console.log('🔧 [FRONTEND] Normalizing questionType...')
+      console.log('='.repeat(80))
+      console.log('   - Original questionType:', questionType)
+      console.log('   - Normalized questionType:', normalizedQuestionType)
+      console.log('   - Will route to:', normalizedQuestionType === 'code' ? '✅ CODING (Gemini)' : '❌ OTHER')
+      console.log('='.repeat(80) + '\n')
+
       const payload = {
         topicName,
         topic_id: topicId ?? topic_id ?? null,
@@ -106,7 +119,14 @@ class QuestionGenerationAPI {
         courseName: ' ' // Temporary workaround: sending space to bypass old validation if Railway still running old code
       }
 
-      console.log('📦 API: Payload sent to backend:', payload)
+      console.log('\n' + '='.repeat(80))
+      console.log('📦 [FRONTEND] Payload being sent to backend:')
+      console.log('='.repeat(80))
+      console.log(JSON.stringify(payload, null, 2))
+      console.log('='.repeat(80))
+      console.log('   ✅ question_type:', payload.question_type, '→ Will route to', payload.question_type === 'code' ? 'CODING (Gemini)' : 'OTHER')
+      console.log('   ✅ Endpoint:', `${API_BASE_URL}/gemini-questions/generate-question-package`)
+      console.log('='.repeat(80) + '\n')
 
       const response = await safeFetch(`${API_BASE_URL}/gemini-questions/generate-question-package`, {
         method: 'POST',
