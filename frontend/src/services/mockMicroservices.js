@@ -24,133 +24,103 @@ const buildDifficultyLadder = (count) => {
   )
 }
 
+const contentStudio = {
+  getCourses: () => [
+    {
+      course_id: 1,
+      name: "JavaScript Fundamentals",
+      description: "Learn the basics of JavaScript programming",
+      trainer_id: 2,
+      topics: [101, 102, 103]
+    },
+    {
+      course_id: 2,
+      name: "Advanced JavaScript Functions",
+      description: "Master advanced JavaScript function concepts",
+      trainer_id: 2,
+      topics: [201, 202, 203]
+    },
+    {
+      course_id: 3,
+      name: "Data Structures & Algorithms",
+      description: "Comprehensive guide to data structures and algorithms",
+      trainer_id: 2,
+      topics: [301, 302, 303]
+    }
+  ],
+
+  getTopics: (courseId) => {
+    const topics = {
+      201: [
+        {
+          topic_id: 301,
+          topic_name: "JavaScript Fundamentals",
+          skills: ["Variable Declaration", "Data Type Identification", "Type Conversion", "Function Basics"],
+        },
+        {
+          topic_id: 302,
+          topic_name: "Functions and Scope",
+          skills: ["Function Declaration", "Scope Understanding", "Closures", "Hoisting"]
+        }
+      ],
+      203: [
+        {
+          topic_id: 401,
+          topic_name: "Asynchronous JavaScript",
+          skills: ["Promises", "Async/Await", "Event Loop", "Error Handling"]
+        },
+        {
+          topic_id: 402,
+          topic_name: "Modern JavaScript Features",
+          skills: ["ES6+ Syntax", "Destructuring", "Spread Operator", "Template Literals"]
+        }
+      ],
+      204: [
+        {
+          topic_id: 501,
+          topic_name: "Algorithm Analysis",
+          skills: ["Time Complexity", "Space Complexity", "Big O Notation", "Algorithm Efficiency"]
+        },
+        {
+          topic_id: 502,
+          topic_name: "Sorting Algorithms",
+          skills: ["Bubble Sort", "Quick Sort", "Merge Sort", "Heap Sort"]
+        },
+        {
+          topic_id: 503,
+          topic_name: "Dynamic Programming",
+          skills: ["Memoization", "Tabulation", "Optimal Substructure", "Overlapping Subproblems"]
+        }
+      ]
+    }
+    return topics[courseId] || []
+  },
+
+  getQuestions: (topicId, amount = 4) => {
+    const topicsByCourse = [
+      ...contentStudio.getTopics(201),
+      ...contentStudio.getTopics(203),
+      ...contentStudio.getTopics(204)
+    ]
+
+    const topic = topicsByCourse.find(t => t.topic_id === topicId)
+    const skills = topic ? topic.skills : []
+
+    return Array.from({ length: amount }, (_, i) => ({
+      question_id: `${topicId}_${i + 1}`,
+      topic_id: topicId,
+      topic_name: topic ? topic.topic_name : "Unknown Topic",
+      skills: skills,
+      question_type: i % 2 === 0 ? "code" : "theoretical",
+      programming_language: "javascript",
+      humanLanguage: "en"
+    }))
+  }
+}
+
 export const mockMicroservices = {
   // Content Studio Service - Courses, topics, skills
-  contentStudio: {
-    getCourses: () => [
-      {
-        course_id: 1,
-        name: "JavaScript Fundamentals",
-        level: "beginner",
-        description: "Learn the basics of JavaScript programming",
-        trainer_id: 2,
-        topics: [101, 102, 103],
-        ai_feedback: {
-          difficulty_analysis: "Suitable for beginners",
-          recommendations: ["Add more examples", "Include practical exercises"]
-        }
-      },
-      {
-        course_id: 2,
-        name: "Advanced JavaScript Functions",
-        level: "intermediate",
-        description: "Master advanced JavaScript function concepts",
-        trainer_id: 2,
-        topics: [201, 202, 203],
-        ai_feedback: {
-          difficulty_analysis: "Intermediate level with complex concepts",
-          recommendations: ["Add more real-world examples"]
-        }
-      },
-      {
-        course_id: 3,
-        name: "Data Structures & Algorithms",
-        level: "advanced",
-        description: "Comprehensive guide to data structures and algorithms",
-        trainer_id: 2,
-        topics: [301, 302, 303],
-        ai_feedback: {
-          difficulty_analysis: "Advanced level requiring strong foundation",
-          recommendations: ["Include more algorithm explanations"]
-        }
-      }
-    ],
-
-    getTopics: (courseId) => {
-      const topics = {
-        201: [
-          {
-            topic_id: 301,
-            course_id: 201,
-            topic_name: "JavaScript Fundamentals",
-            nano_skills: ["Variable Declaration", "Data Type Identification", "Type Conversion", "Function Basics"],
-            macro_skills: ["JavaScript Basics", "Programming Fundamentals"]
-          },
-          {
-            topic_id: 302,
-            course_id: 201,
-            topic_name: "Functions and Scope",
-            nano_skills: ["Function Declaration", "Scope Understanding", "Closures", "Hoisting"],
-            macro_skills: ["JavaScript Functions", "Scope Management"]
-          }
-        ],
-        203: [
-          {
-            topic_id: 401,
-            course_id: 203,
-            topic_name: "Asynchronous JavaScript",
-            nano_skills: ["Promises", "Async/Await", "Event Loop", "Error Handling"],
-            macro_skills: ["Asynchronous Programming", "JavaScript Concurrency"]
-          },
-          {
-            topic_id: 402,
-            course_id: 203,
-            topic_name: "Modern JavaScript Features",
-            nano_skills: ["ES6+ Syntax", "Destructuring", "Spread Operator", "Template Literals"],
-            macro_skills: ["Modern JavaScript", "ES6+ Features"]
-          }
-        ],
-        204: [
-          {
-            topic_id: 501,
-            course_id: 204,
-            topic_name: "Algorithm Analysis",
-            nano_skills: ["Time Complexity", "Space Complexity", "Big O Notation", "Algorithm Efficiency"],
-            macro_skills: ["Algorithm Analysis", "Complexity Theory"]
-          },
-          {
-            topic_id: 502,
-            course_id: 204,
-            topic_name: "Sorting Algorithms",
-            nano_skills: ["Bubble Sort", "Quick Sort", "Merge Sort", "Heap Sort"],
-            macro_skills: ["Sorting Algorithms", "Algorithm Implementation"]
-          },
-          {
-            topic_id: 503,
-            course_id: 204,
-            topic_name: "Dynamic Programming",
-            nano_skills: ["Memoization", "Tabulation", "Optimal Substructure", "Overlapping Subproblems"],
-            macro_skills: ["Dynamic Programming", "Optimization Techniques"]
-          }
-        ]
-      }
-      return topics[courseId] || []
-    },
-
-    getQuestions: (topicId) => [
-      {
-        question_id: 1001,
-        topic_id: topicId,
-        question_type: "code",
-        question_content: "Write a function that returns the sum of two numbers",
-        difficulty: "beginner",
-        tags: ["functions", "arithmetic", "basics"],
-        test_cases: [
-          { input: "2, 3", expected_output: "5" },
-          { input: "10, 20", expected_output: "30" }
-        ]
-      },
-      {
-        question_id: 1002,
-        topic_id: topicId,
-        question_type: "theoretical",
-        question_content: "Explain the difference between let and var in JavaScript",
-        difficulty: "intermediate",
-        tags: ["variables", "scope", "hoisting"],
-        expected_answer: "let has block scope while var has function scope..."
-      }
-    ]
-  },
+  contentStudio,
 
   // Assessment Service - Questions, test cases, evaluation
   assessmentService: {
