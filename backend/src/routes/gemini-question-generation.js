@@ -720,7 +720,7 @@ const parseSkills = (skillsPayload = {}) => {
       macroSkills: []
     }
   }
-
+  
   if (typeof skillsPayload === 'string') {
     try {
       const parsed = JSON.parse(skillsPayload)
@@ -760,8 +760,8 @@ const parseSkills = (skillsPayload = {}) => {
     }
 
     const unique = Array.from(new Set(combined.filter(Boolean)))
-
-    return {
+  
+  return {
       skills: unique,
       nanoSkills: nano.length ? nano : unique,
       macroSkills: macro
@@ -802,10 +802,13 @@ router.post('/generate-question-package', async (req, res) => {
       amount = 1,                      // Number of questions to generate (default: 1)
       topic_id,                        // UUID of topic (optional, will be used for saving)
       topic_name,                      // Name of topic (required)
+      topicName: bodyTopicName,        // Fallback support
       skills = {},                     // Skills object or array (will be parsed)
       question_type = 'code',          // 'code' or 'theoretical'
       programming_language = 'javascript', // Programming language for code questions
-      humanLanguage = 'en'             // Human language for questions (default: 'en')
+      humanLanguage = 'en',            // Human language for questions (default: 'en')
+      difficulty: bodyDifficulty,
+      learnerId: bodyLearnerId
     } = req.body || {}
     
     console.log('🔍 [DEBUG] Extracted raw values:')
@@ -816,14 +819,18 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - question_type:', question_type, '(type:', typeof question_type, ')')
     console.log('   - programming_language:', programming_language, '(type:', typeof programming_language, ')')
     console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
+    console.log('   - difficulty:', bodyDifficulty, '(type:', typeof bodyDifficulty, ')')
+    console.log('   - learnerId:', bodyLearnerId, '(type:', typeof bodyLearnerId, ')')
     
     // Support backward compatibility with old field names
     console.log('🔍 [DEBUG] Normalizing field names with backward compatibility...')
-    const topicName = topic_name || req.body?.topicName || null
+    const topicName = topic_name || bodyTopicName || req.body?.topicName || null
     const questionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
     const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
     const questionCount = amount || req.body?.amount || req.body?.questionCount || 1
     const courseName = req.body?.courseName || req.body?.course_name || null // Optional for now
+    const difficulty = bodyDifficulty || req.body?.difficulty || 'intermediate'
+    const learnerId = bodyLearnerId || req.body?.learnerId || null
     
     console.log('🔍 [DEBUG] Normalized values:')
     console.log('   - topicName:', topicName, '(type:', typeof topicName, ')')
@@ -831,6 +838,8 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - language:', language, '(type:', typeof language, ')')
     console.log('   - questionCount:', questionCount, '(type:', typeof questionCount, ')')
     console.log('   - courseName:', courseName, '(type:', typeof courseName, ')')
+    console.log('   - difficulty:', difficulty, '(type:', typeof difficulty, ')')
+    console.log('   - learnerId:', learnerId, '(type:', typeof learnerId, ')')
     
     // Parse skills from request
     console.log('🔍 [DEBUG] Parsing skills...')
@@ -895,11 +904,18 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - macroSkills:', JSON.stringify(macroSkills))
     
     // Validate required fields
-    if (!topicName) {
-      console.log('❌ Backend: Missing required field: topic_name')
+    const missingFields = []
+    if (!topicName) missingFields.push('topicName')
+    if (!normalizedSkills || normalizedSkills.length === 0) missingFields.push('skills')
+    if (!difficulty) missingFields.push('difficulty')
+    if (!learnerId) missingFields.push('learnerId')
+
+    if (missingFields.length > 0) {
+      console.log('❌ Backend: Missing required field(s):', missingFields)
       return res.status(400).json({
         success: false,
-        error: 'Missing required field: topic_name'
+        error: 'Missing one or more required parameters in request body',
+        missingFields
       })
     }
     
@@ -1010,7 +1026,7 @@ router.post('/generate-question-package', async (req, res) => {
         if (!generated) {
           console.warn('⚠️ [DEBUG] Gemini returned null/undefined - using empty array')
           questions = []
-        } else {
+      } else {
           questions = Array.isArray(generated) ? generated : generated ? [generated] : []
         }
         console.log('🔍 [DEBUG] Questions array after processing:', questions.length, 'questions')
@@ -1128,52 +1144,52 @@ router.post('/generate-question-package', async (req, res) => {
           continue
         }
         
-        // For code questions, generate hints on-demand (empty array for now)
-        // For theoretical questions, use hints from Assessment Microservice
-        const hints = question.hints || []
+      // For code questions, generate hints on-demand (empty array for now)
+      // For theoretical questions, use hints from Assessment Microservice
+      const hints = question.hints || []
         console.log(`   - hints:`, Array.isArray(hints) ? hints.length : 'not array')
-        
-        // Generate solution explanation for code questions
-        let solution = null
-        if (questionType === 'code' && question.solution) {
-          try {
+      
+      // Generate solution explanation for code questions
+      let solution = null
+      if (questionType === 'code' && question.solution) {
+        try {
             console.log(`   - Processing solution (type: ${typeof question.solution})...`)
-            if (typeof question.solution === 'string') {
-              solution = {
-                code: question.solution,
-                explanation: question.explanation || null
-              }
-            } else {
-              solution = question.solution
+          if (typeof question.solution === 'string') {
+            solution = {
+              code: question.solution,
+              explanation: question.explanation || null
             }
-            console.log(`   - Solution processed successfully`)
-          } catch (error) {
-            console.warn(`⚠️ [DEBUG] Failed to process solution for question ${i + 1}:`, error.message)
-            solution = typeof question.solution === 'string' ? question.solution : JSON.stringify(question.solution)
+          } else {
+            solution = question.solution
           }
-        } else if (questionType === 'theoretical') {
-          // For theoretical questions, solution is the expected answer
-          solution = question.solution || question.expected_answer || null
+            console.log(`   - Solution processed successfully`)
+        } catch (error) {
+            console.warn(`⚠️ [DEBUG] Failed to process solution for question ${i + 1}:`, error.message)
+          solution = typeof question.solution === 'string' ? question.solution : JSON.stringify(question.solution)
         }
+      } else if (questionType === 'theoretical') {
+        // For theoretical questions, solution is the expected answer
+        solution = question.solution || question.expected_answer || null
+      }
 
-        // Add metadata to question
+      // Add metadata to question
         console.log(`   - Adding metadata to question ${i + 1}...`)
-        question.courseName = courseName || null
-        question.topicName = topicName
-        question.topic_id = topic_id || question.topic_id || null
-        question.nanoSkills = nanoSkills
-        question.macroSkills = macroSkills
+      question.courseName = courseName || null
+      question.topicName = topicName
+      question.topic_id = topic_id || question.topic_id || null
+      question.nanoSkills = nanoSkills
+      question.macroSkills = macroSkills
         question.skills = normalizedSkills
-        question.difficulty = question.difficulty || 'intermediate'
-        question.language = questionType === 'code' ? language : null
-        question.programming_language = questionType === 'code' ? language : null
-        question.questionType = questionType
-        question.question_type = questionType
-        question.hints = hints
-        question.solution = solution
-        question.humanLanguage = humanLanguage
+        question.difficulty = question.difficulty || difficulty || 'intermediate'
+      question.language = questionType === 'code' ? language : null
+      question.programming_language = questionType === 'code' ? language : null
+      question.questionType = questionType
+      question.question_type = questionType
+      question.hints = hints
+      question.solution = solution
+      question.humanLanguage = humanLanguage
 
-        processedQuestions.push(question)
+      processedQuestions.push(question)
         console.log(`✅ [DEBUG] Question ${i + 1} processed successfully`)
       } catch (questionError) {
         console.error(`❌ [DEBUG] Error processing question ${i + 1}:`)
@@ -1233,6 +1249,8 @@ router.post('/generate-question-package', async (req, res) => {
         topic_name: topicName,
         topicName: topicName, // Keep backward compatibility
         courseName: courseName || null,
+        difficulty,
+        learnerId,
         skills: {
           list: normalizedSkills,
           nanoSkills: nanoSkills,
@@ -1280,7 +1298,8 @@ router.post('/generate-question-package', async (req, res) => {
         courseId: null,
         nanoSkills: nanoSkills || [],
         macroSkills: macroSkills || [],
-        difficulty: 'intermediate', // Default difficulty
+        difficulty: difficulty || 'intermediate', // Default difficulty
+        learnerId,
         language: questionType === 'code' ? language : null,
         programming_language: questionType === 'code' ? language : null,
         questionType: questionType,
@@ -1558,7 +1577,7 @@ router.post('/generate-question-package', async (req, res) => {
         questionsCount: responseData.questions?.length || 0,
         hasMetadata: !!responseData.metadata
       })
-      res.json(responseData)
+    res.json(responseData)
       console.log('✅ [DEBUG] Response sent successfully')
     } catch (responseError) {
       console.error('❌ [DEBUG] Error sending response:')
@@ -1649,7 +1668,7 @@ router.post('/reveal-solution', async (req, res) => {
       const generatedSolution = Array.isArray(solutionCandidates)
         ? solutionCandidates[0] || {}
         : solutionCandidates || {}
-
+      
       solution = {
         code: generatedSolution.solution,
         explanation: generatedSolution.explanation
