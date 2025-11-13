@@ -118,14 +118,6 @@ class QuestionGenerationAPI {
         humanLanguage
       }
 
-      if (Array.isArray(nanoSkills) && nanoSkills.length > 0) {
-        payload.nanoSkills = nanoSkills
-      }
-
-      if (Array.isArray(macroSkills) && macroSkills.length > 0) {
-        payload.macroSkills = macroSkills
-      }
-
       console.log('📦 API: Payload sent to backend:', payload)
 
       const response = await safeFetch(`${API_BASE_URL}/gemini-questions/generate-question-package`, {

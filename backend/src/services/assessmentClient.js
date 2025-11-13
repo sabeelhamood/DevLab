@@ -13,8 +13,7 @@ const buildAssessmentPayload = ({
   amount,
   difficulty,
   humanLanguage,
-  nanoSkills,
-  microSkills
+  skills = []
 }) => ({
   topic_id,
   topicId: topic_id,
@@ -24,8 +23,7 @@ const buildAssessmentPayload = ({
   number_of_questions: amount,
   difficulty,
   humanLanguage,
-  nanoSkills,
-  microSkills
+  skills
 })
 
 const extractQuestions = (responseBody) => {
@@ -54,8 +52,7 @@ export const fetchAssessmentTheoreticalQuestions = async ({
   amount,
   difficulty = 'intermediate',
   humanLanguage = 'en',
-  nanoSkills = [],
-  microSkills = []
+  skills = []
 }) => {
   const fallback = () =>
     mockMicroservices.assessmentService.generateQuestions(topic_id, amount, difficulty) || []
@@ -79,8 +76,7 @@ export const fetchAssessmentTheoreticalQuestions = async ({
             amount,
             difficulty,
             humanLanguage,
-            nanoSkills,
-            microSkills
+            skills
           })
         )
       }
