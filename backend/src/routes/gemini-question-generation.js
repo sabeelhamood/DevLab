@@ -1117,6 +1117,14 @@ router.post('/generate-question-package', async (req, res) => {
 
       // Add metadata to question (courseName removed - no longer used)
         console.log(`   - Adding metadata to question ${i + 1}...`)
+      
+      // Remove deprecated fields before adding metadata
+      delete question.courseName
+      delete question.nanoSkills
+      delete question.macroSkills
+      delete question.nano_skills
+      delete question.macro_skills
+      
       question.topicName = topicName
       question.topic_id = topic_id || question.topic_id || null
       question.skills = validatedSkills
