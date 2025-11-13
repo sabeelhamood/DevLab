@@ -303,7 +303,9 @@ export class GeminiService {
     console.log('   - topic_id:', topic_id || 'null')
 
     const prompt = `
-You are an expert programming instructor. Generate a set of ${amount} practical coding questions for a developer.
+You are an expert programming instructor. Generate a set of ${amount} practical CODING questions for a developer.
+
+CRITICAL: These must be CODING questions where the user writes CODE. DO NOT generate theoretical/multiple-choice questions.
 
 Course Context:
 - Topic: ${topic}
@@ -315,36 +317,43 @@ Course Context:
 Requirements:
 1. Generate exactly ${amount} questions in a JSON array.
 2. The questions should increase in difficulty gradually; the last question should be the hardest.
-3. All questions must be coding questions (no theoretical questions).
-4. Each question must include:
-   - title
-   - description (clear problem statement with requirements)
-   - testCases: 2-3 test cases with input, expectedOutput, and explanation
-   - hints: 2-3 concise hints
+3. ALL questions MUST be CODING questions (write code to solve a problem).
+4. FORBIDDEN: Do NOT include theoretical question fields like "options", "correctAnswer", "explanation" as multiple choice.
+5. Each question MUST include:
+   - title: Brief question title
+   - description: Clear problem statement with specific coding requirements (what code to write)
+   - testCases: 2-3 test cases with input, expectedOutput, and explanation (REQUIRED - coding questions need test cases)
+   - hints: 2-3 concise hints for writing the code
    - topic_id: use the provided topic_id if any
-   - question_type: "code"
-5. DO NOT include "solution" or "summary".
-6. The questions must be practical, real-world relevant, fully executable if implemented.
-7. Use proper ${language} syntax and best practices.
-8. All natural language text must be in ${humanLanguage}.
-9. Return ONLY a valid JSON array of questions wrapped in triple backticks with "json" language identifier.
-10. NO extra text, explanations, or comments outside the JSON.
+   - question_type: "code" (must be "code", not "theoretical")
+6. DO NOT include "solution" or "summary".
+7. DO NOT include "options" (multiple choice options).
+8. DO NOT include "correctAnswer" (multiple choice answer).
+9. The questions must be practical, real-world relevant, fully executable if implemented.
+10. Use proper ${language} syntax and best practices.
+11. All natural language text must be in ${humanLanguage}.
+12. Return ONLY a valid JSON array of questions wrapped in triple backticks with "json" language identifier.
+13. NO extra text, explanations, or comments outside the JSON.
 
+EXAMPLE FORMAT (CODING QUESTION):
 \`\`\`json
 [
   {
-    "title": "Question title",
-    "description": "Clear problem statement with specific requirements",
+    "title": "Sum Two Numbers",
+    "description": "Write a JavaScript function called 'sum' that takes two numbers as parameters and returns their sum.",
     "language": "${language}",
     "topic_id": "${topic_id || ''}",
     "question_type": "code",
     "testCases": [
-      {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+      {"input": "sum(2, 3)", "expectedOutput": "5", "explanation": "2 + 3 = 5"},
+      {"input": "sum(-1, 5)", "expectedOutput": "4", "explanation": "-1 + 5 = 4"}
     ],
-    "hints": ["short concept hint", "specific approach hint", "implementation direction"]
+    "hints": ["Use the + operator", "Return the result directly"]
   }
 ]
 \`\`\`
+
+REMEMBER: Generate CODING questions where users write code, NOT theoretical/multiple-choice questions!
 `;
 
     try {
