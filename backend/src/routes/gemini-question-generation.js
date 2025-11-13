@@ -835,7 +835,7 @@ router.post('/generate-question-package', async (req, res) => {
       topic_id,                        // UUID of topic (optional, will be used for saving)
       topic_name,                      // Name of topic (required)
       topicName: bodyTopicName,        // Fallback support
-      skills = {},                     // Skills object or array (will be parsed)
+      skills,                          // Skills array (optional, will be parsed)
       question_type = 'code',          // 'code' or 'theoretical'
       programming_language = 'javascript', // Programming language for code questions
       humanLanguage = 'en',            // Human language for questions (default: 'en')
@@ -855,7 +855,9 @@ router.post('/generate-question-package', async (req, res) => {
     // Support backward compatibility with old field names
     console.log('🔍 [DEBUG] Normalizing field names with backward compatibility...')
     const topicName = topic_name || bodyTopicName || req.body?.topicName || null
-    const questionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
+    const rawQuestionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
+    // Normalize questionType: 'coding' -> 'code', 'theoretical' -> 'theoretical'
+    const questionType = rawQuestionType === 'coding' ? 'code' : rawQuestionType
     const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
     // Extract questionCount/amount - ensure it's a number
     const rawQuestionCount = amount || req.body?.amount || req.body?.questionCount || 1
@@ -896,9 +898,12 @@ router.post('/generate-question-package', async (req, res) => {
     
     // Validate required fields
     const missingFields = []
-    if (!topicName) missingFields.push('topicName')
+    if (!topicName || (typeof topicName === 'string' && topicName.trim() === '')) {
+      missingFields.push('topicName')
+    }
     // Note: skills is optional - if not provided, use empty array
     // Note: learnerId is optional
+    // Note: topic_id is optional
     
     if (missingFields.length > 0) {
       console.log('❌ Backend: Missing required field(s):', missingFields)
