@@ -64,7 +64,6 @@ class QuestionGenerationAPI {
     skills = [],
     nanoSkills = [],
     macroSkills = [],
-    difficulty = 'beginner',
     language = 'javascript',
     questionType = 'coding',
     questionCount = 1,
@@ -77,7 +76,6 @@ class QuestionGenerationAPI {
       skills,
       nanoSkills,
       macroSkills,
-      difficulty,
       language,
       questionType,
       questionCount
@@ -114,7 +112,6 @@ class QuestionGenerationAPI {
         questionType: normalizedQuestionType,
         questionCount,
         amount: questionCount,
-        difficulty,
         humanLanguage
       }
 
