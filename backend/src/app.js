@@ -408,6 +408,13 @@ app.use(compression())
 // Logging middleware
 app.use(morgan('combined'))
 
+// Top-level request logger - logs ALL requests before any other processing
+app.use((req, res, next) => {
+  console.log('🌐 [TOP-LEVEL] Incoming request:', req.method, req.originalUrl, req.path)
+  console.log('🌐 [TOP-LEVEL] Request headers:', JSON.stringify(req.headers, null, 2))
+  next()
+})
+
 // Apply service authentication to all /api routes in production
 // Skip for /api/auth routes (login, register, etc.) and /health endpoint
 const isProduction = config.nodeEnv === 'production'
@@ -421,6 +428,7 @@ if (requireServiceAuth) {
   
   // Apply service auth to all /api routes except /api/auth and public frontend endpoints
   app.use('/api', (req, res, next) => {
+    console.log('🔍 [auth-middleware] Request received:', req.method, req.path, req.originalUrl)
     // Skip authentication for:
     // - Auth routes (login, register, etc.)
     // - Health checks
