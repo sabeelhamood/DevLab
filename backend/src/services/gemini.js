@@ -381,8 +381,44 @@ Requirements:
         return questions;
       }
     } catch (err) {
-      console.error("❌ generateCodingQuestion error:", err?.message || err);
-      console.error("   Error stack:", err.stack);
+      console.error('\n' + '='.repeat(80));
+      console.error("❌ [GEMINI-SERVICE] generateCodingQuestion ERROR:");
+      console.error('='.repeat(80));
+      console.error("   Error name:", err?.name || 'N/A');
+      console.error("   Error message:", err?.message || 'N/A');
+      console.error("   Error code:", err?.code || 'N/A');
+      console.error("   Error status:", err?.status || 'N/A');
+      console.error("   Error type:", typeof err);
+      console.error("   Error details:", JSON.stringify(err, null, 2));
+      if (err?.stack) {
+        console.error("   Error stack:", err.stack);
+      }
+      console.error('='.repeat(80) + '\n');
+
+      // Check if it's a rate limit or quota issue
+      const isRateLimit = err?.message?.includes('429') || 
+                         err?.message?.includes('quota') || 
+                         err?.message?.includes('Rate limit') ||
+                         err?.message?.includes('Too Many Requests') ||
+                         err?.status === 429;
+      
+      const isOverloaded = err?.message?.includes('503') || 
+                          err?.message?.includes('Service Unavailable') || 
+                          err?.message?.includes('overloaded') ||
+                          err?.status === 503;
+
+      if (isRateLimit) {
+        console.error('⚠️ [GEMINI-SERVICE] Rate limit detected - returning fallback questions');
+      } else if (isOverloaded) {
+        console.error('⚠️ [GEMINI-SERVICE] Service overloaded - returning fallback questions');
+      } else {
+        console.error('⚠️ [GEMINI-SERVICE] Unknown error - returning fallback questions');
+        console.error('   This could indicate:');
+        console.error('   1. GEMINI_API_KEY is invalid or expired');
+        console.error('   2. Network connectivity issues');
+        console.error('   3. Gemini API endpoint changed');
+        console.error('   4. Request format is incorrect');
+      }
 
       // fallback logic for rate limits, overloads, timeouts
       const fallbackResult = this.generateFallbackCodingQuestions({
@@ -394,6 +430,7 @@ Requirements:
         amount
       });
       const fallbackQuestions = Array.isArray(fallbackResult.questions) ? fallbackResult.questions : [];
+      console.warn(`⚠️ [GEMINI-SERVICE] Returning ${fallbackQuestions.length} FALLBACK questions instead of Gemini questions`);
       return fallbackQuestions.map((entry, index) => ({
         ...entry.question,
         language,
