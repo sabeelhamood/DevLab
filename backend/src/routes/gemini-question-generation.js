@@ -1166,6 +1166,13 @@ router.post('/generate-question-package', async (req, res) => {
       const hints = question.hints || []
         console.log(`   - hints:`, Array.isArray(hints) ? hints.length : 'not array')
       
+      // Preserve testCases from question (can be testCases or test_cases)
+      const testCases = question.testCases || question.test_cases || []
+      console.log(`   - testCases:`, Array.isArray(testCases) ? testCases.length : 'not array or undefined')
+      if (testCases.length > 0) {
+        console.log(`   - testCases sample:`, JSON.stringify(testCases[0]))
+      }
+      
       // Generate solution explanation for code questions
       let solution = null
       if (questionType === 'code' && question.solution) {
@@ -1204,6 +1211,8 @@ router.post('/generate-question-package', async (req, res) => {
       question.questionType = questionType
       question.question_type = questionType
       question.hints = hints
+      question.testCases = testCases // Ensure testCases are preserved
+      question.test_cases = testCases // Also support snake_case for backward compatibility
       question.solution = solution
       question.humanLanguage = humanLanguage
 
