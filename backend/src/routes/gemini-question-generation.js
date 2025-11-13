@@ -908,9 +908,8 @@ router.post('/generate-question-package', async (req, res) => {
     const missingFields = []
     if (!topicName) missingFields.push('topicName')
     if (!normalizedSkills || normalizedSkills.length === 0) missingFields.push('skills')
-    if (!rawDifficulty) missingFields.push('difficulty')
-    if (!learnerId) missingFields.push('learnerId')
-
+    // Note: difficulty and learnerId are optional - they have defaults
+    
     if (missingFields.length > 0) {
       console.log('❌ Backend: Missing required field(s):', missingFields)
       return res.status(400).json({
@@ -1695,6 +1694,22 @@ router.post('/reveal-solution', async (req, res) => {
       message: error.message
     })
   }
+})
+
+// Error handler for this router
+router.use((err, req, res, next) => {
+  console.error('❌ [gemini-question-generation] Router error handler caught error:')
+  console.error('   Error name:', err?.name || 'N/A')
+  console.error('   Error message:', err?.message || 'N/A')
+  console.error('   Error stack:', err?.stack || 'N/A')
+  console.error('   Request URL:', req.originalUrl)
+  console.error('   Request method:', req.method)
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal server error',
+    errorName: err.name || 'Error'
+  })
 })
 
 export default router
