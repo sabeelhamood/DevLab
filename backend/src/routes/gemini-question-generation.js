@@ -223,11 +223,10 @@ router.get('/health', (req, res) => {
   })
 })
 
-// Generate question based on course, topic, and skills
+// Generate question based on topic and skills (courseName removed - no longer used)
 router.post('/generate-question', async (req, res) => {
   try {
     const { 
-      courseName, 
       topicName, 
       skills = [],
       difficulty = 'beginner',
@@ -235,9 +234,9 @@ router.post('/generate-question', async (req, res) => {
       questionType = 'coding'
     } = req.body
 
-    if (!courseName || !topicName) {
+    if (!topicName) {
       return res.status(400).json({
-        error: 'Course name and topic name are required'
+        error: 'Topic name is required'
       })
     }
 
