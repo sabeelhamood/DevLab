@@ -911,6 +911,7 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - skills:', JSON.stringify(finalSkills))
     
     // Validate required fields
+    // NOTE: courseName is NOT required - it has been removed from validation
     const missingFields = []
     console.log('🔍 [DEBUG] Validating topicName:')
     console.log('   - topicName value:', topicName)
@@ -925,6 +926,7 @@ router.post('/generate-question-package', async (req, res) => {
     } else {
       console.log('✅ [DEBUG] topicName validation PASSED')
     }
+    // Note: courseName is NOT required and has been removed - it will be ignored if present
     // Note: skills is optional - if not provided, use empty array
     // Note: learnerId is optional
     // Note: topic_id is optional
@@ -933,6 +935,7 @@ router.post('/generate-question-package', async (req, res) => {
       console.log('\n' + '='.repeat(80))
       console.log('❌ [400 ERROR] Missing required field(s):', missingFields)
       console.log('='.repeat(80))
+      console.log('   NOTE: courseName is NOT required and has been removed')
       console.log('   Request body keys:', Object.keys(req.body || {}))
       console.log('   Request body:', JSON.stringify(req.body, null, 2))
       console.log('   Normalized topicName:', topicName)
@@ -942,7 +945,7 @@ router.post('/generate-question-package', async (req, res) => {
       console.log('='.repeat(80) + '\n')
       return res.status(400).json({
         success: false,
-        error: 'Missing one or more required parameters in request body',
+        error: `Missing required parameter: ${missingFields.join(', ')}. Note: courseName is not required.`,
         missingFields,
         receivedFields: Object.keys(req.body || {}),
         receivedBody: req.body
