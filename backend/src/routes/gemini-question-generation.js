@@ -752,8 +752,8 @@ router.post('/generate-question-package', async (req, res) => {
     
     // Parse skills from request
     const skillsData = parseSkills(skills || req.body.skills || {})
-    const nanoSkills = skillsData.nanoSkills || req.body.nanoSkills || req.body.nano_skills || []
-    const macroSkills = skillsData.macroSkills || req.body.macroSkills || req.body.macro_skills || []
+    const nanoSkills = Array.isArray(skillsData.nanoSkills) ? skillsData.nanoSkills : (Array.isArray(req.body.nanoSkills) ? req.body.nanoSkills : (Array.isArray(req.body.nano_skills) ? req.body.nano_skills : []))
+    const macroSkills = Array.isArray(skillsData.macroSkills) ? skillsData.macroSkills : (Array.isArray(req.body.macroSkills) ? req.body.macroSkills : (Array.isArray(req.body.macro_skills) ? req.body.macro_skills : []))
     
     // Validate required fields
     if (!topicName) {
@@ -796,17 +796,42 @@ router.post('/generate-question-package', async (req, res) => {
       serviceUsed = 'gemini'
       
       console.log('💻 Backend: Generating coding question(s) via unified flow')
-      const generated = await geminiService.generateCodingQuestion(
-        topicName,
-        [...nanoSkills, ...macroSkills],
-        finalQuestionCount,
-        language,
-        {
+      
+      // Ensure skills arrays are valid before combining
+      const combinedSkills = [
+        ...(Array.isArray(nanoSkills) ? nanoSkills : []),
+        ...(Array.isArray(macroSkills) ? macroSkills : [])
+      ]
+      
+      console.log('   Parameters:', {
+        topic: topicName,
+        skills: combinedSkills,
+        amount: finalQuestionCount,
+        language: language,
+        options: {
           humanLanguage,
           topic_id: topic_id || null
         }
-      )
-      questions = Array.isArray(generated) ? generated : generated ? [generated] : []
+      })
+      
+      try {
+        const generated = await geminiService.generateCodingQuestion(
+          topicName,
+          combinedSkills,
+          finalQuestionCount,
+          language,
+          {
+            humanLanguage,
+            topic_id: topic_id || null
+          }
+        )
+        questions = Array.isArray(generated) ? generated : generated ? [generated] : []
+      } catch (geminiError) {
+        console.error('❌ Backend: Error calling geminiService.generateCodingQuestion:', geminiError)
+        console.error('   Error message:', geminiError.message)
+        console.error('   Error stack:', geminiError.stack)
+        throw geminiError // Re-throw to be caught by outer catch block
+      }
       
       // Check if questions are from Gemini or fallback
       const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
@@ -1224,9 +1249,14 @@ router.post('/generate-question-package', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Backend: Error generating question package:', error)
+    console.error('   Error name:', error.name)
+    console.error('   Error message:', error.message)
+    console.error('   Error stack:', error.stack)
     res.status(500).json({
+      success: false,
       error: 'Failed to generate question package',
-      message: error.message
+      message: error.message || 'Unknown error occurred',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
 })
