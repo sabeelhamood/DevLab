@@ -781,7 +781,7 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('🚀 BACKEND: Received generate-question-package request')
   console.log('='.repeat(80))
   console.log('🔍 [DEBUG] Route handler is executing!')
-  console.log('📋 Request body:', JSON.stringify(req.body, null, 2))
+  console.log('🧾 Received payload:', JSON.stringify(req.body, null, 2))
   console.log('🌐 Request origin:', req.header('Origin'))
   console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))
   console.log('🔗 Request URL:', req.url)
@@ -829,8 +829,9 @@ router.post('/generate-question-package', async (req, res) => {
     const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
     const questionCount = amount || req.body?.amount || req.body?.questionCount || 1
     const courseName = req.body?.courseName || req.body?.course_name || null // Optional for now
-    const difficulty = bodyDifficulty || req.body?.difficulty || 'intermediate'
-    const learnerId = bodyLearnerId || req.body?.learnerId || null
+    const rawDifficulty = bodyDifficulty ?? req.body?.difficulty ?? null
+    const difficulty = rawDifficulty || 'intermediate'
+    const learnerId = bodyLearnerId ?? req.body?.learnerId ?? null
     
     console.log('🔍 [DEBUG] Normalized values:')
     console.log('   - topicName:', topicName, '(type:', typeof topicName, ')')
@@ -838,7 +839,7 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - language:', language, '(type:', typeof language, ')')
     console.log('   - questionCount:', questionCount, '(type:', typeof questionCount, ')')
     console.log('   - courseName:', courseName, '(type:', typeof courseName, ')')
-    console.log('   - difficulty:', difficulty, '(type:', typeof difficulty, ')')
+    console.log('   - difficulty:', rawDifficulty, '(type:', typeof rawDifficulty, ')')
     console.log('   - learnerId:', learnerId, '(type:', typeof learnerId, ')')
     
     // Parse skills from request
@@ -907,7 +908,7 @@ router.post('/generate-question-package', async (req, res) => {
     const missingFields = []
     if (!topicName) missingFields.push('topicName')
     if (!normalizedSkills || normalizedSkills.length === 0) missingFields.push('skills')
-    if (!difficulty) missingFields.push('difficulty')
+    if (!rawDifficulty) missingFields.push('difficulty')
     if (!learnerId) missingFields.push('learnerId')
 
     if (missingFields.length > 0) {
