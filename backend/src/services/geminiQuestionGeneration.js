@@ -74,7 +74,6 @@ const normalizeQuestion = (question, index, defaults = {}) => {
  * Falls back to the built-in GeminiService fallback when the API is unavailable.
  */
 export const generateQuestions = async ({
-  courseName = 'JavaScript Mastery',
   topicName = 'JavaScript Competitions',
   difficulty = 'intermediate',
   questionCount = 3,

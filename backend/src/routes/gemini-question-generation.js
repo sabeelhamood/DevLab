@@ -323,7 +323,6 @@ router.post('/generate-hint', async (req, res) => {
     userAttempt = '', 
     hintsUsed = 0, 
     allHints = [],
-    courseName,
     topicName
     } = req.body || {}
 
@@ -339,7 +338,6 @@ router.post('/generate-hint', async (req, res) => {
         success: true,
         hint: fallbackHints[0],
         metadata: {
-          courseName: courseName || null,
           topicName: topicName || null,
           hintsUsed: 1,
           generatedAt: new Date().toISOString(),
@@ -377,7 +375,6 @@ router.post('/generate-hint', async (req, res) => {
             success: true,
             hint: fallbackHints[hintsUsed || 0] || fallbackHints[0],
             metadata: {
-              courseName: courseName || null,
               topicName: topicName || null,
               hintsUsed: (hintsUsed || 0) + 1,
               generatedAt: new Date().toISOString(),
@@ -404,7 +401,6 @@ router.post('/generate-hint', async (req, res) => {
           success: true,
           hint: fallbackHints[hintsUsed || 0] || fallbackHints[0],
           metadata: {
-            courseName: courseName || null,
             topicName: topicName || null,
             hintsUsed: (hintsUsed || 0) + 1,
             generatedAt: new Date().toISOString(),
@@ -452,7 +448,6 @@ router.post('/generate-hint', async (req, res) => {
       success: true,
           hint: hintText,
       metadata: {
-            courseName: courseName || null,
             topicName: topicName || null,
             hintsUsed: (hintsUsed || 0) + 1,
             generatedAt: new Date().toISOString(),
@@ -502,7 +497,6 @@ router.post('/generate-hint', async (req, res) => {
         success: true,
         hint: fallbackHint,
         metadata: {
-          courseName: courseName || null,
           topicName: topicName || null,
           hintsUsed: (hintsUsed || 0) + 1,
           generatedAt: new Date().toISOString(),
@@ -531,7 +525,6 @@ router.post('/generate-hint', async (req, res) => {
       success: true,
       hint: fallbackHints[0],
       metadata: {
-        courseName: null,
         topicName: null,
         hintsUsed: 1,
         generatedAt: new Date().toISOString(),
@@ -550,7 +543,6 @@ router.post('/check-solution', async (req, res) => {
     question, 
     userSolution, 
     language = 'javascript',
-    courseName,
     topicName
   } = req.body
 
@@ -660,7 +652,6 @@ router.post('/check-solution', async (req, res) => {
           patterns: combinedPatterns
         },
         metadata: {
-          courseName,
           topicName,
           language,
           checkedAt: new Date().toISOString(),
@@ -672,7 +663,6 @@ router.post('/check-solution', async (req, res) => {
     // Generate detailed feedback for non-AI solutions
     const feedback = await geminiService.generateLearningRecommendations(
       {
-        courseName,
         topicName,
         difficulty: question.difficulty || 'beginner'
       },
@@ -687,7 +677,6 @@ router.post('/check-solution', async (req, res) => {
       evaluation,
       feedback,
       metadata: {
-        courseName,
         topicName,
         language,
         checkedAt: new Date().toISOString(),
@@ -716,7 +705,6 @@ router.post('/check-solution', async (req, res) => {
           optimalSolution: null
         },
         metadata: {
-          courseName: courseName || 'Unknown Course',
           topicName: topicName || 'Unknown Topic',
           fallback: true,
           message: "Using fallback evaluation due to API rate limits"
@@ -815,19 +803,19 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('[DEBUG] Request originalUrl:', req.originalUrl)
   
   try {
-    console.log('\n' + '='.repeat(80))
-    console.log('🚀 BACKEND: Received generate-question-package request')
-    console.log('='.repeat(80))
+  console.log('\n' + '='.repeat(80))
+  console.log('🚀 BACKEND: Received generate-question-package request')
+  console.log('='.repeat(80))
     console.log('🔍 [DEBUG] Route handler is executing!')
     console.log('[DEBUG] Payload received:', JSON.stringify(req.body, null, 2))
     console.log('🧾 Received payload:', JSON.stringify(req.body, null, 2))
-    console.log('🌐 Request origin:', req.header('Origin'))
-    console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))
-    console.log('🔗 Request URL:', req.url)
-    console.log('🔗 Request path:', req.path)
-    console.log('🔗 Request method:', req.method)
-    console.log('🔗 Request originalUrl:', req.originalUrl)
-    console.log('='.repeat(80) + '\n')
+  console.log('🌐 Request origin:', req.header('Origin'))
+  console.log('🌐 Request headers:', JSON.stringify(req.headers, null, 2))
+  console.log('🔗 Request URL:', req.url)
+  console.log('🔗 Request path:', req.path)
+  console.log('🔗 Request method:', req.method)
+  console.log('🔗 Request originalUrl:', req.originalUrl)
+  console.log('='.repeat(80) + '\n')
   } catch (logError) {
     console.error('❌ [DEBUG] Error in initial logging:', logError)
     console.error('   Error message:', logError.message)
@@ -874,7 +862,6 @@ router.post('/generate-question-package', async (req, res) => {
     const questionCount = typeof rawQuestionCount === 'number' 
       ? rawQuestionCount 
       : parseInt(rawQuestionCount) || 1
-    const courseName = req.body?.courseName || req.body?.course_name || null // Optional for now
     const learnerId = bodyLearnerId ?? req.body?.learnerId ?? null
     
     console.log('🔍 [DEBUG] Normalized values:')
@@ -882,7 +869,6 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - questionType:', questionType, '(type:', typeof questionType, ')')
     console.log('   - language:', language, '(type:', typeof language, ')')
     console.log('   - questionCount:', questionCount, '(type:', typeof questionCount, ')')
-    console.log('   - courseName:', courseName, '(type:', typeof courseName, ')')
     console.log('   - learnerId:', learnerId, '(type:', typeof learnerId, ')')
     
     // Extract skills array - simple and straightforward
@@ -906,7 +892,6 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - questionType:', questionType)
     console.log('   - language:', language)
     console.log('   - questionCount:', questionCount)
-    console.log('   - courseName:', courseName)
     console.log('   - skills:', JSON.stringify(finalSkills))
     
     // Validate required fields
@@ -1162,14 +1147,14 @@ router.post('/generate-question-package', async (req, res) => {
     const fallbackQuestions = processedQuestions.filter(q => q._isFallback === true || q._source === 'fallback')
     const geminiQuestions = processedQuestions.filter(q => q._source === 'gemini' || (!q._source && !q._isFallback))
     
-    if (fallbackQuestions.length > 0) {
-      console.warn(`⚠️ WARNING: ${fallbackQuestions.length} question(s) are FALLBACK (NOT from Gemini AI)`)
-      console.warn(`   ${geminiQuestions.length} question(s) are from Gemini AI`)
-      console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
-      console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
-    } else {
-      console.log(`✅ All ${geminiQuestions.length} question(s) are from Gemini AI`)
-    }
+      if (fallbackQuestions.length > 0) {
+        console.warn(`⚠️ WARNING: ${fallbackQuestions.length} question(s) are FALLBACK (NOT from Gemini AI)`)
+        console.warn(`   ${geminiQuestions.length} question(s) are from Gemini AI`)
+        console.warn('   This usually means Gemini API is rate-limited, overloaded, or unavailable')
+        console.warn('   Check GEMINI_API_KEY and Railway logs for more details')
+      } else {
+        console.log(`✅ All ${geminiQuestions.length} question(s) are from Gemini AI`)
+      }
 
     // Validate before building response
     console.log('🔍 [DEBUG] Validating data before building response...')
@@ -1207,7 +1192,7 @@ router.post('/generate-question-package', async (req, res) => {
     })
     
     const cleanedSingleQuestion = cleanedQuestions[0] || null
-    
+
     const responseData = {
       success: true,
       questions: cleanedQuestions,
@@ -1247,12 +1232,10 @@ router.post('/generate-question-package', async (req, res) => {
       console.log(`   Question count: ${processedQuestions.length}`)
       console.log(`   Question type: ${questionType}`)
       console.log(`   Topic name: ${topicName}`)
-      console.log(`   Course name: ${courseName}`)
       console.log(`   Source: dev-lab-three.vercel.app`)
       
       // Prepare metadata for saving questions
       const saveMetadata = {
-        courseName: courseName || null,
         topicName: topicName,
         topic_id: topic_id || null, // Use topic_id from request if provided
         course_id: null, // Will be resolved from DEFAULT_COURSE_ID or lookup
@@ -1411,7 +1394,6 @@ router.post('/generate-question-package', async (req, res) => {
       console.log(`   Question count: ${processedQuestions.length}`)
       console.log(`   Question type: ${questionType}`)
       console.log(`   Topic name: ${topicName}`)
-      console.log(`   Course name: ${courseName}`)
       
       // Transform questions to match storage service format
       const questionsToSave = processedQuestions.map((q, index) => {
@@ -1473,7 +1455,6 @@ router.post('/generate-question-package', async (req, res) => {
         question_type: 'code', // Only code questions are supported
         programming_language: language,
         course_id: null, // Can be looked up by course_name if needed
-        course_name: courseName,
         skills: validatedSkills,
         humanLanguage: 'en',
         source: 'gemini-question-generation'
@@ -1578,7 +1559,6 @@ router.post('/reveal-solution', async (req, res) => {
     const { 
       question, 
       hintsUsed,
-      courseName,
       topicName,
       language = 'javascript'
     } = req.body
@@ -1602,7 +1582,6 @@ router.post('/reveal-solution', async (req, res) => {
         code: question.solution,
         explanation: await geminiService.generateLearningRecommendations(
           {
-            courseName,
             topicName,
             difficulty: question.difficulty || 'beginner'
           },
@@ -1635,7 +1614,6 @@ router.post('/reveal-solution', async (req, res) => {
       success: true,
       solution,
       metadata: {
-        courseName,
         topicName,
         language,
         revealedAt: new Date().toISOString(),
