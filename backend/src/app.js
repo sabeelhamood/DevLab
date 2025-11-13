@@ -63,10 +63,22 @@ const app = express()
 
 // Ultra-early request logger - catches ALL requests before any middleware
 app.use((req, res, next) => {
-  console.log('🚨 [ULTRA-EARLY] Request received:', req.method, req.originalUrl)
-  console.log('🚨 [ULTRA-EARLY] Request path:', req.path)
-  console.log('🚨 [ULTRA-EARLY] Request IP:', req.ip)
-  next()
+  try {
+    console.log('🚨 [ULTRA-EARLY] Request received:', req.method, req.originalUrl)
+    console.log('🚨 [ULTRA-EARLY] Request path:', req.path)
+    console.log('🚨 [ULTRA-EARLY] Request IP:', req.ip)
+    console.log('🚨 [ULTRA-EARLY] Request headers:', JSON.stringify(req.headers, null, 2))
+    next()
+  } catch (err) {
+    console.error('❌ [ULTRA-EARLY] Error in ultra-early middleware:', err)
+    console.error('   Error message:', err.message)
+    console.error('   Error stack:', err.stack)
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error in request processing',
+      message: err.message
+    })
+  }
 })
 
 const logDatabaseEnvStatus = () => {
