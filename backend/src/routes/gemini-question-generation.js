@@ -12,7 +12,17 @@ console.log('🔍 [gemini-question-generation] Route file loaded and router crea
 
 // Middleware to log all requests to this router
 router.use((req, res, next) => {
-  console.log('🔍 [gemini-question-generation] Request received:', req.method, req.path, req.originalUrl)
+  console.log('\n' + '='.repeat(80))
+  console.log('🔍 [gemini-question-generation] Router middleware - Request received')
+  console.log('='.repeat(80))
+  console.log('   Method:', req.method)
+  console.log('   Path:', req.path)
+  console.log('   Original URL:', req.originalUrl)
+  console.log('   Body exists:', !!req.body)
+  console.log('   Body type:', typeof req.body)
+  console.log('   Body keys:', req.body ? Object.keys(req.body) : 'N/A')
+  console.log('   Headers:', JSON.stringify(req.headers, null, 2))
+  console.log('='.repeat(80) + '\n')
   next()
 })
 
@@ -1002,8 +1012,19 @@ router.post('/generate-question-package', async (req, res) => {
       }
       
       try {
+        console.log('\n' + '='.repeat(80))
         console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
-        console.log('🔍 [DEBUG] Starting Gemini API request at:', new Date().toISOString())
+        console.log('='.repeat(80))
+        console.log('   Parameter 1 (topic):', topicName, '(type:', typeof topicName, ', valid:', !!topicName, ')')
+        console.log('   Parameter 2 (skills):', JSON.stringify(combinedSkills), '(type:', typeof combinedSkills, ', isArray:', Array.isArray(combinedSkills), ', length:', Array.isArray(combinedSkills) ? combinedSkills.length : 'N/A', ')')
+        console.log('   Parameter 3 (amount):', finalQuestionCount, '(type:', typeof finalQuestionCount, ', valid:', finalQuestionCount > 0, ')')
+        console.log('   Parameter 4 (language):', language, '(type:', typeof language, ', valid:', !!language, ')')
+        console.log('   Parameter 5 (options):', JSON.stringify({
+          humanLanguage,
+          topic_id: topic_id || null
+        }), '(type: object)')
+        console.log('   Starting Gemini API request at:', new Date().toISOString())
+        console.log('='.repeat(80) + '\n')
         
         const generated = await geminiService.generateCodingQuestion(
           topicName,

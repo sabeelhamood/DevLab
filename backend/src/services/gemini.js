@@ -283,9 +283,24 @@ export class GeminiService {
     language = "javascript",
     options = {}
   ) {
+    console.log('\n' + '='.repeat(80))
+    console.log('🔍 [GEMINI-SERVICE] generateCodingQuestion called')
+    console.log('='.repeat(80))
+    console.log('   Parameter 1 (topic):', topic, '(type:', typeof topic, ', valid:', !!topic, ')')
+    console.log('   Parameter 2 (skills):', JSON.stringify(skills), '(type:', typeof skills, ', isArray:', Array.isArray(skills), ', length:', Array.isArray(skills) ? skills.length : 'N/A', ')')
+    console.log('   Parameter 3 (amount):', amount, '(type:', typeof amount, ', valid:', amount > 0, ')')
+    console.log('   Parameter 4 (language):', language, '(type:', typeof language, ', valid:', !!language, ')')
+    console.log('   Parameter 5 (options):', JSON.stringify(options), '(type:', typeof options, ')')
+    console.log('='.repeat(80) + '\n')
+    
     this._checkAvailability();
 
     const { humanLanguage = 'en', seedQuestion = null, topic_id = null } = options;
+    
+    console.log('🔍 [GEMINI-SERVICE] Extracted options:')
+    console.log('   - humanLanguage:', humanLanguage)
+    console.log('   - seedQuestion:', seedQuestion ? 'provided' : 'null')
+    console.log('   - topic_id:', topic_id || 'null')
 
     const prompt = `
 You are an expert programming instructor. Generate a set of ${amount} practical coding questions for a developer.
