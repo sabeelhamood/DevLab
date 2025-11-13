@@ -804,12 +804,15 @@ router.post('/generate-question-package', async (req, res) => {
   console.log(JSON.stringify(req.body, null, 2))
   console.log('='.repeat(80) + '\n')
   
-  // Verify courseName is NOT in the incoming request
+  // Keep courseName if it's a space (workaround for Railway validation)
   if (req.body && req.body.courseName !== undefined) {
-    console.warn('⚠️ [WARNING] courseName found in incoming request body - will be ignored')
-    console.warn('   courseName value:', req.body.courseName)
-    // Remove it immediately
-    delete req.body.courseName
+    if (req.body.courseName === ' ' || req.body.courseName === '') {
+      console.log('✅ [DEBUG] courseName is space - keeping it for Railway compatibility')
+      // Keep it - don't delete
+    } else {
+      console.warn('⚠️ [WARNING] courseName found with value:', req.body.courseName, '- keeping it')
+      // Keep it - don't delete (might be needed for validation)
+    }
   }
   
   try {
@@ -1044,20 +1047,19 @@ router.post('/generate-question-package', async (req, res) => {
       
       try {
         // Build the payload that will be sent to Gemini
+        // Include courseName from request body if present (workaround for Railway validation)
+        const courseNameFromBody = req.body?.courseName || ' '
         const geminiPayload = {
           topicName: topicName,
           skills: combinedSkills,
           amount: finalQuestionCount,
           language: language,
           humanLanguage: humanLanguage,
-          topic_id: topic_id || null
+          topic_id: topic_id || null,
+          courseName: courseNameFromBody // Add courseName to Gemini payload (workaround)
         }
         
-        // Verify courseName is NOT in the payload
-        if (geminiPayload.courseName !== undefined) {
-          console.error('❌ [ERROR] courseName found in Gemini payload - removing it!')
-          delete geminiPayload.courseName
-        }
+        console.log('✅ [DEBUG] Added courseName to Gemini payload:', courseNameFromBody)
         
         console.log('\n' + '='.repeat(80))
         console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
@@ -1196,12 +1198,17 @@ router.post('/generate-question-package', async (req, res) => {
       // Add metadata to question (courseName removed - no longer used)
         console.log(`   - Adding metadata to question ${i + 1}...`)
       
-      // Remove deprecated fields before adding metadata
-      delete question.courseName
+      // Remove deprecated fields before adding metadata (keep courseName for Railway compatibility)
+      // delete question.courseName // Keep courseName - don't delete (workaround for Railway)
       delete question.nanoSkills
       delete question.macroSkills
       delete question.nano_skills
       delete question.macro_skills
+      
+      // Ensure courseName exists (workaround for Railway validation)
+      if (!question.courseName) {
+        question.courseName = req.body?.courseName || ' '
+      }
       
       question.topicName = topicName
       question.topic_id = topic_id || question.topic_id || null
@@ -1262,15 +1269,19 @@ router.post('/generate-question-package', async (req, res) => {
     
     console.log('🔍 [DEBUG] Building response data...')
     
-    // Remove nanoSkills, macroSkills, and courseName from all questions, ensure skills field exists
+    // Remove nanoSkills, macroSkills from all questions, ensure skills field exists
+    // Keep courseName for Railway compatibility (workaround)
     const cleanedQuestions = processedQuestions.map(q => {
       const cleaned = { ...q }
-      // Remove deprecated fields
+      // Remove deprecated fields (keep courseName - workaround for Railway)
       delete cleaned.nanoSkills
       delete cleaned.macroSkills
       delete cleaned.nano_skills
       delete cleaned.macro_skills
-      delete cleaned.courseName // Remove courseName - no longer used
+      // Keep courseName - don't delete (workaround for Railway validation)
+      if (!cleaned.courseName) {
+        cleaned.courseName = req.body?.courseName || ' '
+      }
       // Ensure skills field exists (use existing skills or empty array)
       if (!cleaned.skills) {
         cleaned.skills = []
