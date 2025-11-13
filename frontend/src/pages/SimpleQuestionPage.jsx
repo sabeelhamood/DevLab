@@ -150,7 +150,9 @@ function SimpleQuestionPage() {
         language: q.language || language,
         test_cases: (() => {
           console.log('Raw testCases from backend:', q.testCases);
-          return q.testCases || [];
+          console.log('Raw test_cases from backend:', q.test_cases);
+          // Support both camelCase and snake_case
+          return q.testCases || q.test_cases || [];
         })(),
         hints: q.hints || [],
         solution: q.solution?.code || q.solution || '',
