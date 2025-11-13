@@ -792,7 +792,12 @@ router.post('/generate-question-package', async (req, res) => {
   
   try {
     console.log('🔍 [DEBUG] Entering try block')
+    console.log('🔍 [DEBUG] req.body exists:', !!req.body)
+    console.log('🔍 [DEBUG] req.body type:', typeof req.body)
+    console.log('🔍 [DEBUG] req.body keys:', req.body ? Object.keys(req.body) : 'N/A')
+    
     // Extract new field names from request
+    console.log('🔍 [DEBUG] Extracting fields from req.body...')
     const {
       amount = 1,                      // Number of questions to generate (default: 1)
       topic_id,                        // UUID of topic (optional, will be used for saving)
@@ -801,16 +806,34 @@ router.post('/generate-question-package', async (req, res) => {
       question_type = 'code',          // 'code' or 'theoretical'
       programming_language = 'javascript', // Programming language for code questions
       humanLanguage = 'en'             // Human language for questions (default: 'en')
-    } = req.body
+    } = req.body || {}
+    
+    console.log('🔍 [DEBUG] Extracted raw values:')
+    console.log('   - amount:', amount, '(type:', typeof amount, ')')
+    console.log('   - topic_id:', topic_id, '(type:', typeof topic_id, ')')
+    console.log('   - topic_name:', topic_name, '(type:', typeof topic_name, ')')
+    console.log('   - skills:', JSON.stringify(skills), '(type:', typeof skills, ')')
+    console.log('   - question_type:', question_type, '(type:', typeof question_type, ')')
+    console.log('   - programming_language:', programming_language, '(type:', typeof programming_language, ')')
+    console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
     
     // Support backward compatibility with old field names
-    const topicName = topic_name || req.body.topicName
-    const questionType = question_type || req.body.questionType || req.body.question_type || 'code'
-    const language = programming_language || req.body.programming_language || req.body.language || 'javascript'
-    const questionCount = amount || req.body.amount || req.body.questionCount || 1
-    const courseName = req.body.courseName || req.body.course_name || null // Optional for now
+    console.log('🔍 [DEBUG] Normalizing field names with backward compatibility...')
+    const topicName = topic_name || req.body?.topicName || null
+    const questionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
+    const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
+    const questionCount = amount || req.body?.amount || req.body?.questionCount || 1
+    const courseName = req.body?.courseName || req.body?.course_name || null // Optional for now
+    
+    console.log('🔍 [DEBUG] Normalized values:')
+    console.log('   - topicName:', topicName, '(type:', typeof topicName, ')')
+    console.log('   - questionType:', questionType, '(type:', typeof questionType, ')')
+    console.log('   - language:', language, '(type:', typeof language, ')')
+    console.log('   - questionCount:', questionCount, '(type:', typeof questionCount, ')')
+    console.log('   - courseName:', courseName, '(type:', typeof courseName, ')')
     
     // Parse skills from request
+    console.log('🔍 [DEBUG] Parsing skills...')
     const ensureArray = (value) => {
       if (!value && value !== 0) return []
       if (Array.isArray(value)) return value
@@ -818,8 +841,20 @@ router.post('/generate-question-package', async (req, res) => {
       return []
     }
 
-    const skillsPayload = skills ?? req.body.skills ?? {}
-    const skillsData = parseSkills(skillsPayload)
+    const skillsPayload = skills ?? req.body?.skills ?? {}
+    console.log('🔍 [DEBUG] skillsPayload:', JSON.stringify(skillsPayload), '(type:', typeof skillsPayload, ')')
+    
+    let skillsData
+    try {
+      console.log('🔍 [DEBUG] Calling parseSkills...')
+      skillsData = parseSkills(skillsPayload)
+      console.log('🔍 [DEBUG] parseSkills result:', JSON.stringify(skillsData))
+    } catch (parseError) {
+      console.error('❌ [DEBUG] Error in parseSkills:', parseError)
+      console.error('   Error message:', parseError.message)
+      console.error('   Error stack:', parseError.stack)
+      throw parseError
+    }
 
     let nanoSkills = ensureArray(skillsData.nanoSkills)
     let macroSkills = ensureArray(skillsData.macroSkills)
@@ -925,15 +960,35 @@ router.post('/generate-question-package', async (req, res) => {
       
       console.log('🔍 [DEBUG] About to call geminiService.generateCodingQuestion')
       console.log('🔍 [DEBUG] Call parameters:')
-      console.log('   - topic:', topicName)
-      console.log('   - skills:', JSON.stringify(combinedSkills))
-      console.log('   - amount:', finalQuestionCount)
-      console.log('   - language:', language)
-      console.log('   - humanLanguage:', humanLanguage)
-      console.log('   - topic_id:', topic_id || null)
+      console.log('   - topic:', topicName, '(type:', typeof topicName, ', valid:', !!topicName, ')')
+      console.log('   - skills:', JSON.stringify(combinedSkills), '(type:', typeof combinedSkills, ', isArray:', Array.isArray(combinedSkills), ')')
+      console.log('   - amount:', finalQuestionCount, '(type:', typeof finalQuestionCount, ', valid:', finalQuestionCount > 0, ')')
+      console.log('   - language:', language, '(type:', typeof language, ', valid:', !!language, ')')
+      console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
+      console.log('   - topic_id:', topic_id || null, '(type:', typeof topic_id, ')')
+      
+      // Validate parameters before calling Gemini
+      if (!topicName) {
+        console.error('❌ [DEBUG] topicName is undefined/null - cannot call Gemini')
+        throw new Error('topicName is required but was undefined or null')
+      }
+      if (!Array.isArray(combinedSkills)) {
+        console.error('❌ [DEBUG] combinedSkills is not an array:', typeof combinedSkills)
+        throw new Error('combinedSkills must be an array')
+      }
+      if (!geminiService) {
+        console.error('❌ [DEBUG] geminiService is undefined')
+        throw new Error('geminiService is not initialized')
+      }
+      if (typeof geminiService.generateCodingQuestion !== 'function') {
+        console.error('❌ [DEBUG] geminiService.generateCodingQuestion is not a function')
+        throw new Error('geminiService.generateCodingQuestion is not available')
+      }
       
       try {
         console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
+        console.log('🔍 [DEBUG] Starting Gemini API request at:', new Date().toISOString())
+        
         const generated = await geminiService.generateCodingQuestion(
           topicName,
           combinedSkills,
@@ -944,17 +999,46 @@ router.post('/generate-question-package', async (req, res) => {
             topic_id: topic_id || null
           }
         )
+        
+        console.log('🔍 [DEBUG] Gemini API request completed at:', new Date().toISOString())
         console.log('🔍 [DEBUG] geminiService.generateCodingQuestion returned successfully')
         console.log('🔍 [DEBUG] Generated result type:', typeof generated)
         console.log('🔍 [DEBUG] Generated is array:', Array.isArray(generated))
         console.log('🔍 [DEBUG] Generated length:', Array.isArray(generated) ? generated.length : 'N/A')
-        questions = Array.isArray(generated) ? generated : generated ? [generated] : []
+        console.log('🔍 [DEBUG] Generated value:', generated ? JSON.stringify(generated).substring(0, 500) : 'null/undefined')
+        
+        if (!generated) {
+          console.warn('⚠️ [DEBUG] Gemini returned null/undefined - using empty array')
+          questions = []
+        } else {
+          questions = Array.isArray(generated) ? generated : generated ? [generated] : []
+        }
         console.log('🔍 [DEBUG] Questions array after processing:', questions.length, 'questions')
       } catch (geminiError) {
-        console.error('❌ Backend: Error calling geminiService.generateCodingQuestion:', geminiError)
-        console.error('   Error message:', geminiError.message)
-        console.error('   Error stack:', geminiError.stack)
+        console.error('❌ [DEBUG] Error calling geminiService.generateCodingQuestion')
+        console.error('   Error name:', geminiError?.name || 'N/A')
+        console.error('   Error message:', geminiError?.message || 'N/A')
+        console.error('   Error code:', geminiError?.code || 'N/A')
+        console.error('   Error type:', typeof geminiError)
+        console.error('   Error stack:', geminiError?.stack || 'N/A')
+        if (geminiError?.cause) {
+          console.error('   Error cause:', geminiError.cause)
+        }
         throw geminiError // Re-throw to be caught by outer catch block
+      }
+      
+      // Validate questions array before processing
+      console.log('🔍 [DEBUG] Validating questions array after Gemini call...')
+      console.log('   - questions exists:', !!questions)
+      console.log('   - questions is array:', Array.isArray(questions))
+      console.log('   - questions length:', questions?.length || 0)
+      
+      if (!Array.isArray(questions)) {
+        console.error('❌ [DEBUG] questions is not an array after Gemini call:', typeof questions)
+        throw new Error('Gemini service returned invalid response: questions is not an array')
+      }
+      if (questions.length === 0) {
+        console.warn('⚠️ [DEBUG] Gemini returned empty questions array')
       }
       
       // Check if questions are from Gemini or fallback
@@ -1025,52 +1109,83 @@ router.post('/generate-question-package', async (req, res) => {
     }
 
     // Process each question to add metadata and structure
+    console.log('🔍 [DEBUG] Processing questions...')
+    console.log('   - questions array length:', questions.length)
+    console.log('   - questions is array:', Array.isArray(questions))
+    
     const processedQuestions = []
     
-    for (const question of questions) {
-      // For code questions, generate hints on-demand (empty array for now)
-      // For theoretical questions, use hints from Assessment Microservice
-      const hints = question.hints || []
-      
-      // Generate solution explanation for code questions
-      let solution = null
-      if (questionType === 'code' && question.solution) {
-        try {
-          if (typeof question.solution === 'string') {
-            solution = {
-              code: question.solution,
-              explanation: question.explanation || null
-            }
-          } else {
-            solution = question.solution
-          }
-        } catch (error) {
-          console.warn('Failed to process solution:', error.message)
-          solution = typeof question.solution === 'string' ? question.solution : JSON.stringify(question.solution)
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i]
+      try {
+        console.log(`🔍 [DEBUG] Processing question ${i + 1}/${questions.length}...`)
+        console.log(`   - question exists:`, !!question)
+        console.log(`   - question type:`, typeof question)
+        console.log(`   - question keys:`, question ? Object.keys(question) : 'N/A')
+        
+        if (!question) {
+          console.warn(`⚠️ [DEBUG] Question ${i + 1} is null/undefined, skipping`)
+          continue
         }
-      } else if (questionType === 'theoretical') {
-        // For theoretical questions, solution is the expected answer
-        solution = question.solution || question.expected_answer || null
+        
+        // For code questions, generate hints on-demand (empty array for now)
+        // For theoretical questions, use hints from Assessment Microservice
+        const hints = question.hints || []
+        console.log(`   - hints:`, Array.isArray(hints) ? hints.length : 'not array')
+        
+        // Generate solution explanation for code questions
+        let solution = null
+        if (questionType === 'code' && question.solution) {
+          try {
+            console.log(`   - Processing solution (type: ${typeof question.solution})...`)
+            if (typeof question.solution === 'string') {
+              solution = {
+                code: question.solution,
+                explanation: question.explanation || null
+              }
+            } else {
+              solution = question.solution
+            }
+            console.log(`   - Solution processed successfully`)
+          } catch (error) {
+            console.warn(`⚠️ [DEBUG] Failed to process solution for question ${i + 1}:`, error.message)
+            solution = typeof question.solution === 'string' ? question.solution : JSON.stringify(question.solution)
+          }
+        } else if (questionType === 'theoretical') {
+          // For theoretical questions, solution is the expected answer
+          solution = question.solution || question.expected_answer || null
+        }
+
+        // Add metadata to question
+        console.log(`   - Adding metadata to question ${i + 1}...`)
+        question.courseName = courseName || null
+        question.topicName = topicName
+        question.topic_id = topic_id || question.topic_id || null
+        question.nanoSkills = nanoSkills
+        question.macroSkills = macroSkills
+        question.skills = normalizedSkills
+        question.difficulty = question.difficulty || 'intermediate'
+        question.language = questionType === 'code' ? language : null
+        question.programming_language = questionType === 'code' ? language : null
+        question.questionType = questionType
+        question.question_type = questionType
+        question.hints = hints
+        question.solution = solution
+        question.humanLanguage = humanLanguage
+
+        processedQuestions.push(question)
+        console.log(`✅ [DEBUG] Question ${i + 1} processed successfully`)
+      } catch (questionError) {
+        console.error(`❌ [DEBUG] Error processing question ${i + 1}:`)
+        console.error('   Error name:', questionError?.name || 'N/A')
+        console.error('   Error message:', questionError?.message || 'N/A')
+        console.error('   Error stack:', questionError?.stack || 'N/A')
+        // Continue processing other questions instead of failing completely
+        console.warn(`⚠️ [DEBUG] Skipping question ${i + 1} due to error, continuing with next question`)
       }
-
-      // Add metadata to question
-      question.courseName = courseName || null
-      question.topicName = topicName
-      question.topic_id = topic_id || question.topic_id || null
-      question.nanoSkills = nanoSkills
-      question.macroSkills = macroSkills
-      question.skills = normalizedSkills
-      question.difficulty = question.difficulty || 'intermediate'
-      question.language = questionType === 'code' ? language : null
-      question.programming_language = questionType === 'code' ? language : null
-      question.questionType = questionType
-      question.question_type = questionType
-      question.hints = hints
-      question.solution = solution
-      question.humanLanguage = humanLanguage
-
-      processedQuestions.push(question)
     }
+    
+    console.log(`🔍 [DEBUG] Question processing completed: ${processedQuestions.length}/${questions.length} questions processed`)
     
     // Log source information
     const fallbackQuestions = processedQuestions.filter(q => q._isFallback === true || q._source === 'fallback')
@@ -1090,10 +1205,28 @@ router.post('/generate-question-package', async (req, res) => {
       console.log(`✅ All ${assessmentQuestions.length} question(s) are from Assessment Microservice`)
     }
 
+    // Validate before building response
+    console.log('🔍 [DEBUG] Validating data before building response...')
+    console.log('   - processedQuestions exists:', !!processedQuestions)
+    console.log('   - processedQuestions is array:', Array.isArray(processedQuestions))
+    console.log('   - processedQuestions length:', processedQuestions?.length || 0)
+    console.log('   - topicName:', topicName)
+    console.log('   - questionType:', questionType)
+    
+    if (!Array.isArray(processedQuestions)) {
+      console.error('❌ [DEBUG] processedQuestions is not an array when building response')
+      throw new Error('processedQuestions must be an array')
+    }
+    if (!topicName) {
+      console.error('❌ [DEBUG] topicName is missing when building response')
+      throw new Error('topicName is required for response')
+    }
+    
+    console.log('🔍 [DEBUG] Building response data...')
     const responseData = {
       success: true,
       questions: processedQuestions,
-      question: processedQuestions[0], // Keep backward compatibility
+      question: processedQuestions[0] || null, // Keep backward compatibility
       metadata: {
         amount: finalQuestionCount,
         topic_id: topic_id || null,
@@ -1180,7 +1313,48 @@ router.post('/generate-question-package', async (req, res) => {
     console.log(`   resolvedCourseId: ${saveMetadata.course_id || 'null'}`)
     console.log(`   topicId: will be resolved in saveGeminiQuestionsToSupabase`)
     
-    const saveResults = await saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
+    // Validate before database save
+    console.log('🔍 [DEBUG] Validating data before database save...')
+    console.log('   - processedQuestions exists:', !!processedQuestions)
+    console.log('   - processedQuestions is array:', Array.isArray(processedQuestions))
+    console.log('   - processedQuestions length:', processedQuestions?.length || 0)
+    console.log('   - saveMetadata exists:', !!saveMetadata)
+    console.log('   - saveMetadata.topicName:', saveMetadata?.topicName)
+    console.log('   - saveGeminiQuestionsToSupabase exists:', typeof saveGeminiQuestionsToSupabase === 'function')
+    
+    if (!Array.isArray(processedQuestions)) {
+      console.error('❌ [DEBUG] processedQuestions is not an array:', typeof processedQuestions)
+      throw new Error('processedQuestions must be an array')
+    }
+    if (!saveMetadata) {
+      console.error('❌ [DEBUG] saveMetadata is undefined/null')
+      throw new Error('saveMetadata is required')
+    }
+    if (!saveMetadata.topicName) {
+      console.error('❌ [DEBUG] saveMetadata.topicName is missing')
+      throw new Error('saveMetadata.topicName is required')
+    }
+    if (typeof saveGeminiQuestionsToSupabase !== 'function') {
+      console.error('❌ [DEBUG] saveGeminiQuestionsToSupabase is not a function')
+      throw new Error('saveGeminiQuestionsToSupabase service is not available')
+    }
+    
+    let saveResults
+    try {
+      console.log('🔍 [DEBUG] Calling saveGeminiQuestionsToSupabase at:', new Date().toISOString())
+      saveResults = await saveGeminiQuestionsToSupabase(processedQuestions, saveMetadata)
+      console.log('🔍 [DEBUG] saveGeminiQuestionsToSupabase completed at:', new Date().toISOString())
+      console.log('🔍 [DEBUG] Save results:', saveResults ? JSON.stringify(saveResults).substring(0, 500) : 'null/undefined')
+    } catch (dbError) {
+      console.error('❌ [DEBUG] Database save error:')
+      console.error('   Error name:', dbError?.name || 'N/A')
+      console.error('   Error message:', dbError?.message || 'N/A')
+      console.error('   Error code:', dbError?.code || 'N/A')
+      console.error('   Error detail:', dbError?.detail || 'N/A')
+      console.error('   Error hint:', dbError?.hint || 'N/A')
+      console.error('   Error stack:', dbError?.stack || 'N/A')
+      throw dbError
+    }
     
     // Log resolved IDs after save
     console.log(`   After save - check logs above for resolvedCourseId and topicId`)
@@ -1371,8 +1545,29 @@ router.post('/generate-question-package', async (req, res) => {
       console.error('   Questions were generated successfully but save was not initiated')
     }
     
-    console.log('📤 Backend: Sending response:', responseData)
-    res.json(responseData)
+    console.log('🔍 [DEBUG] Preparing to send response...')
+    console.log('   - responseData exists:', !!responseData)
+    console.log('   - responseData.success:', responseData?.success)
+    console.log('   - responseData.questions length:', responseData?.questions?.length || 0)
+    console.log('   - responseData.metadata exists:', !!responseData?.metadata)
+    
+    try {
+      console.log('📤 Backend: Sending response at:', new Date().toISOString())
+      console.log('📤 Backend: Response summary:', {
+        success: responseData.success,
+        questionsCount: responseData.questions?.length || 0,
+        hasMetadata: !!responseData.metadata
+      })
+      res.json(responseData)
+      console.log('✅ [DEBUG] Response sent successfully')
+    } catch (responseError) {
+      console.error('❌ [DEBUG] Error sending response:')
+      console.error('   Error name:', responseError?.name || 'N/A')
+      console.error('   Error message:', responseError?.message || 'N/A')
+      console.error('   Error stack:', responseError?.stack || 'N/A')
+      // Response may have already been sent, so we can't send another
+      throw responseError
+    }
 
   } catch (error) {
     console.error('\n' + '='.repeat(80))
