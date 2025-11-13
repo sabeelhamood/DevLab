@@ -802,6 +802,21 @@ router.post('/generate-question-package', async (req, res) => {
   console.log('[DEBUG] Request path:', req.path)
   console.log('[DEBUG] Request originalUrl:', req.originalUrl)
   
+  // Log incoming payload immediately
+  console.log('\n' + '='.repeat(80))
+  console.log('📥 INCOMING PAYLOAD (before processing):')
+  console.log('='.repeat(80))
+  console.log(JSON.stringify(req.body, null, 2))
+  console.log('='.repeat(80) + '\n')
+  
+  // Verify courseName is NOT in the incoming request
+  if (req.body && req.body.courseName !== undefined) {
+    console.warn('⚠️ [WARNING] courseName found in incoming request body - will be ignored')
+    console.warn('   courseName value:', req.body.courseName)
+    // Remove it immediately
+    delete req.body.courseName
+  }
+  
   try {
   console.log('\n' + '='.repeat(80))
   console.log('🚀 BACKEND: Received generate-question-package request')
@@ -1008,9 +1023,26 @@ router.post('/generate-question-package', async (req, res) => {
       }
       
       try {
+        // Build the payload that will be sent to Gemini
+        const geminiPayload = {
+          topicName: topicName,
+          skills: combinedSkills,
+          amount: finalQuestionCount,
+          language: language,
+          humanLanguage: humanLanguage,
+          topic_id: topic_id || null
+        }
+        
+        // Verify courseName is NOT in the payload
+        if (geminiPayload.courseName !== undefined) {
+          console.error('❌ [ERROR] courseName found in Gemini payload - removing it!')
+          delete geminiPayload.courseName
+        }
+        
         console.log('\n' + '='.repeat(80))
         console.log('🔍 [DEBUG] Calling geminiService.generateCodingQuestion NOW...')
         console.log('='.repeat(80))
+        console.log('📦 Gemini payload:', JSON.stringify(geminiPayload, null, 2))
         console.log('   Parameter 1 (topic):', topicName, '(type:', typeof topicName, ', valid:', !!topicName, ')')
         console.log('   Parameter 2 (skills):', JSON.stringify(combinedSkills), '(type:', typeof combinedSkills, ', isArray:', Array.isArray(combinedSkills), ', length:', Array.isArray(combinedSkills) ? combinedSkills.length : 'N/A', ')')
         console.log('   Parameter 3 (amount):', finalQuestionCount, '(type:', typeof finalQuestionCount, ', valid:', finalQuestionCount > 0, ')')
