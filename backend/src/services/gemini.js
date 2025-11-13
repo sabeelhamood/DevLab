@@ -121,13 +121,17 @@ export class GeminiService {
     return null
   }
 
-  // fallback parser (keeps your previous behavior)
+  // fallback parser - DEPRECATED: We now throw errors instead of using this
+  // This should not be used for generateCodingQuestion as it doesn't return proper coding question format
   parseStructuredResponse(text) {
+    console.warn('⚠️ [GEMINI-SERVICE] parseStructuredResponse called - this should not happen for coding questions');
     return {
       title: "AI Generated Question",
       description: text,
       difficulty: "medium",
       language: "javascript",
+      testCases: [], // Empty testCases - this is not a valid coding question
+      hints: [],
       error: "Response parsing failed, using raw text"
     };
   }
@@ -303,37 +307,53 @@ export class GeminiService {
     console.log('   - topic_id:', topic_id || 'null')
 
     const prompt = `
-You are an expert programming instructor. Generate a set of ${amount} practical CODING questions for a developer.
+You are an expert programming instructor. Generate CODING questions ONLY.
 
-CRITICAL: These must be CODING questions where the user writes CODE. DO NOT generate theoretical/multiple-choice questions.
+🚫 CRITICAL REQUIREMENT: Generate ONLY CODING questions where users WRITE CODE.
+🚫 FORBIDDEN: DO NOT generate theoretical questions, multiple-choice questions, or questions with options/correctAnswer fields.
+🚫 DO NOT include: "options", "correctAnswer", "explanation" (as multiple choice), "summary", or "solution".
 
-Course Context:
-- Topic: ${topic}
-- Skills: ${skills.join(", ")}
-- Programming Language: ${language}
-- Natural Language Output: ${humanLanguage}
-- Trainer Provided Question Context (optional): ${seedQuestion ? seedQuestion : 'N/A'}
+Topic: ${topic}
+Skills: ${skills.join(", ") || "General programming"}
+Programming Language: ${language}
+Output Language: ${humanLanguage}
+Number of Questions: ${amount}
 
-Requirements:
-1. Generate exactly ${amount} questions in a JSON array.
-2. The questions should increase in difficulty gradually; the last question should be the hardest.
-3. ALL questions MUST be CODING questions (write code to solve a problem).
-4. FORBIDDEN: Do NOT include theoretical question fields like "options", "correctAnswer", "explanation" as multiple choice.
-5. Each question MUST include:
-   - title: Brief question title
-   - description: Clear problem statement with specific coding requirements (what code to write)
-   - testCases: 2-3 test cases with input, expectedOutput, and explanation (REQUIRED - coding questions need test cases)
-   - hints: 2-3 concise hints for writing the code
-   - topic_id: use the provided topic_id if any
-   - question_type: "code" (must be "code", not "theoretical")
-6. DO NOT include "solution" or "summary".
-7. DO NOT include "options" (multiple choice options).
-8. DO NOT include "correctAnswer" (multiple choice answer).
-9. The questions must be practical, real-world relevant, fully executable if implemented.
-10. Use proper ${language} syntax and best practices.
-11. All natural language text must be in ${humanLanguage}.
-12. Return ONLY a valid JSON array of questions wrapped in triple backticks with "json" language identifier.
-13. NO extra text, explanations, or comments outside the JSON.
+REQUIRED FORMAT - Each question MUST have:
+{
+  "title": "Brief question title",
+  "description": "Clear problem statement asking user to WRITE CODE (not multiple choice)",
+  "testCases": [
+    {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+  ],
+  "hints": ["hint 1", "hint 2", "hint 3"],
+  "language": "${language}",
+  "question_type": "code"
+}
+
+FORBIDDEN FIELDS (DO NOT INCLUDE):
+- "options" (multiple choice options) ❌
+- "correctAnswer" (multiple choice answer) ❌
+- "explanation" as a field separate from testCase explanations ❌
+
+EXAMPLE CORRECT CODING QUESTION:
+\`\`\`json
+[
+  {
+    "title": "Sum Two Numbers",
+    "description": "Write a ${language} function called 'sum' that takes two numbers as parameters and returns their sum.",
+    "testCases": [
+      {"input": "sum(2, 3)", "expectedOutput": "5", "explanation": "2 + 3 = 5"},
+      {"input": "sum(-1, 5)", "expectedOutput": "4", "explanation": "-1 + 5 = 4"}
+    ],
+    "hints": ["Use the + operator", "Return the result directly", "Test with different numbers"],
+    "language": "${language}",
+    "question_type": "code"
+  }
+]
+\`\`\`
+
+Generate exactly ${amount} CODING questions in a JSON array. Questions should gradually increase in difficulty.
 
 EXAMPLE FORMAT (CODING QUESTION):
 \`\`\`json
@@ -396,32 +416,40 @@ REMEMBER: Generate CODING questions where users write code, NOT theoretical/mult
           console.warn(`⚠️ [GEMINI-SERVICE] Rejected ${questionsArray.length - validatedQuestions.length} theoretical question(s), keeping ${validatedQuestions.length} coding question(s)`);
         }
         
-        const questions = validatedQuestions.map((q, index) => ({
-          ...q,
-          _source: 'gemini',
-          _isFallback: false,
-          _rawGeminiResponse: text,
-          _difficultyIndex: index + 1,
-          topic_id: topic_id || q.topic_id || null,
-          question_type: "code"
-        }));
+        // Clean and ensure only coding question fields are present
+        const questions = validatedQuestions.map((q, index) => {
+          // Remove any theoretical question fields that might have slipped through
+          const cleanedQuestion = { ...q };
+          delete cleanedQuestion.options;
+          delete cleanedQuestion.correctAnswer;
+          delete cleanedQuestion.nanoSkills;
+          delete cleanedQuestion.macroSkills;
+          
+          // Ensure required coding question fields exist
+          return {
+            title: cleanedQuestion.title,
+            description: cleanedQuestion.description,
+            testCases: cleanedQuestion.testCases || [],
+            hints: cleanedQuestion.hints || [],
+            language: cleanedQuestion.language || language,
+            difficulty: cleanedQuestion.difficulty || 'intermediate',
+            _source: 'gemini',
+            _isFallback: false,
+            _rawGeminiResponse: text,
+            _difficultyIndex: index + 1,
+            topic_id: topic_id || cleanedQuestion.topic_id || null,
+            question_type: "code",
+            questionType: "code" // Also set questionType for compatibility
+          };
+        });
         console.log(`✅ Successfully generated ${questions.length} CODING questions from Gemini AI.`);
         return questions;
       } catch (parseErr) {
-        console.warn("⚠️ Gemini returned non-JSON; attempting to parse as structured response");
-        const fallback = this.parseStructuredResponse(text);
-        const fallbackArray = Array.isArray(fallback) ? fallback : [fallback];
-        const questions = fallbackArray.map((q, index) => ({
-          ...q,
-          _source: 'gemini',
-          _isFallback: false,
-          _rawGeminiResponse: text,
-          _difficultyIndex: index + 1,
-          topic_id: topic_id || q.topic_id || null,
-          question_type: "code"
-        }));
-        console.log(`✅ Parsed ${questions.length} question(s) from Gemini AI response.`);
-        return questions;
+        console.error('❌ [GEMINI-SERVICE] Failed to parse Gemini response as JSON');
+        console.error('   Parse error:', parseErr?.message);
+        console.error('   Raw response (first 500 chars):', text.substring(0, 500));
+        // If parsing fails, we can't trust the response format - throw error to trigger fallback
+        throw new Error(`Failed to parse Gemini response: ${parseErr?.message}. Response was not valid JSON format for coding questions.`);
       }
     } catch (err) {
       console.error('\n' + '='.repeat(80));
