@@ -72,9 +72,29 @@ router.post('/generate-question', async (req, res) => {
       })
     }
 
+    // Clean question object(s) - remove deprecated fields
+    const cleanQuestion = (q) => {
+      if (!q) return q
+      const cleaned = Array.isArray(q) ? q.map(cleanQuestion) : { ...q }
+      if (!Array.isArray(cleaned)) {
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        delete cleaned.courseName // Remove courseName - no longer used
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+      }
+      return cleaned
+    }
+    
+    const cleanedQuestion = cleanQuestion(question)
+
     res.json({
       success: true,
-      question,
+      question: cleanedQuestion,
       source,
       timestamp: new Date().toISOString()
     })

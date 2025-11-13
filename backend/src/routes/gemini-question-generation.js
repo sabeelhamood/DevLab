@@ -269,19 +269,28 @@ router.post('/generate-question', async (req, res) => {
       question = theoretical?.[0] || {}
     }
 
-    // Add course and topic context to the question
-    question.courseName = courseName
+    // Add topic context to the question (courseName removed - no longer used)
     question.topicName = topicName
     question.skills = normalizedSkills
     question.difficulty = difficulty
     question.language = language
     question.questionType = questionType
+    
+    // Remove deprecated fields from question
+    delete question.nanoSkills
+    delete question.macroSkills
+    delete question.nano_skills
+    delete question.macro_skills
+    delete question.courseName // Remove courseName - no longer used
+    // Ensure skills field exists
+    if (!question.skills) {
+      question.skills = []
+    }
 
     res.json({
       success: true,
       question,
       metadata: {
-        courseName,
         topicName,
         skills: normalizedSkills,
         difficulty,
@@ -1113,9 +1122,8 @@ router.post('/generate-question-package', async (req, res) => {
         }
       }
 
-      // Add metadata to question
+      // Add metadata to question (courseName removed - no longer used)
         console.log(`   - Adding metadata to question ${i + 1}...`)
-      question.courseName = courseName || null
       question.topicName = topicName
       question.topic_id = topic_id || question.topic_id || null
       question.skills = finalSkills
@@ -1173,16 +1181,34 @@ router.post('/generate-question-package', async (req, res) => {
     }
     
     console.log('🔍 [DEBUG] Building response data...')
+    
+    // Remove nanoSkills, macroSkills, and courseName from all questions, ensure skills field exists
+    const cleanedQuestions = processedQuestions.map(q => {
+      const cleaned = { ...q }
+      // Remove deprecated fields
+      delete cleaned.nanoSkills
+      delete cleaned.macroSkills
+      delete cleaned.nano_skills
+      delete cleaned.macro_skills
+      delete cleaned.courseName // Remove courseName - no longer used
+      // Ensure skills field exists (use existing skills or empty array)
+      if (!cleaned.skills) {
+        cleaned.skills = []
+      }
+      return cleaned
+    })
+    
+    const cleanedSingleQuestion = cleanedQuestions[0] || null
+    
     const responseData = {
       success: true,
-      questions: processedQuestions,
-      question: processedQuestions[0] || null, // Keep backward compatibility
+      questions: cleanedQuestions,
+      question: cleanedSingleQuestion, // Keep backward compatibility
       metadata: {
         amount: finalQuestionCount,
         topic_id: topic_id || null,
         topic_name: topicName,
         topicName: topicName, // Keep backward compatibility
-        courseName: courseName || null,
         learnerId,
         skills: finalSkills,
         skillsList: finalSkills,

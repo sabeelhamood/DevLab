@@ -93,8 +93,10 @@ export const generateQuestions = async ({
 
   let generated
   try {
+    // Use only topicName for Gemini API - courseName is no longer used
+    const finalTopicName = topicName || 'General Programming'
     generated = await geminiService.generateCodingQuestion(
-      topicName || courseName,
+      finalTopicName,
       [...nanoSkills, ...macroSkills],
       questionCount,
       language,

@@ -436,6 +436,21 @@ export const generateQuestionsHandler = async (req, res) => {
       console.error('   Questions were generated successfully but save was not initiated')
     }
 
+    // Remove deprecated fields from all questions
+    const cleanedQuestions = questions.map(q => {
+      const cleaned = { ...q }
+      delete cleaned.nanoSkills
+      delete cleaned.macroSkills
+      delete cleaned.nano_skills
+      delete cleaned.macro_skills
+      delete cleaned.courseName // Remove courseName - no longer used
+      // Ensure skills field exists
+      if (!cleaned.skills) {
+        cleaned.skills = []
+      }
+      return cleaned
+    })
+
     return res.json({
       success: true,
       request_id: requestId,
@@ -444,7 +459,7 @@ export const generateQuestionsHandler = async (req, res) => {
         topic_name,
         question_type,
         programming_language: question_type === 'code' ? programming_language : null,
-        questions,
+        questions: cleanedQuestions,
         metadata: {
           generated_at: new Date().toISOString(),
           question_count: questions.length,

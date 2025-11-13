@@ -86,7 +86,22 @@ export const questionController = {
         }
       }
 
-      res.json({ success: true, data: questions })
+      // Remove deprecated fields from all questions
+      const cleanedQuestions = questions.map(q => {
+        const cleaned = { ...q }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        delete cleaned.courseName // Remove courseName - no longer used
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        return cleaned
+      })
+
+      res.json({ success: true, data: cleanedQuestions })
     } catch (error) {
       console.error('Error fetching personalized questions:', error)
       res.status(500).json({ success: false, error: error.message })
@@ -366,7 +381,23 @@ export const questionController = {
     try {
       const { id } = req.params
       const question = await QuestionModel.findById(id)
-      res.json({ success: true, data: question })
+      
+      // Remove deprecated fields from question
+      if (question) {
+        const cleaned = { ...question.toObject ? question.toObject() : question }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        delete cleaned.courseName // Remove courseName - no longer used
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        res.json({ success: true, data: cleaned })
+      } else {
+        res.json({ success: true, data: question })
+      }
     } catch (error) {
       console.error('Error getting question:', error)
       res.status(500).json({ success: false, error: error.message })
@@ -377,7 +408,22 @@ export const questionController = {
     try {
       const questionData = req.body
       const question = await QuestionModel.create(questionData)
-      res.json({ success: true, data: question })
+      
+      // Remove deprecated fields from question
+      if (question) {
+        const cleaned = { ...(question.toObject ? question.toObject() : question) }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        res.json({ success: true, data: cleaned })
+      } else {
+        res.json({ success: true, data: question })
+      }
     } catch (error) {
       console.error('Error creating question:', error)
       res.status(500).json({ success: false, error: error.message })
@@ -389,7 +435,22 @@ export const questionController = {
       const { id } = req.params
       const updateData = req.body
       const question = await QuestionModel.update(id, updateData)
-      res.json({ success: true, data: question })
+      
+      // Remove deprecated fields from question
+      if (question) {
+        const cleaned = { ...(question.toObject ? question.toObject() : question) }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        res.json({ success: true, data: cleaned })
+      } else {
+        res.json({ success: true, data: question })
+      }
     } catch (error) {
       console.error('Error updating question:', error)
       res.status(500).json({ success: false, error: error.message })
@@ -411,7 +472,22 @@ export const questionController = {
     try {
       const { courseId } = req.params
       const questions = await QuestionModel.findByCourse(courseId)
-      res.json({ success: true, data: questions })
+      
+      // Remove deprecated fields from all questions
+      const cleanedQuestions = questions.map(q => {
+        const cleaned = { ...(q.toObject ? q.toObject() : q) }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        return cleaned
+      })
+      
+      res.json({ success: true, data: cleanedQuestions })
     } catch (error) {
       console.error('Error getting questions by course:', error)
       res.status(500).json({ success: false, error: error.message })

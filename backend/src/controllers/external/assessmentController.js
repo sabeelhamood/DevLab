@@ -203,10 +203,25 @@ export const assessmentController = {
         }
       })
 
+      // Remove deprecated fields from all questions
+      const cleanedQuestions = questionsWithPresentation.map(q => {
+        const cleaned = { ...q }
+        delete cleaned.nanoSkills
+        delete cleaned.macroSkills
+        delete cleaned.nano_skills
+        delete cleaned.macro_skills
+        delete cleaned.courseName // Remove courseName - no longer used
+        // Ensure skills field exists
+        if (!cleaned.skills) {
+          cleaned.skills = []
+        }
+        return cleaned
+      })
+
       return res.json({
         success: true,
         data: {
-          questions: questionsWithPresentation,
+          questions: cleanedQuestions,
           metadata: {
             topic_name,
             programming_language,
