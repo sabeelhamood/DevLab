@@ -88,7 +88,6 @@ export const saveQuestionsWithTestCases = async (questions = [], options = {}) =
   const {
     course_id: courseId,
     topic_id: topicId,
-    courseName,
     topicName
   } = options
   
@@ -611,7 +610,6 @@ export const saveQuestionsEndpoint = async (req, res) => {
     const options = {
       course_id: req.body.course_id || req.body.courseId || null,
       topic_id: req.body.topic_id || req.body.topicId || null,
-      courseName: req.body.courseName || null,
       topicName: req.body.topicName || null,
       difficulty: req.body.difficulty || null,
       language: req.body.language || null,
