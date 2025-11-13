@@ -52,7 +52,6 @@ function PracticePage() {
       console.log('Practice ID:', practiceId, 'Question Type:', questionType)
       // Generate real question using Gemini API
       const aiQuestion = await questionGenerationAPI.generateQuestionPackage({
-        courseName: currentTopic.course_name || 'Programming Course',
         topicName: currentTopic.topic_name,
         topicId: currentTopic.topic_id,
         skills: currentTopic.skills || [],
@@ -133,7 +132,6 @@ int main() {
         question: question.question_content || question.title,
         userSolution: question.question_type === 'theoretical' ? userAnswer : codeSolution,
         language: question.language || language,
-        courseName: question.courseName,
         topicName: question.topicName
       })
       
@@ -167,7 +165,6 @@ int main() {
         userAttempt: userAnswer || codeSolution,
         hintsUsed,
         allHints,
-        courseName: question.courseName,
         topicName: question.topicName
       })
       

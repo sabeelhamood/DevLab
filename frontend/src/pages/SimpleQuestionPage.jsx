@@ -112,7 +112,6 @@ function SimpleQuestionPage() {
       
       console.log('📡 Calling questionGenerationAPI.generateQuestionPackage...')
       const generatedQuestion = await questionGenerationAPI.generateQuestionPackage({
-        courseName: defaultCourse?.name || 'JavaScript Programming',
         topicName: topicName,
         topicId: topicId,
         skills: skills,
@@ -156,7 +155,6 @@ function SimpleQuestionPage() {
         hints: q.hints || [],
         solution: q.solution?.code || q.solution || '',
         title: q.title,
-        courseName: q.courseName || defaultCourse?.name || 'JavaScript Programming',
         topicName: q.topicName || topicName || 'Unknown Topic',
         skills: q.skills || skills
       }))
@@ -258,7 +256,6 @@ int sum(int a, int b) {
         question: question.question_content || question.title,
         userSolution: (question.question_type === 'theoretical' || question.questionType === 'theoretical') ? userAnswer : codeSolution,
         language: question.language || language,
-        courseName: question.courseName,
         topicName: question.topicName
       })
       
@@ -303,7 +300,6 @@ int sum(int a, int b) {
         userAttempt: userAnswer,
         hintsUsed,
         allHints: [],
-        courseName: question.courseName,
         topicName: question.topicName
       })
       
@@ -379,7 +375,6 @@ int sum(int a, int b) {
         const solution = await questionGenerationAPI.revealSolution({
           question,
           hintsUsed,
-          courseName: question.courseName,
           topicName: question.topicName,
           language: question.language || language
         })

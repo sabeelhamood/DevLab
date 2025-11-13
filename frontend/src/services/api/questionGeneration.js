@@ -16,9 +16,8 @@ const safeFetch = async (url, options = {}) => {
 }
 
 class QuestionGenerationAPI {
-  // Generate a single question based on course, topic, and skills
+  // Generate a single question based on topic and skills
   async generateQuestion({
-    courseName,
     topicName,
     skills = [],
     difficulty = 'beginner',
@@ -33,7 +32,6 @@ class QuestionGenerationAPI {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          courseName,
           topicName,
           skills: normalizedSkills,
           difficulty,
@@ -56,7 +54,6 @@ class QuestionGenerationAPI {
 
   // Generate a complete question package (question + hints + solution)
   async generateQuestionPackage({
-    courseName,
     topicName,
     topicId = null,
     topic_id = null,
@@ -67,7 +64,6 @@ class QuestionGenerationAPI {
     humanLanguage = 'en'
   }, externalSignal = null) {
     console.log('🔧 API: generateQuestionPackage called with params:', {
-      courseName,
       topicName,
       topicId,
       skills,
@@ -96,7 +92,6 @@ class QuestionGenerationAPI {
       const normalizedQuestionType = questionType === 'coding' ? 'code' : questionType
 
       const payload = {
-        courseName,
         topicName,
         topic_id: topicId ?? topic_id ?? null,
         topic_name: topicName,
@@ -158,7 +153,6 @@ class QuestionGenerationAPI {
     userAttempt = '',
     hintsUsed = 0,
     allHints = [],
-    courseName,
     topicName
   }, externalSignal = null) {
     try {
@@ -182,7 +176,6 @@ class QuestionGenerationAPI {
           userAttempt,
           hintsUsed,
           allHints,
-          courseName,
           topicName
         }),
         signal
@@ -216,7 +209,6 @@ class QuestionGenerationAPI {
     question,
     userSolution,
     language = 'javascript',
-    courseName,
     topicName
   }) {
     try {
@@ -235,7 +227,6 @@ class QuestionGenerationAPI {
           question,
           userSolution,
           language,
-          courseName,
           topicName
         }),
         signal: controller.signal
@@ -269,7 +260,6 @@ class QuestionGenerationAPI {
   async revealSolution({
     question,
     hintsUsed,
-    courseName,
     topicName,
     language = 'javascript'
   }) {
@@ -282,7 +272,6 @@ class QuestionGenerationAPI {
         body: JSON.stringify({
           question,
           hintsUsed,
-          courseName,
           topicName,
           language
         })
@@ -302,7 +291,6 @@ class QuestionGenerationAPI {
 
   // Generate multiple questions for a practice session
   async generatePracticeQuestions({
-    courseName,
     topicName,
     skills = [],
     difficulty = 'beginner',
@@ -316,7 +304,6 @@ class QuestionGenerationAPI {
       for (let i = 0; i < count; i++) {
         try {
           const question = await this.generateQuestion({
-            courseName,
             topicName,
             skills,
             difficulty,
