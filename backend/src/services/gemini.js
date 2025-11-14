@@ -510,10 +510,10 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
             hints: ensuredHints,
             language: cleanedQuestion.language || language,
             difficulty: cleanedQuestion.difficulty || 'intermediate',
-            _source: 'gemini',
-            _isFallback: false,
-            _rawGeminiResponse: text,
-            _difficultyIndex: index + 1,
+          _source: 'gemini',
+          _isFallback: false,
+          _rawGeminiResponse: text,
+          _difficultyIndex: index + 1,
             topic_id: topic_id || cleanedQuestion.topic_id || null,
             question_type: "code",
             questionType: "code"
@@ -539,7 +539,7 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
       console.error("   Error type:", typeof err);
       console.error("   Error details:", JSON.stringify(err, null, 2));
       if (err?.stack) {
-        console.error("   Error stack:", err.stack);
+      console.error("   Error stack:", err.stack);
       }
       console.error('='.repeat(80) + '\n');
 
@@ -723,6 +723,15 @@ Return ONLY the JSON object in the specified format, no additional text.
 
   // Generate hints
   async generateHints(question, userAttempt, hintsUsed = 0, allHints = []) {
+    console.log('[GeminiService] generateHints called', {
+      questionPreview: typeof question === 'string'
+        ? `${question.substring(0, 80)}${question.length > 80 ? '…' : ''}`
+        : typeof question,
+      userAttemptPreview: userAttempt ? `${userAttempt.substring(0, 50)}${userAttempt.length > 50 ? '…' : ''}` : '',
+      hintsUsed,
+      allHintsCount: Array.isArray(allHints) ? allHints.length : 0
+    })
+
     try {
       this._checkAvailability();
     } catch (availabilityError) {
@@ -771,6 +780,7 @@ Return ONLY the JSON object.
         const parsed = JSON.parse(this._cleanJsonResponse(text));
         // Ensure we have a hint field
         if (parsed && (parsed.hint || parsed.text || parsed.message)) {
+          console.log('[GeminiService] Hint JSON parsed successfully')
           return parsed;
         } else {
           console.warn("⚠️ Gemini returned invalid hint format, using fallback");
@@ -783,6 +793,7 @@ Return ONLY the JSON object.
         const textLower = text.toLowerCase();
         if (textLower.includes('hint') || text.length < 200) {
           // Might be a direct hint text
+          console.log('[GeminiService] Using plain-text hint fallback from response body')
           return {
             hint: text.trim().substring(0, 200),
             hintLevel: hintsUsed + 1,
@@ -798,6 +809,7 @@ Return ONLY the JSON object.
     } catch (err) {
       console.error("❌ generateHints error:", err?.message || err);
       console.error("   Error stack:", err?.stack);
+      console.warn("⚠️ Falling back to generateFallbackHints due to error above");
       
       // Handle rate limiting and all API errors - always return fallback hints
       if (err.message?.includes('429') || 

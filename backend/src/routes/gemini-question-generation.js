@@ -490,6 +490,19 @@ router.post('/generate-hint', async (req, res) => {
     topicName
     } = req.body || {}
 
+  console.log('📥 /generate-hint payload:', {
+    hasQuestion: question !== undefined,
+    questionType: typeof question,
+    questionKeys: typeof question === 'object' && question !== null ? Object.keys(question) : undefined,
+    questionPreview: typeof question === 'string'
+      ? `${question.substring(0, 80)}${question.length > 80 ? '…' : ''}`
+      : undefined,
+    userAttemptPreview: userAttempt ? `${userAttempt.substring(0, 50)}${userAttempt.length > 50 ? '…' : ''}` : '',
+    hintsUsed,
+    allHintsCount: Array.isArray(allHints) ? allHints.length : 0,
+    topicName: topicName || null
+  })
+
   const sendFallbackHint = ({
     reason = 'Using fallback hint due to error',
     errorMessage
@@ -504,6 +517,12 @@ router.post('/generate-hint', async (req, res) => {
 
     const safeHintsUsed = Math.max(0, Math.min(Number(hintsUsed) || 0, fallbackHints.length - 1))
     const fallbackHint = fallbackHints[safeHintsUsed] || fallbackHints[0]
+
+    console.log('⚠️ Returning fallback hint:', {
+      reason,
+      errorMessage,
+      hintLevel: safeHintsUsed + 1
+    })
 
     return res.json({
       success: true,
@@ -567,6 +586,7 @@ router.post('/generate-hint', async (req, res) => {
       const questionPreview = questionText.length > 50 ? questionText.substring(0, 50) + '...' : questionText
       console.log('🔍 Generating hint for question:', questionPreview)
       console.log(`   Hints used: ${hintsUsed || 0}, All hints: ${(Array.isArray(allHints) ? allHints : []).length}`)
+      console.log('🧠 Strategy: Attempting real Gemini hint generation')
       
       // Call Gemini service to generate hint
       let hint = null
