@@ -254,19 +254,26 @@ class QuestionGenerationAPI {
       // Use external signal if provided, otherwise use internal controller
       const signal = externalSignal || controller.signal
 
-      console.log('📡 API: Making hint generation request')
+      const payload = {
+        question,
+        userAttempt,
+        hintsUsed,
+        allHints,
+        topicName
+      }
+
+      console.log('📝 Sending hint request payload:', {
+        url: `${API_BASE_URL}/gemini-questions/generate-hint`,
+        method: 'POST',
+        payload
+      })
+
       const response = await safeFetch(`${API_BASE_URL}/gemini-questions/generate-hint`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          question,
-          userAttempt,
-          hintsUsed,
-          allHints,
-          topicName
-        }),
+        body: JSON.stringify(payload),
         signal
       })
 
@@ -279,6 +286,11 @@ class QuestionGenerationAPI {
 
       const result = await response.json()
       console.log('📦 API: Hint generation result:', result)
+      console.log('📨 Raw hint response:', {
+        status: response.status,
+        ok: response.ok,
+        body: result
+      })
       // Return the hint object or extract hint text
       return result.hint || result
     } catch (error) {
