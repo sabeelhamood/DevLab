@@ -634,17 +634,32 @@ int main() {
       return '';
     }
     
-    if (!input || input === null || input === undefined) {
+    if (!input && input !== 0 && input !== false) {
       return null;
     }
     
-    // If input is already an object or array, return as-is
+    // Normalize strings that might be wrapped in quotes
+    const unwrapQuotedString = (val) => {
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+            (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+          const inner = trimmed.slice(1, -1)
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'")
+            .replace(/\\\\/g, '\\');
+          return inner;
+        }
+      }
+      return val;
+    };
+    
     if (typeof input === 'object') {
       return input;
     }
     
-    // Handle string input
     if (typeof input === 'string') {
+      input = unwrapQuotedString(input);
       // Check if input contains assignment expressions (e.g., "products = [...], taxRate = 0.10")
       if (this.containsAssignmentExpressions(input)) {
         console.log('🔧 Judge0: Detected assignment expressions, extracting function arguments');
@@ -1046,6 +1061,48 @@ int main() {
    * Format Judge0 result for our application
    */
   formatResult(result, expectedOutput = null) {
+    const normalizeValue = (value) => {
+      const helper = (val) => {
+        if (typeof val === 'string') {
+          const trimmed = val.trim();
+          if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+              (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+            try {
+              const unquoted = trimmed.slice(1, -1)
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
+              return helper(unquoted);
+            } catch (err) {
+              try {
+                return helper(JSON.parse(trimmed));
+              } catch {
+                // fall through
+              }
+            }
+          }
+          if (!Number.isNaN(Number(trimmed)) && trimmed !== '') {
+            return Number(trimmed);
+          }
+          const lower = trimmed.toLowerCase();
+          if (lower === 'true') return true;
+          if (lower === 'false') return false;
+          if (lower === 'null') return null;
+          if (lower === 'undefined') return undefined;
+          return trimmed;
+        } else if (Array.isArray(val)) {
+          return val.map(helper);
+        } else if (val && typeof val === 'object') {
+          return Object.keys(val)
+            .sort()
+            .reduce((acc, key) => {
+              acc[key] = helper(val[key]);
+              return acc;
+            }, {});
+        }
+        return val;
+      };
+      return helper(value);
+    };
     const statusMap = {
       1: 'In Queue',
       2: 'Processing',
@@ -1098,6 +1155,7 @@ int main() {
     }
     
     const trimmedOutput = actualOutput.trim();
+    const normalizedDisplayOutput = normalizeValue(trimmedOutput);
     
     console.log('🔍 Judge0: Raw response:', {
       statusId: result.status?.id,
@@ -1146,7 +1204,7 @@ int main() {
       passed: passed,
       error: result.status?.id > 3,
       expectedOutput: expectedOutput,
-      actualOutput: trimmedOutput
+      actualOutput: normalizedDisplayOutput
     };
   }
 
