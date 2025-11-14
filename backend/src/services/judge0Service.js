@@ -487,23 +487,7 @@ int main() {
     
     // Create wrapped code that executes the function and prints the result
     // Use console.log to ensure output is captured
-    const wrappedCode = `${sourceCode}
-
-// Test execution
-const result = ${functionCall};
-if (typeof result === "string") {
-  console.log(result);
-} else if (typeof result === "number" || typeof result === "boolean") {
-  console.log(result);
-} else if (result === undefined || result === null) {
-  console.log("");
-} else {
-  try {
-    console.log(JSON.stringify(result));
-  } catch (err) {
-    console.log(String(result));
-  }
-}`;
+    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nconsole.log(JSON.stringify(result));`;
     
     console.log('🔧 Judge0: Wrapped code:', wrappedCode);
     return wrappedCode;
@@ -912,62 +896,59 @@ if (typeof result === "string") {
    */
   compareOutputs(actualOutput, expectedOutput) {
     console.log('🔍 Judge0: Comparing outputs - Actual:', actualOutput, 'Expected:', expectedOutput);
-  
-    function normalize(value) {
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-
-        // Attempt to decode JSON-escaped strings like "\"text\"" or quoted primitives
-        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-            (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-          try {
-            // First unwrap the outer quotes
-            const unquoted = trimmed.slice(1, -1)
-              .replace(/\\"/g, '"')
-              .replace(/\\\\/g, '\\');
-            return normalize(unquoted);
-          } catch (err) {
-            try {
-              return normalize(JSON.parse(trimmed));
-            } catch (jsonErr) {
-              // fall through if both parsing attempts fail
-            }
-          }
-        }
-
-        // Try to coerce numeric strings
-        if (!Number.isNaN(Number(trimmed)) && trimmed !== "") {
-          return Number(trimmed);
-        }
-
-        // Parse booleans and null
-        const lower = trimmed.toLowerCase();
-        if (lower === "true") return true;
-        if (lower === "false") return false;
-        if (lower === "null") return null;
-        if (lower === "undefined") return undefined;
-
-        return trimmed;
-      } else if (Array.isArray(value)) {
-        return value.map(normalize);
-      } else if (value && typeof value === "object") {
-        return Object.keys(value)
-          .sort()
-          .reduce((acc, key) => {
-            acc[key] = normalize(value[key]);
-            return acc;
-          }, {});
-      } else {
-        return value;
-      }
+    
+    // Handle null/undefined cases
+    if (actualOutput === null || actualOutput === undefined) {
+      return expectedOutput === null || expectedOutput === undefined;
     }
-  
-    const normalizedActual = normalize(actualOutput);
-    const normalizedExpected = normalize(expectedOutput);
-  
-    const match = JSON.stringify(normalizedActual) === JSON.stringify(normalizedExpected);
-    console.log('📦 Judge0: Normalized comparison:', match);
-    return match;
+    
+    if (expectedOutput === null || expectedOutput === undefined) {
+      return actualOutput === null || actualOutput === undefined;
+    }
+    
+    // Convert both to strings for comparison
+    const actualStr = String(actualOutput).trim();
+    const expectedStr = String(expectedOutput).trim();
+    
+    // Direct string comparison first
+    if (actualStr === expectedStr) {
+      console.log('✅ Judge0: Direct string match');
+      return true;
+    }
+    
+    // Try numeric comparison if both look like numbers
+    const actualNum = parseFloat(actualStr);
+    const expectedNum = parseFloat(expectedStr);
+    
+    if (!isNaN(actualNum) && !isNaN(expectedNum)) {
+      const numericMatch = actualNum === expectedNum;
+      console.log('🔢 Judge0: Numeric comparison:', actualNum, '===', expectedNum, '=', numericMatch);
+      return numericMatch;
+    }
+    
+    // Try boolean comparison
+    const actualBool = actualStr.toLowerCase();
+    const expectedBool = expectedStr.toLowerCase();
+    
+    if ((actualBool === 'true' || actualBool === 'false') && 
+        (expectedBool === 'true' || expectedBool === 'false')) {
+      const boolMatch = actualBool === expectedBool;
+      console.log('🔘 Judge0: Boolean comparison:', actualBool, '===', expectedBool, '=', boolMatch);
+      return boolMatch;
+    }
+    
+    // Try JSON comparison for objects/arrays
+    try {
+      const actualParsed = JSON.parse(actualStr);
+      const expectedParsed = JSON.parse(expectedStr);
+      const jsonMatch = JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
+      console.log('📦 Judge0: JSON comparison:', jsonMatch);
+      return jsonMatch;
+    } catch (e) {
+      // Not valid JSON, fall back to string comparison
+      console.log('📝 Judge0: Fallback to string comparison:', actualStr, '===', expectedStr, '=', false);
+      return false;
+    }
   }
 
   /**
