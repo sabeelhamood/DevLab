@@ -487,7 +487,23 @@ int main() {
     
     // Create wrapped code that executes the function and prints the result
     // Use console.log to ensure output is captured
-    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nif (typeof result === "string") {\n  console.log(result);\n} else {\n  console.log(JSON.stringify(result));\n}`;
+    const wrappedCode = `${sourceCode}
+
+// Test execution
+const result = ${functionCall};
+if (typeof result === "string") {
+  console.log(result);
+} else if (typeof result === "number" || typeof result === "boolean") {
+  console.log(result);
+} else if (result === undefined || result === null) {
+  console.log("");
+} else {
+  try {
+    console.log(JSON.stringify(result));
+  } catch (err) {
+    console.log(String(result));
+  }
+}`;
     
     console.log('🔧 Judge0: Wrapped code:', wrappedCode);
     return wrappedCode;
