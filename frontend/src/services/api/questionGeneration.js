@@ -105,17 +105,13 @@ class QuestionGenerationAPI {
       console.log('='.repeat(80) + '\n')
 
       const payload = {
-        topicName,
-        topic_id: topicId ?? topic_id ?? null,
-        topic_name: topicName,
-        skills: normalizedSkills,
-        language,
-        programming_language: language,
-        question_type: normalizedQuestionType,
-        questionType: normalizedQuestionType,
-        questionCount,
-        amount: questionCount,
         humanLanguage,
+        programmingLanguage: language,
+        questionCount,
+        questionType,
+        skills: normalizedSkills,
+        topicId: topicId ?? topic_id ?? null,
+        topicName,
         courseName: ' ' // Temporary workaround: sending space to bypass old validation if Railway still running old code
       }
 
@@ -124,7 +120,7 @@ class QuestionGenerationAPI {
       console.log('='.repeat(80))
       console.log(JSON.stringify(payload, null, 2))
       console.log('='.repeat(80))
-      console.log('   ✅ question_type:', payload.question_type, '→ Will route to', payload.question_type === 'code' ? 'CODING (Gemini)' : 'OTHER')
+      console.log('   ✅ questionType:', payload.questionType, '→ Will route to', normalizedQuestionType === 'code' ? 'CODING (Gemini)' : 'OTHER')
       console.log('   ✅ Endpoint:', `${API_BASE_URL}/gemini-questions/generate-question-package`)
       console.log('='.repeat(80) + '\n')
 

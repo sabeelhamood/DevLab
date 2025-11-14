@@ -1,82 +1,75 @@
 import { QuestionModel } from '../models/Question.js'
 import { geminiService } from '../services/gemini.js'
-import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClient.js'
+
+const MOCK_REQUEST_BODY = Object.freeze({
+  humanLanguage: 'en',
+  programmingLanguage: 'javascript',
+  questionCount: 4,
+  questionType: 'coding',
+  skills: [
+    'Variable Declaration',
+    'Data Type Identification',
+    'Type Conversion',
+    'Function Basics'
+  ],
+  topicId: 301,
+  topicName: 'JavaScript Fundamentals'
+})
 
 export const questionController = {
 
   // Get personalized questions using Gemini AI
   async getPersonalizedQuestions(req, res) {
     try {
-      const { courseId, topicId, type, difficulty = 'beginner', language = 'javascript' } = req.query
+      const {
+        courseId,
+        topicId = MOCK_REQUEST_BODY.topicId,
+        difficulty = 'beginner',
+        language = MOCK_REQUEST_BODY.programmingLanguage,
+        topicName: topicNameOverride,
+        skills: skillQuery
+      } = req.query
+      const normalizedSkills = Array.isArray(skillQuery)
+        ? skillQuery
+        : skillQuery
+          ? [skillQuery]
+          : MOCK_REQUEST_BODY.skills
+      const topicName = topicNameOverride || MOCK_REQUEST_BODY.topicName
       
       // First try to get existing questions from database
-      let questions = await QuestionModel.find({ courseId, topicId, type })
+      let questions = await QuestionModel.find({ courseId, topicId, type: 'code' })
 
       // If no questions exist, generate new ones using Gemini AI
       if (!questions || questions.length === 0) {
         try {
-          const topicName = `Course ${courseId} - Topic ${topicId}`
-          const nanoSkills = [] // Can be populated from course/topic data
-          const macroSkills = [] // Can be populated from course/topic data
-
-          if (type === 'code') {
-            const generated = await geminiService.generateCodingQuestion(
-              topicName,
-              [...nanoSkills, ...macroSkills],
-              1,
-              language,
-              {
-                humanLanguage: 'en',
-                topic_id: topicId
-              }
-            )
-            const question = Array.isArray(generated) ? generated[0] || {} : generated || {}
-            questions = [{
-              id: `gemini-${Date.now()}`,
-              title: question.title || 'AI Generated Coding Question',
-              description: question.description || question.question,
-              type: 'code',
-              courseId,
-              topicId,
-              difficulty: question.difficulty || difficulty,
-              language: question.language || language,
-              testCases: question.testCases || [],
-              hints: question.hints || [],
-              solution: question.solution,
-              createdBy: 'gemini',
-              isAIGenerated: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }]
-          } else {
-            const theoreticalQuestions = await fetchAssessmentTheoreticalQuestions({
-              topic_id: topicId,
-              topic_name: topicName,
-              amount: 1,
-              difficulty,
-              humanLanguage: 'en',
-              nanoSkills,
-              microSkills: macroSkills
-            })
-            const question = theoreticalQuestions?.[0] || {}
-            questions = [{
-              id: `gemini-${Date.now()}`,
-              title: question.title || 'AI Generated Theoretical Question',
-              description: question.description || question.question,
-              type: 'theoretical',
-              courseId,
-              topicId,
-              difficulty: question.difficulty || difficulty,
-              options: question.options || {},
-              correctAnswer: question.correctAnswer,
-              explanation: question.explanation,
-              hints: question.hints || [],
-              createdBy: 'gemini',
-              isAIGenerated: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }]
-          }
+          const generated = await geminiService.generateCodingQuestion(
+            topicName,
+            normalizedSkills,
+            1,
+            language,
+            {
+              humanLanguage: MOCK_REQUEST_BODY.humanLanguage,
+              topic_id: topicId
+            }
+          )
+          const question = Array.isArray(generated) ? generated[0] || {} : generated || {}
+          questions = [{
+            id: `gemini-${Date.now()}`,
+            title: question.title || 'AI Generated Coding Question',
+            description: question.description || question.question,
+            type: 'code',
+            courseId,
+            topicId,
+            difficulty: question.difficulty || difficulty,
+            language: question.language || language,
+            testCases: question.testCases || [],
+            hints: question.hints || [],
+            solution: question.solution,
+            createdBy: 'gemini',
+            isAIGenerated: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }]
         } catch (geminiError) {
           console.error('Error generating questions with Gemini:', geminiError)
           return res.status(500).json({ 
@@ -93,15 +86,32 @@ export const questionController = {
         delete cleaned.macroSkills
         delete cleaned.nano_skills
         delete cleaned.macro_skills
-        delete cleaned.courseName // Remove courseName - no longer used
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
+        delete cleaned.microSkills
+        delete cleaned.courseName
+        delete cleaned.options
+        delete cleaned.correctAnswer
+        delete cleaned.explanation
+        if (!cleaned.skills) cleaned.skills = []
+        cleaned.type = 'code'
         return cleaned
       })
 
-      res.json({ success: true, data: cleanedQuestions })
+      const metadata = {
+        questionType: 'code',
+        questionCount: cleanedQuestions.length,
+        topicId,
+        topicName,
+        language,
+        humanLanguage: MOCK_REQUEST_BODY.humanLanguage,
+        skills: normalizedSkills
+      }
+
+      res.json({
+        success: true,
+        metadata,
+        requestTemplate: MOCK_REQUEST_BODY,
+        data: cleanedQuestions
+      })
     } catch (error) {
       console.error('Error fetching personalized questions:', error)
       res.status(500).json({ success: false, error: error.message })
@@ -189,40 +199,21 @@ export const questionController = {
 
       // Generate solution using Gemini AI
       try {
-        let solution, explanation
-        
-        if (question.type === 'code') {
-          // Generate coding solution
-          const solutionCandidates = await geminiService.generateCodingQuestion(
-            question.description || question.question_content,
-            [],
-            1,
-            question.language || 'javascript',
-            {
-              humanLanguage: 'en',
-              topic_id: question.topicId || question.topic_id || null
-            }
-          )
-          const solutionData = Array.isArray(solutionCandidates)
-            ? solutionCandidates[0] || {}
-            : solutionCandidates || {}
-          solution = solutionData.solution
-          explanation = solutionData.explanation
-        } else {
-          // Generate theoretical solution
-          const theoreticalQuestions = await fetchAssessmentTheoreticalQuestions({
-            topic_id: question.topicId || question.topic_id || null,
-            topic_name: question.topicName || question.topic_name || question.description || question.question_content,
-            amount: 1,
-            difficulty: question.difficulty || 'beginner',
-            humanLanguage: 'en',
-            nanoSkills: [],
-            microSkills: []
-          })
-          const solutionData = theoreticalQuestions?.[0] || {}
-          solution = solutionData.correctAnswer || solutionData.correct_answer || null
-          explanation = solutionData.explanation
-        }
+        const solutionCandidates = await geminiService.generateCodingQuestion(
+          question.description || question.question_content,
+          question.skills || [],
+          1,
+          question.language || MOCK_REQUEST_BODY.programmingLanguage,
+          {
+            humanLanguage: MOCK_REQUEST_BODY.humanLanguage,
+            topic_id: question.topicId || question.topic_id || null
+          }
+        )
+        const solutionData = Array.isArray(solutionCandidates)
+          ? solutionCandidates[0] || {}
+          : solutionCandidates || {}
+        const solution = solutionData.solution
+        const explanation = solutionData.explanation
 
         // Save the solution to the question
         question.solution = solution
@@ -335,7 +326,7 @@ export const questionController = {
         const feedback = await geminiService.generateLearningRecommendations(
           {
             userId,
-            questionType: question.type,
+            questionType: question.type || 'code',
             difficulty: question.difficulty,
             language: question.language
           },
@@ -389,118 +380,19 @@ export const questionController = {
         delete cleaned.macroSkills
         delete cleaned.nano_skills
         delete cleaned.macro_skills
-        delete cleaned.courseName // Remove courseName - no longer used
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
+        delete cleaned.microSkills
+        delete cleaned.courseName
+        delete cleaned.options
+        delete cleaned.correctAnswer
+        delete cleaned.explanation
+        if (!cleaned.skills) cleaned.skills = []
+        cleaned.type = 'code'
         res.json({ success: true, data: cleaned })
       } else {
         res.json({ success: true, data: question })
       }
     } catch (error) {
       console.error('Error getting question:', error)
-      res.status(500).json({ success: false, error: error.message })
-    }
-  },
-
-  async createQuestion(req, res) {
-    try {
-      const questionData = req.body
-      const question = await QuestionModel.create(questionData)
-      
-      // Remove deprecated fields from question
-      if (question) {
-        const cleaned = { ...(question.toObject ? question.toObject() : question) }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
-        res.json({ success: true, data: cleaned })
-      } else {
-        res.json({ success: true, data: question })
-      }
-    } catch (error) {
-      console.error('Error creating question:', error)
-      res.status(500).json({ success: false, error: error.message })
-    }
-  },
-
-  async updateQuestion(req, res) {
-    try {
-      const { id } = req.params
-      const updateData = req.body
-      const question = await QuestionModel.update(id, updateData)
-      
-      // Remove deprecated fields from question
-      if (question) {
-        const cleaned = { ...(question.toObject ? question.toObject() : question) }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
-        res.json({ success: true, data: cleaned })
-      } else {
-        res.json({ success: true, data: question })
-      }
-    } catch (error) {
-      console.error('Error updating question:', error)
-      res.status(500).json({ success: false, error: error.message })
-    }
-  },
-
-  async deleteQuestion(req, res) {
-    try {
-      const { id } = req.params
-      await QuestionModel.delete(id)
-      res.json({ success: true, message: 'Question deleted successfully' })
-    } catch (error) {
-      console.error('Error deleting question:', error)
-      res.status(500).json({ success: false, error: error.message })
-    }
-  },
-
-  async getQuestionsByCourse(req, res) {
-    try {
-      const { courseId } = req.params
-      const questions = await QuestionModel.findByCourse(courseId)
-      
-      // Remove deprecated fields from all questions
-      const cleanedQuestions = questions.map(q => {
-        const cleaned = { ...(q.toObject ? q.toObject() : q) }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
-        return cleaned
-      })
-      
-      res.json({ success: true, data: cleanedQuestions })
-    } catch (error) {
-      console.error('Error getting questions by course:', error)
-      res.status(500).json({ success: false, error: error.message })
-    }
-  },
-
-  async validateQuestion(req, res) {
-    try {
-      const { id } = req.params
-      const validation = await QuestionModel.validate(id)
-      res.json({ success: true, data: validation })
-    } catch (error) {
-      console.error('Error validating question:', error)
       res.status(500).json({ success: false, error: error.message })
     }
   }

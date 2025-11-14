@@ -1018,25 +1018,33 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('='.repeat(80) + '\n')
     
     console.log('🔍 [DEBUG] Extracting fields from req.body...')
+    const body = req.body || {}
     const {
-      amount = 1,                      // Number of questions to generate (default: 1)
-      topic_id,                        // UUID of topic (optional, will be used for saving)
-      topic_name,                      // Name of topic (required)
-      topicName: bodyTopicName,        // Fallback support
-      skills,                          // Skills array (optional, will be parsed)
-      question_type = 'code',          // 'code' or 'theoretical'
-      programming_language = 'javascript', // Programming language for code questions
-      humanLanguage = 'en',            // Human language for questions (default: 'en')
+      amount = body.questionCount ?? body.question_count ?? 1, // Support camelCase questionCount
+      topic_id: snakeTopicId,              // UUID of topic (optional, snake_case)
+      topicId: camelTopicId,               // UUID of topic (optional, camelCase)
+      topic_name,                          // Name of topic (snake_case)
+      topicName: bodyTopicName,            // Name of topic (camelCase)
+      skills,                              // Skills array (optional, will be parsed)
+      question_type: snakeQuestionType = 'code', // 'code' or 'theoretical' snake_case
+      questionType: camelQuestionType,     // 'code' or 'theoretical' camelCase
+      programming_language: snakeProgrammingLanguage = 'javascript', // Programming language (snake_case)
+      programmingLanguage: camelProgrammingLanguage, // Programming language (camelCase)
+      humanLanguage = 'en',                // Human language for questions (default: 'en')
       learnerId: bodyLearnerId
-    } = req.body || {}
+    } = body
+
+    const topic_id = snakeTopicId ?? camelTopicId ?? null
     
     console.log('🔍 [DEBUG] Extracted raw values:')
     console.log('   - amount:', amount, '(type:', typeof amount, ')')
     console.log('   - topic_id:', topic_id, '(type:', typeof topic_id, ')')
     console.log('   - topic_name:', topic_name, '(type:', typeof topic_name, ')')
     console.log('   - skills:', JSON.stringify(skills), '(type:', typeof skills, ')')
-    console.log('   - question_type:', question_type, '(type:', typeof question_type, ')')
-    console.log('   - programming_language:', programming_language, '(type:', typeof programming_language, ')')
+    console.log('   - question_type (snake_case):', snakeQuestionType, '(type:', typeof snakeQuestionType, ')')
+    console.log('   - questionType (camelCase):', camelQuestionType, '(type:', typeof camelQuestionType, ')')
+    console.log('   - programming_language (snake_case):', snakeProgrammingLanguage, '(type:', typeof snakeProgrammingLanguage, ')')
+    console.log('   - programmingLanguage (camelCase):', camelProgrammingLanguage, '(type:', typeof camelProgrammingLanguage, ')')
     console.log('   - humanLanguage:', humanLanguage, '(type:', typeof humanLanguage, ')')
     console.log('   - learnerId:', bodyLearnerId, '(type:', typeof bodyLearnerId, ')')
     
@@ -1044,14 +1052,14 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('\n' + '='.repeat(80))
     console.log('🔍 [BACKEND ROUTE] Normalizing field names...')
     console.log('='.repeat(80))
-    console.log('   - Raw question_type from body:', question_type, '(type:', typeof question_type, ')')
-    console.log('   - req.body?.questionType:', req.body?.questionType, '(type:', typeof req.body?.questionType, ')')
-    console.log('   - req.body?.question_type:', req.body?.question_type, '(type:', typeof req.body?.question_type, ')')
+    console.log('   - Raw question_type (snake_case):', snakeQuestionType, '(type:', typeof snakeQuestionType, ')')
+    console.log('   - Raw questionType (camelCase):', camelQuestionType, '(type:', typeof camelQuestionType, ')')
+    console.log('   - body.question_type:', body.question_type, '(type:', typeof body.question_type, ')')
     
-    const topicName = topic_name || bodyTopicName || req.body?.topicName || null
+    const topicName = topic_name || bodyTopicName || body.topicName || null
     console.log('   - Final topicName:', topicName, '(type:', typeof topicName, ', isTruthy:', !!topicName, ')')
     
-    const rawQuestionType = question_type || req.body?.questionType || req.body?.question_type || 'code'
+    const rawQuestionType = snakeQuestionType || camelQuestionType || body.questionType || body.question_type || 'code'
     // Normalize questionType: 'coding' -> 'code', 'theoretical' -> 'theoretical'
     const questionType = rawQuestionType === 'coding' ? 'code' : rawQuestionType
     
@@ -1059,9 +1067,9 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - Final questionType:', questionType)
     console.log('   - Will route to:', questionType === 'code' ? '✅ CODING (Gemini)' : questionType === 'theoretical' ? '❌ THEORETICAL (Assessment)' : '❓ UNKNOWN')
     console.log('='.repeat(80) + '\n')
-    const language = programming_language || req.body?.programming_language || req.body?.language || 'javascript'
+    const language = snakeProgrammingLanguage || camelProgrammingLanguage || body.language || 'javascript'
     // Extract questionCount/amount - ensure it's a number
-    const rawQuestionCount = amount || req.body?.amount || req.body?.questionCount || 1
+    const rawQuestionCount = amount || body.amount || body.questionCount || 1
     const questionCount = typeof rawQuestionCount === 'number' 
       ? rawQuestionCount 
       : parseInt(rawQuestionCount) || 1
