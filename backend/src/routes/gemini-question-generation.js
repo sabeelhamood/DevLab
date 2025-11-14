@@ -1038,8 +1038,14 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - Final topicName:', topicName, '(type:', typeof topicName, ', isTruthy:', !!topicName, ')')
     
     const rawQuestionType = snakeQuestionType || camelQuestionType || body.questionType || body.question_type || 'code'
-    // Normalize questionType: 'coding' -> 'code', 'theoretical' -> 'theoretical'
-    const questionType = rawQuestionType === 'coding' ? 'code' : rawQuestionType
+    const normalizedQuestionType = (rawQuestionType || 'code')
+      .toString()
+      .trim()
+      .toLowerCase()
+    // Normalize questionType: 'coding' -> 'code', keep theoretical as-is
+    const questionType = normalizedQuestionType === 'coding'
+      ? 'code'
+      : normalizedQuestionType
     
     console.log('   - Raw questionType:', rawQuestionType)
     console.log('   - Final questionType:', questionType)
