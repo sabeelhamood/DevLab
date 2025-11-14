@@ -287,6 +287,42 @@ export class GeminiService {
     language = "javascript",
     options = {}
   ) {
+    const ensureThreeHints = (hints) => {
+      const prepared = Array.isArray(hints) ? hints.filter(Boolean) : []
+      while (prepared.length < 3) {
+        prepared.push(
+          prepared.length === 0
+            ? 'Break the problem into smaller helper functions.'
+            : prepared.length === 1
+              ? 'Consider edge cases, invalid inputs, and performance constraints.'
+              : 'Validate the solution using the provided test cases before returning.'
+        )
+      }
+      return prepared.slice(0, 3)
+    }
+
+    const ensureTestCases = (testCases) => {
+      if (Array.isArray(testCases) && testCases.length >= 3) {
+        return testCases
+      }
+      return [
+        {
+          input: 'sampleInput(2, 3)',
+          expectedOutput: '5',
+          explanation: 'Demonstrates a standard case with positive values'
+        },
+        {
+          input: 'sampleInput(-1, 5)',
+          expectedOutput: '4',
+          explanation: 'Shows handling of negative numbers'
+        },
+        {
+          input: 'sampleInput(0, 0)',
+          expectedOutput: '0',
+          explanation: 'Confirms neutral/edge behavior'
+        }
+      ]
+    }
     console.log('\n' + '='.repeat(80))
     console.log('🚀 [GEMINI-SERVICE] generateCodingQuestion FUNCTION CALLED')
     console.log('='.repeat(80))
@@ -348,7 +384,7 @@ You are an expert programming instructor. Generate CODING questions ONLY.
 
 🚫 CRITICAL REQUIREMENT: Generate ONLY CODING questions where users WRITE CODE.
 🚫 FORBIDDEN: DO NOT generate theoretical questions, multiple-choice questions, or questions with options/correctAnswer fields.
-🚫 DO NOT include: "options", "correctAnswer", "explanation" (as multiple choice), "summary", or "solution".
+🚫 DO NOT include: "options", "correctAnswer", "summary", or any theoretical explanation outside of testCase explanations.
 
 Topic: ${topic}
 Skills: ${skills.join(", ") || "General programming"}
@@ -361,7 +397,9 @@ REQUIRED FORMAT - Each question MUST have:
   "title": "Brief question title",
   "description": "Clear problem statement asking user to WRITE CODE (not multiple choice)",
   "testCases": [
-    {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"}
+    {"input": "example input", "expectedOutput": "expected output", "explanation": "why this test case"},
+    {"input": "second input", "expectedOutput": "expected output", "explanation": "why this test case"},
+    {"input": "third input", "expectedOutput": "expected output", "explanation": "why this test case"}
   ],
   "hints": ["hint 1", "hint 2", "hint 3"],
   "language": "${language}",
@@ -371,7 +409,8 @@ REQUIRED FORMAT - Each question MUST have:
 FORBIDDEN FIELDS (DO NOT INCLUDE):
 - "options" (multiple choice options) ❌
 - "correctAnswer" (multiple choice answer) ❌
-- "explanation" as a field separate from testCase explanations ❌
+- Any free-form "explanation" block outside testCase explanations ❌
+- Any mention of "multiple choice", "select", or "choose" ❌
 
 EXAMPLE CORRECT CODING QUESTION:
 \`\`\`json
@@ -455,19 +494,20 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
         
         // Clean and ensure only coding question fields are present
         const questions = validatedQuestions.map((q, index) => {
-          // Remove any theoretical question fields that might have slipped through
           const cleanedQuestion = { ...q };
           delete cleanedQuestion.options;
           delete cleanedQuestion.correctAnswer;
           delete cleanedQuestion.nanoSkills;
           delete cleanedQuestion.macroSkills;
+
+          const ensuredTestCases = ensureTestCases(cleanedQuestion.testCases);
+          const ensuredHints = ensureThreeHints(cleanedQuestion.hints);
           
-          // Ensure required coding question fields exist
           return {
             title: cleanedQuestion.title,
             description: cleanedQuestion.description,
-            testCases: cleanedQuestion.testCases || [],
-            hints: cleanedQuestion.hints || [],
+            testCases: ensuredTestCases,
+            hints: ensuredHints,
             language: cleanedQuestion.language || language,
             difficulty: cleanedQuestion.difficulty || 'intermediate',
             _source: 'gemini',
@@ -476,7 +516,7 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
             _difficultyIndex: index + 1,
             topic_id: topic_id || cleanedQuestion.topic_id || null,
             question_type: "code",
-            questionType: "code" // Also set questionType for compatibility
+            questionType: "code"
           };
         });
         console.log(`✅ Successfully generated ${questions.length} CODING questions from Gemini AI.`);

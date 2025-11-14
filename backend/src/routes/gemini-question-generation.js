@@ -24,6 +24,43 @@ function ensureCodingQuestionsOnly(
     amount
   }
 ) {
+  const ensureThreeHints = (hints) => {
+    const prepared = Array.isArray(hints) ? hints.filter(Boolean) : []
+    while (prepared.length < 3) {
+      prepared.push(
+        prepared.length === 0
+          ? 'Break the problem into smaller helper functions.'
+          : prepared.length === 1
+            ? 'Think about edge cases (empty input, negative numbers, etc.).'
+            : 'Validate your solution with the provided test cases before returning.'
+      )
+    }
+    return prepared.slice(0, 3)
+  }
+
+  const ensureTestCases = (testCases) => {
+    if (Array.isArray(testCases) && testCases.length > 0) {
+      return testCases
+    }
+    return [
+      {
+        input: 'sampleInput()',
+        expectedOutput: 'expected output',
+        explanation: 'Demonstrates the primary success scenario'
+      },
+      {
+        input: 'sampleInput(5)',
+        expectedOutput: '10',
+        explanation: 'Shows handling of numeric arguments'
+      },
+      {
+        input: 'sampleInput(0)',
+        expectedOutput: '0',
+        explanation: 'Confirms correct behavior with neutral input'
+      }
+    ]
+  }
+
   if (!Array.isArray(rawQuestions)) {
     return {
       questions: [],
@@ -61,9 +98,11 @@ function ensureCodingQuestionsOnly(
 
       sanitized.question_type = 'code'
       sanitized.questionType = 'code'
-      sanitized.testCases = [...sanitized.testCases]
-      sanitized.test_cases = sanitized.testCases
-      sanitized.hints = sanitized.hints.slice(0, 3)
+
+      const ensuredTestCases = ensureTestCases(sanitized.testCases)
+      sanitized.testCases = ensuredTestCases
+      sanitized.test_cases = ensuredTestCases
+      sanitized.hints = ensureThreeHints(sanitized.hints)
       sanitized._source = sanitized._source || 'gemini'
       sanitized._isFallback = !!sanitized._isFallback
 
@@ -107,20 +146,8 @@ function ensureCodingQuestionsOnly(
   const fallbackQuestions = Array.isArray(fallbackResult.questions) ? fallbackResult.questions : []
 
   const normalizedFallback = fallbackQuestions.map((entry, idx) => {
-    const fallbackTestCases = entry?.testCases && entry.testCases.length > 0
-      ? entry.testCases
-      : [
-          { input: 'sample()', expectedOutput: 'result', explanation: 'Sample fallback test case' },
-          { input: 'sample(5)', expectedOutput: '10', explanation: 'Double the input' }
-        ]
-    const fallbackHints = entry?.hints && entry.hints.length >= 3
-      ? entry.hints.slice(0, 3)
-      : [
-          'Understand the problem requirements before coding.',
-          'Break the solution into reusable helper functions.',
-          'Add tests for edge cases.'
-        ]
-
+    const fallbackTestCases = ensureTestCases(entry?.testCases)
+    const fallbackHints = ensureThreeHints(entry?.hints)
     return {
       title: entry?.question?.title || `Coding Challenge ${idx + 1}`,
       description: entry?.question?.description || `Write a ${language} function related to ${topicName}.`,
@@ -1609,33 +1636,28 @@ router.post('/generate-question-package', async (req, res) => {
     
     const cleanedSingleQuestion = cleanedQuestions[0] || null
 
+    const metadata = {
+      topicName,
+      topicId: topic_id || null,
+      learnerId: learnerId || null,
+      language: questionType === 'code' ? language : null,
+      humanLanguage,
+      skills: validatedSkills,
+      questionCount: cleanedQuestions.length,
+      requestedAmount: finalQuestionCount,
+      questionsSource,
+      serviceUsed: serviceUsed || 'gemini',
+      geminiCount: geminiQuestions.length,
+      fallbackCount: fallbackQuestions.length,
+      isFallback: fallbackQuestions.length > 0,
+      generatedAt: new Date().toISOString()
+    }
+
     const responseData = {
       success: true,
       questions: cleanedQuestions,
-      question: cleanedSingleQuestion, // Keep backward compatibility
-      metadata: {
-        amount: finalQuestionCount,
-        topic_id: topic_id || null,
-        topic_name: topicName,
-        topicName: topicName, // Keep backward compatibility
-        learnerId,
-        skills: validatedSkills,
-        skillsList: validatedSkills,
-        question_type: questionType,
-        questionType: questionType, // Keep backward compatibility
-        programming_language: questionType === 'code' ? language : null,
-        language: questionType === 'code' ? language : null, // Keep backward compatibility
-        humanLanguage: humanLanguage,
-        questionCount: processedQuestions.length,
-        practiceQuestionsCount: finalQuestionCount,
-        generatedAt: new Date().toISOString(),
-        questionsSource: questionsSource, // 'gemini', 'assessment', 'fallback', or 'mixed'
-        serviceUsed: serviceUsed, // 'gemini' or 'assessment'
-        geminiCount: geminiQuestions.length,
-        assessmentCount: 0, // Assessment questions not used in this endpoint
-        fallbackCount: fallbackQuestions.length,
-        isFallback: fallbackQuestions.length > 0 // Indicates if any questions are fallback
-      }
+      question: cleanedSingleQuestion,
+      metadata
     }
     
     // Supabase saving is disabled - questions are NOT saved to database
@@ -1653,6 +1675,9 @@ router.post('/generate-question-package', async (req, res) => {
     console.log('   - responseData.success:', responseData?.success)
     console.log('   - responseData.questions length:', responseData?.questions?.length || 0)
     console.log('   - responseData.metadata exists:', !!responseData?.metadata)
+    if (responseData?.metadata) {
+      console.log('📊 [RESPONSE] Final metadata object:', JSON.stringify(responseData.metadata, null, 2))
+    }
     
     try {
       console.log('📤 Backend: Sending response at:', new Date().toISOString())
