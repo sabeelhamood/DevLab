@@ -95,6 +95,7 @@ function ensureCodingQuestionsOnly(
       delete sanitized.macroSkills
       delete sanitized.nano_skills
       delete sanitized.macro_skills
+      delete sanitized.difficulty
 
       sanitized.question_type = 'code'
       sanitized.questionType = 'code'
@@ -154,7 +155,6 @@ function ensureCodingQuestionsOnly(
       testCases: fallbackTestCases,
       hints: fallbackHints,
       language,
-      difficulty: entry?.question?.difficulty || 'intermediate',
       _source: 'fallback',
       _isFallback: true,
       question_type: 'code',

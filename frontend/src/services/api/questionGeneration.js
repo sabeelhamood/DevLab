@@ -1,6 +1,21 @@
 // Frontend Question Generation API service
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://devlab-backend-production-0bcb.up.railway.app/api' : 'http://localhost:3001/api')
 
+const stripDifficultyField = (payload) => {
+  if (!payload) return payload
+
+  if (Array.isArray(payload)) {
+    payload.forEach(stripDifficultyField)
+    return payload
+  }
+
+  if (typeof payload === 'object') {
+    delete payload.difficulty
+  }
+
+  return payload
+}
+
 // Helper function to safely handle fetch requests
 const safeFetch = async (url, options = {}) => {
   try {
@@ -43,6 +58,7 @@ class QuestionGenerationAPI {
       }
 
       const result = await response.json()
+      stripDifficultyField(result?.question)
       return result.question
     } catch (error) {
       console.error('Question generation API error:', error)
@@ -162,6 +178,8 @@ class QuestionGenerationAPI {
 
       const result = await response.json()
       console.log('📦 API: Parsed response:', result)
+      stripDifficultyField(result.questions)
+      stripDifficultyField(result.question)
       
       // Check if questions are from Gemini or fallback
       if (result.metadata) {

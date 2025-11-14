@@ -16,7 +16,7 @@ const MOCK_REQUEST_BODY = Object.freeze({
   topicName: 'JavaScript Fundamentals'
 })
 
-const FALLBACK_DIFFICULTY = 'basic'
+const FALLBACK_DIFFICULTY = null
 
 export const questionController = {
 
@@ -71,7 +71,6 @@ export const questionController = {
               testCases: [],
               hints: [],
               language,
-              difficulty: FALLBACK_DIFFICULTY,
               solution: null
             }
             generated = [fallbackQuestion]
@@ -86,7 +85,6 @@ export const questionController = {
             topicId,
             topicName,
             skills: question.skills || normalizedSkills,
-            difficulty: question.difficulty || FALLBACK_DIFFICULTY,
             language: question.language || language,
             testCases: question.testCases || [],
             hints: question.hints || [],
@@ -117,6 +115,7 @@ export const questionController = {
         delete cleaned.options
         delete cleaned.correctAnswer
         delete cleaned.explanation
+        delete cleaned.difficulty
         if (!cleaned.skills) cleaned.skills = []
         cleaned.type = 'code'
         return cleaned
@@ -411,6 +410,7 @@ export const questionController = {
         delete cleaned.options
         delete cleaned.correctAnswer
         delete cleaned.explanation
+        delete cleaned.difficulty
         if (!cleaned.skills) cleaned.skills = []
         cleaned.type = 'code'
         res.json({ success: true, data: cleaned })

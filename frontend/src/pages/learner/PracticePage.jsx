@@ -66,7 +66,6 @@ function PracticePage() {
         question_id: aiQuestion.question_id || `ai_${Date.now()}`,
         question_type: questionType === 'code' ? 'code' : 'theoretical',
         question_content: aiQuestion.description || aiQuestion.question || aiQuestion.title || aiQuestion.question_content,
-        difficulty: aiQuestion.difficulty || 'intermediate',
         language: aiQuestion.language || language,
         tags: aiQuestion.skills || currentTopic.skills,
         test_cases: aiQuestion.testCases || [],
@@ -248,7 +247,6 @@ int main() {
                 </span>
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span>Difficulty: {question.difficulty}</span>
                 {question.tags && (
                   <div className="flex space-x-1">
                     {question.tags.map((tag, index) => (

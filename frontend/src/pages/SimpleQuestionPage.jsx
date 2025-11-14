@@ -163,7 +163,6 @@ function SimpleQuestionPage() {
         question_type: 'code',
         questionType: 'coding',
         question_content: q.description || q.title,
-        difficulty: q.difficulty || 'intermediate', // Display only, not sent to Gemini
         language: q.language || language,
         test_cases: (() => {
           console.log(`🔍 DEBUG: Question ${index + 1} testCases check:`, {
@@ -610,7 +609,6 @@ int sum(int a, int b) {
                 </span>
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                <span>Difficulty: {question.difficulty}</span>
               </div>
             </div>
 
