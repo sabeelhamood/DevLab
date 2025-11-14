@@ -490,25 +490,41 @@ router.post('/generate-hint', async (req, res) => {
     topicName
     } = req.body || {}
 
+  const sendFallbackHint = ({
+    reason = 'Using fallback hint due to error',
+    errorMessage
+  } = {}) => {
+    const fallbackHints = [
+      "Try breaking down the problem into smaller steps.",
+      "Consider what data structures might be helpful for this problem.",
+      "Think about edge cases and how to handle them.",
+      "Look at the test cases to understand the expected behavior.",
+      "Consider using helper functions to organize your code better."
+    ]
+
+    const safeHintsUsed = Math.max(0, Math.min(Number(hintsUsed) || 0, fallbackHints.length - 1))
+    const fallbackHint = fallbackHints[safeHintsUsed] || fallbackHints[0]
+
+    return res.json({
+      success: true,
+      hint: fallbackHint,
+      metadata: {
+        topicName: topicName || question?.topicName || question?.topic_name || null,
+        hintsUsed: safeHintsUsed + 1,
+        generatedAt: new Date().toISOString(),
+        fallback: true,
+        message: reason,
+        error: errorMessage || null,
+        source: 'fallback'
+      }
+    })
+  }
+
   if (!question) {
       console.warn('⚠️ Hint generation: Question is missing')
-      // Return fallback hint instead of error to avoid breaking UI
-      const fallbackHints = [
-        "Try breaking down the problem into smaller steps.",
-        "Consider what data structures might be helpful for this problem.",
-        "Think about edge cases and how to handle them."
-      ]
-      return res.json({
-        success: true,
-        hint: fallbackHints[0],
-        metadata: {
-          topicName: topicName || null,
-          hintsUsed: 1,
-          generatedAt: new Date().toISOString(),
-          fallback: true,
-          message: "Using fallback hint - question not provided"
-        }
-    })
+      return sendFallbackHint({
+        reason: "Using fallback hint because question is missing"
+      })
   }
 
   try {
@@ -529,22 +545,8 @@ router.post('/generate-hint', async (req, res) => {
         
         if (!questionText || questionText.trim() === '') {
           console.warn('⚠️ Cannot extract question text from question object:', Object.keys(question || {}))
-          // Return fallback hint instead of error
-          const fallbackHints = [
-            "Try breaking down the problem into smaller steps.",
-            "Consider what data structures might be helpful for this problem.",
-            "Think about edge cases and how to handle them."
-          ]
-          return res.json({
-            success: true,
-            hint: fallbackHints[hintsUsed || 0] || fallbackHints[0],
-            metadata: {
-              topicName: topicName || null,
-              hintsUsed: (hintsUsed || 0) + 1,
-              generatedAt: new Date().toISOString(),
-              fallback: true,
-              message: "Using fallback hint - question text not found"
-            }
+          return sendFallbackHint({
+            reason: "Using fallback hint - question text not found"
           })
         }
       }
@@ -556,21 +558,8 @@ router.post('/generate-hint', async (req, res) => {
       
       if (!questionText || questionText.trim() === '') {
         console.warn('⚠️ Question text is empty after processing')
-        const fallbackHints = [
-          "Try breaking down the problem into smaller steps.",
-          "Consider what data structures might be helpful for this problem.",
-          "Think about edge cases and how to handle them."
-        ]
-        return res.json({
-          success: true,
-          hint: fallbackHints[hintsUsed || 0] || fallbackHints[0],
-          metadata: {
-            topicName: topicName || null,
-            hintsUsed: (hintsUsed || 0) + 1,
-            generatedAt: new Date().toISOString(),
-            fallback: true,
-            message: "Using fallback hint - empty question text"
-          }
+        return sendFallbackHint({
+          reason: "Using fallback hint - empty question text"
         })
       }
       
@@ -609,9 +598,9 @@ router.post('/generate-hint', async (req, res) => {
         console.log('✅ Successfully generated hint from Gemini:', hintText.substring(0, 50) + '...')
         
         return res.json({
-      success: true,
+          success: true,
           hint: hintText,
-      metadata: {
+          metadata: {
             topicName: topicName || null,
             hintsUsed: (hintsUsed || 0) + 1,
             generatedAt: new Date().toISOString(),
@@ -624,7 +613,11 @@ router.post('/generate-hint', async (req, res) => {
         console.error('❌ Error calling Gemini service:', geminiError)
         console.error('   Error message:', geminiError?.message)
         console.error('   Error stack:', geminiError?.stack)
-        throw geminiError // Re-throw to be caught by outer catch
+        console.warn('⚠️ Using fallback hint due to Gemini error')
+        return sendFallbackHint({
+          reason: "Using fallback hint due to Gemini error",
+          errorMessage: geminiError?.message
+        })
       }
 
   } catch (error) {
@@ -643,32 +636,12 @@ router.post('/generate-hint', async (req, res) => {
         error.message.includes('Service Unavailable')
       )
       
-      // Provide fallback hints for any error to avoid breaking the UI
-      console.warn('⚠️ Using fallback hint due to error:', error?.message || 'Unknown error')
-      const fallbackHints = [
-        "Try breaking down the problem into smaller steps.",
-        "Consider what data structures might be helpful for this problem.",
-        "Think about edge cases and how to handle them.",
-        "Look at the test cases to understand the expected behavior.",
-        "Consider using helper functions to organize your code better."
-      ]
-      
-      const hintIndex = Math.min(hintsUsed || 0, fallbackHints.length - 1)
-      const fallbackHint = fallbackHints[hintIndex] || fallbackHints[0]
-      
-      // Return fallback hint instead of error to avoid breaking the UI
-      return res.json({
-        success: true,
-        hint: fallbackHint,
-        metadata: {
-          topicName: topicName || null,
-          hintsUsed: (hintsUsed || 0) + 1,
-          generatedAt: new Date().toISOString(),
-          fallback: true,
-          error: error?.message || 'Unknown error',
-          message: isRateLimit ? "Using fallback hint due to API rate limits" : "Using fallback hint due to API error",
-          source: 'fallback'
-        }
+      const message = isRateLimit
+        ? "Using fallback hint due to API rate limits"
+        : "Using fallback hint due to API error"
+      return sendFallbackHint({
+        reason: message,
+        errorMessage: error?.message
       })
     }
     
@@ -679,24 +652,9 @@ router.post('/generate-hint', async (req, res) => {
     console.error('   Error stack:', outerError?.stack)
     
     // Always return a response to prevent 500 error
-    const fallbackHints = [
-      "Try breaking down the problem into smaller steps.",
-      "Consider what data structures might be helpful for this problem.",
-      "Think about edge cases and how to handle them."
-    ]
-    
-    return res.json({
-      success: true,
-      hint: fallbackHints[0],
-      metadata: {
-        topicName: null,
-        hintsUsed: 1,
-        generatedAt: new Date().toISOString(),
-        fallback: true,
-        error: outerError?.message || 'Unknown error',
-        message: "Using fallback hint due to unexpected error",
-        source: 'fallback'
-      }
+    return sendFallbackHint({
+      reason: "Using fallback hint due to unexpected error",
+      errorMessage: outerError?.message
     })
   }
 })
