@@ -8,6 +8,108 @@ import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClien
 
 const router = express.Router()
 
+/**
+ * Ensure every question is a coding challenge with test cases & hints.
+ * If Gemini responds with theoretical questions, we fall back to our
+ * internal coding templates so the frontend always renders executable tasks.
+ */
+function ensureCodingQuestionsOnly(rawQuestions, {
+  topicName,
+  topic_id,
+  skills,
+  language,
+  humanLanguage,
+  amount
+}) {
+  if (!Array.isArray(rawQuestions)) {
+    return { questions: [], usedFallback: false, rejected: [], reason: 'questions_not_array' }
+  }
+
+  const rejected = []
+  const sanitized = rawQuestions.filter(Boolean).map((question, index) => {
+    const hasOptions = question?.options !== undefined
+    const hasCorrectAnswer = question?.correctAnswer !== undefined
+    const hasTestCases = Array.isArray(question?.testCases) && question.testCases.length > 0
+    const hasHints = Array.isArray(question?.hints) && question.hints.length > 0
+    const isCodingType = (question?.question_type || question?.questionType || '').toLowerCase() === 'code'
+
+    const invalidReasons = []
+    if (hasOptions || hasCorrectAnswer) {
+      invalidReasons.push('theoretical_fields_present')
+    }
+    if (!hasTestCases) {
+      invalidReasons.push('missing_test_cases')
+    }
+    if (!hasHints) {
+      invalidReasons.push('missing_hints')
+    }
+    if (!isCodingType) {
+      invalidReasons.push('question_type_not_code')
+    }
+
+    if (invalidReasons.length > 0) {
+      rejected.push({
+        index,
+        title: question?.title,
+        reasons: invalidReasons
+      })
+    }
+
+    return question
+  })
+
+  if (rejected.length === 0 && sanitized.length > 0) {
+    return { questions: sanitized, usedFallback: false, rejected: [] }
+  }
+
+  console.error('\n' + '='.repeat(80))
+  console.error('❌ [ROUTE] Gemini returned theoretical questions – forcing FALLBACK coding questions')
+  console.error('='.repeat(80))
+  console.error('   Topic:', topicName)
+  console.error('   Language:', language)
+  console.error('   Requested amount:', amount)
+  console.error('   Rejected entries:', JSON.stringify(rejected, null, 2))
+  console.error('='.repeat(80) + '\n')
+
+  const fallbackResult = geminiService.generateFallbackCodingQuestions({
+    topic_name: topicName,
+    topic_id,
+    skills,
+    programming_language: language,
+    humanLanguage,
+    amount
+  }) || {}
+
+  const fallbackQuestions = Array.isArray(fallbackResult.questions) ? fallbackResult.questions : []
+
+  const normalizedFallback = fallbackQuestions.map((entry, idx) => ({
+    title: entry?.question?.title || `Coding Challenge ${idx + 1}`,
+    description: entry?.question?.description || `Write a ${language} function related to ${topicName}.`,
+    testCases: entry?.testCases || [
+      { input: 'sampleInput()', expectedOutput: 'expected value', explanation: 'Sample fallback test case' }
+    ],
+    hints: entry?.hints || [
+      'Break the problem into smaller steps.',
+      'Think about input validation.',
+      'Consider edge cases.'
+    ],
+    language,
+    difficulty: entry?.question?.difficulty || 'intermediate',
+    _source: 'fallback',
+    _isFallback: true,
+    question_type: 'code',
+    questionType: 'code',
+    topicName,
+    topic_id: topic_id || entry?.question?.topic_id || null,
+    skills: skills || [],
+    humanLanguage,
+    solution: entry?.question?.solution || '',
+    courseName: ' '
+  }))
+
+  return { questions: normalizedFallback, usedFallback: true, rejected }
+}
+
 console.log('🔍 [gemini-question-generation] Route file loaded and router created')
 
 // Middleware to log all requests to this router
@@ -1213,6 +1315,29 @@ router.post('/generate-question-package', async (req, res) => {
       if (questions.length === 0) {
         console.warn('⚠️ [DEBUG] Gemini returned empty questions array')
       }
+
+      // FINAL SAFETY NET: ensure questions are truly coding challenges
+      const codingValidation = ensureCodingQuestionsOnly(questions, {
+        topicName,
+        topic_id: topic_id || null,
+        skills: validatedSkills,
+        language,
+        humanLanguage,
+        amount: finalQuestionCount
+      })
+
+      if (codingValidation.usedFallback) {
+        console.warn('⚠️ [BACKEND ROUTE] Forced fallback coding questions due to invalid Gemini response')
+        questionsSource = 'fallback'
+        serviceUsed = 'fallback'
+      }
+
+      if (codingValidation.rejected?.length) {
+        console.warn(`⚠️ [BACKEND ROUTE] Rejected ${codingValidation.rejected.length} Gemini question(s) for not meeting coding requirements`)
+      }
+
+      questions = codingValidation.questions
+      console.log('✅ [BACKEND ROUTE] Coding validation complete. Questions ready for processing:', questions.length)
       
       // Check if questions are from Gemini or fallback
       const fallbackCount = questions.filter(q => q._isFallback === true || q._source === 'fallback').length
