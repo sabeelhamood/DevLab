@@ -921,9 +921,17 @@ if (typeof result === "string") {
         if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
             (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
           try {
-            return normalize(JSON.parse(trimmed));
+            // First unwrap the outer quotes
+            const unquoted = trimmed.slice(1, -1)
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\');
+            return normalize(unquoted);
           } catch (err) {
-            // fall through if JSON.parse fails
+            try {
+              return normalize(JSON.parse(trimmed));
+            } catch (jsonErr) {
+              // fall through if both parsing attempts fail
+            }
           }
         }
 
