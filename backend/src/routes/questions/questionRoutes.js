@@ -1,22 +1,11 @@
 import express from 'express'
 import { body } from 'express-validator'
-import { authenticateToken, requireRole } from '../../middleware/auth.js'
+import { authenticateToken } from '../../middleware/auth.js'
 import { validateRequest } from '../../middleware/validateRequest.js'
 import { questionController } from '../../controllers/questionController.js'
 import { QuestionModel } from '../../models/Question.js'
 
 const router = express.Router()
-
-// Validation rules
-const questionValidation = [
-  body('question_content').trim().isLength({ min: 10 }).withMessage('Question content must be at least 10 characters'),
-  body('question_type').isIn(['code', 'theoretical']).withMessage('Question type must be code or theoretical'),
-  body('difficulty').isIn(['beginner', 'intermediate', 'advanced']).withMessage('Invalid difficulty level'),
-  body('course_id').trim().notEmpty().withMessage('Course ID is required'),
-  body('topic_id').trim().notEmpty().withMessage('Topic ID is required'),
-  body('practice_id').optional().trim().notEmpty().withMessage('Practice ID is optional'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
-]
 
 const submissionValidation = [
   body('solution').trim().isLength({ min: 1 }).withMessage('Solution is required'),
@@ -31,13 +20,6 @@ router.post('/:id/submit', authenticateToken, submissionValidation, validateRequ
 router.get('/:id/feedback', authenticateToken, questionController.getFeedback)
 router.post('/:id/hint', authenticateToken, questionController.requestHint)
 router.get('/:id/solution', authenticateToken, questionController.getSolution)
-
-// Trainer routes
-router.post('/', authenticateToken, requireRole(['trainer', 'admin']), questionValidation, validateRequest, questionController.createQuestion)
-router.put('/:id', authenticateToken, requireRole(['trainer', 'admin']), questionValidation, validateRequest, questionController.updateQuestion)
-router.delete('/:id', authenticateToken, requireRole(['trainer', 'admin']), questionController.deleteQuestion)
-router.get('/course/:courseId', authenticateToken, questionController.getQuestionsByCourse)
-router.post('/:id/validate', authenticateToken, requireRole(['trainer', 'admin']), questionController.validateQuestion)
 
 // New routes for updated schema
 router.get('/practice/:practiceId', async (req, res) => {
