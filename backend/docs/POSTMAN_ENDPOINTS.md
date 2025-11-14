@@ -72,33 +72,16 @@ POST https://devlab-backend-production-0bcb.up.railway.app/api/gemini-questions/
 Content-Type: application/json
 ```
 
-**Request Body (New Format):**
+**Request Body (Current Format):**
 ```json
 {
   "amount": 4,
   "topic_id": "uuid-of-topic",
   "topic_name": "Functions and Basic Operations",
-  "skills": {
-    "nanoSkills": ["Function Declaration", "Parameters", "Return Values"],
-    "macroSkills": ["Problem Solving", "Code Structure"]
-  },
+  "skills": ["Function Declaration", "Parameters", "Return Values"],
   "question_type": "code",
   "programming_language": "javascript",
   "humanLanguage": "en"
-}
-```
-
-**Request Body (Backward Compatible - Old Format):**
-```json
-{
-  "courseName": "JavaScript Programming",
-  "topicName": "Functions and Basic Operations",
-  "nanoSkills": ["Function Declaration", "Parameters", "Return Values"],
-  "macroSkills": ["Problem Solving", "Code Structure"],
-  "difficulty": "intermediate",
-  "language": "javascript",
-  "questionType": "coding",
-  "questionCount": 1
 }
 ```
 
@@ -106,7 +89,7 @@ Content-Type: application/json
 - `amount` (number, required): Number of questions to generate (default: 1)
 - `topic_id` (UUID, optional): UUID of topic (will be used for saving to Supabase)
 - `topic_name` (string, required): Name of topic
-- `skills` (object or array, optional): Skills object with `nanoSkills` and `macroSkills`, or array of skills
+- `skills` (array, optional): List of skills or focus areas for the questions
 - `question_type` (string, required): Either `"code"` or `"theoretical"`
   - `"code"`: Routes to Gemini AI for coding questions
   - `"theoretical"`: Routes to Assessment Microservice for theoretical questions
@@ -127,7 +110,6 @@ Content-Type: application/json
       "question_id": "demo_1234567890_0",
       "title": "Calculate Total Grocery Bill",
       "description": "Create a function...",
-      "difficulty": "intermediate",
       "language": "javascript",
       "question_type": "code",
       "programming_language": "javascript",
@@ -149,10 +131,7 @@ Content-Type: application/json
     "amount": 4,
     "topic_id": "uuid-of-topic",
     "topic_name": "Functions and Basic Operations",
-    "skills": {
-      "nanoSkills": ["Function Declaration", "Parameters"],
-      "macroSkills": ["Problem Solving"]
-    },
+    "skills": ["Function Declaration", "Parameters"],
     "question_type": "code",
     "programming_language": "javascript",
     "humanLanguage": "en",
@@ -254,9 +233,7 @@ Content-Type: application/json
 {
   "courseName": "JavaScript Programming",
   "topicName": "Functions",
-  "nanoSkills": ["Function Declaration"],
-  "macroSkills": ["Problem Solving"],
-  "difficulty": "intermediate",
+  "skills": ["Function Declaration", "Problem Solving"],
   "language": "javascript",
   "questionType": "coding"
 }
@@ -339,10 +316,7 @@ Content-Type: application/json
      "amount": 4,
      "topic_id": "uuid-of-topic",
      "topic_name": "Functions and Basic Operations",
-     "skills": {
-       "nanoSkills": ["Function Declaration", "Parameters"],
-       "macroSkills": ["Problem Solving"]
-     },
+     "skills": ["Function Declaration", "Parameters", "Problem Solving"],
      "question_type": "code",
      "programming_language": "javascript",
      "humanLanguage": "en"
@@ -369,10 +343,7 @@ Content-Type: application/json
      "amount": 4,
      "topic_id": "uuid-of-topic",
      "topic_name": "Functions and Basic Operations",
-     "skills": {
-       "nanoSkills": ["Function Declaration", "Parameters"],
-       "macroSkills": ["Problem Solving"]
-     },
+     "skills": ["Function Declaration", "Parameters", "Problem Solving"],
      "question_type": "theoretical",
      "humanLanguage": "en"
    }
@@ -487,7 +458,7 @@ You can create a Postman collection with these endpoints:
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"amount\": 4,\n  \"topic_id\": \"uuid-of-topic\",\n  \"topic_name\": \"Functions and Basic Operations\",\n  \"skills\": {\n    \"nanoSkills\": [\"Function Declaration\", \"Parameters\"],\n    \"macroSkills\": [\"Problem Solving\"]\n  },\n  \"question_type\": \"code\",\n  \"programming_language\": \"javascript\",\n  \"humanLanguage\": \"en\"\n}"
+          "raw": "{\n  \"amount\": 4,\n  \"topic_id\": \"uuid-of-topic\",\n  \"topic_name\": \"Functions and Basic Operations\",\n  \"skills\": [\"Function Declaration\", \"Parameters\", \"Problem Solving\"],\n  \"question_type\": \"code\",\n  \"programming_language\": \"javascript\",\n  \"humanLanguage\": \"en\"\n}"
         },
         "url": {
           "raw": "https://devlab-backend-production-0bcb.up.railway.app/api/gemini-questions/generate-question-package",
@@ -509,7 +480,7 @@ You can create a Postman collection with these endpoints:
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"amount\": 4,\n  \"topic_id\": \"uuid-of-topic\",\n  \"topic_name\": \"Functions and Basic Operations\",\n  \"skills\": {\n    \"nanoSkills\": [\"Function Declaration\", \"Parameters\"],\n    \"macroSkills\": [\"Problem Solving\"]\n  },\n  \"question_type\": \"theoretical\",\n  \"humanLanguage\": \"en\"\n}"
+          "raw": "{\n  \"amount\": 4,\n  \"topic_id\": \"uuid-of-topic\",\n  \"topic_name\": \"Functions and Basic Operations\",\n  \"skills\": [\"Function Declaration\", \"Parameters\", \"Problem Solving\"],\n  \"question_type\": \"theoretical\",\n  \"humanLanguage\": \"en\"\n}"
         },
         "url": {
           "raw": "https://devlab-backend-production-0bcb.up.railway.app/api/gemini-questions/generate-question-package",
