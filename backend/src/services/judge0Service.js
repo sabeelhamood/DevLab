@@ -896,59 +896,30 @@ int main() {
    */
   compareOutputs(actualOutput, expectedOutput) {
     console.log('🔍 Judge0: Comparing outputs - Actual:', actualOutput, 'Expected:', expectedOutput);
-    
-    // Handle null/undefined cases
-    if (actualOutput === null || actualOutput === undefined) {
-      return expectedOutput === null || expectedOutput === undefined;
+  
+    function normalize(value) {
+      if (typeof value === "string") {
+        return value.trim();
+      } else if (Array.isArray(value)) {
+        return value.map(normalize);
+      } else if (value && typeof value === "object") {
+        return Object.keys(value)
+          .sort()
+          .reduce((acc, key) => {
+            acc[key] = normalize(value[key]);
+            return acc;
+          }, {});
+      } else {
+        return value;
+      }
     }
-    
-    if (expectedOutput === null || expectedOutput === undefined) {
-      return actualOutput === null || actualOutput === undefined;
-    }
-    
-    // Convert both to strings for comparison
-    const actualStr = String(actualOutput).trim();
-    const expectedStr = String(expectedOutput).trim();
-    
-    // Direct string comparison first
-    if (actualStr === expectedStr) {
-      console.log('✅ Judge0: Direct string match');
-      return true;
-    }
-    
-    // Try numeric comparison if both look like numbers
-    const actualNum = parseFloat(actualStr);
-    const expectedNum = parseFloat(expectedStr);
-    
-    if (!isNaN(actualNum) && !isNaN(expectedNum)) {
-      const numericMatch = actualNum === expectedNum;
-      console.log('🔢 Judge0: Numeric comparison:', actualNum, '===', expectedNum, '=', numericMatch);
-      return numericMatch;
-    }
-    
-    // Try boolean comparison
-    const actualBool = actualStr.toLowerCase();
-    const expectedBool = expectedStr.toLowerCase();
-    
-    if ((actualBool === 'true' || actualBool === 'false') && 
-        (expectedBool === 'true' || expectedBool === 'false')) {
-      const boolMatch = actualBool === expectedBool;
-      console.log('🔘 Judge0: Boolean comparison:', actualBool, '===', expectedBool, '=', boolMatch);
-      return boolMatch;
-    }
-    
-    // Try JSON comparison for objects/arrays
-    try {
-      const actualParsed = JSON.parse(actualStr);
-      const expectedParsed = JSON.parse(expectedStr);
-      const jsonMatch = JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
-      console.log('📦 Judge0: JSON comparison:', jsonMatch);
-      return jsonMatch;
-    } catch (e) {
-      // Not valid JSON, fall back to string comparison
-      console.log('📝 Judge0: Fallback to string comparison:', actualStr, '===', expectedStr, '=', false);
-      return false;
-    }
+  
+    const normalizedActual = normalize(actualOutput);
+    const normalizedExpected = normalize(expectedOutput);
+  
+    const match = JSON.stringify(normalizedActual) === JSON.stringify(normalizedExpected);
+    console.log('📦 Judge0: Normalized comparison:', match);
+    return match;
   }
 
   /**
