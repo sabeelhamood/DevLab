@@ -480,28 +480,13 @@ router.post('/generate-question', async (req, res) => {
 
 // Generate hint for a specific question
 router.post('/generate-hint', async (req, res) => {
-  // Wrap entire handler in try-catch to ensure we always return a response
-  try {
-  const { 
-    question, 
-    userAttempt = '', 
-    hintsUsed = 0, 
+  const {
+    question,
+    userAttempt = '',
+    hintsUsed = 0,
     allHints = [],
     topicName
-    } = req.body || {}
-
-  console.log('📥 /generate-hint payload:', {
-    hasQuestion: question !== undefined,
-    questionType: typeof question,
-    questionKeys: typeof question === 'object' && question !== null ? Object.keys(question) : undefined,
-    questionPreview: typeof question === 'string'
-      ? `${question.substring(0, 80)}${question.length > 80 ? '…' : ''}`
-      : undefined,
-    userAttemptPreview: userAttempt ? `${userAttempt.substring(0, 50)}${userAttempt.length > 50 ? '…' : ''}` : '',
-    hintsUsed,
-    allHintsCount: Array.isArray(allHints) ? allHints.length : 0,
-    topicName: topicName || null
-  })
+  } = req.body || {}
 
   const sendFallbackHint = ({
     reason = 'Using fallback hint due to error',
@@ -538,6 +523,21 @@ router.post('/generate-hint', async (req, res) => {
       }
     })
   }
+
+  // Wrap entire handler in try-catch to ensure we always return a response
+  try {
+  console.log('📥 /generate-hint payload:', {
+    hasQuestion: question !== undefined,
+    questionType: typeof question,
+    questionKeys: typeof question === 'object' && question !== null ? Object.keys(question) : undefined,
+    questionPreview: typeof question === 'string'
+      ? `${question.substring(0, 80)}${question.length > 80 ? '…' : ''}`
+      : undefined,
+    userAttemptPreview: userAttempt ? `${userAttempt.substring(0, 50)}${userAttempt.length > 50 ? '…' : ''}` : '',
+    hintsUsed,
+    allHintsCount: Array.isArray(allHints) ? allHints.length : 0,
+    topicName: topicName || null
+  })
 
   if (!question) {
       console.warn('⚠️ Hint generation: Question is missing')
