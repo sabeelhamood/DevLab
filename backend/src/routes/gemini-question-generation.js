@@ -13,53 +13,77 @@ const router = express.Router()
  * If Gemini responds with theoretical questions, we fall back to our
  * internal coding templates so the frontend always renders executable tasks.
  */
-function ensureCodingQuestionsOnly(rawQuestions, {
-  topicName,
-  topic_id,
-  skills,
-  language,
-  humanLanguage,
-  amount
-}) {
+function ensureCodingQuestionsOnly(
+  rawQuestions,
+  {
+    topicName,
+    topic_id,
+    skills,
+    language,
+    humanLanguage,
+    amount
+  }
+) {
   if (!Array.isArray(rawQuestions)) {
-    return { questions: [], usedFallback: false, rejected: [], reason: 'questions_not_array' }
+    return {
+      questions: [],
+      usedFallback: true,
+      rejected: [{ reasons: ['questions_not_array'] }]
+    }
   }
 
   const rejected = []
-  const sanitized = rawQuestions.filter(Boolean).map((question, index) => {
+  const validCodingQuestions = []
+
+  rawQuestions.filter(Boolean).forEach((question, index) => {
     const hasOptions = question?.options !== undefined
     const hasCorrectAnswer = question?.correctAnswer !== undefined
     const hasTestCases = Array.isArray(question?.testCases) && question.testCases.length > 0
-    const hasHints = Array.isArray(question?.hints) && question.hints.length > 0
-    const isCodingType = (question?.question_type || question?.questionType || '').toLowerCase() === 'code'
+    const hasHints = Array.isArray(question?.hints) && question.hints.length >= 3
+    const questionTypeValue = (question?.question_type || question?.questionType || '').toLowerCase()
+    const isCodingType = questionTypeValue === 'code'
 
     const invalidReasons = []
-    if (hasOptions || hasCorrectAnswer) {
-      invalidReasons.push('theoretical_fields_present')
-    }
-    if (!hasTestCases) {
-      invalidReasons.push('missing_test_cases')
-    }
-    if (!hasHints) {
-      invalidReasons.push('missing_hints')
-    }
-    if (!isCodingType) {
-      invalidReasons.push('question_type_not_code')
-    }
+    if (hasOptions || hasCorrectAnswer) invalidReasons.push('theoretical_fields_present')
+    if (!hasTestCases) invalidReasons.push('missing_test_cases')
+    if (!hasHints) invalidReasons.push('missing_or_insufficient_hints')
+    if (!isCodingType) invalidReasons.push('question_type_not_code')
+    if (!question?.description) invalidReasons.push('missing_description')
 
-    if (invalidReasons.length > 0) {
+    if (invalidReasons.length === 0) {
+      const sanitized = { ...question }
+      delete sanitized.options
+      delete sanitized.correctAnswer
+      delete sanitized.nanoSkills
+      delete sanitized.macroSkills
+      delete sanitized.nano_skills
+      delete sanitized.macro_skills
+
+      sanitized.question_type = 'code'
+      sanitized.questionType = 'code'
+      sanitized.testCases = [...sanitized.testCases]
+      sanitized.test_cases = sanitized.testCases
+      sanitized.hints = sanitized.hints.slice(0, 3)
+      sanitized._source = sanitized._source || 'gemini'
+      sanitized._isFallback = !!sanitized._isFallback
+
+      validCodingQuestions.push(sanitized)
+    } else {
       rejected.push({
         index,
         title: question?.title,
-        reasons: invalidReasons
+        reasons: invalidReasons,
+        keys: question ? Object.keys(question) : []
       })
     }
-
-    return question
   })
 
-  if (rejected.length === 0 && sanitized.length > 0) {
-    return { questions: sanitized, usedFallback: false, rejected: [] }
+  if (rejected.length === 0 && validCodingQuestions.length > 0) {
+    return { questions: validCodingQuestions, usedFallback: false, rejected: [] }
+  }
+
+  if (rejected.length > 0) {
+    console.warn(`⚠️ [ROUTE] Rejected ${rejected.length}/${rawQuestions.length} Gemini question(s) that were not valid coding questions`)
   }
 
   console.error('\n' + '='.repeat(80))
@@ -82,30 +106,40 @@ function ensureCodingQuestionsOnly(rawQuestions, {
 
   const fallbackQuestions = Array.isArray(fallbackResult.questions) ? fallbackResult.questions : []
 
-  const normalizedFallback = fallbackQuestions.map((entry, idx) => ({
-    title: entry?.question?.title || `Coding Challenge ${idx + 1}`,
-    description: entry?.question?.description || `Write a ${language} function related to ${topicName}.`,
-    testCases: entry?.testCases || [
-      { input: 'sampleInput()', expectedOutput: 'expected value', explanation: 'Sample fallback test case' }
-    ],
-    hints: entry?.hints || [
-      'Break the problem into smaller steps.',
-      'Think about input validation.',
-      'Consider edge cases.'
-    ],
-    language,
-    difficulty: entry?.question?.difficulty || 'intermediate',
-    _source: 'fallback',
-    _isFallback: true,
-    question_type: 'code',
-    questionType: 'code',
-    topicName,
-    topic_id: topic_id || entry?.question?.topic_id || null,
-    skills: skills || [],
-    humanLanguage,
-    solution: entry?.question?.solution || '',
-    courseName: ' '
-  }))
+  const normalizedFallback = fallbackQuestions.map((entry, idx) => {
+    const fallbackTestCases = entry?.testCases && entry.testCases.length > 0
+      ? entry.testCases
+      : [
+          { input: 'sample()', expectedOutput: 'result', explanation: 'Sample fallback test case' },
+          { input: 'sample(5)', expectedOutput: '10', explanation: 'Double the input' }
+        ]
+    const fallbackHints = entry?.hints && entry.hints.length >= 3
+      ? entry.hints.slice(0, 3)
+      : [
+          'Understand the problem requirements before coding.',
+          'Break the solution into reusable helper functions.',
+          'Add tests for edge cases.'
+        ]
+
+    return {
+      title: entry?.question?.title || `Coding Challenge ${idx + 1}`,
+      description: entry?.question?.description || `Write a ${language} function related to ${topicName}.`,
+      testCases: fallbackTestCases,
+      hints: fallbackHints,
+      language,
+      difficulty: entry?.question?.difficulty || 'intermediate',
+      _source: 'fallback',
+      _isFallback: true,
+      question_type: 'code',
+      questionType: 'code',
+      topicName,
+      topic_id: topic_id || entry?.question?.topic_id || null,
+      skills: skills || [],
+      humanLanguage,
+      solution: entry?.question?.solution || '',
+      courseName: ' '
+    }
+  })
 
   return { questions: normalizedFallback, usedFallback: true, rejected }
 }
