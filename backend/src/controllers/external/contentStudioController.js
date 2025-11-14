@@ -2,12 +2,16 @@ export const contentStudioController = {
   async getCourseSkills(req, res) {
     try {
       const { courseId } = req.params
-      const skills = {
-        macroSkills: ['Programming Fundamentals', 'Problem Solving'],
-        microSkills: ['Python Basics', 'Data Structures'],
-        nanoSkills: ['Variables', 'Functions', 'Loops']
-      }
-      res.json({ success: true, data: skills })
+      const skills = [
+        'Programming Fundamentals',
+        'Problem Solving',
+        'Python Basics',
+        'Data Structures',
+        'Variables',
+        'Functions',
+        'Loops'
+      ]
+      res.json({ success: true, data: { skills } })
     } catch (error) {
       res.status(500).json({ success: false, error: error.message })
     }

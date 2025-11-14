@@ -202,61 +202,27 @@ export class TopicModel {
     return true
   }
 
-  static async findByNanoSkills(nanoSkills) {
+  static async findBySkills(skills = []) {
+    const serialized = JSON.stringify(Array.isArray(skills) ? skills : [])
     const { rows } = await postgres.query(
       `
       SELECT *
       FROM ${topicsTable}
-      WHERE "nano_skills" @> $1::jsonb
+      WHERE "skills" @> $1::jsonb
       ORDER BY "created_at" DESC
       `,
-      [JSON.stringify(nanoSkills)]
+      [serialized]
     )
 
     const topics = await loadRelatedData(rows, { includeCourse: true })
     return topics
   }
 
-  static async findByMacroSkills(macroSkills) {
-    const { rows } = await postgres.query(
-      `
-      SELECT *
-      FROM ${topicsTable}
-      WHERE "macro_skills" @> $1::jsonb
-      ORDER BY "created_at" DESC
-      `,
-      [JSON.stringify(macroSkills)]
-    )
-
-    const topics = await loadRelatedData(rows, { includeCourse: true })
-    return topics
-  }
-
-  static async updateNanoSkills(topicId, nanoSkills) {
+  static async updateSkills(topicId, skills = []) {
     const query = buildUpdateStatement(
       topicsTable,
       {
-        nano_skills: nanoSkills,
-        updated_at: new Date().toISOString()
-      },
-      'WHERE "topic_id" = $3',
-      [topicId]
-    )
-
-    const { rows } = await postgres.query(query.text, query.values)
-    const [topic] = await loadRelatedData(rows, {
-      includeCourse: true,
-      includeQuestions: true,
-      includePractices: true
-    })
-    return topic || null
-  }
-
-  static async updateMacroSkills(topicId, macroSkills) {
-    const query = buildUpdateStatement(
-      topicsTable,
-      {
-        macro_skills: macroSkills,
+        skills,
         updated_at: new Date().toISOString()
       },
       'WHERE "topic_id" = $3',

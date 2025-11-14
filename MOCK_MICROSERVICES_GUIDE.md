@@ -89,8 +89,7 @@ const practice = generateMockData.createPractice(course.id, 201, 401);
   "topic_id": 301,
   "course_id": 201,
   "topic_name": "Functions and Scope",
-  "nano_skills": ["Function Declaration", "Closures"],
-  "macro_skills": ["JavaScript Functions", "Scope Management"]
+  "skills": ["Function Declaration", "Closures", "JavaScript Functions", "Scope Management"]
 }
 ```
 

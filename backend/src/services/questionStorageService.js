@@ -75,8 +75,7 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
       programming_language: metaProgrammingLanguage,
       course_id: metaCourseId,
       course_name: metaCourseName,
-      nanoSkills = [],
-      microSkills = [],
+      skills = [],
       humanLanguage = 'en',
       source = 'content-studio'
     } = metadata
@@ -224,8 +223,7 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
                   "topic_id",
                   "course_id",
                   "topic_name",
-                  "nano_skills",
-                  "macro_skills",
+                  "skills",
                   "created_at",
                   "updated_at"
                 ) VALUES (
@@ -233,7 +231,6 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
                   $2::uuid,
                   $3::text,
                   $4::jsonb,
-                  $5::jsonb,
                   now(),
                   now()
                 )
@@ -245,8 +242,7 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
                 newTopicId,
                 resolvedCourseId,
                 topicNameToSearch,
-                JSON.stringify(Array.isArray(nanoSkills) ? nanoSkills : []),
-                JSON.stringify(Array.isArray(microSkills) ? microSkills : [])
+                JSON.stringify(Array.isArray(skills) ? skills : [])
               ])
               
               if (createTopicResult.rows.length > 0) {
@@ -313,8 +309,7 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
       original_id: id,
       topic_name: topic_name || topicName || metaTopicName,
       human_language: humanLanguage,
-      nano_skills: Array.isArray(nanoSkills) ? nanoSkills : [],
-      micro_skills: Array.isArray(microSkills) ? microSkills : [],
+      skills: Array.isArray(skills) ? skills : [],
       hints: resolvedHints,
       // Store raw Gemini response if available (for debugging/analysis)
       ...(_rawGeminiResponse && {
@@ -339,8 +334,7 @@ export const saveQuestionToSupabase = async (questionData, metadata = {}) => {
 
     // Prepare tags (can be extracted from skills or other metadata)
     const tags = [
-      ...(Array.isArray(nanoSkills) ? nanoSkills : []),
-      ...(Array.isArray(microSkills) ? microSkills : []),
+      ...(Array.isArray(skills) ? skills : []),
       resolvedQuestionType,
       resolvedDifficulty,
       ...(resolvedLanguage ? [resolvedLanguage] : [])

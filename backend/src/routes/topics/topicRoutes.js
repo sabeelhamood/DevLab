@@ -80,66 +80,34 @@ router.get('/course/:courseId', async (req, res) => {
   }
 })
 
-// Get topics with specific nano skills
-router.get('/nano-skills/:nanoSkills', async (req, res) => {
+// Get topics with specific skills
+router.get('/skills/:skills', async (req, res) => {
   try {
-    const { nanoSkills } = req.params
-    const skillsArray = nanoSkills.split(',')
-    const topics = await TopicModel.findByNanoSkills(skillsArray)
+    const { skills } = req.params
+    const skillsArray = skills.split(',').map((skill) => skill.trim()).filter(Boolean)
+    const topics = await TopicModel.findBySkills(skillsArray)
     
     res.json(topics)
   } catch (error) {
-    console.error('Error fetching topics by nano skills:', error)
+    console.error('Error fetching topics by skills:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// Get topics with specific macro skills
-router.get('/macro-skills/:macroSkills', async (req, res) => {
-  try {
-    const { macroSkills } = req.params
-    const skillsArray = macroSkills.split(',')
-    const topics = await TopicModel.findByMacroSkills(skillsArray)
-    
-    res.json(topics)
-  } catch (error) {
-    console.error('Error fetching topics by macro skills:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-// Update nano skills for a topic
-router.put('/:topicId/nano-skills', async (req, res) => {
+// Replace skills for a topic
+router.put('/:topicId/skills', async (req, res) => {
   try {
     const { topicId } = req.params
-    const { nano_skills } = req.body
+    const { skills } = req.body
     
-    if (!nano_skills || !Array.isArray(nano_skills)) {
-      return res.status(400).json({ error: 'Nano skills must be an array' })
+    if (!Array.isArray(skills)) {
+      return res.status(400).json({ error: 'Skills must be an array' })
     }
     
-    const updatedTopic = await TopicModel.updateNanoSkills(topicId, nano_skills)
+    const updatedTopic = await TopicModel.updateSkills(topicId, skills)
     res.json(updatedTopic)
   } catch (error) {
-    console.error('Error updating nano skills:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-// Update macro skills for a topic
-router.put('/:topicId/macro-skills', async (req, res) => {
-  try {
-    const { topicId } = req.params
-    const { macro_skills } = req.body
-    
-    if (!macro_skills || !Array.isArray(macro_skills)) {
-      return res.status(400).json({ error: 'Macro skills must be an array' })
-    }
-    
-    const updatedTopic = await TopicModel.updateMacroSkills(topicId, macro_skills)
-    res.json(updatedTopic)
-  } catch (error) {
-    console.error('Error updating macro skills:', error)
+    console.error('Error updating skills:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

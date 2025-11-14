@@ -78,8 +78,7 @@ export const generateQuestions = async ({
   difficulty = 'intermediate',
   questionCount = 3,
   language = 'javascript',
-  nanoSkills = ['arrays', 'objects', 'async'],
-  macroSkills = ['problem solving', 'application design'],
+  skills = ['arrays', 'objects', 'async', 'problem solving', 'application design'],
   humanLanguage = 'en'
 } = {}) => {
   const defaults = {
@@ -96,7 +95,7 @@ export const generateQuestions = async ({
     const finalTopicName = topicName || 'General Programming'
     generated = await geminiService.generateCodingQuestion(
       finalTopicName,
-      [...nanoSkills, ...macroSkills],
+      Array.isArray(skills) ? skills : [],
       questionCount,
       language,
       { humanLanguage }

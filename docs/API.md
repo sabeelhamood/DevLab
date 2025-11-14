@@ -95,9 +95,7 @@ Get personalized questions for a learner.
       "language": "python",
       "testCases": [...],
       "hints": [...],
-      "macroSkills": [...],
-      "microSkills": [...],
-      "nanoSkills": [...]
+      "skills": [...]
     }
   ]
 }
@@ -202,7 +200,7 @@ Validate trainer-authored questions and, when relevant, transform them into stru
 ### Assessment Service
 
 #### POST /external/assessment/code
-Assessment requests code questions without hints or solutions. Payload includes `topic_name`, `programming_language`, `number_of_questions`, `nano_skills`, `micro_skills`.
+Assessment requests code questions without hints or solutions. Payload includes `topic_name`, `programming_language`, `number_of_questions`, and a unified `skills` array.
 
 ### Learning Analytics
 

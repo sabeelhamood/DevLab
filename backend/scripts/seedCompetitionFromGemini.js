@@ -162,8 +162,13 @@ const run = async () => {
       difficulty: 'intermediate',
       questionCount: 3,
       language: 'javascript',
-      nanoSkills: ['arrays', 'callback patterns', 'async control flow'],
-      macroSkills: ['problem solving', 'refactoring'],
+      skills: [
+        'arrays',
+        'callback patterns',
+        'async control flow',
+        'problem solving',
+        'refactoring'
+      ],
       humanLanguage: 'en'
     })
 

@@ -38,15 +38,13 @@ export const mockMicroservices = {
             topic_id: 301,
             course_id: 201,
             topic_name: "JavaScript Fundamentals",
-            nano_skills: ["Variable Declaration", "Data Type Identification", "Type Conversion", "Function Basics"],
-            macro_skills: ["JavaScript Basics", "Programming Fundamentals"]
+            skills: ["Variable Declaration", "Data Type Identification", "Type Conversion", "Function Basics", "JavaScript Basics", "Programming Fundamentals"]
           },
           {
             topic_id: 302,
             course_id: 201,
             topic_name: "Functions and Scope",
-            nano_skills: ["Function Declaration", "Scope Understanding", "Closures", "Hoisting"],
-            macro_skills: ["JavaScript Functions", "Scope Management"]
+            skills: ["Function Declaration", "Scope Understanding", "Closures", "Hoisting", "JavaScript Functions", "Scope Management"]
           }
         ],
         203: [
@@ -54,15 +52,13 @@ export const mockMicroservices = {
             topic_id: 401,
             course_id: 203,
             topic_name: "Asynchronous JavaScript",
-            nano_skills: ["Promises", "Async/Await", "Event Loop", "Error Handling"],
-            macro_skills: ["Asynchronous Programming", "JavaScript Concurrency"]
+            skills: ["Promises", "Async/Await", "Event Loop", "Error Handling", "Asynchronous Programming", "JavaScript Concurrency"]
           },
           {
             topic_id: 402,
             course_id: 203,
             topic_name: "Modern JavaScript Features",
-            nano_skills: ["ES6+ Syntax", "Destructuring", "Spread Operator", "Template Literals"],
-            macro_skills: ["Modern JavaScript", "ES6+ Features"]
+            skills: ["ES6+ Syntax", "Destructuring", "Spread Operator", "Template Literals", "Modern JavaScript", "ES6+ Features"]
           }
         ],
         204: [
@@ -70,22 +66,19 @@ export const mockMicroservices = {
             topic_id: 501,
             course_id: 204,
             topic_name: "Algorithm Analysis",
-            nano_skills: ["Time Complexity", "Space Complexity", "Big O Notation", "Algorithm Efficiency"],
-            macro_skills: ["Algorithm Analysis", "Complexity Theory"]
+            skills: ["Time Complexity", "Space Complexity", "Big O Notation", "Algorithm Efficiency", "Algorithm Analysis", "Complexity Theory"]
           },
           {
             topic_id: 502,
             course_id: 204,
             topic_name: "Sorting Algorithms",
-            nano_skills: ["Bubble Sort", "Quick Sort", "Merge Sort", "Heap Sort"],
-            macro_skills: ["Sorting Algorithms", "Algorithm Implementation"]
+            skills: ["Bubble Sort", "Quick Sort", "Merge Sort", "Heap Sort", "Sorting Algorithms", "Algorithm Implementation"]
           },
           {
             topic_id: 503,
             course_id: 204,
             topic_name: "Dynamic Programming",
-            nano_skills: ["Memoization", "Tabulation", "Optimal Substructure", "Overlapping Subproblems"],
-            macro_skills: ["Dynamic Programming", "Optimization Techniques"]
+            skills: ["Memoization", "Tabulation", "Optimal Substructure", "Overlapping Subproblems", "Dynamic Programming", "Optimization Techniques"]
           }
         ]
       }

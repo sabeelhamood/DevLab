@@ -15,9 +15,7 @@ router.post('/generate-question', async (req, res) => {
       amount = 1,
       humanLanguage = 'en',
       topic_id = null,
-      difficulty = 'intermediate',
-      nanoSkills = [],
-      macroSkills = []
+      difficulty = 'intermediate'
     } = req.body
 
     if (!topic) {
@@ -27,16 +25,7 @@ router.post('/generate-question', async (req, res) => {
     }
 
     const normalizedAmount = Math.max(1, parseInt(amount, 10) || 1)
-    const normalizedSkills = Array.isArray(skills) && skills.length
-      ? skills
-      : [
-          ...new Set(
-            [
-              ...(Array.isArray(nanoSkills) ? nanoSkills : []),
-              ...(Array.isArray(macroSkills) ? macroSkills : [])
-            ].filter(Boolean)
-          )
-        ]
+    const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : []
 
     let question
     let source = 'gemini'
@@ -62,8 +51,7 @@ router.post('/generate-question', async (req, res) => {
         amount: normalizedAmount,
         difficulty,
         humanLanguage,
-        nanoSkills: normalizedSkills,
-        microSkills: normalizedSkills
+        skills: normalizedSkills
       })
       question = normalizedAmount === 1 ? theoretical?.[0] : theoretical
     } else {
@@ -77,10 +65,6 @@ router.post('/generate-question', async (req, res) => {
       if (!q) return q
       const cleaned = Array.isArray(q) ? q.map(cleanQuestion) : { ...q }
       if (!Array.isArray(cleaned)) {
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
         delete cleaned.courseName // Remove courseName - no longer used
         // Ensure skills field exists
         if (!cleaned.skills) {

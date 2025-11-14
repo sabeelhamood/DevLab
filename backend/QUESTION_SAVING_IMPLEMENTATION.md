@@ -52,7 +52,7 @@ This document describes the implementation of automatic question saving from Con
 - **Test Cases (Coding):** Stored in separate `testCases` table
 - **Source:** Marked as 'content-studio' in metadata
 - **Hints:** Stored in metadata
-- **Skills:** Stored in metadata (nano_skills, micro_skills)
+- **Skills:** Stored in metadata as a unified `skills` array
 
 #### Error Handling
 - Graceful error handling - one failure doesn't stop all saves
@@ -141,7 +141,7 @@ CREATE TABLE "testCases" (
   "original_id": "code_301_1",
   "topic_name": "JavaScript Fundamentals",
   "human_language": "en",
-  "nano_skills": ["Variable Declaration", "Data Type Identification"],
+  "skills": ["Variable Declaration", "Data Type Identification"],
   "micro_skills": ["JavaScript Basics"],
   "hints": ["Consider using array methods", "Think about edge cases"],
   "test_cases_count": 3,
@@ -158,7 +158,7 @@ CREATE TABLE "testCases" (
   "original_id": "theoretical_301_1",
   "topic_name": "JavaScript Fundamentals",
   "human_language": "en",
-  "nano_skills": ["Variable Declaration"],
+  "skills": ["Variable Declaration"],
   "micro_skills": ["JavaScript Basics"],
   "hints": [],
   "options": [

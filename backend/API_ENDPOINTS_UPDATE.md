@@ -51,14 +51,12 @@ All API endpoints have been updated to work with the new database schema based o
 |--------|----------|-------------|------------|
 | `GET` | `/` | Get all topics (paginated) | `page`, `limit`, `course_id` |
 | `GET` | `/:topicId` | Get topic by ID | `topicId` |
-| `POST` | `/` | Create new topic | `course_id`, `topic_name`, `nano_skills`, `macro_skills` |
+| `POST` | `/` | Create new topic | `course_id`, `topic_name`, `skills` |
 | `PUT` | `/:topicId` | Update topic | `topicId` + update data |
 | `DELETE` | `/:topicId` | Delete topic | `topicId` |
 | `GET` | `/course/:courseId` | Get topics by course | `courseId` |
-| `GET` | `/nano-skills/:nanoSkills` | Get topics by nano skills | `nanoSkills` (comma-separated) |
-| `GET` | `/macro-skills/:macroSkills` | Get topics by macro skills | `macroSkills` (comma-separated) |
-| `PUT` | `/:topicId/nano-skills` | Update nano skills | `topicId`, `nano_skills` array |
-| `PUT` | `/:topicId/macro-skills` | Update macro skills | `topicId`, `macro_skills` array |
+| `GET` | `/skills/:skills` | Get topics by skills | `skills` (comma-separated) |
+| `PUT` | `/:topicId/skills` | Replace topic skills | `topicId`, `skills` array |
 | `GET` | `/:topicId/stats` | Get topic statistics | `topicId` |
 
 ---
@@ -168,8 +166,7 @@ All API endpoints have been updated to work with the new database schema based o
 - `topic_id` (bigint, PK)
 - `course_id` (bigint, FK to courses)
 - `topic_name` (string)
-- `nano_skills` (json array)
-- `macro_skills` (json array)
+- `skills` (json array)
 
 ### **Question Fields:**
 - `question_id` (bigint, PK)

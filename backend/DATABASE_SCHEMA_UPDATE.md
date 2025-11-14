@@ -41,8 +41,7 @@
   - `topic_id` (pk) - Primary key
   - `course_id` (fk) - Foreign key to courses
   - `topic_name` (string) - Name of the topic
-  - `nano_skills` (json) - Array of nano skills
-  - `macro_skills` (json) - Array of macro skills
+  - `skills` (json) - Array of unified skills
   - `created_at` (timestamp) - Topic creation date
 
 #### **5. questions Table**

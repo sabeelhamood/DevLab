@@ -133,8 +133,7 @@ CREATE TABLE IF NOT EXISTS "topics" (
   "topic_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "course_id" uuid NOT NULL,
   "topic_name" text NOT NULL,
-  "nano_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
-  "macro_skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
+"skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now()
 );

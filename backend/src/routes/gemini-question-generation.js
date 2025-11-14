@@ -91,10 +91,6 @@ function ensureCodingQuestionsOnly(
       const sanitized = { ...question }
       delete sanitized.options
       delete sanitized.correctAnswer
-      delete sanitized.nanoSkills
-      delete sanitized.macroSkills
-      delete sanitized.nano_skills
-      delete sanitized.macro_skills
       delete sanitized.difficulty
 
       sanitized.question_type = 'code'
@@ -442,10 +438,6 @@ router.post('/generate-question', async (req, res) => {
     question.questionType = questionType
     
     // Remove deprecated fields from question
-    delete question.nanoSkills
-    delete question.macroSkills
-    delete question.nano_skills
-    delete question.macro_skills
     // Keep courseName - don't delete (workaround for Railway validation)
     // delete question.courseName // Keep courseName for Railway compatibility
     // Ensure courseName exists (workaround)
@@ -859,81 +851,6 @@ router.post('/check-solution', async (req, res) => {
     })
   }
 })
-
-// Helper function to parse skills from request
-const parseSkills = (skillsPayload = {}) => {
-  const ensureArray = (value) => {
-    if (!value && value !== 0) return []
-    if (Array.isArray(value)) return value.filter((item) => typeof item === 'string' ? item.trim() !== '' : !!item)
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
-      return trimmed ? [trimmed] : []
-    }
-    return []
-  }
-
-  if (Array.isArray(skillsPayload)) {
-    const unique = Array.from(new Set(ensureArray(skillsPayload)))
-    return {
-      skills: unique,
-      nanoSkills: unique,
-      macroSkills: []
-    }
-  }
-  
-  if (typeof skillsPayload === 'string') {
-    try {
-      const parsed = JSON.parse(skillsPayload)
-      return parseSkills(parsed)
-    } catch {
-      const arrayValue = ensureArray(skillsPayload)
-      return {
-        skills: arrayValue,
-        nanoSkills: arrayValue,
-        macroSkills: []
-      }
-    }
-  }
-
-  if (typeof skillsPayload === 'object' && skillsPayload !== null) {
-    const directSkills = ensureArray(
-      skillsPayload.skills ||
-      skillsPayload.items ||
-      skillsPayload.values
-    )
-
-    const nano = ensureArray(
-      skillsPayload.nanoSkills ||
-      skillsPayload.nano_skills ||
-      skillsPayload.nano
-    )
-
-    const macro = ensureArray(
-      skillsPayload.macroSkills ||
-      skillsPayload.macro_skills ||
-      skillsPayload.macro
-    )
-
-    let combined = [...directSkills]
-    if (!combined.length) {
-      combined = [...nano, ...macro]
-    }
-
-    const unique = Array.from(new Set(combined.filter(Boolean)))
-  
-  return {
-      skills: unique,
-      nanoSkills: nano.length ? nano : unique,
-      macroSkills: macro
-    }
-  }
-
-  return {
-    skills: [],
-    nanoSkills: [],
-    macroSkills: []
-  }
-}
 
 // Generate complete question package (question + hints + solution)
 router.post('/generate-question-package', async (req, res) => {
@@ -1519,10 +1436,6 @@ router.post('/generate-question-package', async (req, res) => {
       // STRICT: Remove ALL theoretical question fields - we ONLY process CODING questions
       delete question.options  // Theoretical field - MUST be removed
       delete question.correctAnswer  // Theoretical field - MUST be removed
-      delete question.nanoSkills  // Deprecated
-      delete question.macroSkills  // Deprecated
-      delete question.nano_skills  // Deprecated
-      delete question.macro_skills  // Deprecated
       
       // Ensure courseName exists (workaround for Railway validation)
       if (!question.courseName) {
@@ -1588,7 +1501,6 @@ router.post('/generate-question-package', async (req, res) => {
     
     console.log('🔍 [DEBUG] Building response data...')
     
-    // Remove nanoSkills, macroSkills from all questions, ensure skills field exists
     // Keep courseName for Railway compatibility (workaround)
     const cleanedQuestions = processedQuestions.map(q => {
       const cleaned = { ...q }
@@ -1596,10 +1508,6 @@ router.post('/generate-question-package', async (req, res) => {
       // STRICT: Remove ALL theoretical question fields - we ONLY return CODING questions
       delete cleaned.options  // Theoretical field - MUST be removed
       delete cleaned.correctAnswer  // Theoretical field - MUST be removed
-      delete cleaned.nanoSkills  // Deprecated
-      delete cleaned.macroSkills  // Deprecated
-      delete cleaned.nano_skills  // Deprecated
-      delete cleaned.macro_skills  // Deprecated
       
       // Keep courseName - don't delete (workaround for Railway validation)
       if (!cleaned.courseName) {

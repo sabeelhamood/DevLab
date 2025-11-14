@@ -12,7 +12,7 @@ DevLab now exchanges data with a reduced set of EduCore services through a singl
 
 ### 2. Assessment Service (Bidirectional)
 - **Inbound (from Content Studio via DevLab):** Theoretical question generation requests are proxied to Assessment.
-- **Inbound (from Assessment):** Assessment can request code questions with `topic_name`, `programming_language`, `number_of_questions`, `nano_skills`, `micro_skills`. DevLab returns code questions **without** hints or solutions.
+- **Inbound (from Assessment):** Assessment can request code questions with `topic_name`, `programming_language`, `number_of_questions`, and `skills`. DevLab returns code questions **without** hints or solutions.
 - **Response Format:** AJAX payload with question text, Judge0 metadata, and test cases.
 
 ### 3. Course Builder (Inbound, Fire-and-Forget)

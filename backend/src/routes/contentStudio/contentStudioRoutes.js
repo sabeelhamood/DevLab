@@ -31,31 +31,43 @@ const buildDifficultyLadder = (count) => {
   )
 }
 
-const normalizeSkills = (skillsPayload = {}, fallbackNano = [], fallbackMacro = []) => {
-  if (Array.isArray(skillsPayload)) {
-    return {
-      nanoSkills: skillsPayload,
-      microSkills: []
+const normalizeSkills = (skillsPayload = []) => {
+  const ensureArray = (value) => {
+    if (!value && value !== 0) return []
+    if (Array.isArray(value)) return value.filter(Boolean)
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (!trimmed) return []
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          return parsed.filter(Boolean)
+        }
+      } catch {
+        if (trimmed.includes(',')) {
+          return trimmed.split(',').map((item) => item.trim()).filter(Boolean)
+        }
+      }
+      return [trimmed]
     }
+    return []
   }
 
-  const nano =
-    skillsPayload.nanoSkills ||
-    skillsPayload.nano_skills ||
-    skillsPayload.nano ||
-    fallbackNano ||
-    []
-  const micro =
-    skillsPayload.microSkills ||
-    skillsPayload.micro_skills ||
-    skillsPayload.micro ||
-    fallbackMacro ||
-    []
-
-  return {
-    nanoSkills: Array.isArray(nano) ? nano : nano ? [nano] : [],
-    microSkills: Array.isArray(micro) ? micro : micro ? [micro] : []
+  if (Array.isArray(skillsPayload)) {
+    return Array.from(new Set(ensureArray(skillsPayload)))
   }
+
+  if (typeof skillsPayload === 'object' && skillsPayload !== null) {
+    const combined = [
+      ...ensureArray(skillsPayload.skills),
+      ...ensureArray(skillsPayload.items),
+      ...ensureArray(skillsPayload.values)
+    ]
+
+    return Array.from(new Set(combined.filter(Boolean)))
+  }
+
+  return []
 }
 
 const toAjaxCodingQuestion = ({
@@ -174,8 +186,7 @@ const fetchTheoreticalQuestionsFromAssessment = async ({
   topic_name,
   amount,
   humanLanguage,
-  nanoSkills,
-  microSkills
+  skills
 }) => {
   try {
     const assessmentQuestions = await fetchAssessmentTheoreticalQuestions({
@@ -184,8 +195,7 @@ const fetchTheoreticalQuestionsFromAssessment = async ({
       amount,
       difficulty: DEFAULT_DIFFICULTY,
       humanLanguage,
-      nanoSkills,
-      microSkills
+      skills
     })
 
     return (assessmentQuestions || []).map((item, index) =>
@@ -205,8 +215,7 @@ const fetchTheoreticalQuestionsFromAssessment = async ({
         humanLanguage,
         expectedAnswer: item.expected_answer || item.expectedAnswer || null,
         difficulty: item.difficulty || DEFAULT_DIFFICULTY,
-        nanoSkills,
-        microSkills
+        skills
       })
     )
   } catch (error) {
@@ -220,15 +229,14 @@ const generateCodingQuestions = async ({
   topic_id,
   amount,
   programming_language,
-  nanoSkills,
-  microSkills,
+  skills,
   humanLanguage,
   seedQuestion
 }) => {
   try {
     const generated = await geminiService.generateCodingQuestion(
       topic_name,
-      [...nanoSkills, ...microSkills],
+      Array.isArray(skills) ? skills : [],
       amount,
       programming_language,
       {
@@ -269,16 +277,14 @@ const generateCodingQuestions = async ({
 const validateCodingQuestionWithGemini = async ({
   question,
   topic_name,
-  nanoSkills,
-  microSkills,
+  skills,
   humanLanguage
 }) => {
   const validation = await geminiService.validateCodingQuestion({
     question,
     topic: topic_name,
     difficulty: DEFAULT_DIFFICULTY,
-    nanoSkills,
-    macroSkills: microSkills,
+    skills,
     humanLanguage
   })
 
@@ -292,12 +298,10 @@ export const generateQuestionsHandler = async (req, res) => {
       topic_id,
       topic_name,
       course_id,
-      skills = {},
+      skills = [],
       question_type,
       programming_language,
-      humanLanguage = 'en',
-      nano_skills,
-      micro_skills
+      humanLanguage = 'en'
     } = req.body || {}
 
     if (!topic_id || !topic_name || !question_type) {
@@ -314,7 +318,7 @@ export const generateQuestionsHandler = async (req, res) => {
       })
     }
 
-    const { nanoSkills, microSkills } = normalizeSkills(skills, nano_skills, micro_skills)
+    const normalizedSkills = normalizeSkills(skills)
     const questionCount = Number(amount) > 0 ? Number(amount) : DEFAULT_AMOUNT
 
     let questions = []
@@ -326,8 +330,7 @@ export const generateQuestionsHandler = async (req, res) => {
         topic_id,
         amount: questionCount,
         programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
-        nanoSkills,
-        microSkills,
+        skills: normalizedSkills,
         humanLanguage
       })
       source = 'gemini_ai'
@@ -337,8 +340,7 @@ export const generateQuestionsHandler = async (req, res) => {
         topic_name,
         amount: questionCount,
         humanLanguage,
-        nanoSkills,
-        microSkills
+        skills: normalizedSkills
       })
       source = 'assessment_service'
     } else {
@@ -367,8 +369,7 @@ export const generateQuestionsHandler = async (req, res) => {
         topic_name,
         question_type,
         programming_language,
-        nanoSkills,
-        microSkills,
+        skills: normalizedSkills,
         questionCount,
         humanLanguage
       }
@@ -389,8 +390,7 @@ export const generateQuestionsHandler = async (req, res) => {
         question_type,
         programming_language: question_type === 'code' ? programming_language : null,
         course_id: course_id || null, // Extract from request if available
-        nanoSkills,
-        microSkills,
+        skills: normalizedSkills,
         humanLanguage,
         source: 'content-studio'
       }
@@ -439,10 +439,6 @@ export const generateQuestionsHandler = async (req, res) => {
     // Remove deprecated fields from all questions
     const cleanedQuestions = questions.map(q => {
       const cleaned = { ...q }
-      delete cleaned.nanoSkills
-      delete cleaned.macroSkills
-      delete cleaned.nano_skills
-      delete cleaned.macro_skills
       delete cleaned.courseName // Remove courseName - no longer used
       // Ensure skills field exists
       if (!cleaned.skills) {
@@ -586,11 +582,9 @@ export const validateQuestionHandler = async (req, res) => {
       question_type,
       topic_id,
       topic_name,
-      skills = {},
+      skills = [],
       programming_language,
-      humanLanguage = 'en',
-      nano_skills,
-      micro_skills
+      humanLanguage = 'en'
     } = req.body || {}
 
     const trainerQuestion = question || question_content
@@ -602,7 +596,7 @@ export const validateQuestionHandler = async (req, res) => {
       })
     }
 
-    const { nanoSkills, microSkills } = normalizeSkills(skills, nano_skills, micro_skills)
+    const normalizedSkills = normalizeSkills(skills)
 
     if (question_type === 'theoretical') {
       const assessmentPayload = await fetchTheoreticalQuestionsFromAssessment({
@@ -610,8 +604,7 @@ export const validateQuestionHandler = async (req, res) => {
         topic_name,
         amount: 1,
         humanLanguage,
-        nanoSkills,
-        microSkills
+        skills: normalizedSkills
       })
 
       return res.json({
@@ -638,8 +631,7 @@ export const validateQuestionHandler = async (req, res) => {
     const validation = await validateCodingQuestionWithGemini({
       question: trainerQuestion,
       topic_name,
-      nanoSkills,
-      microSkills,
+      skills: normalizedSkills,
       humanLanguage
     })
 
@@ -661,8 +653,7 @@ export const validateQuestionHandler = async (req, res) => {
       topic_id,
       amount: 1,
       programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
-      nanoSkills,
-      microSkills,
+      skills: normalizedSkills,
       humanLanguage,
       seedQuestion: trainerQuestion
     })

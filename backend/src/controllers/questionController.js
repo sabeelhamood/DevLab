@@ -106,10 +106,6 @@ export const questionController = {
       // Remove deprecated fields from all questions
       const cleanedQuestions = questions.map(q => {
         const cleaned = { ...q }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
         delete cleaned.microSkills
         delete cleaned.courseName
         delete cleaned.options
@@ -401,10 +397,6 @@ export const questionController = {
       // Remove deprecated fields from question
       if (question) {
         const cleaned = { ...question.toObject ? question.toObject() : question }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
         delete cleaned.microSkills
         delete cleaned.courseName
         delete cleaned.options

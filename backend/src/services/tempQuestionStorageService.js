@@ -74,8 +74,7 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
     topic_id: metaTopicId, // Use topic_id from metadata if provided
     course_id: metaCourseId,
     courseId: metaCourseIdAlt,
-    nanoSkills = [],
-    macroSkills = []
+    skills = []
   } = metadata
 
   if (!topicName) {
@@ -147,17 +146,15 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
           console.log(`✅ Topic exists: ${topicId}`)
           console.log(`   Topic data:`, JSON.stringify(existingTopic.rows[0], null, 2))
           
-          // Update topic with nano_skills and macro_skills if provided
-          if (nanoSkills.length > 0 || macroSkills.length > 0) {
+          // Update topic with skills if provided
+          if (Array.isArray(skills) && skills.length > 0) {
             await postgres.query(
               `UPDATE "topics" 
-               SET "nano_skills" = $1::jsonb,
-                   "macro_skills" = $2::jsonb,
+               SET "skills" = $1::jsonb,
                    "updated_at" = now()
-               WHERE "topic_id" = $3::uuid`,
+               WHERE "topic_id" = $2::uuid`,
               [
-                JSON.stringify(nanoSkills),
-                JSON.stringify(macroSkills),
+                JSON.stringify(skills),
                 topicId
               ]
             )
@@ -195,17 +192,15 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
           console.log(`   topicId: ${topicId}`)
           console.log(`   topicId type: ${typeof topicId}`)
           
-          // Update topic with nano_skills and macro_skills if provided
-          if (nanoSkills.length > 0 || macroSkills.length > 0) {
+          // Update topic with skills if provided
+          if (Array.isArray(skills) && skills.length > 0) {
             await postgres.query(
               `UPDATE "topics" 
-               SET "nano_skills" = $1::jsonb,
-                   "macro_skills" = $2::jsonb,
+               SET "skills" = $1::jsonb,
                    "updated_at" = now()
-               WHERE "topic_id" = $3::uuid`,
+               WHERE "topic_id" = $2::uuid`,
               [
-                JSON.stringify(nanoSkills),
-                JSON.stringify(macroSkills),
+                JSON.stringify(skills),
                 topicId
               ]
             )
@@ -219,8 +214,7 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
             topic_id: topicId,
             course_id: resolvedCourseId,
             topic_name: topicName,
-            nano_skills: nanoSkills,
-            macro_skills: macroSkills
+            skills
           })
           
           await postgres.query(
@@ -228,23 +222,20 @@ export const saveGeminiQuestionsToSupabase = async (questions = [], metadata = {
               "topic_id",
               "course_id",
               "topic_name",
-              "nano_skills",
-              "macro_skills",
+              "skills",
               "created_at",
               "updated_at"
             )
-            VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, now(), now())
+            VALUES ($1, $2, $3, $4::jsonb, now(), now())
             ON CONFLICT ("topic_id") DO UPDATE
             SET "topic_name" = EXCLUDED."topic_name",
-                "nano_skills" = EXCLUDED."nano_skills",
-                "macro_skills" = EXCLUDED."macro_skills",
+                "skills" = EXCLUDED."skills",
                 "updated_at" = now()`,
             [
               topicId,
               resolvedCourseId,
               topicName,
-              JSON.stringify(nanoSkills),
-              JSON.stringify(macroSkills)
+              JSON.stringify(Array.isArray(skills) ? skills : [])
             ]
           )
           console.log(`✅ Created new topic: ${topicId}`)

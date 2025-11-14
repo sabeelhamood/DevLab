@@ -497,8 +497,6 @@ Generate exactly ${amount} CODING questions in a JSON array. Questions should gr
           const cleanedQuestion = { ...q };
           delete cleanedQuestion.options;
           delete cleanedQuestion.correctAnswer;
-          delete cleanedQuestion.nanoSkills;
-          delete cleanedQuestion.macroSkills;
 
           const ensuredTestCases = ensureTestCases(cleanedQuestion.testCases);
           const ensuredHints = ensureThreeHints(cleanedQuestion.hints);
@@ -1190,8 +1188,7 @@ Return ONLY the JSON object in the specified format, no additional text.
     question,
     topic,
     difficulty,
-    nanoSkills = [],
-    macroSkills = [],
+    skills = [],
     humanLanguage = 'en'
   }) {
     this._checkAvailability();
@@ -1202,8 +1199,7 @@ You are an expert programming instructor reviewing a coding question created by 
 Question to validate: "${question}"
 Topic: ${topic}
 Difficulty: ${difficulty}
-Nano Skills: ${nanoSkills.join(", ")}
-Macro Skills: ${macroSkills.join(", ")}
+Skills: ${skills.join(", ")}
 Respond using natural language in ${humanLanguage}.
 
 Provide validation feedback as **strict JSON** in the following format:
@@ -1278,8 +1274,7 @@ Rules:
     question,
     topic,
     difficulty,
-    nanoSkills = [],
-    macroSkills = [],
+    skills = [],
     humanLanguage = 'en'
   }) {
     this._checkAvailability();
@@ -1290,8 +1285,7 @@ You are an expert educational content reviewer analyzing a theoretical question 
 Question to validate: "${question}"
 Topic: ${topic}
 Difficulty: ${difficulty}
-Nano Skills: ${nanoSkills.join(", ")}
-Macro Skills: ${macroSkills.join(", ")}
+Skills: ${skills.join(", ")}
 Respond using natural language in ${humanLanguage}.
 
 Provide validation feedback as **strict JSON** in the following format:

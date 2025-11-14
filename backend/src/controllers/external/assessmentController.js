@@ -20,24 +20,35 @@ const DIFFICULTY_SEQUENCE = [
 const DEFAULT_THEORETICAL_DIFFICULTY = 'intermediate'
 
 const parseSkills = (value) => {
-  if (!value) {
-    return []
-  }
-
-  if (Array.isArray(value)) {
-    return value
-  }
+  if (!value && value !== 0) return []
+  if (Array.isArray(value)) return value
 
   if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
     try {
-      const parsed = JSON.parse(value)
-      return Array.isArray(parsed) ? parsed : []
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        return parsed
+      }
+      return [trimmed]
     } catch {
-      return [value]
+      return trimmed.includes(',')
+        ? trimmed.split(',').map((item) => item.trim())
+        : [trimmed]
     }
   }
 
   return []
+}
+
+const normalizeSkills = (...sources) => {
+  const combined = sources
+    .flatMap((source) => parseSkills(source))
+    .map((skill) => (typeof skill === 'string' ? skill.trim() : skill))
+    .filter(Boolean)
+
+  return Array.from(new Set(combined))
 }
 
 const buildDifficultyLadder = (count) => {
@@ -70,20 +81,10 @@ export const assessmentController = {
           DEFAULT_THEORETICAL_DIFFICULTY,
         humanLanguage:
           req.body?.humanLanguage || req.query?.humanLanguage || 'en',
-        nanoSkills:
-          parseSkills(
-            req.body?.nano_skills ||
-              req.body?.nanoSkills ||
-              req.query?.nano_skills ||
-              req.query?.nanoSkills
-          ),
-        microSkills:
-          parseSkills(
-            req.body?.micro_skills ||
-              req.body?.microSkills ||
-              req.query?.micro_skills ||
-              req.query?.microSkills
-          )
+        skills: normalizeSkills(
+          req.body?.skills,
+          req.query?.skills
+        )
       }
 
       if (!payload.topic_id || !payload.topic_name) {
@@ -114,8 +115,7 @@ export const assessmentController = {
         topic_name,
         programming_language,
         number_of_questions,
-        nano_skills = [],
-        micro_skills = []
+        skills = []
       } = req.body || {}
 
       if (!topic_name || !programming_language) {
@@ -129,7 +129,7 @@ export const assessmentController = {
 
       const generated = await geminiService.generateCodingQuestion(
         topic_name,
-        [...nano_skills, ...micro_skills],
+        Array.isArray(skills) ? skills : [],
         questionCount,
         programming_language,
         {
@@ -199,33 +199,20 @@ export const assessmentController = {
         metadata: {
           topic_name,
           programming_language,
-          number_of_questions: questionCount
+          number_of_questions: questionCount,
+          skills: Array.isArray(skills) ? skills : []
         }
-      })
-
-      // Remove deprecated fields from all questions
-      const cleanedQuestions = questionsWithPresentation.map(q => {
-        const cleaned = { ...q }
-        delete cleaned.nanoSkills
-        delete cleaned.macroSkills
-        delete cleaned.nano_skills
-        delete cleaned.macro_skills
-        delete cleaned.courseName // Remove courseName - no longer used
-        // Ensure skills field exists
-        if (!cleaned.skills) {
-          cleaned.skills = []
-        }
-        return cleaned
       })
 
       return res.json({
         success: true,
         data: {
-          questions: cleanedQuestions,
+          questions: questionsWithPresentation,
           metadata: {
             topic_name,
             programming_language,
             requested: questionCount,
+            skills: Array.isArray(skills) ? skills : [],
             request_id: requestId
           }
         },
