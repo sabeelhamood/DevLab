@@ -16,6 +16,8 @@ const MOCK_REQUEST_BODY = Object.freeze({
   topicName: 'JavaScript Fundamentals'
 })
 
+const FALLBACK_DIFFICULTY = 'basic'
+
 export const questionController = {
 
   // Get personalized questions using Gemini AI
@@ -23,7 +25,6 @@ export const questionController = {
     try {
       const {
         topicId = MOCK_REQUEST_BODY.topicId,
-        difficulty = 'beginner',
         language = MOCK_REQUEST_BODY.programmingLanguage,
         topicName: topicNameOverride,
         skills: skillQuery
@@ -38,7 +39,6 @@ export const questionController = {
       console.log('[questionController:getPersonalizedQuestions] Incoming request', {
         topicId,
         topicName,
-        difficulty,
         language,
         skills: normalizedSkills
       })
@@ -71,7 +71,7 @@ export const questionController = {
               testCases: [],
               hints: [],
               language,
-              difficulty,
+              difficulty: FALLBACK_DIFFICULTY,
               solution: null
             }
             generated = [fallbackQuestion]
@@ -86,7 +86,7 @@ export const questionController = {
             topicId,
             topicName,
             skills: question.skills || normalizedSkills,
-            difficulty: question.difficulty || difficulty,
+            difficulty: question.difficulty || FALLBACK_DIFFICULTY,
             language: question.language || language,
             testCases: question.testCases || [],
             hints: question.hints || [],

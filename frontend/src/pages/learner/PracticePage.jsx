@@ -55,7 +55,6 @@ function PracticePage() {
         topicName: currentTopic.topic_name,
         topicId: currentTopic.topic_id,
         skills: currentTopic.skills || [],
-        difficulty: 'intermediate',
         language: language,
         questionType: questionType === 'code' ? 'coding' : 'theoretical'
       })

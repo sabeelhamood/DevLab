@@ -20,7 +20,6 @@ class QuestionGenerationAPI {
   async generateQuestion({
     topicName,
     skills = [],
-    difficulty = 'beginner',
     language = 'javascript',
     questionType = 'coding'
   }) {
@@ -34,7 +33,6 @@ class QuestionGenerationAPI {
         body: JSON.stringify({
           topicName,
           skills: normalizedSkills,
-          difficulty,
           language,
           questionType
         })
@@ -366,7 +364,6 @@ class QuestionGenerationAPI {
   async generatePracticeQuestions({
     topicName,
     skills = [],
-    difficulty = 'beginner',
     language = 'javascript',
     questionType = 'coding',
     count = 5
@@ -379,7 +376,6 @@ class QuestionGenerationAPI {
           const question = await this.generateQuestion({
             topicName,
             skills,
-            difficulty,
             language,
             questionType
           })
