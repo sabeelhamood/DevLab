@@ -915,7 +915,31 @@ if (typeof result === "string") {
   
     function normalize(value) {
       if (typeof value === "string") {
-        return value.trim();
+        const trimmed = value.trim();
+
+        // Attempt to decode JSON-escaped strings like "\"text\"" or quoted primitives
+        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+            (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+          try {
+            return normalize(JSON.parse(trimmed));
+          } catch (err) {
+            // fall through if JSON.parse fails
+          }
+        }
+
+        // Try to coerce numeric strings
+        if (!Number.isNaN(Number(trimmed)) && trimmed !== "") {
+          return Number(trimmed);
+        }
+
+        // Parse booleans and null
+        const lower = trimmed.toLowerCase();
+        if (lower === "true") return true;
+        if (lower === "false") return false;
+        if (lower === "null") return null;
+        if (lower === "undefined") return undefined;
+
+        return trimmed;
       } else if (Array.isArray(value)) {
         return value.map(normalize);
       } else if (value && typeof value === "object") {
