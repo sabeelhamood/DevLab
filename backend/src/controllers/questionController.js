@@ -22,7 +22,6 @@ export const questionController = {
   async getPersonalizedQuestions(req, res) {
     try {
       const {
-        courseId,
         topicId = MOCK_REQUEST_BODY.topicId,
         difficulty = 'beginner',
         language = MOCK_REQUEST_BODY.programmingLanguage,
@@ -36,30 +35,57 @@ export const questionController = {
           : MOCK_REQUEST_BODY.skills
       const topicName = topicNameOverride || MOCK_REQUEST_BODY.topicName
       
-      // First try to get existing questions from database
-      let questions = await QuestionModel.find({ courseId, topicId, type: 'code' })
+      console.log('[questionController:getPersonalizedQuestions] Incoming request', {
+        topicId,
+        topicName,
+        difficulty,
+        language,
+        skills: normalizedSkills
+      })
+
+      // First try to get existing questions from database (topic-based only)
+      let questions = await QuestionModel.find({ topicId, type: 'code' })
 
       // If no questions exist, generate new ones using Gemini AI
       if (!questions || questions.length === 0) {
         try {
-          const generated = await geminiService.generateCodingQuestion(
-            topicName,
-            normalizedSkills,
-            1,
-            language,
-            {
-              humanLanguage: MOCK_REQUEST_BODY.humanLanguage,
-              topic_id: topicId
+          let generated
+          try {
+            console.log('[questionController:getPersonalizedQuestions] No cached questions found, calling Gemini…')
+            generated = await geminiService.generateCodingQuestion(
+              topicName,
+              normalizedSkills,
+              4,
+              language,
+              {
+                humanLanguage: MOCK_REQUEST_BODY.humanLanguage,
+                topic_id: topicId
+              }
+            )
+            console.log('[questionController:getPersonalizedQuestions] Gemini response received')
+          } catch (geminiCallError) {
+            console.error('[questionController:getPersonalizedQuestions] Gemini generation failed:', geminiCallError)
+            const fallbackQuestion = {
+              title: 'Practice Coding Challenge',
+              description: `Write a ${language} function related to ${topicName} covering ${normalizedSkills.join(', ')}.`,
+              testCases: [],
+              hints: [],
+              language,
+              difficulty,
+              solution: null
             }
-          )
+            generated = [fallbackQuestion]
+          }
+
           const question = Array.isArray(generated) ? generated[0] || {} : generated || {}
           questions = [{
             id: `gemini-${Date.now()}`,
             title: question.title || 'AI Generated Coding Question',
             description: question.description || question.question,
             type: 'code',
-            courseId,
             topicId,
+            topicName,
+            skills: question.skills || normalizedSkills,
             difficulty: question.difficulty || difficulty,
             language: question.language || language,
             testCases: question.testCases || [],
