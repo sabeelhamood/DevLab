@@ -158,13 +158,15 @@ int main() {
       setLoading(true)
       
       // Call real Gemini API for hint generation
-      const hint = await questionGenerationAPI.generateHint({
+      const hintPayload = {
         question: question.question_content || question.title,
         userAttempt: userAnswer || codeSolution,
         hintsUsed,
         allHints,
         topicName: question.topicName
-      })
+      }
+      console.log('🧪 [PracticePage] Get Hint payload:', hintPayload)
+      const hint = await questionGenerationAPI.generateHint(hintPayload)
       
       setHint(hint)
       setAllHints(prev => [...prev, hint])

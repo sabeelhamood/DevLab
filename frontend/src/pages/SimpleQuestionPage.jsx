@@ -325,6 +325,15 @@ int sum(int a, int b) {
       setLoading(true)
       
       // Call real Gemini API for hint generation
+      const hintPayload = {
+        question: question.question_content || question.title,
+        userAttempt: userAnswer,
+        hintsUsed,
+        allHints: [],
+        topicName: question.topicName
+      }
+      console.log('🧪 [SimpleQuestionPage] Get Hint payload:', hintPayload)
+      
       const hint = await questionGenerationAPI.generateHint({
         question: question.question_content || question.title,
         userAttempt: userAnswer,
