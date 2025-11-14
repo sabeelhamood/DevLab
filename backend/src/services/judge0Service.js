@@ -487,7 +487,7 @@ int main() {
     
     // Create wrapped code that executes the function and prints the result
     // Use console.log to ensure output is captured
-    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nconsole.log(JSON.stringify(result));`;
+    const wrappedCode = `${sourceCode}\n\n// Test execution\nconst result = ${functionCall};\nif (typeof result === "string") {\n  console.log(result);\n} else {\n  console.log(JSON.stringify(result));\n}`;
     
     console.log('🔧 Judge0: Wrapped code:', wrappedCode);
     return wrappedCode;
