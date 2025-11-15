@@ -141,21 +141,24 @@ export default function Dashboard() {
     const learnerId = effectiveUser?.id
     if (!learnerId) {
       setPendingCompetitions([])
+      console.log('[Dashboard] No learnerId available; skipping pending competitions fetch.')
       return
     }
 
     let isMounted = true
     setPendingLoading(true)
     setPendingError(null)
+    console.log('[Dashboard] Fetching pending competitions for learner:', learnerId)
     competitionsAIAPI
       .getPendingCompetitions(learnerId)
       .then((data) => {
+        console.log('[Dashboard] Pending competitions response:', data)
         if (isMounted) {
           setPendingCompetitions(data)
         }
       })
       .catch((error) => {
-        console.error('Failed to fetch pending competitions:', error)
+        console.error('[Dashboard] Failed to fetch pending competitions:', error)
         if (isMounted) {
           setPendingError(error.message || 'Unable to fetch pending competitions')
         }
@@ -217,12 +220,18 @@ export default function Dashboard() {
     }))
 
     try {
+      console.log('[Dashboard] Requesting competition creation', {
+        learnerId,
+        learnerName,
+        course
+      })
       const response = await competitionsAIAPI.createCompetition({
         learner_id: learnerId,
         learner_name: learnerName || null,
         course_id: course.course_id,
         course_name: course.course_name
       })
+      console.log('[Dashboard] createCompetition response', response)
 
       setCreationState((prev) => ({
         ...prev,
@@ -234,7 +243,7 @@ export default function Dashboard() {
         }
       }))
     } catch (error) {
-      console.error('Failed to create AI competition:', error)
+      console.error('[Dashboard] Failed to create AI competition:', error)
       setCreationState((prev) => ({
         ...prev,
         [courseKey]: {
@@ -255,6 +264,10 @@ export default function Dashboard() {
 
       setIsCompleting(true)
       try {
+      console.log('[Dashboard] Completing competition', {
+        competitionId: activeSession.competitionId,
+        reason
+      })
         const response = await competitionsAIAPI.completeCompetition(activeSession.competitionId)
         const session = response?.session || null
         if (!session) {
@@ -273,7 +286,8 @@ export default function Dashboard() {
         if (reason === 'timeout' && !sessionState.completed) {
           setSessionError('Competition ended because the timer expired.')
         }
-      } catch (error) {
+    } catch (error) {
+      console.error('[Dashboard] Failed to finalize competition:', error)
         setSessionError(
           error.response?.data?.error || error.message || 'Unable to finalize competition.'
         )
@@ -304,7 +318,9 @@ export default function Dashboard() {
     setSessionError(null)
 
     try {
+      console.log('[Dashboard] Starting competition', { competitionId, course })
       const response = await competitionsAIAPI.startCompetition(competitionId)
+      console.log('[Dashboard] startCompetition response', response)
       const session = response?.session || null
       if (!session) {
         throw new Error('Invalid competition session response.')
@@ -324,7 +340,7 @@ export default function Dashboard() {
 
       syncCreationStateWithSession(sessionState)
     } catch (error) {
-      console.error('Failed to start competition:', error)
+      console.error('[Dashboard] Failed to start competition:', error)
       setCreationState((prev) => ({
         ...prev,
         [courseKey]: {
@@ -357,10 +373,16 @@ export default function Dashboard() {
     setSessionError(null)
 
     try {
+      console.log('[Dashboard] Submitting answer', {
+        competitionId: activeSession.competitionId,
+        questionId: question.question_id,
+        isTimeout
+      })
       const response = await competitionsAIAPI.submitAnswer(activeSession.competitionId, {
         question_id: question.question_id,
         answer: isTimeout ? '' : currentAnswer.trim()
       })
+      console.log('[Dashboard] submitAnswer response', response)
 
       const session = response?.session || null
       if (!session) {
@@ -382,6 +404,7 @@ export default function Dashboard() {
       autoSubmitRef.current = false
       syncCreationStateWithSession(sessionState)
     } catch (error) {
+      console.error('[Dashboard] Failed to submit answer:', error)
       setSessionError(error.response?.data?.error || error.message || 'Unable to submit answer')
     } finally {
       setAnswerSubmitting(false)
