@@ -992,6 +992,15 @@ int main() {
         base64_encoded: false  // Get plain text output instead of Base64
       };
 
+      console.log('📤 Judge0: Sending submission payload', {
+        language,
+        languageId,
+        hasExpectedOutput: expectedOutput !== null && expectedOutput !== undefined,
+        expectedOutput,
+        sourceCodePreview: wrappedCode ? `${wrappedCode.substring(0, 200)}${wrappedCode.length > 200 ? '…' : ''}` : null,
+        submissionData
+      });
+
       const response = await fetch(`${this.baseUrl}/submissions`, {
         method: 'POST',
         headers: {
