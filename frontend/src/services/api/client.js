@@ -46,7 +46,9 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401) {
           localStorage.removeItem('auth-token')
-          window.location.href = '/login'
+          if (false) {
+            window.location.href = '/login'
+          }
         }
         
         if (error.response?.status >= 500) {
