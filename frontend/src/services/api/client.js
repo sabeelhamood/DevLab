@@ -22,11 +22,20 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
         }
+
+        const serviceApiKey = import.meta.env.VITE_SERVICE_API_KEY
+        const serviceId = import.meta.env.VITE_SERVICE_ID || 'devlab-frontend'
+
+        if (serviceApiKey) {
+          config.headers['x-api-key'] = serviceApiKey
+        }
+        if (serviceId) {
+          config.headers['x-service-id'] = serviceId
+        }
+
         return config
       },
-      (error) => {
-        return Promise.reject(error)
-      }
+      (error) => Promise.reject(error)
     )
 
     // Response interceptor
