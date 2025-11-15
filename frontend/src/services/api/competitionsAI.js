@@ -13,6 +13,30 @@ export const competitionsAIAPI = {
   async createCompetition(payload) {
     const response = await apiClient.post('/competitions/create', payload)
     return response
+  },
+
+  async startCompetition(competitionId) {
+    if (!competitionId) {
+      throw new Error('competitionId is required')
+    }
+
+    return apiClient.post(`/competitions/start/${competitionId}`)
+  },
+
+  async submitAnswer(competitionId, payload) {
+    if (!competitionId) {
+      throw new Error('competitionId is required')
+    }
+
+    return apiClient.post(`/competitions/${competitionId}/answer`, payload)
+  },
+
+  async completeCompetition(competitionId) {
+    if (!competitionId) {
+      throw new Error('competitionId is required')
+    }
+
+    return apiClient.post(`/competitions/${competitionId}/complete`)
   }
 }
 

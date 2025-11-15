@@ -1,8 +1,46 @@
-import { buildCompetitionQuestionsPrompt } from '../prompts/competitionPrompts.js'
+import {
+  buildCompetitionQuestionsPrompt,
+  buildCompetitionStartPrompt,
+  buildCompetitionEvaluationPrompt
+} from '../prompts/competitionPrompts.js'
 import { getFetch } from '../utils/http.js'
 
+const DEVLAB_MODEL = 'gpt-4.1'
+
+const parseJsonResponse = (raw) => {
+  if (typeof raw === 'string') {
+    return JSON.parse(raw)
+  }
+  return raw
+}
+
+const normalizeQuestionsArray = (questions = []) =>
+  questions
+    .map((question, index) => {
+      if (typeof question === 'string') {
+        return {
+          question_id: `q${index + 1}`,
+          question
+        }
+      }
+
+      return {
+        question_id: question?.question_id || `q${index + 1}`,
+        question: question?.question || question?.prompt || question?.description || ''
+      }
+    })
+    .filter((question) => Boolean(question.question && question.question.trim().length))
+
+const normalizeAnswerArray = (answers = []) =>
+  answers
+    .map((entry, index) => ({
+      question_id: entry?.question_id || `q${index + 1}`,
+      answer: entry?.answer || entry?.response || ''
+    }))
+    .filter((entry) => Boolean(entry.answer && entry.answer.trim().length))
+
 class CompetitionAIService {
-  async generateCompetitionQuestions({ courseName }) {
+  async #callDevlabGPT(prompt) {
     const apiUrl = process.env.DEVLAB_GPT_API_URL || process.env.DEVLAB_GPT_API
     if (!apiUrl) {
       throw new Error('DEVLAB_GPT_API_URL environment variable is not configured')
@@ -10,28 +48,23 @@ class CompetitionAIService {
 
     const apiKey = process.env.DEVLAB_GPT_API_KEY || process.env.DEVLAB_GPT_API_TOKEN
     const fetchFn = await getFetch()
-    const prompt = buildCompetitionQuestionsPrompt(courseName)
 
     const headers = {
       'Content-Type': 'application/json',
-      // 🔥 Force OPENAI model
-      'x-devlab-gpt-model': 'gpt-4.1'
+      'x-devlab-gpt-model': DEVLAB_MODEL
     }
 
     if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`
+      headers.Authorization = `Bearer ${apiKey}`
     }
-
-    // 🔥 Send explicit model to ensure the API knows we want OpenAI
-    const body = JSON.stringify({
-      prompt,
-      model: 'gpt-4.1'
-    })
 
     const response = await fetchFn(apiUrl, {
       method: 'POST',
       headers,
-      body
+      body: JSON.stringify({
+        prompt,
+        model: DEVLAB_MODEL
+      })
     })
 
     const responseText = await response.text()
@@ -42,52 +75,71 @@ class CompetitionAIService {
       )
     }
 
-    let parsed
-    try {
-      parsed = JSON.parse(responseText)
-    } catch (error) {
-      throw new Error('DEVLAB_GPT_API returned invalid JSON')
+    return parseJsonResponse(responseText)
+  }
+
+  async generateCompetitionSetup({ courseName }) {
+    const prompt = buildCompetitionQuestionsPrompt(courseName)
+    const payload = await this.#callDevlabGPT(prompt)
+    const questions = normalizeQuestionsArray(payload?.questions || payload)
+
+    if (questions.length !== 3) {
+      throw new Error('DEVLAB_GPT_API must return exactly 3 questions')
     }
 
-    let questionsPayload = parsed
+    return { questions }
+  }
 
-    if (typeof parsed === 'string') {
-      try {
-        questionsPayload = JSON.parse(parsed)
-      } catch {
-        throw new Error('DEVLAB_GPT_API returned a JSON string that could not be parsed')
-      }
+  async generateAIAnswerForQuestion({ courseName, question }) {
+    if (!question) {
+      throw new Error('Question is required for AI answer generation')
     }
 
-    if (parsed && Array.isArray(parsed.questions)) {
-      questionsPayload = parsed.questions
+    const prompt = buildCompetitionStartPrompt({ courseName, question })
+    const payload = await this.#callDevlabGPT(prompt)
+    const normalized = normalizeAnswerArray(
+      Array.isArray(payload?.ai_answers)
+        ? payload.ai_answers
+        : Array.isArray(payload)
+        ? payload
+        : [payload]
+    )
+
+    if (!normalized.length) {
+      throw new Error('DEVLAB_GPT_API did not return an answer for the current question')
     }
 
-    if (!Array.isArray(questionsPayload)) {
-      throw new Error('DEVLAB_GPT_API response is not an array of questions')
+    return normalized[0]?.answer || ''
+  }
+
+  async evaluateCompetition({ questions, aiAnswers, learnerAnswers }) {
+    if (!questions?.length || !aiAnswers?.length || !learnerAnswers?.length) {
+      throw new Error('Questions, AI answers, and learner answers are required for evaluation')
     }
 
-    const sanitizedQuestions = questionsPayload
-      .map((question, index) => {
-        if (typeof question === 'string') {
-          return {
-            question_id: `q${index + 1}`,
-            question
-          }
-        }
+    const prompt = buildCompetitionEvaluationPrompt({
+      questions,
+      aiAnswers,
+      learnerAnswers
+    })
 
-        return {
-          question_id: question.question_id || `q${index + 1}`,
-          question: question.question || question.prompt || question.description || ''
-        }
-      })
-      .filter((question) => question.question && question.question.trim().length > 0)
+    const payload = await this.#callDevlabGPT(prompt)
+    const winner = payload?.winner
+    const score = payload?.score
 
-    if (!sanitizedQuestions.length) {
-      throw new Error('DEVLAB_GPT_API did not return any usable questions')
+    if (!winner || (winner !== 'learner' && winner !== 'ai')) {
+      throw new Error('DEVLAB_GPT_API evaluation did not return a valid winner')
     }
 
-    return sanitizedQuestions
+    const numericScore =
+      typeof score === 'number'
+        ? Math.max(0, Math.min(100, Math.round(score)))
+        : 0
+
+    return {
+      winner,
+      score: numericScore
+    }
   }
 }
 

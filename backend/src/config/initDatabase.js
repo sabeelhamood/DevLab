@@ -105,6 +105,15 @@ const ensureCompetitionsVsAISchema = async (client) => {
         END IF;
       END $$;
     `)
+    await client.query(`
+      ALTER TABLE "competitions_vs_ai"
+        ADD COLUMN IF NOT EXISTS "in_progress_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        ADD COLUMN IF NOT EXISTS "status" text NOT NULL DEFAULT 'pending',
+        ADD COLUMN IF NOT EXISTS "timer_seconds" integer NOT NULL DEFAULT 1800,
+        ADD COLUMN IF NOT EXISTS "started_at" timestamptz,
+        ADD COLUMN IF NOT EXISTS "completed_at" timestamptz,
+        ADD COLUMN IF NOT EXISTS "current_question_index" integer NOT NULL DEFAULT 0;
+    `)
   } catch (error) {
     if (error.code !== '42P01') {
       console.warn('⚠️ Unable to ensure competitions_vs_ai schema:', error.message)
@@ -297,6 +306,11 @@ const tableStatements = [
         "learner_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "ai_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "questions" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "in_progress_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "status" text NOT NULL DEFAULT 'pending',
+        "timer_seconds" integer NOT NULL DEFAULT 1800,
+        "started_at" timestamptz,
+        "completed_at" timestamptz,
         "winner" text,
         "score" integer,
         "created_at" timestamptz NOT NULL DEFAULT now(),

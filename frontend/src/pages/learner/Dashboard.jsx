@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card.jsx'
 import Button from '../../components/ui/Button.jsx'
 import { BookOpen, BarChart3, Clock, Target, Award } from 'lucide-react'
@@ -48,12 +48,77 @@ const mockRecentActivity = [
   }
 ]
 
+const QUESTION_TIMER_SECONDS = 10 * 60
+
+const calculateRemainingSeconds = (endsAt, fallbackSeconds = DEFAULT_COMPETITION_TIMER) => {
+  if (endsAt) {
+    const diff = Math.floor((Date.parse(endsAt) - Date.now()) / 1000)
+    return diff > 0 ? diff : 0
+  }
+  return fallbackSeconds
+}
+
+const formatTimer = (seconds) => {
+  if (seconds === null || seconds === undefined) {
+    return '--:--'
+  }
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
+
+const buildSessionState = (session, meta = {}) => ({
+  competitionId: session?.competition_id || null,
+  status: session?.status || 'pending',
+  question: session?.question || null,
+  questionIndex: session?.questionIndex || 0,
+  totalQuestions: session?.totalQuestions || 0,
+  startedAt: session?.started_at || null,
+  expiresAt: session?.expires_at || null,
+  timerSeconds: session?.timer_seconds || QUESTION_TIMER_SECONDS,
+  answers: session?.answers || [],
+  completed: Boolean(session?.completed),
+  summary: session?.summary || null,
+  winner: session?.summary?.winner || session?.winner || null,
+  score:
+    typeof session?.summary?.score === 'number'
+      ? session.summary.score
+      : typeof session?.score === 'number'
+      ? session.score
+      : null,
+  courseKey: meta.courseKey || null,
+  courseName: meta.courseName || null
+})
+
 export default function Dashboard() {
   const { user } = useAuthStore()
   const [pendingCompetitions, setPendingCompetitions] = useState([])
   const [pendingLoading, setPendingLoading] = useState(false)
   const [pendingError, setPendingError] = useState(null)
   const [creationState, setCreationState] = useState({})
+  const [activeSession, setActiveSession] = useState(null)
+  const [currentAnswer, setCurrentAnswer] = useState('')
+  const [sessionError, setSessionError] = useState(null)
+  const [answerSubmitting, setAnswerSubmitting] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [remainingSeconds, setRemainingSeconds] = useState(null)
+  const autoSubmitRef = useRef(false)
+
+  const syncCreationStateWithSession = useCallback((sessionState) => {
+    if (!sessionState?.courseKey) {
+      return
+    }
+
+    setCreationState((prev) => ({
+      ...prev,
+      [sessionState.courseKey]: {
+        ...(prev[sessionState.courseKey] || {}),
+        status: sessionState.completed ? 'completed' : 'in_progress',
+        competitionId: sessionState.competitionId,
+        courseName: sessionState.courseName
+      }
+    }))
+  }, [])
 
   useEffect(() => {
     const learnerId = user?.id
@@ -89,6 +154,39 @@ export default function Dashboard() {
     }
   }, [user?.id])
 
+  useEffect(() => {
+    if (!activeSession || activeSession.completed) {
+      setRemainingSeconds(null)
+      return
+    }
+
+    const initial = calculateRemainingSeconds(
+      activeSession.expiresAt,
+      activeSession.timerSeconds || QUESTION_TIMER_SECONDS
+    )
+    setRemainingSeconds(initial)
+
+    const interval = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        const baseline =
+          prev === null
+            ? calculateRemainingSeconds(
+                activeSession.expiresAt,
+                activeSession.timerSeconds || QUESTION_TIMER_SECONDS
+              )
+            : prev
+        return baseline > 0 ? baseline - 1 : 0
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [
+    activeSession?.competitionId,
+    activeSession?.completed,
+    activeSession?.expiresAt,
+    activeSession?.timerSeconds
+  ])
+
   const handleEnterCompetition = async (course) => {
     const learnerId = user?.id
     if (!learnerId) {
@@ -98,7 +196,7 @@ export default function Dashboard() {
     const courseKey = course.course_id
     setCreationState((prev) => ({
       ...prev,
-      [courseKey]: { status: 'creating' }
+      [courseKey]: { ...(prev[courseKey] || {}), status: 'creating', courseName: course.course_name }
     }))
 
     try {
@@ -112,8 +210,10 @@ export default function Dashboard() {
       setCreationState((prev) => ({
         ...prev,
         [courseKey]: {
+          ...(prev[courseKey] || {}),
           status: 'ready',
-          competitionId: response?.competition?.competition_id || null
+          competitionId: response?.competition?.competition_id || null,
+          courseName: course.course_name
         }
       }))
     } catch (error) {
@@ -122,16 +222,166 @@ export default function Dashboard() {
         ...prev,
         [courseKey]: {
           status: 'error',
-          message: error.response?.data?.error || error.message || 'Unable to create competition'
+          message: error.response?.data?.error || error.message || 'Unable to create competition',
+          competitionId: prev[courseKey]?.competitionId || null,
+          courseName: course.course_name
         }
       }))
     }
   }
 
-  const handleStartCompetition = (courseKey, competitionId) => {
-    console.log('Start competition placeholder', { courseKey, competitionId })
-    alert('Competition experience is coming soon!')
+  const completeActiveCompetition = useCallback(
+    async (reason = 'finished') => {
+      if (!activeSession || isCompleting) {
+        return
+      }
+
+      setIsCompleting(true)
+      try {
+        const response = await competitionsAIAPI.completeCompetition(activeSession.competitionId)
+        const session = response?.session || null
+        if (!session) {
+          throw new Error('Invalid competition session response.')
+        }
+
+        const sessionState = buildSessionState(session, {
+          courseKey: activeSession.courseKey,
+          courseName: activeSession.courseName
+        })
+
+        setActiveSession(sessionState)
+        setRemainingSeconds(null)
+        syncCreationStateWithSession(sessionState)
+
+        if (reason === 'timeout' && !sessionState.completed) {
+          setSessionError('Competition ended because the timer expired.')
+        }
+      } catch (error) {
+        setSessionError(
+          error.response?.data?.error || error.message || 'Unable to finalize competition.'
+        )
+      } finally {
+        setIsCompleting(false)
+        autoSubmitRef.current = false
+      }
+    },
+    [activeSession, isCompleting, syncCreationStateWithSession]
+  )
+
+  const handleStartCompetition = async (course, competitionId) => {
+    const learnerId = user?.id
+    if (!learnerId || !competitionId) {
+      return
+    }
+
+    const courseKey = course.course_id
+    setCreationState((prev) => ({
+      ...prev,
+      [courseKey]: {
+        ...(prev[courseKey] || {}),
+        status: 'starting',
+        competitionId,
+        courseName: course.course_name
+      }
+    }))
+    setSessionError(null)
+
+    try {
+      const response = await competitionsAIAPI.startCompetition(competitionId)
+      const session = response?.session || null
+      if (!session) {
+        throw new Error('Invalid competition session response.')
+      }
+
+      const sessionState = buildSessionState(session, {
+        courseKey,
+        courseName: course.course_name
+      })
+
+      setActiveSession(sessionState)
+      setCurrentAnswer('')
+      setRemainingSeconds(
+        calculateRemainingSeconds(sessionState.expiresAt, sessionState.timerSeconds)
+      )
+      autoSubmitRef.current = false
+
+      syncCreationStateWithSession(sessionState)
+    } catch (error) {
+      console.error('Failed to start competition:', error)
+      setCreationState((prev) => ({
+        ...prev,
+        [courseKey]: {
+          ...(prev[courseKey] || {}),
+          status: 'ready',
+          competitionId,
+          courseName: course.course_name,
+          message: error.response?.data?.error || error.message || 'Unable to start competition'
+        }
+      }))
+      setSessionError(error.response?.data?.error || error.message || 'Unable to start competition')
+    }
   }
+
+  const handleSubmitLearnerAnswer = useCallback(async (isTimeout = false) => {
+    if (!activeSession || activeSession.completed) {
+      return
+    }
+
+    const question = activeSession.question
+    if (!question) {
+      return
+    }
+
+    if (!isTimeout && !currentAnswer.trim()) {
+      return
+    }
+
+    setAnswerSubmitting(true)
+    setSessionError(null)
+
+    try {
+      const response = await competitionsAIAPI.submitAnswer(activeSession.competitionId, {
+        question_id: question.question_id,
+        answer: isTimeout ? '' : currentAnswer.trim()
+      })
+
+      const session = response?.session || null
+      if (!session) {
+        throw new Error('Invalid competition session response.')
+      }
+
+      const sessionState = buildSessionState(session, {
+        courseKey: activeSession.courseKey,
+        courseName: activeSession.courseName
+      })
+
+      setActiveSession(sessionState)
+      setCurrentAnswer('')
+      setRemainingSeconds(
+        sessionState.completed
+          ? null
+          : calculateRemainingSeconds(sessionState.expiresAt, sessionState.timerSeconds)
+      )
+      autoSubmitRef.current = false
+      syncCreationStateWithSession(sessionState)
+    } catch (error) {
+      setSessionError(error.response?.data?.error || error.message || 'Unable to submit answer')
+    } finally {
+      setAnswerSubmitting(false)
+    }
+  }, [activeSession, currentAnswer, syncCreationStateWithSession])
+
+  useEffect(() => {
+    if (!activeSession || activeSession.completed) {
+      autoSubmitRef.current = false
+      return
+    }
+
+    if (remainingSeconds === 0 && !autoSubmitRef.current && activeSession.question) {
+      autoSubmitRef.current = true
+      handleSubmitLearnerAnswer(true)
+    }
+  }, [remainingSeconds, activeSession?.completed, activeSession?.question, handleSubmitLearnerAnswer])
 
   const formatCompletedAt = (timestamp) => {
     if (!timestamp) {
@@ -145,6 +395,25 @@ export default function Dashboard() {
       return timestamp
     }
   }
+
+  const activeQuestion =
+    activeSession && !activeSession.completed ? activeSession.question || null : null
+  const questionsTotal = activeSession?.totalQuestions || 0
+  const answeredCount = activeSession?.answers?.length || 0
+  const questionPosition = activeSession?.completed
+    ? questionsTotal
+    : Math.max(activeSession?.questionIndex || 1, 1)
+  const questionProgressPercent =
+    questionsTotal > 0
+      ? ((questionPosition - 1) / questionsTotal) * 100
+      : 0
+  const timerPercent =
+    activeSession && !activeSession.completed
+      ? Math.max(
+          0,
+          Math.min(100, ((remainingSeconds ?? QUESTION_TIMER_SECONDS) / QUESTION_TIMER_SECONDS) * 100)
+        )
+      : 0
 
   return (
     <div className="space-y-6">
@@ -341,24 +610,46 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="mt-4 md:mt-0 flex flex-col md:flex-row md:items-center gap-3">
-                      {status !== 'ready' && (
-                        <Button
-                          size="sm"
-                          disabled={status === 'creating'}
-                          onClick={() => handleEnterCompetition(course)}
-                        >
-                          {status === 'creating' ? 'Creating Competition...' : 'Enter Competition'}
-                        </Button>
-                      )}
                       {status === 'ready' && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleStartCompetition(courseKey, competitionId)}
+                          onClick={() => handleStartCompetition(course, competitionId)}
+                          disabled={!competitionId}
                         >
                           Start Competition
                         </Button>
                       )}
+                      {status === 'starting' && (
+                        <Button size="sm" variant="outline" disabled>
+                          Starting Competition...
+                        </Button>
+                      )}
+                      {status === 'in_progress' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStartCompetition(course, competitionId)}
+                          disabled={!competitionId}
+                        >
+                          Resume Competition
+                        </Button>
+                      )}
+                      {status === 'completed' && (
+                        <p className="text-sm text-success-600 font-medium">Competition completed</p>
+                      )}
+                      {status !== 'ready' &&
+                        status !== 'starting' &&
+                        status !== 'in_progress' &&
+                        status !== 'completed' && (
+                          <Button
+                            size="sm"
+                            disabled={status === 'creating'}
+                            onClick={() => handleEnterCompetition(course)}
+                          >
+                            {status === 'creating' ? 'Creating Competition...' : 'Enter Competition'}
+                          </Button>
+                        )}
                       {status === 'error' && (
                         <p className="text-xs text-red-600 max-w-sm">
                           {creationState[courseKey]?.message}
@@ -369,6 +660,166 @@ export default function Dashboard() {
                 )
               })}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {user?.role === 'learner' && activeSession && (
+        <Card className="border-0 bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white shadow-2xl">
+          <CardHeader className="border-b border-white/10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <CardTitle className="text-white">AI Arena · {activeSession.courseName || 'Competition'}</CardTitle>
+                <CardDescription className="text-white/80">
+                  {activeSession.completed
+                    ? 'Competition complete — review your performance below.'
+                    : 'Each question unlocks one at a time with a 10-minute timer. Outsmart the AI opponent!'}
+                </CardDescription>
+              </div>
+              <div className="text-sm text-white/70">
+                {activeSession.completed
+                  ? 'Finished'
+                  : `Question ${Math.min(questionPosition, questionsTotal) || 0} / ${questionsTotal || 0}`}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {!activeSession.completed && activeQuestion && (
+              <>
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="bg-white/5 rounded-2xl p-5 shadow-inner shadow-white/5 min-h-[200px]">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/60">Current Challenge</p>
+                      <p className="mt-3 text-lg leading-relaxed whitespace-pre-line">
+                        {activeQuestion.question}
+                      </p>
+                    </div>
+                    <textarea
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl p-4 text-sm text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/60"
+                      rows={6}
+                      placeholder="Describe your reasoning like a human competitor..."
+                      value={currentAnswer}
+                      onChange={(event) => setCurrentAnswer(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center space-y-6">
+                    <div className="relative w-32 h-32">
+                      <div
+                        className="absolute inset-0 rounded-full opacity-80"
+                        style={{
+                          background: `conic-gradient(#d8b4fe ${timerPercent}%, rgba(255,255,255,0.15) ${timerPercent}% 100%)`
+                        }}
+                      />
+                      <div className="absolute inset-2 bg-gray-900 rounded-full flex flex-col items-center justify-center shadow-lg shadow-black/40">
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                          Timer
+                        </span>
+                        <span className="text-3xl font-bold">{formatTimer(remainingSeconds)}</span>
+                        <span className="text-[10px] text-white/50 mt-1">10 min limit</span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/60">Progress</p>
+                      <p className="text-3xl font-semibold">
+                        {Math.min(questionPosition, questionsTotal) || 0} / {questionsTotal || 0}
+                      </p>
+                      <p className="text-xs text-white/60">{answeredCount} answers saved</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-white via-white to-transparent transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.max(0, questionProgressPercent))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-white/70 text-right">
+                    No skipping — the next challenge appears when this timer expires or you submit.
+                  </p>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-white text-gray-900 hover:bg-gray-100 w-full md:w-auto"
+                    onClick={() => handleSubmitLearnerAnswer(false)}
+                    disabled={answerSubmitting || !currentAnswer.trim()}
+                  >
+                    {answerSubmitting ? 'Submitting...' : 'Submit Answer'}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/60 text-white hover:bg-white/10 w-full md:w-auto"
+                    onClick={() => completeActiveCompetition('finished')}
+                    disabled={isCompleting}
+                  >
+                    {isCompleting ? 'Saving...' : 'Finish Competition'}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {!activeSession.completed && !activeQuestion && (
+              <p className="text-sm text-white/80">Loading your next challenge...</p>
+            )}
+
+            {activeSession.completed && (
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="bg-white/10 rounded-2xl p-4 text-center shadow-inner shadow-black/30">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">Winner</p>
+                    <p className="text-3xl font-semibold mt-2">
+                      {activeSession.summary?.winner === 'learner'
+                        ? 'You'
+                        : activeSession.summary?.winner === 'ai'
+                        ? 'AI'
+                        : 'Tie'}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 rounded-2xl p-4 text-center shadow-inner shadow-black/30">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">Your Score</p>
+                    <p className="text-3xl font-semibold mt-2">
+                      {typeof activeSession.summary?.score === 'number'
+                        ? activeSession.summary.score
+                        : 'Pending'}
+                    </p>
+                  </div>
+                </div>
+                {activeSession.summary && (
+                  <div className="bg-gray-900/60 rounded-2xl p-4 text-sm text-white/90 max-h-72 overflow-auto border border-white/10">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Evaluation</p>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(activeSession.summary, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-white/60 text-white hover:bg-white/10"
+                    onClick={() => {
+                      setActiveSession(null)
+                      setSessionError(null)
+                      setCurrentAnswer('')
+                      setRemainingSeconds(null)
+                      autoSubmitRef.current = false
+                    }}
+                  >
+                    Close Arena
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {sessionError && (
+              <p className="text-sm text-red-200 mt-2">{sessionError}</p>
+            )}
           </CardContent>
         </Card>
       )}
