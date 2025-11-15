@@ -90,8 +90,25 @@ const buildSessionState = (session, meta = {}) => ({
   courseName: meta.courseName || null
 })
 
+const DEFAULT_FORCED_LEARNER_ID = '550e8400-e29b-41d4-a716-446655440000'
+const DEFAULT_FORCED_LEARNER_NAME = 'DevLab Test Learner'
+
 export default function Dashboard() {
   const { user } = useAuthStore()
+  const forcedLearnerId =
+    import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
+  const forcedLearnerName =
+    import.meta.env.VITE_FORCE_LEARNER_NAME || DEFAULT_FORCED_LEARNER_NAME
+  const effectiveUser = forcedLearnerId
+    ? {
+        id: forcedLearnerId,
+        name: forcedLearnerName,
+        role: 'learner'
+      }
+    : user
+  const learnerId = effectiveUser?.id
+  const learnerName = effectiveUser?.name
+  const isLearner = (effectiveUser?.role || 'learner') === 'learner'
   const [pendingCompetitions, setPendingCompetitions] = useState([])
   const [pendingLoading, setPendingLoading] = useState(false)
   const [pendingError, setPendingError] = useState(null)
@@ -121,7 +138,7 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    const learnerId = user?.id
+    const learnerId = effectiveUser?.id
     if (!learnerId) {
       setPendingCompetitions([])
       return
@@ -152,7 +169,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false
     }
-  }, [user?.id])
+  }, [learnerId])
 
   useEffect(() => {
     if (!activeSession || activeSession.completed) {
@@ -188,7 +205,7 @@ export default function Dashboard() {
   ])
 
   const handleEnterCompetition = async (course) => {
-    const learnerId = user?.id
+    const learnerId = effectiveUser?.id
     if (!learnerId) {
       return
     }
@@ -202,7 +219,7 @@ export default function Dashboard() {
     try {
       const response = await competitionsAIAPI.createCompetition({
         learner_id: learnerId,
-        learner_name: user?.name || null,
+        learner_name: learnerName || null,
         course_id: course.course_id,
         course_name: course.course_name
       })
@@ -269,7 +286,7 @@ export default function Dashboard() {
   )
 
   const handleStartCompetition = async (course, competitionId) => {
-    const learnerId = user?.id
+    const learnerId = effectiveUser?.id
     if (!learnerId || !competitionId) {
       return
     }
@@ -572,7 +589,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {user?.role === 'learner' && (
+      {isLearner && (
         <Card>
           <CardHeader>
             <CardTitle>Ready for a Competition?</CardTitle>
@@ -664,7 +681,7 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {user?.role === 'learner' && activeSession && (
+      {isLearner && activeSession && (
         <Card className="border-0 bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white shadow-2xl">
           <CardHeader className="border-b border-white/10">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

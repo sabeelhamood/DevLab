@@ -4,12 +4,17 @@ import { competitionController } from '../../controllers/competitionController.j
 
 const router = express.Router()
 
+const competitionAuth =
+  process.env.DISABLE_COMPETITION_AUTH === 'true'
+    ? (req, _res, next) => next()
+    : authenticateToken
+
 router.post('/course-completion', competitionController.recordCourseCompletion)
 router.post('/create', competitionController.createAICompetition)
 router.get('/pending/:learnerId', competitionController.getPendingAICompetitions)
-router.post('/start/:competitionId', authenticateToken, competitionController.startAICompetition)
-router.post('/:competitionId/answer', authenticateToken, competitionController.recordAICompetitionAnswer)
-router.post('/:competitionId/complete', authenticateToken, competitionController.completeAICompetition)
+router.post('/start/:competitionId', competitionAuth, competitionController.startAICompetition)
+router.post('/:competitionId/answer', competitionAuth, competitionController.recordAICompetitionAnswer)
+router.post('/:competitionId/complete', competitionAuth, competitionController.completeAICompetition)
 
 export default router
 
