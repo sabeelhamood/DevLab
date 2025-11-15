@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button.jsx'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { useAuthStore } from '../../store/authStore.js'
 
+const DEFAULT_FORCED_LEARNER_ID = '550e8400-e29b-41d4-a716-446655440000'
 const QUESTIONS_PER_COMPETITION = 3
 const QUESTION_TIMER_SECONDS = 10 * 60 // 10 minutes per question
 const TOTAL_COMPETITION_SECONDS = QUESTION_TIMER_SECONDS * QUESTIONS_PER_COMPETITION // 30 minutes total
@@ -23,7 +24,9 @@ export default function CompetitionPlay() {
   const location = useLocation()
   const { user } = useAuthStore()
 
-  const learnerId = user?.id
+  const forcedLearnerId =
+    import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
+  const learnerId = user?.id || forcedLearnerId || null
 
   const [competition, setCompetition] = useState(location.state?.competition || null)
   const [session, setSession] = useState(location.state?.session || null)

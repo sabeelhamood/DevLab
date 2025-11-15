@@ -7,7 +7,6 @@ import { apiClient } from '../../services/api/client.js'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 
 const DEFAULT_FORCED_LEARNER_ID = '550e8400-e29b-41d4-a716-446655440000'
-const DEFAULT_FORCED_LEARNER_NAME = 'DevLab Test Learner'
 
 const TechBackdrop = ({ children }) => (
   <div className="relative min-h-screen overflow-hidden bg-gray-950 text-white">
@@ -59,10 +58,8 @@ export default function Dashboard() {
   const { user } = useAuthStore()
   const forcedLearnerId =
     import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
-  const forcedLearnerName =
-    import.meta.env.VITE_FORCE_LEARNER_NAME || DEFAULT_FORCED_LEARNER_NAME
   const effectiveUser = forcedLearnerId
-    ? { id: forcedLearnerId, name: forcedLearnerName, role: 'learner' }
+    ? { id: forcedLearnerId, role: 'learner' }
     : user
   const learnerId = effectiveUser?.id
 

@@ -5,13 +5,17 @@ import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
 
+const DEFAULT_FORCED_LEARNER_ID = '550e8400-e29b-41d4-a716-446655440000'
+
 export default function CompetitionIntro() {
   const { competitionId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
 
-  const learnerId = user?.id
+  const forcedLearnerId =
+    import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
+  const learnerId = user?.id || forcedLearnerId || null
 
   const initialCompetition = location.state?.competition || null
 
