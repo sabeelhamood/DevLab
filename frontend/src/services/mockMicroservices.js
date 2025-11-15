@@ -200,6 +200,7 @@ export const mockMicroservices = {
         generated_at: new Date().toISOString(),
         content_studio_request: contentStudioRequest
       }
+    },
     evaluateCode: (code, testCases) => {
       const results = testCases.map(testCase => ({
         input: testCase.input,
