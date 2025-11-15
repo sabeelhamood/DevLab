@@ -56,8 +56,8 @@ const buildLearnerAnswersFromQuestions = (questions = []) =>
     .map((question) => {
       const answer = question?.state?.learner_answer
       if (answer === undefined || answer === null || !question?.question_id) {
-        return null
-      }
+    return null
+  }
       return {
         question_id: question.question_id,
         answer
@@ -389,23 +389,34 @@ export const competitionController = {
         )
       }
 
-      let competition = await CompetitionAIModel.findByLearnerAndCourse(
-        learner_id,
-        String(course_id)
-      )
+      let competition = null
+
+      try {
+        competition = await CompetitionAIModel.findByLearnerAndCourse(
+          learner_id,
+          String(course_id)
+        )
+      } catch (error) {
+        console.error('❌ [competitions] Failed to query existing competition:', error)
+      }
 
       if (!competition) {
-        const { questions } = await competitionAIService.generateCompetitionSetup({
-          courseName: course_name
-        })
+        try {
+          const { questions } = await competitionAIService.generateCompetitionSetup({
+            courseName: course_name
+          })
 
-        competition = await CompetitionAIModel.create({
-          learnerId: learner_id,
-          learnerName: learner_name || null,
-          courseId: String(course_id),
-          courseName: course_name,
-          questions
-        })
+          competition = await CompetitionAIModel.create({
+            learnerId: learner_id,
+            learnerName: learner_name || null,
+            courseId: String(course_id),
+            courseName: course_name,
+            questions
+          })
+        } catch (creationError) {
+          console.error('❌ [competitions] Failed to create competition during course completion:', creationError)
+          throw new Error('Unable to generate competition for this course completion')
+        }
       }
 
       return res.status(202).json({
@@ -577,8 +588,8 @@ export const competitionController = {
       let workingCompetition = await ensureActiveQuestion(competition)
 
       if (workingCompetition.status === 'completed') {
-        return res.json({
-          success: true,
+      return res.json({
+        success: true,
           session: buildSessionPayload(workingCompetition)
         })
       }
