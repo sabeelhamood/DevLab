@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import SimpleQuestionPage from './pages/SimpleQuestionPage'
 import Dashboard from './pages/learner/Dashboard'
+import CompetitionIntro from './pages/competitions/CompetitionIntro.jsx'
+import CompetitionPlay from './pages/competitions/CompetitionPlay.jsx'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -13,6 +15,8 @@ function App() {
           <Route path="/" element={<SimpleQuestionPage />} />
           <Route path="/question" element={<SimpleQuestionPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/competitions/:competitionId/intro" element={<CompetitionIntro />} />
+          <Route path="/competitions/:competitionId/play" element={<CompetitionPlay />} />
         </Routes>
       </Layout>
     </Router>
