@@ -95,6 +95,7 @@ const DEFAULT_FORCED_LEARNER_NAME = 'DevLab Test Learner'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
+  console.log('[Dashboard] Initializing learner dashboard')
   const forcedLearnerId =
     import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
   const forcedLearnerName =
@@ -106,9 +107,12 @@ export default function Dashboard() {
         role: 'learner'
       }
     : user
+  console.log('[Dashboard] Effective user:', effectiveUser)
   const learnerId = effectiveUser?.id
   const learnerName = effectiveUser?.name
+  console.log('[Dashboard] learnerId / learnerName:', learnerId, learnerName)
   const isLearner = (effectiveUser?.role || 'learner') === 'learner'
+  console.log('[Dashboard] isLearner:', isLearner)
   const [pendingCompetitions, setPendingCompetitions] = useState([])
   const [pendingLoading, setPendingLoading] = useState(false)
   const [pendingError, setPendingError] = useState(null)
@@ -521,97 +525,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Active Courses */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Courses</CardTitle>
-            <CardDescription>Continue your learning journey</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockCourses.map((course) => (
-                <div key={course.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-gray-900">{course.name}</h3>
-                    <span className="text-sm text-gray-500">{course.difficulty}</span>
-                  </div>
-                  <div className="mb-2">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Progress</span>
-                      <span>{course.progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-primary-600 h-2 rounded-full" 
-                        style={{ width: `${course.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">Next: {course.nextTopic}</p>
-                  <div className="mt-3 flex space-x-2">
-                    <Button size="sm" asChild>
-                      <Link to="/practice">Continue</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest learning activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockRecentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <BookOpen className="h-4 w-4 text-gray-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      Practice session in {activity.course}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Score: {activity.score}% • {activity.date}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Jump back into your learning flow</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button asChild className="h-20 flex-col space-y-2">
-              <Link to="/practice">
-                <BookOpen className="h-6 w-6" />
-                <span>Start Practice</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-20 flex-col space-y-2">
-              <Link to="/analytics">
-                <BarChart3 className="h-6 w-6" />
-                <span>View Analytics</span>
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {isLearner && (
         <Card>
           <CardHeader>
@@ -854,7 +767,7 @@ export default function Dashboard() {
                     Close Arena
                   </Button>
                 </div>
-              </div>
+            </div>
             )}
 
             {sessionError && (
