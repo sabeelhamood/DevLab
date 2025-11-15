@@ -51,7 +51,7 @@ const AdminDashboard = () => {
     setUserActivity([
       { name: 'John Doe', action: 'Completed Python course', time: '2 minutes ago', points: 50 },
       { name: 'Jane Smith', action: 'Started Data Structures', time: '5 minutes ago', points: 0 },
-      { name: 'Mike Johnson', action: 'Won competition', time: '10 minutes ago', points: 100 },
+      { name: 'Mike Johnson', action: 'Completed advanced project', time: '10 minutes ago', points: 100 },
       { name: 'Sarah Wilson', action: 'Added new question', time: '15 minutes ago', points: 25 }
     ])
   }, [])

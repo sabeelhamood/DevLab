@@ -75,13 +75,6 @@ function HomePage() {
               </p>
             </div>
             <div className={`text-center p-6 rounded-2xl shadow-lg ${theme === 'day-mode' ? 'bg-emerald-50' : 'bg-gray-700'}`}>
-              <div className="text-4xl mb-4">🏆</div>
-              <h3 className={`text-xl font-semibold mb-3 ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>Anonymous Competitions</h3>
-              <p className={theme === 'day-mode' ? 'text-gray-600' : 'text-gray-300'}>
-                Challenge peers and climb leaderboards without revealing your identity.
-              </p>
-            </div>
-            <div className={`text-center p-6 rounded-2xl shadow-lg ${theme === 'day-mode' ? 'bg-emerald-50' : 'bg-gray-700'}`}>
               <div className="text-4xl mb-4">📈</div>
               <h3 className={`text-xl font-semibold mb-3 ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>Skill-Based Progression</h3>
               <p className={theme === 'day-mode' ? 'text-gray-600' : 'text-gray-300'}>
@@ -122,13 +115,6 @@ function HomePage() {
               <p className={`mb-6 ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-300'}`}>Interactive coding and theoretical exercises.</p>
               <button className={`px-6 py-3 rounded-lg font-semibold transition-colors ${theme === 'day-mode' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg'}`}>
                 Start Practice
-              </button>
-            </div>
-            <div className={`p-8 rounded-2xl shadow-lg ${theme === 'day-mode' ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className={`text-2xl font-semibold mb-4 ${theme === 'day-mode' ? 'text-gray-900' : 'text-white'}`}>⚡ Live Competition</h3>
-              <p className={`mb-6 ${theme === 'day-mode' ? 'text-gray-600' : 'text-gray-300'}`}>Compete with other learners in real-time coding battles</p>
-              <button className={`px-6 py-3 rounded-lg font-semibold transition-colors ${theme === 'day-mode' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg'}`}>
-                Join Now
               </button>
             </div>
           </div>

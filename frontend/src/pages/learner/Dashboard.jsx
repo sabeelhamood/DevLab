@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card.jsx'
 import Button from '../../components/ui/Button.jsx'
-import { BookOpen, Trophy, BarChart3, Clock, Target, Award } from 'lucide-react'
+import { BookOpen, BarChart3, Clock, Target, Award } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 // Mock data for demonstration
@@ -34,16 +34,14 @@ const mockCourses = [
 const mockRecentActivity = [
   {
     id: '1',
-    type: 'practice',
     course: 'Python Fundamentals',
     score: 85,
     date: '2 hours ago'
   },
   {
     id: '2',
-    type: 'competition',
     course: 'JavaScript Advanced',
-    rank: 2,
+    score: 78,
     date: '1 day ago'
   }
 ]
@@ -147,9 +145,6 @@ export default function Dashboard() {
                     <Button size="sm" asChild>
                       <Link to="/practice">Continue</Link>
                     </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link to="/competition">Compete</Link>
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -168,24 +163,14 @@ export default function Dashboard() {
               {mockRecentActivity.map((activity) => (
                 <div key={activity.id} className="flex items-center space-x-3">
                   <div className="p-2 bg-gray-100 rounded-lg">
-                    {activity.type === 'practice' ? (
-                      <BookOpen className="h-4 w-4 text-gray-600" />
-                    ) : (
-                      <Trophy className="h-4 w-4 text-yellow-600" />
-                    )}
+                    <BookOpen className="h-4 w-4 text-gray-600" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
-                      {activity.type === 'practice' 
-                        ? `Practice session in ${activity.course}`
-                        : `Competition in ${activity.course}`
-                      }
+                      Practice session in {activity.course}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {activity.type === 'practice' 
-                        ? `Score: ${activity.score}%`
-                        : `Rank: ${activity.rank}`
-                      } • {activity.date}
+                      Score: {activity.score}% • {activity.date}
                     </p>
                   </div>
                 </div>
@@ -199,20 +184,14 @@ export default function Dashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Start learning or competing right away</CardDescription>
+          <CardDescription>Jump back into your learning flow</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button asChild className="h-20 flex-col space-y-2">
               <Link to="/practice">
                 <BookOpen className="h-6 w-6" />
                 <span>Start Practice</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-20 flex-col space-y-2">
-              <Link to="/competition">
-                <Trophy className="h-6 w-6" />
-                <span>Join Competition</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-20 flex-col space-y-2">

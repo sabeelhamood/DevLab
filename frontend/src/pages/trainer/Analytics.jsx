@@ -27,7 +27,6 @@ const Analytics = () => {
       averageScore: 82.3,
       totalHours: 1240,
       questionsSolved: 1250,
-      competitions: 12,
       averageTime: 45
     })
     

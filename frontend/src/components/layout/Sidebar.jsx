@@ -4,7 +4,6 @@ import { useTheme } from '../../contexts/ThemeContext.jsx'
 import { 
   Home, 
   BookOpen, 
-  Trophy, 
   BarChart3, 
   Settings, 
   Users,
@@ -17,7 +16,6 @@ const navigation = {
   learner: [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Practice', href: '/practice', icon: BookOpen },
-    { name: 'Competition', href: '/competitions', icon: Trophy },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ],
   trainer: [

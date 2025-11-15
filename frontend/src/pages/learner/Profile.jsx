@@ -48,7 +48,7 @@ const Profile = () => {
         { id: 1, title: 'First Problem Solved', description: 'Solved your first coding problem', date: '2024-01-16', icon: '🎯' },
         { id: 2, title: 'Week Streak', description: 'Maintained a 7-day practice streak', date: '2024-01-22', icon: '🔥' },
         { id: 3, title: 'Python Master', description: 'Completed 20 Python problems', date: '2024-01-25', icon: '🐍' },
-        { id: 4, title: 'Competition Winner', description: 'Won a coding competition', date: '2024-01-28', icon: '🏆' }
+        { id: 4, title: 'AI Challenge Hero', description: 'Mastered an AI coding challenge', date: '2024-01-28', icon: '🤖' }
       ]
     }))
   }, [])

@@ -70,7 +70,7 @@
  * @property {string} id
  * @property {string} learnerId
  * @property {string} courseId
- * @property {'practice'|'competition'} sessionType
+ * @property {'practice'|'ai_competition'} sessionType
  * @property {'active'|'completed'|'paused'} status
  * @property {string} startedAt
  * @property {string} [completedAt]
