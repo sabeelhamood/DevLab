@@ -3,6 +3,15 @@ import { UserProfileModel } from '../models/User.js'
 import { generateQuestions } from '../services/geminiQuestionGeneration.js'
 import { postgres, getSupabaseTables } from '../config/database.js'
 
+let fetchInstance = globalThis.fetch
+const getFetch = async () => {
+  if (!fetchInstance) {
+    const { default: nodeFetch } = await import('node-fetch')
+    fetchInstance = nodeFetch
+  }
+  return fetchInstance
+}
+
 const DEFAULT_TURN_TIMER = 600
 const tables = getSupabaseTables()
 const learnerScoresTable = postgres.quoteIdentifier(tables.learnerScores || 'learner_scores')
@@ -1032,6 +1041,64 @@ export const competitionController = {
         })
       }
 
+      const payload = req.body
+
+      const serviceApiKeys = (process.env.SERVICE_API_KEYS || '')
+        .split(',')
+        .map((key) => key.trim())
+        .filter(Boolean)
+
+      if (!serviceApiKeys.length) {
+        console.error('❌ [competitions] SERVICE_API_KEYS missing in environment variables')
+        return res.status(500).json({
+          success: false,
+          error: 'Service authentication misconfigured'
+        })
+      }
+
+      const selectedKey = serviceApiKeys[Math.floor(Math.random() * serviceApiKeys.length)]
+      const serviceId = process.env.SERVICE_API_ID || 'devlab-competitions'
+      const competitionsApiUrl = process.env.COMPETITIONS_API_URL
+
+      let upstreamStatus = null
+      let upstreamBody = null
+
+      if (!competitionsApiUrl) {
+        console.warn('⚠️ [competitions] COMPETITIONS_API_URL not set; skipping forward call')
+      } else {
+        try {
+          const fetchFn = await getFetch()
+          const forwardResponse = await fetchFn(competitionsApiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': selectedKey,
+              'x-service-id': serviceId
+            },
+            body: JSON.stringify(payload)
+          })
+
+          upstreamStatus = forwardResponse.status
+          const text = await forwardResponse.text()
+          upstreamBody = text
+
+          if (!forwardResponse.ok) {
+            const authFailure = forwardResponse.status === 401 || forwardResponse.status === 403
+            if (authFailure) {
+              console.error(
+                `❌ [competitions] Authentication failed when forwarding course completion (status ${forwardResponse.status})`
+              )
+            } else {
+              console.error(
+                `⚠️ [competitions] Upstream competitions API responded with status ${forwardResponse.status}`
+              )
+            }
+          }
+        } catch (error) {
+          console.error('❌ [competitions] Failed to forward course completion:', error.message)
+        }
+      }
+
       await ensureUserProfile(learner_id, learner_name || course_name)
 
       const { rows } = await postgres.query(
@@ -1065,7 +1132,9 @@ export const competitionController = {
         learner_id,
         course_id,
         course_name: course_name || null,
-        alreadyRecorded
+        alreadyRecorded,
+        upstreamStatus,
+        upstreamBody
       })
     } catch (error) {
       console.error('❌ [competitions] Course completion handling failed:', error)
