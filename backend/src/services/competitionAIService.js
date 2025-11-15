@@ -13,14 +13,21 @@ class CompetitionAIService {
     const prompt = buildCompetitionQuestionsPrompt(courseName)
 
     const headers = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      // 🔥 Force OPENAI model
+      'x-devlab-gpt-model': 'gpt-4.1'
     }
 
     if (apiKey) {
       headers['Authorization'] = `Bearer ${apiKey}`
     }
 
-    const body = JSON.stringify({ prompt })
+    // 🔥 Send explicit model to ensure the API knows we want OpenAI
+    const body = JSON.stringify({
+      prompt,
+      model: 'gpt-4.1'
+    })
+
     const response = await fetchFn(apiUrl, {
       method: 'POST',
       headers,
@@ -43,10 +50,11 @@ class CompetitionAIService {
     }
 
     let questionsPayload = parsed
+
     if (typeof parsed === 'string') {
       try {
         questionsPayload = JSON.parse(parsed)
-      } catch (error) {
+      } catch {
         throw new Error('DEVLAB_GPT_API returned a JSON string that could not be parsed')
       }
     }
@@ -84,5 +92,3 @@ class CompetitionAIService {
 }
 
 export const competitionAIService = new CompetitionAIService()
-
-
