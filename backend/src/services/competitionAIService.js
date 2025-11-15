@@ -39,6 +39,24 @@ const normalizeAnswerArray = (answers = []) =>
     }))
     .filter((entry) => Boolean(entry.answer && entry.answer.trim().length))
 
+const buildFallbackQuestions = (courseName = 'this course') => [
+  {
+    question_id: 'q1',
+    question: `Explain a core concept from ${courseName} and provide a short code snippet that demonstrates it.`
+  },
+  {
+    question_id: 'q2',
+    question: `Solve a mid-level algorithmic challenge related to ${courseName}. Describe your approach and write the solution code.`
+  },
+  {
+    question_id: 'q3',
+    question: `Debug or optimize a piece of code that could appear in ${courseName}. Explain what you changed and why.`
+  }
+]
+
+const fallbackAiAnswer = (courseName = 'this course', questionId) =>
+  `Placeholder AI answer for ${questionId} in ${courseName}.`
+
 class CompetitionAIService {
   async #callDevlabGPT(prompt) {
     const apiUrl = process.env.DEVLAB_GPT_API_URL || process.env.DEVLAB_GPT_API
@@ -79,15 +97,20 @@ class CompetitionAIService {
   }
 
   async generateCompetitionSetup({ courseName }) {
-    const prompt = buildCompetitionQuestionsPrompt(courseName)
-    const payload = await this.#callDevlabGPT(prompt)
-    const questions = normalizeQuestionsArray(payload?.questions || payload)
+    try {
+      const prompt = buildCompetitionQuestionsPrompt(courseName)
+      const payload = await this.#callDevlabGPT(prompt)
+      const questions = normalizeQuestionsArray(payload?.questions || payload)
 
-    if (questions.length !== 3) {
-      throw new Error('DEVLAB_GPT_API must return exactly 3 questions')
+      if (questions.length !== 3) {
+        throw new Error('DEVLAB_GPT_API must return exactly 3 questions')
+      }
+
+      return { questions }
+    } catch (error) {
+      console.warn('⚠️ Falling back to default competition questions:', error.message)
+      return { questions: buildFallbackQuestions(courseName) }
     }
-
-    return { questions }
   }
 
   async generateAIAnswerForQuestion({ courseName, question }) {
@@ -95,21 +118,26 @@ class CompetitionAIService {
       throw new Error('Question is required for AI answer generation')
     }
 
-    const prompt = buildCompetitionStartPrompt({ courseName, question })
-    const payload = await this.#callDevlabGPT(prompt)
-    const normalized = normalizeAnswerArray(
-      Array.isArray(payload?.ai_answers)
-        ? payload.ai_answers
-        : Array.isArray(payload)
-        ? payload
-        : [payload]
-    )
+    try {
+      const prompt = buildCompetitionStartPrompt({ courseName, question })
+      const payload = await this.#callDevlabGPT(prompt)
+      const normalized = normalizeAnswerArray(
+        Array.isArray(payload?.ai_answers)
+          ? payload.ai_answers
+          : Array.isArray(payload)
+          ? payload
+          : [payload]
+      )
 
-    if (!normalized.length) {
-      throw new Error('DEVLAB_GPT_API did not return an answer for the current question')
+      if (!normalized.length) {
+        throw new Error('DEVLAB_GPT_API did not return an answer for the current question')
+      }
+
+      return normalized[0]?.answer || ''
+    } catch (error) {
+      console.warn('⚠️ Falling back to default AI answer:', error.message)
+      return fallbackAiAnswer(courseName, question?.question_id)
     }
-
-    return normalized[0]?.answer || ''
   }
 
   async evaluateCompetition({ questions, aiAnswers, learnerAnswers }) {
@@ -117,28 +145,36 @@ class CompetitionAIService {
       throw new Error('Questions, AI answers, and learner answers are required for evaluation')
     }
 
-    const prompt = buildCompetitionEvaluationPrompt({
-      questions,
-      aiAnswers,
-      learnerAnswers
-    })
+    try {
+      const prompt = buildCompetitionEvaluationPrompt({
+        questions,
+        aiAnswers,
+        learnerAnswers
+      })
 
-    const payload = await this.#callDevlabGPT(prompt)
-    const winner = payload?.winner
-    const score = payload?.score
+      const payload = await this.#callDevlabGPT(prompt)
+      const winner = payload?.winner
+      const score = payload?.score
 
-    if (!winner || (winner !== 'learner' && winner !== 'ai')) {
-      throw new Error('DEVLAB_GPT_API evaluation did not return a valid winner')
-    }
+      if (!winner || (winner !== 'learner' && winner !== 'ai')) {
+        throw new Error('DEVLAB_GPT_API evaluation did not return a valid winner')
+      }
 
-    const numericScore =
-      typeof score === 'number'
-        ? Math.max(0, Math.min(100, Math.round(score)))
-        : 0
+      const numericScore =
+        typeof score === 'number'
+          ? Math.max(0, Math.min(100, Math.round(score)))
+          : 0
 
-    return {
-      winner,
-      score: numericScore
+      return {
+        winner,
+        score: numericScore
+      }
+    } catch (error) {
+      console.warn('⚠️ Falling back to default evaluation:', error.message)
+      return {
+        winner: 'ai',
+        score: 0
+      }
     }
   }
 }
