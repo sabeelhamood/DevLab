@@ -8,6 +8,12 @@ const tables = getSupabaseTables()
 const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions || 'course_completions')
 const QUESTION_DURATION_SECONDS = 10 * 60
 
+const isValidUuid = (value) =>
+  typeof value === 'string' &&
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+    value
+  )
+
 const ensureUserProfile = async (learnerId, learnerName = null) => {
   if (!learnerId) {
     throw new Error('learnerId is required to upsert user profile')
@@ -295,11 +301,19 @@ export const competitionController = {
   async recordCourseCompletion(req, res) {
     try {
       const { learner_id, learner_name, course_id, course_name } = req.body || {}
+      const learnerId = String(learner_id || '').trim()
 
-      if (!learner_id || !course_id) {
+      if (!learnerId || !course_id) {
         return res.status(400).json({
           success: false,
           error: 'learner_id and course_id are required'
+        })
+      }
+
+      if (!isValidUuid(learnerId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'learner_id must be a valid UUID'
         })
       }
 
@@ -361,7 +375,7 @@ export const competitionController = {
         }
       }
 
-      await ensureUserProfile(learner_id, learner_name || course_name)
+      await ensureUserProfile(learnerId, learner_name || course_name)
 
       const { rows } = await postgres.query(
         `
@@ -370,7 +384,7 @@ export const competitionController = {
         WHERE "learner_id" = $1 AND "course_id" = $2
         LIMIT 1
         `,
-        [learner_id, course_id]
+        [learnerId, course_id]
       )
 
       let alreadyRecorded = Boolean(rows.length)
@@ -385,7 +399,7 @@ export const competitionController = {
           )
           VALUES ($1, $2, $3, now())
           `,
-          [learner_id, course_id, course_name || null]
+          [learnerId, course_id, course_name || null]
         )
       }
 
@@ -393,7 +407,7 @@ export const competitionController = {
 
       try {
         competition = await CompetitionAIModel.findByLearnerAndCourse(
-          learner_id,
+          learnerId,
           String(course_id)
         )
       } catch (error) {
@@ -407,7 +421,7 @@ export const competitionController = {
           })
 
           competition = await CompetitionAIModel.create({
-            learnerId: learner_id,
+            learnerId,
             learnerName: learner_name || null,
             courseId: String(course_id),
             courseName: course_name,
@@ -421,7 +435,7 @@ export const competitionController = {
 
       return res.status(202).json({
         success: true,
-        learner_id,
+        learner_id: learnerId,
         course_id,
         course_name: course_name || null,
         alreadyRecorded,
