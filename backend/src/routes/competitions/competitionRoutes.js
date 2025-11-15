@@ -4,10 +4,12 @@ import { competitionController } from '../../controllers/competitionController.j
 
 const router = express.Router()
 
-const competitionAuth =
+const disableAuth =
+  process.env.DISABLE_COMPETITION_AUTH === undefined ||
+  process.env.DISABLE_COMPETITION_AUTH === '' ||
   process.env.DISABLE_COMPETITION_AUTH === 'true'
-    ? (req, _res, next) => next()
-    : authenticateToken
+
+const competitionAuth = disableAuth ? (req, _res, next) => next() : authenticateToken
 
 router.post('/course-completion', competitionController.recordCourseCompletion)
 router.post('/create', competitionController.createAICompetition)
