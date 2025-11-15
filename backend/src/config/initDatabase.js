@@ -264,6 +264,39 @@ const tableStatements = [
   },
   {
     create: `
+      CREATE TABLE IF NOT EXISTS "competitions_vs_ai" (
+        "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "learner_id" uuid NOT NULL,
+        "learner_name" text,
+        "course_id" uuid,
+        "course_name" text,
+        "learner_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "ai_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "questions" jsonb NOT NULL DEFAULT '[]'::jsonb,
+        "winner" text,
+        "score" integer,
+        "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+    indexes: [
+      `CREATE INDEX IF NOT EXISTS competitions_vs_ai_learner_id_idx ON "competitions_vs_ai" ("learner_id");`,
+      `CREATE INDEX IF NOT EXISTS competitions_vs_ai_course_id_idx ON "competitions_vs_ai" ("course_id");`,
+      `CREATE INDEX IF NOT EXISTS competitions_vs_ai_created_at_idx ON "competitions_vs_ai" ("created_at");`
+    ],
+    foreignKeys: [
+      foreignKeyStatement(
+        'competitions_vs_ai_learner_id_fkey',
+        '"competitions_vs_ai"',
+        '"learner_id"',
+        '"userProfiles"',
+        '"learner_id"',
+        'CASCADE'
+      )
+    ]
+  },
+  {
+    create: `
       CREATE TABLE IF NOT EXISTS "topics" (
         "topic_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "course_id" uuid NOT NULL,
