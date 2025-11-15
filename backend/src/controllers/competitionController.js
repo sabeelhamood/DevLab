@@ -1,10 +1,39 @@
 import { CompetitionModel } from '../models/Competition.js'
+import { UserProfileModel } from '../models/User.js'
 import { generateQuestions } from '../services/geminiQuestionGeneration.js'
 import { postgres, getSupabaseTables } from '../config/database.js'
 
 const DEFAULT_TURN_TIMER = 600
 const tables = getSupabaseTables()
 const learnerScoresTable = postgres.quoteIdentifier(tables.learnerScores || 'learner_scores')
+const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions || 'course_completions')
+
+const ensureUserProfile = async (learnerId, learnerName = null) => {
+  if (!learnerId) {
+    throw new Error('learnerId is required to upsert user profile')
+  }
+
+  const existing = await UserProfileModel.findById(learnerId)
+  if (existing) {
+    return existing
+  }
+
+  try {
+    const name =
+      typeof learnerName === 'string' && learnerName.trim().length
+        ? learnerName.trim()
+        : `Learner ${learnerId.slice(0, 8)}`
+    return await UserProfileModel.create({
+      learner_id: learnerId,
+      learner_name: name
+    })
+  } catch (error) {
+    if (error.code === '23505') {
+      return UserProfileModel.findById(learnerId)
+    }
+    throw error
+  }
+}
 
 const upsertLearnerScore = async ({ learnerId, competitionId, score }) => {
   if (!learnerId || !competitionId) {
@@ -988,6 +1017,61 @@ export const competitionController = {
       res.status(500).json({
         success: false,
         error: error.message
+      })
+    }
+  },
+
+  async recordCourseCompletion(req, res) {
+    try {
+      const { learner_id, learner_name, course_id, course_name } = req.body || {}
+
+      if (!learner_id || !course_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'learner_id and course_id are required'
+        })
+      }
+
+      await ensureUserProfile(learner_id, learner_name || course_name)
+
+      const { rows } = await postgres.query(
+        `
+        SELECT 1
+        FROM ${courseCompletionsTable}
+        WHERE "learner_id" = $1 AND "course_id" = $2
+        LIMIT 1
+        `,
+        [learner_id, course_id]
+      )
+
+      let alreadyRecorded = Boolean(rows.length)
+      if (!alreadyRecorded) {
+        await postgres.query(
+          `
+          INSERT INTO ${courseCompletionsTable} (
+            "learner_id",
+            "course_id",
+            "course_name",
+            "completed_at"
+          )
+          VALUES ($1, $2, $3, now())
+          `,
+          [learner_id, course_id, course_name || null]
+        )
+      }
+
+      return res.status(202).json({
+        success: true,
+        learner_id,
+        course_id,
+        course_name: course_name || null,
+        alreadyRecorded
+      })
+    } catch (error) {
+      console.error('❌ [competitions] Course completion handling failed:', error)
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to record course completion'
       })
     }
   }

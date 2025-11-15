@@ -34,6 +34,7 @@ const updateResultValidation = [
 router.post('/invite', authenticateToken, competitionController.createInvitation)
 router.post('/invitation/:invitationId/respond', authenticateToken, competitionController.respondToInvitation)
 router.post('/join', authenticateToken, joinCompetitionValidation, validateRequest, competitionController.joinCompetition)
+router.post('/course-completion', competitionController.recordCourseCompletion)
 // Specific routes must come before parameterized routes like /:id
 router.get('/course/:courseId', async (req, res) => {
   try {
