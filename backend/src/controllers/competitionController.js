@@ -389,6 +389,25 @@ export const competitionController = {
         )
       }
 
+      let competition = await CompetitionAIModel.findByLearnerAndCourse(
+        learner_id,
+        String(course_id)
+      )
+
+      if (!competition) {
+        const { questions } = await competitionAIService.generateCompetitionSetup({
+          courseName: course_name
+        })
+
+        competition = await CompetitionAIModel.create({
+          learnerId: learner_id,
+          learnerName: learner_name || null,
+          courseId: String(course_id),
+          courseName: course_name,
+          questions
+        })
+      }
+
       return res.status(202).json({
         success: true,
         learner_id,
@@ -396,7 +415,8 @@ export const competitionController = {
         course_name: course_name || null,
         alreadyRecorded,
         upstreamStatus,
-        upstreamBody
+        upstreamBody,
+        competition
       })
     } catch (error) {
       console.error('❌ [competitions] Course completion handling failed:', error)
