@@ -2,15 +2,9 @@ import { CompetitionModel } from '../models/Competition.js'
 import { UserProfileModel } from '../models/User.js'
 import { generateQuestions } from '../services/geminiQuestionGeneration.js'
 import { postgres, getSupabaseTables } from '../config/database.js'
-
-let fetchInstance = globalThis.fetch
-const getFetch = async () => {
-  if (!fetchInstance) {
-    const { default: nodeFetch } = await import('node-fetch')
-    fetchInstance = nodeFetch
-  }
-  return fetchInstance
-}
+import { CompetitionAIModel } from '../models/CompetitionAI.js'
+import { competitionAIService } from '../services/competitionAIService.js'
+import { getFetch } from '../utils/http.js'
 
 const DEFAULT_TURN_TIMER = 600
 const tables = getSupabaseTables()
@@ -1141,6 +1135,80 @@ export const competitionController = {
       return res.status(500).json({
         success: false,
         error: 'Failed to record course completion'
+      })
+    }
+  },
+
+  async createAICompetition(req, res) {
+    try {
+      const { learner_id, learner_name, course_id, course_name } = req.body || {}
+
+      if (!learner_id || !course_id || !course_name) {
+        return res.status(400).json({
+          success: false,
+          error: 'learner_id, course_id, and course_name are required'
+        })
+      }
+
+      const courseIdText = String(course_id)
+      const existingCompetition = await CompetitionAIModel.findByLearnerAndCourse(learner_id, courseIdText)
+      if (existingCompetition) {
+        return res.status(200).json({
+          success: true,
+          competition: existingCompetition,
+          alreadyExists: true
+        })
+      }
+
+      const questions = await competitionAIService.generateCompetitionQuestions({
+        courseName: course_name
+      })
+
+      const competition = await CompetitionAIModel.create({
+        learnerId: learner_id,
+        learnerName: learner_name || null,
+        courseId: courseIdText,
+        courseName: course_name,
+        questions
+      })
+
+      return res.status(201).json({
+        success: true,
+        competition,
+        alreadyExists: false
+      })
+    } catch (error) {
+      console.error('❌ [competitions] Failed to create AI competition:', error)
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create AI competition',
+        message: error.message
+      })
+    }
+  },
+
+  async getPendingAICompetitions(req, res) {
+    try {
+      const { learnerId } = req.params
+
+      if (!learnerId) {
+        return res.status(400).json({
+          success: false,
+          error: 'learnerId is required'
+        })
+      }
+
+      const pendingCourses = await CompetitionAIModel.getPendingCourses(learnerId)
+      return res.json({
+        success: true,
+        data: pendingCourses
+      })
+    } catch (error) {
+      console.error('❌ [competitions] Failed to fetch pending competitions:', error)
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch pending competitions',
+        message: error.message
       })
     }
   }

@@ -88,6 +88,30 @@ const resetCompetitionsTable = async (client) => {
   console.log('♻️ Dropped legacy competitions table')
 }
 
+const ensureCompetitionsVsAISchema = async (client) => {
+  try {
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'competitions_vs_ai'
+            AND column_name = 'course_id'
+        ) THEN
+          ALTER TABLE "competitions_vs_ai"
+          ALTER COLUMN "course_id" TYPE text USING "course_id"::text;
+        END IF;
+      END $$;
+    `)
+  } catch (error) {
+    if (error.code !== '42P01') {
+      console.warn('⚠️ Unable to ensure competitions_vs_ai schema:', error.message)
+    }
+  }
+}
+
 const cleanupLegacyUserProfiles = async (client) => {
   if (!(await tableExists(client, 'userProfiles'))) {
     return
@@ -268,7 +292,7 @@ const tableStatements = [
         "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "learner_id" uuid NOT NULL,
         "learner_name" text,
-        "course_id" uuid,
+        "course_id" text,
         "course_name" text,
         "learner_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
         "ai_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
@@ -399,6 +423,7 @@ const ensureSupabaseCoreTables = async () => {
     await client.query('BEGIN')
     await ensureExtension(client)
     await resetCompetitionsTable(client)
+    await ensureCompetitionsVsAISchema(client)
     await cleanupLegacyUserProfiles(client)
     await cleanupCourseCompletions(client)
     await cleanupTopics(client)

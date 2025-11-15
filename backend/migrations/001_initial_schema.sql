@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS "competitions_vs_ai" (
   "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "learner_id" uuid NOT NULL,
   "learner_name" text,
-  "course_id" uuid,
+  "course_id" text,
   "course_name" text,
   "learner_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
   "ai_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,

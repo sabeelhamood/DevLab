@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card.jsx'
 import Button from '../../components/ui/Button.jsx'
 import { BookOpen, BarChart3, Clock, Target, Award } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore.js'
+import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 
 // Mock data for demonstration
 const mockStats = {
@@ -47,6 +49,103 @@ const mockRecentActivity = [
 ]
 
 export default function Dashboard() {
+  const { user } = useAuthStore()
+  const [pendingCompetitions, setPendingCompetitions] = useState([])
+  const [pendingLoading, setPendingLoading] = useState(false)
+  const [pendingError, setPendingError] = useState(null)
+  const [creationState, setCreationState] = useState({})
+
+  useEffect(() => {
+    const learnerId = user?.id
+    if (!learnerId) {
+      setPendingCompetitions([])
+      return
+    }
+
+    let isMounted = true
+    setPendingLoading(true)
+    setPendingError(null)
+    competitionsAIAPI
+      .getPendingCompetitions(learnerId)
+      .then((data) => {
+        if (isMounted) {
+          setPendingCompetitions(data)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch pending competitions:', error)
+        if (isMounted) {
+          setPendingError(error.message || 'Unable to fetch pending competitions')
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setPendingLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
+
+  const handleEnterCompetition = async (course) => {
+    const learnerId = user?.id
+    if (!learnerId) {
+      return
+    }
+
+    const courseKey = course.course_id
+    setCreationState((prev) => ({
+      ...prev,
+      [courseKey]: { status: 'creating' }
+    }))
+
+    try {
+      const response = await competitionsAIAPI.createCompetition({
+        learner_id: learnerId,
+        learner_name: user?.name || null,
+        course_id: course.course_id,
+        course_name: course.course_name
+      })
+
+      setCreationState((prev) => ({
+        ...prev,
+        [courseKey]: {
+          status: 'ready',
+          competitionId: response?.competition?.competition_id || null
+        }
+      }))
+    } catch (error) {
+      console.error('Failed to create AI competition:', error)
+      setCreationState((prev) => ({
+        ...prev,
+        [courseKey]: {
+          status: 'error',
+          message: error.response?.data?.error || error.message || 'Unable to create competition'
+        }
+      }))
+    }
+  }
+
+  const handleStartCompetition = (courseKey, competitionId) => {
+    console.log('Start competition placeholder', { courseKey, competitionId })
+    alert('Competition experience is coming soon!')
+  }
+
+  const formatCompletedAt = (timestamp) => {
+    if (!timestamp) {
+      return 'Recently completed'
+    }
+
+    try {
+      const date = new Date(timestamp)
+      return date.toLocaleString()
+    } catch (error) {
+      return timestamp
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -203,6 +302,76 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {user?.role === 'learner' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ready for a Competition?</CardTitle>
+            <CardDescription>
+              Turn your recent course completions into an AI challenge.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pendingLoading && <p className="text-gray-500">Checking for new competitions...</p>}
+            {pendingError && (
+              <p className="text-red-600 text-sm mb-4">
+                {pendingError}
+              </p>
+            )}
+            {!pendingLoading && !pendingCompetitions.length && !pendingError && (
+              <p className="text-gray-600">
+                Complete a course to unlock a personalized AI competition.
+              </p>
+            )}
+            <div className="space-y-4">
+              {pendingCompetitions.map((course) => {
+                const courseKey = course.course_id
+                const status = creationState[courseKey]?.status || 'idle'
+                const competitionId = creationState[courseKey]?.competitionId
+
+                return (
+                  <div
+                    key={courseKey}
+                    className="border rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{course.course_name}</h4>
+                      <p className="text-sm text-gray-500">
+                        Completed on {formatCompletedAt(course.completed_at)}
+                      </p>
+                    </div>
+                    <div className="mt-4 md:mt-0 flex flex-col md:flex-row md:items-center gap-3">
+                      {status !== 'ready' && (
+                        <Button
+                          size="sm"
+                          disabled={status === 'creating'}
+                          onClick={() => handleEnterCompetition(course)}
+                        >
+                          {status === 'creating' ? 'Creating Competition...' : 'Enter Competition'}
+                        </Button>
+                      )}
+                      {status === 'ready' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStartCompetition(courseKey, competitionId)}
+                        >
+                          Start Competition
+                        </Button>
+                      )}
+                      {status === 'error' && (
+                        <p className="text-xs text-red-600 max-w-sm">
+                          {creationState[courseKey]?.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
