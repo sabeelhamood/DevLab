@@ -82,58 +82,10 @@ const dropUserProfileForeignKeys = async (client) => {
   }
 }
 
-const expectedCompetitionColumns = [
-  'competition_id',
-  'course_name',
-  'course_id',
-  'learner1_id',
-  'learner2_id',
-  'winner_id',
-  'learner1_score',
-  'learner2_score',
-  'timer',
-  'status',
-  'result',
-  'performance_learner1',
-  'performance_learner2',
-  'score',
-  'questions_answered',
-  'question_count',
-  'time_limit',
-  'questions',
-  'learner1_answers',
-  'learner2_answers',
-  'created_at',
-  'updated_at'
-]
-
-const competitionsNeedsReset = async (client) => {
-  if (!(await tableExists(client, 'competitions'))) {
-    return false
-  }
-
-  const columns = new Set(await getTableColumns(client, 'competitions'))
-  const expected = new Set(expectedCompetitionColumns)
-
-  if (columns.size !== expected.size) {
-    return true
-  }
-
-  for (const column of expected) {
-    if (!columns.has(column)) {
-      return true
-    }
-  }
-
-  return false
-}
-
 const resetCompetitionsTable = async (client) => {
-  if (await competitionsNeedsReset(client)) {
-    await dropTableIfExists(client, 'competitions')
-  }
-
+  await dropTableIfExists(client, 'competitions')
   await dropTableIfExists(client, 'competition_participation')
+  console.log('♻️ Dropped legacy competitions table')
 }
 
 const cleanupLegacyUserProfiles = async (client) => {
@@ -248,47 +200,6 @@ const cleanupCourseCompletions = async (client) => {
   await client.query(`ALTER TABLE "course_completions" ADD PRIMARY KEY ("learner_id", "course_id", "completed_at");`)
 }
 
-const cleanupCompetitions = async (client) => {
-  if (!(await tableExists(client, 'competitions'))) {
-    return
-  }
-
-  // Change course_id from text to bigint if it exists as text
-  console.log('🔄 Checking competitions.course_id type...')
-  const { rows: competitionsCheck } = await client.query(`
-    SELECT data_type 
-    FROM information_schema.columns 
-    WHERE table_schema = 'public'
-      AND table_name = 'competitions' 
-      AND column_name = 'course_id'
-  `)
-  
-  if (competitionsCheck.length > 0) {
-    const currentType = competitionsCheck[0].data_type
-    console.log(`📊 Current competitions.course_id type: ${currentType}`)
-    
-    if (currentType === 'text' || currentType === 'character varying') {
-      console.log('🔄 Converting competitions.course_id from text to bigint...')
-      await client.query(`
-        ALTER TABLE "competitions" 
-        ALTER COLUMN "course_id" TYPE bigint USING CASE 
-          WHEN "course_id" ~ '^[0-9]+$' THEN "course_id"::bigint 
-          ELSE NULL 
-        END;
-      `)
-      console.log('✅ Converted competitions.course_id to bigint')
-    } else if (currentType === 'bigint') {
-      console.log('✅ competitions.course_id is already bigint')
-    } else {
-      console.log(`⚠️ competitions.course_id is ${currentType}, not converting`)
-    }
-  } else {
-    console.log('➕ Adding competitions.course_id as bigint')
-    await client.query(`ALTER TABLE "competitions" ADD COLUMN "course_id" bigint;`)
-  }
-  console.log('✅ Cleaned up competitions table course_id column')
-}
-
 const cleanupTopics = async (client) => {
   if (!(await tableExists(client, 'topics'))) {
     return
@@ -348,66 +259,6 @@ const tableStatements = [
         '"userProfiles"',
         '"learner_id"',
         'CASCADE'
-      )
-    ]
-  },
-  {
-    create: `
-      CREATE TABLE IF NOT EXISTS "competitions" (
-        "competition_id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "course_name" text,
-        "course_id" bigint,
-        "learner1_id" uuid NOT NULL,
-        "learner2_id" uuid,
-        "winner_id" uuid,
-        "learner1_score" numeric,
-        "learner2_score" numeric,
-        "timer" integer,
-        "status" text NOT NULL DEFAULT 'pending',
-        "result" jsonb,
-        "performance_learner1" jsonb,
-        "performance_learner2" jsonb,
-        "score" integer,
-        "questions_answered" integer,
-        "question_count" integer,
-        "time_limit" integer,
-        "questions" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "learner1_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "learner2_answers" jsonb NOT NULL DEFAULT '[]'::jsonb,
-        "created_at" timestamptz NOT NULL DEFAULT now(),
-        "updated_at" timestamptz NOT NULL DEFAULT now()
-      );
-    `,
-    indexes: [
-      `CREATE INDEX IF NOT EXISTS competitions_course_id_idx ON "competitions" ("course_id");`,
-      `CREATE INDEX IF NOT EXISTS competitions_learner1_id_idx ON "competitions" ("learner1_id");`,
-      `CREATE INDEX IF NOT EXISTS competitions_learner2_id_idx ON "competitions" ("learner2_id");`,
-      `CREATE INDEX IF NOT EXISTS competitions_winner_id_idx ON "competitions" ("winner_id");`
-    ],
-    foreignKeys: [
-      foreignKeyStatement(
-        'competitions_learner1_id_fkey',
-        '"competitions"',
-        '"learner1_id"',
-        '"userProfiles"',
-        '"learner_id"',
-        'CASCADE'
-      ),
-      foreignKeyStatement(
-        'competitions_learner2_id_fkey',
-        '"competitions"',
-        '"learner2_id"',
-        '"userProfiles"',
-        '"learner_id"',
-        'SET NULL'
-      ),
-      foreignKeyStatement(
-        'competitions_winner_id_fkey',
-        '"competitions"',
-        '"winner_id"',
-        '"userProfiles"',
-        '"learner_id"',
-        'SET NULL'
       )
     ]
   },
@@ -517,7 +368,6 @@ const ensureSupabaseCoreTables = async () => {
     await resetCompetitionsTable(client)
     await cleanupLegacyUserProfiles(client)
     await cleanupCourseCompletions(client)
-    await cleanupCompetitions(client)
     await cleanupTopics(client)
     await cleanupQuestions(client)
     await dropLegacyTables(client)
