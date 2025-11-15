@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import SimpleQuestionPage from './pages/SimpleQuestionPage'
+import Dashboard from './pages/learner/Dashboard'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<SimpleQuestionPage />} />
           <Route path="/question" element={<SimpleQuestionPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Layout>
     </Router>
