@@ -140,22 +140,16 @@ export class CompetitionAIModel {
   static async getPendingCourses(learnerId) {
     const { rows } = await postgres.query(
       `
-        SELECT 
-          cc."course_id"::text AS course_id,
-          cc."course_name",
-          cc."completed_at"
-        FROM "course_completions" cc
-        LEFT JOIN ${competitionsVsAiTable} cva
-          ON cva."learner_id" = cc."learner_id"
-         AND cva."course_id" = cc."course_id"::text
-        WHERE cc."learner_id" = $1::uuid
-          AND cva."competition_id" IS NULL
-        ORDER BY cc."completed_at" DESC
+        SELECT *
+        FROM ${competitionsVsAiTable}
+        WHERE "learner_id" = $1::uuid
+          AND "status" = 'pending'
+        ORDER BY "created_at" DESC
       `,
       [learnerId]
     )
 
-    return rows || []
+    return rows.map(mapCompetitionRow) || []
   }
 
   static async findById(competitionId) {
