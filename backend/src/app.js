@@ -147,7 +147,11 @@ const corsOptions = {
     'Accept', 
     'Origin',
     'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
+    'Access-Control-Request-Headers',
+    'x-api-key',
+    'x-service-id',
+    'X-API-Key',
+    'X-Service-Id'
   ],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   optionsSuccessStatus: 200,
@@ -195,7 +199,10 @@ app.options('*', (req, res) => {
   if (!origin || allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers, x-api-key, x-service-id, X-API-Key, X-Service-Id'
+    );
     res.header('Access-Control-Allow-Credentials', 'true');
     res.status(200).end();
   } else {
