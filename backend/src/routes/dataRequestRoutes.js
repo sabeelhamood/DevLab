@@ -91,31 +91,71 @@ const handlersByService = {
   'course-builder': courseBuilderHandler
 }
 
-router.post('/data-request', async (req, res) => {
+// Accept raw text body specifically for this endpoint to comply with external microservices contract
+router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => {
   try {
-    const { requester_service, payload } = req.body || {}
-
-    if (!requester_service || !payload) {
+    // Step 1: Parse entire body as stringified JSON
+    let parsed
+    try {
+      const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
+      parsed = JSON.parse(rawBody)
+    } catch (parseError) {
       return res
         .status(400)
-        .json({ success: false, error: 'Missing requester_service or payload' })
+        .type('application/json')
+        .send(JSON.stringify({ error: 'Invalid JSON: request body must be a stringified JSON object' }))
+    }
+
+    // Step 2: Validate required structure
+    const { requester_service, payload, response } = parsed || {}
+    const responseObject = typeof response === 'object' && response !== null ? response : { answer: '' }
+    if (
+      typeof requester_service !== 'string' ||
+      typeof payload !== 'object' ||
+      payload === null ||
+      typeof responseObject !== 'object' ||
+      !Object.prototype.hasOwnProperty.call(responseObject, 'answer')
+    ) {
+      return res
+        .status(400)
+        .type('application/json')
+        .send(
+          JSON.stringify({
+            error:
+              'Missing required fields: requester_service (string), payload (object), response (object with "answer")'
+          })
+        )
     }
 
     const handler = handlersByService[requester_service]
 
     if (!handler) {
-      return res.status(400).json({ success: false, error: 'Unknown requester_service' })
+      // Preserve original object and place error in response.answer
+      parsed.response = responseObject
+      parsed.response.answer = JSON.stringify({ success: false, error: 'Unknown requester_service' })
+      return res.status(400).type('application/json').send(JSON.stringify(parsed))
     }
 
+    // Step 3: Execute handler and place result into response.answer
     const { statusCode, payload: responsePayload } = await handler(payload)
-    return res.status(statusCode).json(responsePayload)
+    parsed.response = responseObject
+    parsed.response.answer = JSON.stringify(responsePayload)
+
+    // Step 4: Return the full object as stringified JSON
+    return res.status(statusCode).type('application/json').send(JSON.stringify(parsed))
   } catch (error) {
     console.error('Data request gateway error:', error)
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to process data request',
-      details: error.message
-    })
+    // Best-effort: return structured error while preserving top-level shape when possible
+    try {
+      const fallback = {
+        requester_service: undefined,
+        payload: undefined,
+        response: { answer: JSON.stringify({ success: false, error: 'Failed to process data request', details: error.message }) }
+      }
+      return res.status(500).type('application/json').send(JSON.stringify(fallback))
+    } catch {
+      return res.status(500).type('application/json').send(JSON.stringify({ error: 'Internal Server Error' }))
+    }
   }
 })
 
