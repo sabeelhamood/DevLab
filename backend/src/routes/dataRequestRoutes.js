@@ -4,6 +4,10 @@ import { contentStudioHandlers } from './contentStudio/contentStudioRoutes.js'
 import { assessmentController } from '../controllers/external/assessmentController.js'
 import { learningAnalyticsController } from '../controllers/external/learningAnalyticsController.js'
 import { courseBuilderController } from '../controllers/external/courseBuilderController.js'
+import {
+  createRequestId,
+  saveTempQuestions
+} from '../services/tempQuestionStore.js'
 
 const router = express.Router()
 
@@ -139,7 +143,54 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
     // Step 3: Execute handler and place result into response.answer
     const { statusCode, payload: responsePayload } = await handler(payload)
     parsed.response = responseObject
-    parsed.response.answer = JSON.stringify(responsePayload)
+    
+    // If assessment theoretical questions were requested, save temporarily and wrap response
+    if (requester_service === 'assessment' && payload?.action === 'theoretical') {
+      const extractQuestions = (data) => {
+        if (!data) return []
+        if (Array.isArray(data)) return data
+        if (Array.isArray(data.questions)) return data.questions
+        if (data.data && Array.isArray(data.data.questions)) return data.data.questions
+        return []
+      }
+      
+      const questions = extractQuestions(responsePayload)
+      const requestId = createRequestId()
+      const metadata = {
+        generated_at: new Date().toISOString(),
+        topic_id: payload?.topic_id,
+        topic_name: payload?.topic_name,
+        amount: payload?.amount,
+        humanLanguage: payload?.humanLanguage,
+        skills: Array.isArray(payload?.skills) ? payload.skills : [],
+        source: 'assessment_service'
+      }
+      
+      try {
+        await saveTempQuestions({
+          requestId,
+          requesterService: 'content-studio',
+          action: 'theoretical',
+          questions,
+          metadata
+        })
+      } catch (e) {
+        metadata.warning = `Temporary save failed: ${e?.message || 'unknown error'}`
+      }
+      
+      const wrappedAnswer = {
+        success: true,
+        request_id: requestId,
+        data: {
+          questions,
+          metadata
+        }
+      }
+      parsed.response.answer = JSON.stringify(wrappedAnswer)
+    } else {
+      // Default behavior for other services/actions
+      parsed.response.answer = JSON.stringify(responsePayload)
+    }
 
     // Step 4: Return the full object as stringified JSON
     return res.status(statusCode).type('application/json').send(JSON.stringify(parsed))
