@@ -4,6 +4,7 @@ import { contentStudioHandlers } from './contentStudio/contentStudioRoutes.js'
 import { assessmentController } from '../controllers/external/assessmentController.js'
 import { learningAnalyticsController } from '../controllers/external/learningAnalyticsController.js'
 import { courseBuilderController } from '../controllers/external/courseBuilderController.js'
+import { competitionController } from '../controllers/competitionController.js'
 import {
   createRequestId,
   saveTempQuestions
@@ -85,7 +86,8 @@ const analyticsHandler = async (payload) => {
 }
 
 const courseBuilderHandler = async (payload) => {
-  return executeHandler(courseBuilderController.handleCourseCompletion, { body: payload })
+  // Forward EXACTLY to the existing competitions course-completion handler
+  return executeHandler(competitionController.recordCourseCompletion, { body: payload })
 }
 
 const handlersByService = {
@@ -187,6 +189,9 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
         }
       }
       parsed.response.answer = JSON.stringify(wrappedAnswer)
+    } else if (requester_service === 'course-builder') {
+      // For Course Builder, do not populate response.answer; return wrapper as-is
+      parsed.response.answer = typeof parsed.response.answer === 'string' ? parsed.response.answer : ''
     } else {
       // Default behavior for other services/actions
       parsed.response.answer = JSON.stringify(responsePayload)
