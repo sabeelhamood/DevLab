@@ -64,6 +64,8 @@ const assessmentHandler = async (payload) => {
       return executeHandler(assessmentController.getTheoreticalQuestions, { body: payload })
     case 'code':
       return executeHandler(assessmentController.sendCodeQuestions, { body: payload })
+    case 'coding':
+      return executeHandler(assessmentController.sendCodingQuestionsWithOpenAI, { body: payload })
     case 'update-question-status': {
       const questionId = payload?.questionId || payload?.question_id
       if (!questionId) {
@@ -146,8 +148,12 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
     const { statusCode, payload: responsePayload } = await handler(payload)
     parsed.response = responseObject
     
-    // If assessment theoretical questions were requested, save temporarily and wrap response
-    if (requester_service === 'assessment' && payload?.action === 'theoretical') {
+    // If assessment coding questions were requested, wrap component HTML in response.answer
+    if (requester_service === 'assessment' && payload?.action === 'coding') {
+      const componentHtml = responsePayload?.componentHtml || ''
+      // The response.answer should contain the component HTML that will be sent back to assessment
+      parsed.response.answer = componentHtml
+    } else if (requester_service === 'assessment' && payload?.action === 'theoretical') {
       const extractQuestions = (data) => {
         if (!data) return []
         if (Array.isArray(data)) return data

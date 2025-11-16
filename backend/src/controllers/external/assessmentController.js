@@ -1,4 +1,5 @@
 import { geminiService } from '../../services/gemini.js'
+import { openAIService } from '../../services/openAIService.js'
 import {
   createRequestId,
   saveTempQuestions,
@@ -6,6 +7,7 @@ import {
 } from '../../services/tempQuestionStore.js'
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
+import { renderAssessmentCodeQuestions } from '../../utils/assessmentComponentRenderer.js'
 
 const DIFFICULTY_SEQUENCE = [
   'basic',
@@ -220,6 +222,81 @@ export const assessmentController = {
       })
     } catch (error) {
       console.error('Assessment sendCodeQuestions error:', error)
+      res.status(500).json({ success: false, error: error.message })
+    }
+  },
+
+  async sendCodingQuestionsWithOpenAI(req, res) {
+    try {
+      const {
+        amount = 1,
+        difficulty = 'medium',
+        humanLanguage = 'en',
+        skills = [],
+        programming_language
+      } = req.body?.payload || req.body || {}
+
+      if (!programming_language) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required field: programming_language'
+        })
+      }
+
+      const questionCount = Number(amount) > 0 ? Number(amount) : 1
+      const normalizedSkills = Array.isArray(skills) ? skills : []
+
+      // Generate questions using OpenAI
+      const generated = await openAIService.generateAssessmentCoding(
+        questionCount,
+        difficulty,
+        humanLanguage,
+        normalizedSkills,
+        programming_language
+      )
+
+      const questionArray = Array.isArray(generated) ? generated : generated ? [generated] : []
+
+      if (!questionArray.length) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate coding questions using OpenAI'
+        })
+      }
+
+      // Format questions for response
+      const formattedQuestions = questionArray.map((item, index) => ({
+        id: `assessment_coding_${index + 1}`,
+        title: item.title || `Coding Question ${index + 1}`,
+        description: item.description || '',
+        difficulty: item.difficulty || difficulty,
+        programming_language: item.language || programming_language,
+        skills: item.skills || normalizedSkills,
+        testCases: (item.testCases || []).map((tc) => ({
+          input: tc.input,
+          expected_output: tc.expected_output || tc.output
+        }))
+      }))
+
+      // Render the component as HTML
+      const componentHtml = renderAssessmentCodeQuestions(formattedQuestions)
+
+      // Return questions in the format expected by the ASSESSMENT service
+      // The response should be wrapped in { response: { answers: "<component>" } }
+      return res.json({
+        success: true,
+        questions: formattedQuestions,
+        componentHtml,
+        metadata: {
+          amount: questionCount,
+          difficulty,
+          humanLanguage,
+          programming_language,
+          skills: normalizedSkills
+        }
+      })
+    } catch (error) {
+      console.error('Assessment sendCodingQuestionsWithOpenAI error:', error)
       res.status(500).json({ success: false, error: error.message })
     }
   },

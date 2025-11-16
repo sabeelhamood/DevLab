@@ -22,6 +22,9 @@ const getEnvironmentConfig = () => {
       gemini: {
         apiKey: process.env['GEMINI_API_KEY'] || '',
       },
+      openai: {
+        apiKey: process.env['OPENAI_API_KEY'] || '',
+      },
       sandbox: {
         apiKey: process.env['SANDBOX_API_KEY'] || '',
         url: process.env['SANDBOX_API_URL'] || '',
