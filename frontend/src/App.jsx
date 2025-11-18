@@ -4,6 +4,7 @@ import SimpleQuestionPage from './pages/SimpleQuestionPage'
 import Dashboard from './pages/learner/Dashboard'
 import CompetitionIntro from './pages/competitions/CompetitionIntro.jsx'
 import CompetitionPlay from './pages/competitions/CompetitionPlay.jsx'
+import AssessmentPreview from './pages/AssessmentPreview.jsx'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/competitions/:competitionId/intro" element={<CompetitionIntro />} />
           <Route path="/competitions/:competitionId/play" element={<CompetitionPlay />} />
+          <Route path="/assessment-preview" element={<AssessmentPreview />} />
         </Routes>
       </Layout>
     </Router>

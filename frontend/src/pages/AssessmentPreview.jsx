@@ -1,67 +1,90 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
-const SAMPLE_PAYLOAD = {
-  requester_service: 'assessment',
-  payload: {
-    action: 'code',
-    topic_name: 'Preview Topic',
-    programming_language: 'javascript',
-    number_of_questions: 1
-  }
-}
-
 function AssessmentPreview() {
+  const [amount, setAmount] = useState(2)
+  const [difficulty, setDifficulty] = useState('medium')
+  const [programmingLanguage, setProgrammingLanguage] = useState('javascript')
+  const [humanLanguage, setHumanLanguage] = useState('en')
+  const [skillsInput, setSkillsInput] = useState('loops,array-methods')
+
   const [htmlPreview, setHtmlPreview] = useState('')
-  const [presentationJson, setPresentationJson] = useState('')
-  const [rawQuestionJson, setRawQuestionJson] = useState('')
+  const [requestJson, setRequestJson] = useState('')
+  const [responseJson, setResponseJson] = useState('')
   const [customHtmlInput, setCustomHtmlInput] = useState('')
-  const [statusMessage, setStatusMessage] = useState('')
+  const [statusMessage, setStatusMessage] = useState('Click “Generate Live Preview” to fetch real OpenAI questions.')
   const [loading, setLoading] = useState(false)
 
-  const handleLoadSample = async () => {
-    setLoading(true)
-    setStatusMessage('Requesting assessment preview sample…')
-    try {
-      const response = await apiClient.post('/data-request', SAMPLE_PAYLOAD)
-      const question =
-        response?.data?.questions?.[0] ||
-        response?.data?.data?.questions?.[0] ||
-        null
+  const requestBody = useMemo(() => {
+    const skills = skillsInput
+      .split(',')
+      .map((skill) => skill.trim())
+      .filter(Boolean)
 
-      if (!question) {
-        setStatusMessage('Sample request completed but no question was returned.')
+    return {
+      requester_service: 'assessment',
+      action: 'coding',
+      payload: {
+        action: 'coding',
+        amount: Number(amount) > 0 ? Number(amount) : 1,
+        difficulty: difficulty || 'medium',
+        humanLanguage: humanLanguage || 'en',
+        programming_language: programmingLanguage || 'javascript',
+        skills
+      },
+      response: {
+        answer: ''
+      }
+    }
+  }, [amount, difficulty, humanLanguage, programmingLanguage, skillsInput])
+
+  useEffect(() => {
+    setRequestJson(JSON.stringify(requestBody, null, 2))
+  }, [requestBody])
+
+  const handleGeneratePreview = useCallback(async () => {
+    setLoading(true)
+    setStatusMessage('Contacting Assessment gateway…')
+    try {
+      const payloadString = JSON.stringify(requestBody)
+      const response = await apiClient.post(
+        '/data-request',
+        payloadString,
+        {
+          headers: {
+            'Content-Type': 'text/plain'
+          }
+        }
+      )
+
+      setResponseJson(JSON.stringify(response, null, 2))
+
+      const html = response?.response?.answer || ''
+      if (!html) {
+        setStatusMessage('Request succeeded but no HTML was returned.')
         setHtmlPreview('')
-        setPresentationJson('')
-        setRawQuestionJson(JSON.stringify(response, null, 2))
-        setLoading(false)
         return
       }
 
-      setHtmlPreview(question.renderedQuestion || '')
-      setPresentationJson(
-        JSON.stringify(question.presentation || {}, null, 2)
-      )
-      setRawQuestionJson(JSON.stringify(question, null, 2))
-      setStatusMessage('Sample assessment question loaded.')
+      setHtmlPreview(html)
+      setStatusMessage('Live preview loaded from OpenAI-generated questions.')
     } catch (error) {
-      console.error('Assessment preview sample failed:', error)
-      setStatusMessage(
-        `Failed to load sample question: ${error?.message || 'Unknown error'}`
-      )
+      console.error('Assessment preview generation failed:', error)
+      const message =
+        error?.response?.data?.error ||
+        error?.message ||
+        'Unknown error'
+      setStatusMessage(`Failed to render preview: ${message}`)
+      setHtmlPreview('')
+      setResponseJson(JSON.stringify(error?.response?.data || {}, null, 2))
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    handleLoadSample()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [requestBody])
 
   const handleApplyCustomHtml = () => {
     setHtmlPreview(customHtmlInput)
-    setStatusMessage('Custom HTML applied.')
+    setStatusMessage('Custom HTML applied locally.')
   }
 
   return (
@@ -87,13 +110,64 @@ function AssessmentPreview() {
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+                Amount
+                <input
+                  type="number"
+                  min="1"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                />
+              </label>
+              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+                Difficulty
+                <select
+                  value={difficulty}
+                  onChange={(event) => setDifficulty(event.target.value)}
+                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                >
+                  <option value="easy">easy</option>
+                  <option value="medium">medium</option>
+                  <option value="hard">hard</option>
+                  <option value="advanced">advanced</option>
+                </select>
+              </label>
+              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+                Programming Language
+                <input
+                  value={programmingLanguage}
+                  onChange={(event) => setProgrammingLanguage(event.target.value)}
+                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                />
+              </label>
+              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+                Human Language
+                <input
+                  value={humanLanguage}
+                  onChange={(event) => setHumanLanguage(event.target.value)}
+                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                />
+              </label>
+            </div>
+
+            <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              Skills (comma separated)
+              <input
+                value={skillsInput}
+                onChange={(event) => setSkillsInput(event.target.value)}
+                className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+              />
+            </label>
+
             <div className="flex gap-3 flex-wrap">
               <button
-                onClick={handleLoadSample}
+                onClick={handleGeneratePreview}
                 disabled={loading}
                 className="rounded-md bg-emerald-500/90 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
               >
-                {loading ? 'Loading…' : 'Load Sample Question'}
+                {loading ? 'Generating…' : 'Generate Live Preview'}
               </button>
               <button
                 onClick={handleApplyCustomHtml}
@@ -119,23 +193,22 @@ function AssessmentPreview() {
 
           <div className="space-y-3">
             <label className="text-sm font-medium text-slate-300">
-              Presentation JSON
+              Request Payload (sent to /api/data-request)
             </label>
             <textarea
-              value={presentationJson}
+              value={requestJson}
               readOnly
-              placeholder="Presentation metadata will appear here after loading a sample."
-              rows={16}
+              rows={12}
               className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
             />
 
             <label className="text-sm font-medium text-slate-300">
-              Raw Question JSON
+              Raw Gateway Response
             </label>
             <textarea
-              value={rawQuestionJson}
+              value={responseJson}
               readOnly
-              placeholder="Full question payload for debugging."
+              placeholder="Response from gateway will appear here after fetching."
               rows={12}
               className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
             />
