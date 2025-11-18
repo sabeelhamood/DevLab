@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
 function AssessmentPreview() {
@@ -14,6 +14,7 @@ function AssessmentPreview() {
   const [customHtmlInput, setCustomHtmlInput] = useState('')
   const [statusMessage, setStatusMessage] = useState('Click “Generate Live Preview” to fetch real OpenAI questions.')
   const [loading, setLoading] = useState(false)
+  const previewRef = useRef(null)
 
   const requestBody = useMemo(() => {
     const skills = skillsInput
@@ -86,6 +87,41 @@ function AssessmentPreview() {
     setHtmlPreview(customHtmlInput)
     setStatusMessage('Custom HTML applied locally.')
   }
+
+  useEffect(() => {
+    const apiBase =
+      import.meta.env.VITE_API_URL ||
+      (import.meta.env.VERCEL_URL ? `https://${import.meta.env.VERCEL_URL}` : '') ||
+      window.__DEVLAB_API_BASE__
+    if (apiBase) {
+      window.__DEVLAB_API_BASE__ = apiBase
+    }
+  }, [])
+
+  useEffect(() => {
+    const container = previewRef.current
+    if (!container) return
+    container.innerHTML = ''
+    if (!htmlPreview) return
+
+    const template = document.createElement('template')
+    template.innerHTML = htmlPreview
+
+    const injectNode = (node) => {
+      if (node.nodeName === 'SCRIPT') {
+        const script = document.createElement('script')
+        Array.from(node.attributes || []).forEach((attr) => {
+          script.setAttribute(attr.name, attr.value)
+        })
+        script.textContent = node.textContent
+        container.appendChild(script)
+      } else {
+        container.appendChild(node.cloneNode(true))
+      }
+    }
+
+    Array.from(template.content.childNodes).forEach(injectNode)
+  }, [htmlPreview])
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4">
@@ -226,10 +262,7 @@ function AssessmentPreview() {
               </span>
             </div>
             {htmlPreview ? (
-              <div
-                className="preview-container prose max-w-none text-slate-200"
-                dangerouslySetInnerHTML={{ __html: htmlPreview }}
-              />
+              <div ref={previewRef} className="preview-container prose max-w-none text-slate-200" />
             ) : (
               <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/70 p-8 text-center text-sm text-slate-500">
                 No preview loaded yet. Click &ldquo;Load Sample Question&rdquo;
