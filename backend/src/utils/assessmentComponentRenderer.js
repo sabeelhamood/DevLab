@@ -26,7 +26,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
   }
 
   const questionsHtml = questions.map((question, index) => {
-    const difficulty = question.difficulty || 'medium'
+    const difficulty = 'medium'
     const difficultyClass = 
       difficulty === 'easy' || difficulty === 'basic' ? 'difficulty-easy' :
       difficulty === 'medium' || difficulty === 'intermediate' ? 'difficulty-medium' :
@@ -105,21 +105,19 @@ export function renderAssessmentCodeQuestions(questions = []) {
                     <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                       ${escapeHtml(question.programming_language || 'N/A')}
                     </span>
-                    ${question.difficulty ? `
-                      <span class="${difficultyClass}" style="
-                        font-size: 12px;
-                        padding: 4px 12px;
-                        border-radius: 9999px;
-                        font-weight: 600;
-                        letter-spacing: 0.05em;
-                        ${
-                          difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
-                          difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
-                          'background: #fee2e2; color: #991b1b;'
-                        }">
-                        ${escapeHtml(question.difficulty)}
-                      </span>
-                    ` : ''}
+                    <span class="${difficultyClass}" style="
+                      font-size: 12px;
+                      padding: 4px 12px;
+                      border-radius: 9999px;
+                      font-weight: 600;
+                      letter-spacing: 0.05em;
+                      ${
+                        difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
+                        difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
+                        'background: #fee2e2; color: #991b1b;'
+                      }">
+                      ${escapeHtml(difficulty)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -152,6 +150,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
     `
   }).join('')
 
+  const serviceHeadersScript = renderServiceHeadersScript()
   const judge0BootstrapScript = renderJudge0Bootstrap(questions)
 
   return `
@@ -186,6 +185,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
       </div>
     </div>
     ${renderQuestionMetaScript(questions)}
+    ${serviceHeadersScript}
     ${judge0BootstrapScript}
     ${renderStepperBootstrap()}
   `
@@ -364,6 +364,8 @@ function renderJudge0Bootstrap(questions) {
         const scriptEl = document.currentScript;
         const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
         const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
+        const attrServiceKey = scriptEl ? scriptEl.getAttribute('data-service-key') : '';
+        const attrServiceId = scriptEl ? scriptEl.getAttribute('data-service-id') : '';
 
         const buildUrl = (path) => {
           if (!path) return '';
@@ -408,7 +410,14 @@ function renderJudge0Bootstrap(questions) {
                 return { ...globalHeaders };
               }
             }
-            return {};
+            const headers = {};
+            if (attrServiceKey) {
+              headers['x-api-key'] = attrServiceKey;
+            }
+            if (attrServiceId) {
+              headers['x-service-id'] = attrServiceId;
+            }
+            return headers;
           })();
 
           const response = await fetch(endpoint, {
@@ -662,9 +671,59 @@ function renderJudge0Bootstrap(questions) {
     })();
   `
 
+  const attrs = [
+    `data-api-base="${escapeHtml(baseFromEnv)}"`,
+    `data-service-key="${escapeHtml(getDefaultServiceApiKey())}"`,
+    `data-service-id="${escapeHtml(getDefaultServiceId())}"`
+  ].join(' ')
+
   return `
-    <script data-api-base="${escapeHtml(baseFromEnv)}">
+    <script ${attrs}>
 ${scriptBody}
+    </script>
+  `
+}
+
+function getDefaultServiceApiKey() {
+  if (process.env['SERVICE_API_KEY']) {
+    return process.env['SERVICE_API_KEY']
+  }
+  const raw = process.env['SERVICE_API_KEYS'] || ''
+  const tokens = raw
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean)
+  return tokens.length ? tokens[0] : ''
+}
+
+function getDefaultServiceId() {
+  return process.env['SERVICE_ID'] || process.env['SERVICE_API_ID'] || 'assessment-service'
+}
+
+function renderServiceHeadersScript() {
+  const serviceKey = getDefaultServiceApiKey()
+  const serviceId = getDefaultServiceId()
+  if (!serviceKey && !serviceId) {
+    return ''
+  }
+
+  const payload = serializeJsonForScript({
+    ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
+    ...(serviceId ? { 'x-service-id': serviceId } : {})
+  })
+
+  return `
+    <script>
+      (function () {
+        try {
+          var existing = window.__DEVLAB_SERVICE_HEADERS || {};
+          var provided = ${payload};
+          window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
+        } catch (err) {
+          console.error('Failed to initialize service headers', err);
+          window.__DEVLAB_SERVICE_HEADERS = ${payload};
+        }
+      })();
     </script>
   `
 }
