@@ -7,7 +7,7 @@ import {
 } from '../../services/tempQuestionStore.js'
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
-import { renderAssessmentCodeQuestions } from '../../utils/assessmentComponentRenderer.js'
+import { renderAssessmentCodeQuestions, saveAssessmentCodeQuestions } from '../../utils/assessmentComponentRenderer.js'
 
 const DIFFICULTY_SEQUENCE = [
   'basic',
@@ -233,7 +233,9 @@ export const assessmentController = {
         difficulty = 'medium',
         humanLanguage = 'en',
         skills = [],
-        programming_language
+        programming_language,
+        assessment_id,
+        assessmentId
       } = req.body?.payload || req.body || {}
 
       if (!programming_language) {
@@ -245,6 +247,7 @@ export const assessmentController = {
 
       const questionCount = Number(amount) > 0 ? Number(amount) : 1
       const normalizedSkills = Array.isArray(skills) ? skills : []
+      const assessmentIdValue = assessment_id || assessmentId
 
       // Generate questions using OpenAI
       const generated = await openAIService.generateAssessmentCoding(
@@ -294,6 +297,18 @@ export const assessmentController = {
           }
         }
       })
+
+      // Save questions to Supabase (without answers)
+      if (assessmentIdValue) {
+        try {
+          await saveAssessmentCodeQuestions(formattedQuestions, assessmentIdValue)
+        } catch (saveError) {
+          console.error('Error saving questions to Supabase:', saveError)
+          // Continue even if save fails
+        }
+      } else {
+        console.warn('No assessmentId provided, questions not saved to Supabase')
+      }
 
       // Render the component as HTML
       const componentHtml = renderAssessmentCodeQuestions(formattedQuestions)
@@ -403,6 +418,42 @@ export const assessmentController = {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to grade assessment solutions'
+      })
+    }
+  },
+
+  async deleteCodeQuestions(req, res) {
+    try {
+      const { assessmentId } = req.params
+
+      if (!assessmentId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required parameter: assessmentId'
+        })
+      }
+
+      // Import postgres here to avoid circular dependencies
+      const { postgres } = await import('../../config/database.js')
+
+      // Delete questions from Supabase
+      const result = await postgres.query(
+        `DELETE FROM "assessment_codeQuestions" WHERE "assessment_id" = $1`,
+        [assessmentId]
+      )
+
+      console.log(`[deleteCodeQuestions] Deleted ${result.rowCount} questions for assessment ${assessmentId}`)
+
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.rowCount} question(s) for assessment ${assessmentId}`,
+        deletedCount: result.rowCount
+      })
+    } catch (error) {
+      console.error('Assessment deleteCodeQuestions error:', error)
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to delete code questions'
       })
     }
   }

@@ -2,12 +2,74 @@
  * Renders AssessmentCodeQuestions component as HTML string
  * This generates HTML that matches the React component structure
  */
+import { postgres } from '../config/database.js'
+
 const PUBLIC_API_BASE_URL =
   process.env['ASSESSMENT_PUBLIC_API_BASE_URL'] ||
   process.env['PUBLIC_BACKEND_URL'] ||
   process.env['PUBLIC_API_URL'] ||
   process.env['API_BASE_URL'] ||
   ''
+
+/**
+ * Saves generated coding questions to Supabase
+ * @param {Array} questions - Array of question objects
+ * @param {string} assessmentId - Assessment identifier
+ * @returns {Promise<Array>} Array of inserted question IDs
+ */
+export async function saveAssessmentCodeQuestions(questions = [], assessmentId) {
+  if (!questions || questions.length === 0) {
+    console.warn('[saveAssessmentCodeQuestions] No questions provided to save')
+    return []
+  }
+
+  if (!assessmentId) {
+    console.warn('[saveAssessmentCodeQuestions] No assessmentId provided, skipping save')
+    return []
+  }
+
+  try {
+    const insertPromises = questions.map(async (question) => {
+      // Extract question text (description or title)
+      const questionText = question.description || question.title || question.question || ''
+      
+      // Extract test cases (without answers)
+      const testCases = Array.isArray(question.testCases) 
+        ? question.testCases.map(tc => ({
+            input: tc.input || '',
+            expected_output: tc.expected_output || tc.output || ''
+          }))
+        : Array.isArray(question.test_cases)
+          ? question.test_cases.map(tc => ({
+              input: tc.input || '',
+              expected_output: tc.expected_output || tc.output || ''
+            }))
+          : []
+
+      // Extract skills array
+      const skills = Array.isArray(question.skills) ? question.skills : []
+
+      // Insert into Supabase
+      const { rows } = await postgres.query(
+        `INSERT INTO "assessment_codeQuestions" 
+         ("assessment_id", "question", "testCases", "skills", "createdAt")
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING "id"`,
+        [assessmentId, questionText, JSON.stringify(testCases), JSON.stringify(skills)]
+      )
+
+      return rows[0]?.id
+    })
+
+    const insertedIds = await Promise.all(insertPromises)
+    console.log(`[saveAssessmentCodeQuestions] Successfully saved ${insertedIds.length} questions for assessment ${assessmentId}`)
+    return insertedIds.filter(Boolean)
+  } catch (error) {
+    console.error('[saveAssessmentCodeQuestions] Error saving questions to Supabase:', error)
+    // Don't throw - allow the request to continue even if saving fails
+    return []
+  }
+}
 
 export function renderAssessmentCodeQuestions(questions = []) {
   if (!questions || questions.length === 0) {

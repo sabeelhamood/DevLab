@@ -430,6 +430,21 @@ const tempQuestionsStatements = [
   `CREATE UNIQUE INDEX IF NOT EXISTS temp_questions_request_id_idx ON "temp_questions" ("request_id");`
 ]
 
+const assessmentCodeQuestionsStatements = [
+  `
+  CREATE TABLE IF NOT EXISTS "assessment_codeQuestions" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    "assessment_id" text NOT NULL,
+    "question" text NOT NULL,
+    "testCases" jsonb NOT NULL DEFAULT '[]'::jsonb,
+    "skills" jsonb NOT NULL DEFAULT '[]'::jsonb,
+    "createdAt" timestamptz NOT NULL DEFAULT now()
+  );
+  `,
+  `CREATE INDEX IF NOT EXISTS assessment_code_questions_assessment_id_idx ON "assessment_codeQuestions" ("assessment_id");`,
+  `CREATE INDEX IF NOT EXISTS assessment_code_questions_created_at_idx ON "assessment_codeQuestions" ("createdAt");`
+]
+
 const ensureSupabaseCoreTables = async () => {
   const client = await postgres.getClient()
 
@@ -461,6 +476,10 @@ const ensureSupabaseCoreTables = async () => {
     }
 
     for (const statement of tempQuestionsStatements) {
+      await client.query(statement)
+    }
+
+    for (const statement of assessmentCodeQuestionsStatements) {
       await client.query(statement)
     }
 
