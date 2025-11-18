@@ -87,30 +87,36 @@ export function renderAssessmentCodeQuestions(questions = []) {
 
     return `
       <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
-        <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; align-items: flex-start;">
-          <div class="question-card" style="background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08); padding: 1.75rem;">
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem;">
-              <div style="display: flex; align-items: center; gap: 0.85rem;">
-                <div style="padding: 0.65rem; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 0.75rem;">
+        <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">
+          <div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
                     <polyline points="16 18 22 12 16 6"></polyline>
                     <polyline points="8 6 2 12 8 18"></polyline>
                   </svg>
                 </div>
                 <div>
-                  <h3 style="font-size: 1.4rem; font-weight: 700; color: #0f172a; margin: 0;">
+                  <h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">
                     ${escapeHtml(question.title || `Question ${index + 1}`)}
                   </h3>
-                  <div style="display: flex; align-items: center; gap: 0.85rem; margin-top: 0.4rem; font-size: 0.9rem; color: #475569;">
-                    <span style="font-weight: 600;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">
+                    <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                       ${escapeHtml(question.programming_language || 'N/A')}
                     </span>
                     ${question.difficulty ? `
-                      <span class="${difficultyClass}" style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; ${
-                        difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
-                        difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
-                        'background: #fee2e2; color: #991b1b;'
-                      }">
+                      <span class="${difficultyClass}" style="
+                        font-size: 12px;
+                        padding: 4px 12px;
+                        border-radius: 9999px;
+                        font-weight: 600;
+                        letter-spacing: 0.05em;
+                        ${
+                          difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
+                          difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
+                          'background: #fee2e2; color: #991b1b;'
+                        }">
                         ${escapeHtml(question.difficulty)}
                       </span>
                     ` : ''}
@@ -119,8 +125,8 @@ export function renderAssessmentCodeQuestions(questions = []) {
               </div>
             </div>
 
-            <div style="margin-bottom: 1.5rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div style="margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
@@ -128,10 +134,10 @@ export function renderAssessmentCodeQuestions(questions = []) {
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                <span style="font-size: 0.9rem; font-weight: 600; color: #0f172a;">Description</span>
+                <span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>
               </div>
-              <div style="background: #f8fafc; border-radius: 1rem; padding: 1.15rem; border: 1px solid rgba(15, 23, 42, 0.05);">
-                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.65;">
+              <div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">
+                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">
                   ${escapeHtml(question.description || 'No description provided.')}
                 </p>
               </div>
@@ -149,12 +155,12 @@ export function renderAssessmentCodeQuestions(questions = []) {
   const judge0BootstrapScript = renderJudge0Bootstrap(questions)
 
   return `
-    <div class="assessment-questions-container" style="padding: 1.5rem;">
-      <div style="margin-bottom: 1.5rem;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem 0;">
+    <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
+      <div style="margin-bottom: 32px;">
+        <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
           Coding Assessment Questions
         </h2>
-        <p style="color: #6b7280; margin: 0;">
+        <p style="color: #475569; margin: 0; font-size: 16px;">
           ${questions.length} question${questions.length !== 1 ? 's' : ''} generated
         </p>
       </div>
