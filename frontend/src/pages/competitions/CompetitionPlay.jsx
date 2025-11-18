@@ -44,18 +44,77 @@ export default function CompetitionPlay() {
   const startAttemptedRef = useRef(Boolean(location.state?.session))
   const autoSubmitRef = useRef(false)
   const audioRef = useRef(null)
+  const audioContextRef = useRef(null)
+  const audioSourceRef = useRef(null)
+  const audioFileLoadedRef = useRef(false)
+
+  // Create fallback ambient sound using Web Audio API
+  const createFallbackAudio = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext
+      if (!AudioContext) return null
+
+      const context = new AudioContext()
+      if (context.state === 'suspended') {
+        context.resume()
+      }
+
+      // Create a very subtle ambient tone using multiple oscillators for richness
+      const oscillators = []
+      const gainNode = context.createGain()
+      const filterNode = context.createBiquadFilter()
+
+      // Create multiple oscillators for a richer ambient sound
+      const frequencies = [60, 120, 180] // Low frequencies for ambient feel
+      frequencies.forEach((freq, index) => {
+        const osc = context.createOscillator()
+        const oscGain = context.createGain()
+        
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, context.currentTime)
+        oscGain.gain.setValueAtTime(0.02 / (index + 1), context.currentTime) // Quieter for higher frequencies
+        
+        osc.connect(oscGain)
+        oscGain.connect(filterNode)
+        osc.start()
+        oscillators.push({ oscillator: osc, gain: oscGain })
+      })
+
+      filterNode.type = 'lowpass'
+      filterNode.frequency.setValueAtTime(300, context.currentTime)
+      filterNode.Q.setValueAtTime(1, context.currentTime)
+      
+      gainNode.gain.setValueAtTime(0.08, context.currentTime) // Very quiet ambient
+      filterNode.connect(gainNode)
+      gainNode.connect(context.destination)
+      
+      return { context, oscillators, gainNode, filterNode }
+    } catch (err) {
+      // Silently fail - no fallback sound available
+      return null
+    }
+  }, [])
 
   // Enable sound after user interaction
   const enableSoundAfterInteraction = useCallback(() => {
     if (!userInteracted) {
       setUserInteracted(true)
-      if (soundEnabled && audioRef.current) {
-        audioRef.current.play().catch(() => {
-          // Silently handle autoplay block
-        })
+      if (soundEnabled) {
+        if (audioRef.current && audioFileLoadedRef.current) {
+          audioRef.current.play().catch(() => {
+            // Silently handle autoplay block
+          })
+        } else if (!audioFileLoadedRef.current && !audioContextRef.current) {
+          // Use fallback audio if file didn't load
+          const fallback = createFallbackAudio()
+          if (fallback) {
+            audioContextRef.current = fallback.context
+            audioSourceRef.current = fallback
+          }
+        }
       }
     }
-  }, [userInteracted, soundEnabled])
+  }, [userInteracted, soundEnabled, createFallbackAudio])
 
   // Audio setup
   useEffect(() => {
@@ -65,56 +124,115 @@ export default function CompetitionPlay() {
     audio.muted = false
     audio.preload = 'auto'
     
-    // Add error handling
-    audio.addEventListener('error', (e) => {
-      console.error('Audio file failed to load:', e)
-      console.warn('Audio file not found at /assets/sfx/arena_loop.mp3. Please add the audio file to enable background sound.')
-    })
+    // Track if file loads successfully
+    const handleCanPlay = () => {
+      audioFileLoadedRef.current = true
+    }
     
-    audio.addEventListener('canplaythrough', () => {
-      console.log('Audio file loaded successfully')
-    })
+    const handleError = () => {
+      // File doesn't exist - silently use fallback, don't log errors
+      audioFileLoadedRef.current = false
+      // Keep audioRef.current set so we can check it, but mark as not loaded
+    }
+    
+    audio.addEventListener('canplaythrough', handleCanPlay)
+    audio.addEventListener('error', handleError)
     
     audioRef.current = audio
     
     return () => {
+      audio.removeEventListener('canplaythrough', handleCanPlay)
+      audio.removeEventListener('error', handleError)
       audioRef.current?.pause()
       audioRef.current = null
+      // Clean up fallback audio
+      if (audioSourceRef.current) {
+        try {
+          if (audioSourceRef.current.oscillators) {
+            audioSourceRef.current.oscillators.forEach(({ oscillator }) => {
+              oscillator?.stop()
+            })
+          }
+          audioSourceRef.current.context?.close()
+        } catch (e) {}
+        audioSourceRef.current = null
+        audioContextRef.current = null
+      }
     }
   }, [])
 
   // Audio control - only play after user interaction
   useEffect(() => {
-    if (!audioRef.current) return
-    try {
-      if (soundEnabled && userInteracted) {
-        const playPromise = audioRef.current.play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('Audio playback started')
+    if (soundEnabled && userInteracted) {
+      // Try to use file-based audio first
+      if (audioRef.current && audioFileLoadedRef.current) {
+        try {
+          const playPromise = audioRef.current.play()
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // Silently handle autoplay block
             })
-            .catch((error) => {
-              console.warn('Audio playback blocked or failed:', error)
-            })
+          }
+        } catch (err) {
+          // Fall through to fallback
         }
-      } else {
+      } else if (!audioFileLoadedRef.current) {
+        // Use fallback Web Audio API sound
+        if (!audioContextRef.current) {
+          const fallback = createFallbackAudio()
+          if (fallback) {
+            audioContextRef.current = fallback.context
+            audioSourceRef.current = fallback
+          }
+        } else if (audioContextRef.current.state === 'suspended') {
+          // Resume suspended context
+          audioContextRef.current.resume().catch(() => {})
+        }
+      }
+    } else {
+      // Pause file-based audio
+      if (audioRef.current) {
         audioRef.current.pause()
         if (!soundEnabled) {
           audioRef.current.currentTime = 0
         }
       }
-    } catch (err) {
-      console.error('Audio playback failed', err)
+      // Stop fallback audio
+      if (audioSourceRef.current) {
+        try {
+          if (audioSourceRef.current.oscillators) {
+            audioSourceRef.current.oscillators.forEach(({ oscillator }) => {
+              oscillator?.stop()
+            })
+          }
+          audioSourceRef.current.context?.close()
+        } catch (e) {}
+        audioSourceRef.current = null
+        audioContextRef.current = null
+      }
     }
-  }, [soundEnabled, userInteracted])
+  }, [soundEnabled, userInteracted, createFallbackAudio])
 
   // Keep audio playing during question transitions
   useEffect(() => {
-    if (audioRef.current && soundEnabled && userInteracted && session && !session.completed) {
-      audioRef.current.play().catch(() => {})
+    if (soundEnabled && userInteracted && session && !session.completed) {
+      if (audioRef.current && audioFileLoadedRef.current) {
+        audioRef.current.play().catch(() => {})
+      } else if (!audioFileLoadedRef.current) {
+        // Use or recreate fallback if needed
+        if (!audioContextRef.current) {
+          const fallback = createFallbackAudio()
+          if (fallback) {
+            audioContextRef.current = fallback.context
+            audioSourceRef.current = fallback
+          }
+        } else if (audioContextRef.current.state === 'suspended') {
+          // Resume suspended context
+          audioContextRef.current.resume().catch(() => {})
+        }
+      }
     }
-  }, [session?.question?.question_id, soundEnabled, userInteracted, session?.completed])
+  }, [session?.question?.question_id, soundEnabled, userInteracted, session?.completed, createFallbackAudio])
 
   // Load sound preference from localStorage
   useEffect(() => {
@@ -289,6 +407,19 @@ export default function CompetitionPlay() {
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.currentTime = 0
+      }
+      // Stop fallback audio
+      if (audioSourceRef.current) {
+        try {
+          if (audioSourceRef.current.oscillators) {
+            audioSourceRef.current.oscillators.forEach(({ oscillator }) => {
+              oscillator?.stop()
+            })
+          }
+          audioSourceRef.current.context?.close()
+        } catch (e) {}
+        audioSourceRef.current = null
+        audioContextRef.current = null
       }
     } catch (completeError) {
       console.error('[CompetitionPlay] Failed to complete competition:', completeError)
