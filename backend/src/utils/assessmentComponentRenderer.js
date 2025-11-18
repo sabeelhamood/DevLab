@@ -2,6 +2,13 @@
  * Renders AssessmentCodeQuestions component as HTML string
  * This generates HTML that matches the React component structure
  */
+const PUBLIC_API_BASE_URL =
+  process.env['ASSESSMENT_PUBLIC_API_BASE_URL'] ||
+  process.env['PUBLIC_BACKEND_URL'] ||
+  process.env['PUBLIC_API_URL'] ||
+  process.env['API_BASE_URL'] ||
+  ''
+
 export function renderAssessmentCodeQuestions(questions = []) {
   if (!questions || questions.length === 0) {
     return `
@@ -150,6 +157,14 @@ export function renderAssessmentCodeQuestions(questions = []) {
         </p>
       </div>
       ${questionsHtml}
+      <div style="margin-top: 2rem; text-align: center;">
+        <button type="button" data-submit-all-answers style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 2.75rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 600; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; box-shadow: 0 15px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
+          <span>Submit All Answers</span>
+        </button>
+        <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #64748b;">
+          (Backend validation coming soon. This button is currently informational.)
+        </p>
+      </div>
     </div>
     ${judge0BootstrapScript}
   `
@@ -314,9 +329,23 @@ function renderJudge0Bootstrap(questions) {
   const hasJudge0 = Array.isArray(questions) && questions.some((q) => q?.judge0 && q.judge0.enabled !== false)
   if (!hasJudge0) return ''
 
+  const baseFromEnv = PUBLIC_API_BASE_URL ? PUBLIC_API_BASE_URL.replace(/"/g, '\\"') : ''
+
   const scriptBody = `
     (function () {
       try {
+        const scriptEl = document.currentScript;
+        const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
+        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
+
+        const buildUrl = (path) => {
+          if (!path) return '';
+          if (/^https?:\\/\\//i.test(path)) return path;
+          const base = (defaultBase || '').replace(/\\/+$/, '');
+          const normalized = path.startsWith('/') ? path : '/' + path;
+          return base ? base + normalized : normalized;
+        };
+
         const configMap = {};
         document.querySelectorAll('script[data-judge0-config]').forEach((script) => {
           const key = script.getAttribute('data-judge0-config');
@@ -406,7 +435,8 @@ function renderJudge0Bootstrap(questions) {
             try {
               setStatus('Running sample test…', { color: '#38bdf8' });
               setOutput('// Executing sample test via Judge0…');
-              const result = await postJson(config.endpoints?.execute || '/api/judge0/execute', {
+              const endpoint = buildUrl(config.endpoints?.execute || '/api/judge0/execute');
+              const result = await postJson(endpoint, {
                 sourceCode: code,
                 language: config.language || 'javascript',
                 input: firstTest.input || '',
@@ -439,7 +469,8 @@ function renderJudge0Bootstrap(questions) {
             try {
               setStatus('Running all tests…', { color: '#38bdf8' });
               setOutput('// Executing Judge0 test suite…');
-              const result = await postJson(config.endpoints?.runAllTestCases || '/api/judge0/test-cases', {
+              const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
+              const result = await postJson(endpoint, {
                 sourceCode: code,
                 language: config.language || 'javascript',
                 testCases: allTestCases
@@ -474,7 +505,7 @@ function renderJudge0Bootstrap(questions) {
   `
 
   return `
-    <script>
+    <script data-api-base="${escapeHtml(baseFromEnv)}">
 ${scriptBody}
     </script>
   `
