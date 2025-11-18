@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore.js'
 import { apiClient } from '../../services/api/client.js'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 
-const DEFAULT_FORCED_LEARNER_ID = '550e8400-e29b-41d4-a716-446655440000'
+const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
 const TechBackdrop = ({ children }) => (
   <div className="relative min-h-screen overflow-hidden bg-gray-950 text-white">
