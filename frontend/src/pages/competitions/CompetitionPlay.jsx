@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { useAuthStore } from '../../store/authStore.js'
-import { Moon, Sun, Volume2, VolumeX, Code, Sparkles, Terminal, Cpu } from 'lucide-react'
+import { Moon, Sun, Volume2, VolumeX, Code, Sparkles, Terminal, Cpu, Trophy, Bot, Smile } from 'lucide-react'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 const QUESTIONS_PER_COMPETITION = 3
@@ -39,16 +39,30 @@ export default function CompetitionPlay() {
   const [remainingSeconds, setRemainingSeconds] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(false)
+  const [userInteracted, setUserInteracted] = useState(false)
 
   const startAttemptedRef = useRef(Boolean(location.state?.session))
   const autoSubmitRef = useRef(false)
   const audioRef = useRef(null)
+
+  // Enable sound after user interaction
+  const enableSoundAfterInteraction = useCallback(() => {
+    if (!userInteracted) {
+      setUserInteracted(true)
+      if (soundEnabled && audioRef.current) {
+        audioRef.current.play().catch(() => {
+          // Silently handle autoplay block
+        })
+      }
+    }
+  }, [userInteracted, soundEnabled])
 
   // Audio setup
   useEffect(() => {
     const audio = new Audio('/assets/sfx/arena_loop.mp3')
     audio.loop = true
     audio.volume = 0.18
+    audio.muted = false
     audio.preload = 'auto'
     
     // Add error handling
@@ -69,11 +83,11 @@ export default function CompetitionPlay() {
     }
   }, [])
 
-  // Audio control
+  // Audio control - only play after user interaction
   useEffect(() => {
     if (!audioRef.current) return
     try {
-      if (soundEnabled) {
+      if (soundEnabled && userInteracted) {
         const playPromise = audioRef.current.play()
         if (playPromise !== undefined) {
           playPromise
@@ -82,17 +96,25 @@ export default function CompetitionPlay() {
             })
             .catch((error) => {
               console.warn('Audio playback blocked or failed:', error)
-              console.info('User interaction required to play audio. Click the sound button to enable.')
             })
         }
       } else {
         audioRef.current.pause()
-        audioRef.current.currentTime = 0
+        if (!soundEnabled) {
+          audioRef.current.currentTime = 0
+        }
       }
     } catch (err) {
       console.error('Audio playback failed', err)
     }
-  }, [soundEnabled])
+  }, [soundEnabled, userInteracted])
+
+  // Keep audio playing during question transitions
+  useEffect(() => {
+    if (audioRef.current && soundEnabled && userInteracted && session && !session.completed) {
+      audioRef.current.play().catch(() => {})
+    }
+  }, [session?.question?.question_id, soundEnabled, userInteracted, session?.completed])
 
   // Load sound preference from localStorage
   useEffect(() => {
@@ -199,6 +221,10 @@ export default function CompetitionPlay() {
         return
       }
 
+      // Enable sound on user interaction
+      enableSoundAfterInteraction()
+
+      // Allow empty answer on timeout
       if (!isTimeout && !currentAnswer.trim()) {
         return
       }
@@ -230,7 +256,7 @@ export default function CompetitionPlay() {
         autoSubmitRef.current = false
       }
     },
-    [session, currentAnswer, competitionId]
+    [session, currentAnswer, competitionId, enableSoundAfterInteraction]
   )
 
   useEffect(() => {
@@ -250,12 +276,20 @@ export default function CompetitionPlay() {
       return
     }
 
+    // Enable sound on user interaction
+    enableSoundAfterInteraction()
+
     setCompleting(true)
     setError(null)
     try {
       const response = await competitionsAIAPI.completeCompetition(competitionId)
       const updatedSession = response?.session || response
       setSession(updatedSession)
+      // Stop audio when competition ends
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
     } catch (completeError) {
       console.error('[CompetitionPlay] Failed to complete competition:', completeError)
       const message =
@@ -309,36 +343,65 @@ export default function CompetitionPlay() {
       <>
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-4">
-            <div className={`${
-              darkMode
-                ? 'bg-slate-900/70 border-slate-800'
-                : 'bg-white/80 backdrop-blur border-slate-300'
-            } border rounded-xl shadow-lg p-5 min-h-[200px] hover:shadow-[0_8px_40px_rgba(16,185,129,0.08)] transition-all`}>
-              <p className={`text-xs uppercase tracking-[0.3em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`${
+                darkMode
+                  ? 'bg-slate-900/70 border-slate-800'
+                  : 'bg-white/80 backdrop-blur border-slate-300'
+              } border-2 rounded-xl shadow-lg p-5 min-h-[200px] transition-all relative overflow-hidden`}
+              style={{
+                boxShadow: darkMode
+                  ? '0 0 20px rgba(16, 185, 129, 0.15), 0 8px 40px rgba(16, 185, 129, 0.08)'
+                  : '0 0 20px rgba(16, 185, 129, 0.1), 0 8px 40px rgba(16, 185, 129, 0.05)',
+                borderColor: darkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 animate-pulse-slow pointer-events-none"></div>
+              <p className={`text-xs uppercase tracking-[0.3em] font-medium relative z-10 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                 Current Challenge
               </p>
-              <p className={`mt-3 text-lg leading-relaxed whitespace-pre-line ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+              <p className={`mt-3 text-lg leading-relaxed whitespace-pre-line relative z-10 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                 {session.question.question}
               </p>
-            </div>
+            </motion.div>
             <textarea
-              className={`w-full border rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/60 transition-all ${
+              className={`w-full border-2 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/60 transition-all ${
                 darkMode
                   ? 'bg-slate-900/70 border-slate-800 text-slate-100 placeholder:text-slate-400'
                   : 'bg-white/80 backdrop-blur border-slate-300 text-slate-900 placeholder:text-slate-500'
               }`}
+              style={{
+                borderColor: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)'
+              }}
               rows={6}
               placeholder="Write your code solution here"
               value={currentAnswer}
-              onChange={(event) => setCurrentAnswer(event.target.value)}
+              onChange={(event) => {
+                setCurrentAnswer(event.target.value)
+                enableSoundAfterInteraction()
+              }}
+              onClick={enableSoundAfterInteraction}
             />
           </div>
           <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="relative w-32 h-32">
+            <motion.div
+              animate={{
+                scale: [1, 1.02, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="relative w-32 h-32"
+            >
               <div
                 className="absolute inset-0 rounded-full opacity-80"
                 style={{
-                  background: `conic-gradient(#10b981 ${timerPercent}%, rgba(255,255,255,0.15) ${timerPercent}% 100%)`
+                  background: `conic-gradient(#10b981 ${timerPercent}%, rgba(255,255,255,0.15) ${timerPercent}% 100%)`,
+                  filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))'
                 }}
               />
               <div className={`absolute inset-2 rounded-full flex flex-col items-center justify-center shadow-lg ${
@@ -354,7 +417,7 @@ export default function CompetitionPlay() {
                   {Math.floor(perQuestionTimer / 60)} min limit
                 </span>
               </div>
-            </div>
+            </motion.div>
             <div className="text-center">
               <p className={`text-xs uppercase tracking-[0.3em] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                 Progress
@@ -393,9 +456,12 @@ export default function CompetitionPlay() {
 
         <div className="flex flex-col md:flex-row gap-3">
           <button
-            onClick={() => handleSubmitAnswer(false)}
+            onClick={() => {
+              enableSoundAfterInteraction()
+              handleSubmitAnswer(false)
+            }}
             disabled={answerSubmitting || !currentAnswer.trim()}
-            className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg px-6 py-3 font-semibold transition-all hover:scale-105 active:scale-95 focus:ring-2 focus:ring-emerald-500/60 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full md:w-auto"
+            className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg px-6 py-3 font-semibold transition-all hover:scale-105 active:scale-95 focus:ring-2 focus:ring-emerald-500/60 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full md:w-auto shadow-lg shadow-emerald-500/30"
           >
             {answerSubmitting ? 'Submitting…' : 'Submit Answer'}
           </button>
@@ -420,30 +486,110 @@ export default function CompetitionPlay() {
       return null
     }
 
+    const winner = session.summary?.winner
+    const isLearnerWinner = winner === 'learner'
+    const isAIWinner = winner === 'ai'
+    const isTie = winner !== 'learner' && winner !== 'ai'
+
     return (
       <div className="space-y-6">
+        {isLearnerWinner && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.6, type: "spring" }}
+            className="text-center"
+          >
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="inline-block mb-4"
+            >
+              <Trophy className="w-20 h-20 text-emerald-500 mx-auto drop-shadow-lg" />
+            </motion.div>
+            <h2 className={`text-4xl font-bold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+              Congratulations!
+            </h2>
+            <div className="flex justify-center gap-2 mt-4">
+              {[...Array(5)].map((_, i) => (
+                <motion.span
+                  key={i}
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.5, 1, 0.5]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: i * 0.2,
+                    ease: "easeInOut"
+                  }}
+                  className="text-2xl"
+                >
+                  🎉
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {isAIWinner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-4"
+          >
+            <Bot className="w-16 h-16 text-red-500 mx-auto mb-3" />
+            <p className={`text-lg font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              AI won this time — try again!
+            </p>
+          </motion.div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className={`${
             darkMode
               ? 'bg-slate-900/70 border-slate-800'
               : 'bg-white/80 backdrop-blur border-slate-300'
-          } border rounded-xl shadow-lg p-4 text-center hover:shadow-[0_8px_40px_rgba(16,185,129,0.08)] transition-all`}>
+          } border-2 rounded-xl shadow-lg p-4 text-center hover:shadow-[0_8px_40px_rgba(16,185,129,0.08)] transition-all`}
+          style={{
+            borderColor: isLearnerWinner 
+              ? 'rgba(16, 185, 129, 0.4)' 
+              : isAIWinner 
+              ? 'rgba(239, 68, 68, 0.3)'
+              : darkMode ? 'rgba(148, 163, 184, 0.3)' : 'rgba(148, 163, 184, 0.2)'
+          }}>
             <p className={`text-xs uppercase tracking-[0.3em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               Winner
             </p>
-            <p className={`text-3xl font-semibold mt-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-              {session.summary?.winner === 'learner'
-                ? 'You'
-                : session.summary?.winner === 'ai'
-                ? 'AI'
-                : 'Tie'}
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              {isAIWinner && <Bot className="w-6 h-6 text-red-500" />}
+              {isLearnerWinner && <Trophy className="w-6 h-6 text-emerald-500" />}
+              {isTie && <Smile className="w-6 h-6 text-yellow-500" />}
+              <p className={`text-3xl font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                {isLearnerWinner
+                  ? 'You'
+                  : isAIWinner
+                  ? 'AI'
+                  : 'Tie'}
+              </p>
+            </div>
           </div>
           <div className={`${
             darkMode
               ? 'bg-slate-900/70 border-slate-800'
               : 'bg-white/80 backdrop-blur border-slate-300'
-          } border rounded-xl shadow-lg p-4 text-center hover:shadow-[0_8px_40px_rgba(16,185,129,0.08)] transition-all`}>
+          } border-2 rounded-xl shadow-lg p-4 text-center hover:shadow-[0_8px_40px_rgba(16,185,129,0.08)] transition-all`}
+          style={{
+            borderColor: darkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'
+          }}>
             <p className={`text-xs uppercase tracking-[0.3em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               Your Score
             </p>
@@ -489,11 +635,15 @@ export default function CompetitionPlay() {
   }
 
   return (
-    <div className={`relative min-h-screen px-4 py-10 overflow-hidden ${
-      darkMode
-        ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
-        : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
-    }`}>
+    <div 
+      className={`relative min-h-screen px-4 py-10 overflow-hidden ${
+        darkMode
+          ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
+          : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
+      }`}
+      onClick={enableSoundAfterInteraction}
+      onKeyDown={enableSoundAfterInteraction}
+    >
       {/* Scanline Overlay */}
       <div
         className="absolute inset-0 pointer-events-none z-[5] opacity-30"
@@ -559,7 +709,11 @@ export default function CompetitionPlay() {
       {/* HUD */}
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <button
-          onClick={() => setSoundEnabled(s => !s)}
+          onClick={() => {
+            const newState = !soundEnabled
+            setSoundEnabled(newState)
+            enableSoundAfterInteraction()
+          }}
           aria-pressed={soundEnabled}
           aria-label={soundEnabled ? 'Mute background sound' : 'Unmute background sound'}
           className={`p-2 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
@@ -656,8 +810,18 @@ export default function CompetitionPlay() {
           0% { background-position: 0 0; }
           100% { background-position: 0 100%; }
         }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
         @media (prefers-reduced-motion: reduce) {
-          * { animation-duration: 0.01ms !important; }
+          * { 
+            animation-duration: 0.01ms !important; 
+            animation-iteration-count: 1 !important;
+          }
         }
       `}</style>
     </div>
