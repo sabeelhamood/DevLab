@@ -354,12 +354,6 @@ export default function CompetitionPlay() {
             </p>
           </div>
         </div>
-        <div className="bg-gray-900/60 rounded-2xl p-4 text-sm text-white/90 max-h-72 overflow-auto border border-white/10">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Evaluation</p>
-          <pre className="whitespace-pre-wrap text-white/80">
-            {JSON.stringify(session.summary, null, 2)}
-          </pre>
-        </div>
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <Button variant="outline" onClick={() => navigate('/dashboard')}>
             Back to Dashboard
