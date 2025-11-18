@@ -53,7 +53,8 @@ function AssessmentPreview() {
         payloadString,
         {
           headers: {
-            'Content-Type': 'text/plain'
+            'Content-Type': 'text/plain',
+            ...(window.__DEVLAB_SERVICE_HEADERS || {})
           }
         }
       )
