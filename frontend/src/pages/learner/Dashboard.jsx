@@ -1,54 +1,40 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import Button from '../../components/ui/Button.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore.js'
 import { apiClient } from '../../services/api/client.js'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
+import { Trophy, Clock, Play, Target, Award } from 'lucide-react'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
-
-const TechBackdrop = ({ children }) => (
-  <div className="relative min-h-screen overflow-hidden bg-gray-950 text-white">
-    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-black to-purple-900 opacity-70" />
-    <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle,_rgba(255,255,255,0.08)_1px,_transparent_1px)] [background-size:80px_80px]" />
-    <div className="absolute inset-0 bg-[url('/images/grid.svg')] opacity-10" />
-    <div className="relative z-10 max-w-5xl mx-auto px-4 py-12">{children}</div>
-  </div>
-)
-
-const DashboardHero = ({ learnerName }) => (
-  <div className="text-center mb-10">
-    <p className="text-xs uppercase tracking-[0.4em] text-white/60">AI Competition Hub</p>
-    <h1 className="mt-4 text-4xl md:text-5xl font-bold">
-      Welcome, {learnerName || 'Learner'}!
-    </h1>
-    <p className="mt-3 text-lg text-white/80">
-      Complete courses, unlock competitions, and challenge the DevLab AI.
-    </p>
-  </div>
-)
 
 const CompetitionCard = ({ competition, onStart }) => (
   <motion.div
     layout
-    className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/40 mb-6"
+    className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200 hover:shadow-xl transition-shadow"
     whileHover={{ scale: 1.01 }}
   >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-white/60">Course</p>
-        <h3 className="text-2xl font-semibold">{competition.course_name}</h3>
-        <p className="text-white/70">
-          Ready since {new Date(competition.created_at || competition.completed_at).toLocaleString()}
-        </p>
+      <div className="flex-1">
+        <div className="flex items-center space-x-2 mb-2">
+          <Target className="w-5 h-5 text-indigo-600" />
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-medium">Course</p>
+        </div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">{competition.course_name}</h3>
+        <div className="flex items-center space-x-2 text-gray-600">
+          <Clock className="w-4 h-4" />
+          <p className="text-sm">
+            Ready since {new Date(competition.created_at || competition.completed_at).toLocaleString()}
+          </p>
+        </div>
       </div>
-      <Button
+      <button
         onClick={onStart}
-        className="bg-white text-gray-900 hover:bg-gray-100 px-6 py-2 rounded-full font-semibold"
+        className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 flex items-center space-x-2 font-semibold transition-colors"
       >
-        Start Competition
-      </Button>
+        <Play className="w-5 h-5" />
+        <span>Start Competition</span>
+      </button>
     </div>
   </motion.div>
 )
@@ -118,43 +104,77 @@ export default function Dashboard() {
 
   if (!learnerId) {
     return (
-      <TechBackdrop>
-        <DashboardHero learnerName="Learner" />
-        <p className="text-center text-red-200">
-          Unable to determine learner context. Please refresh or log in again.
-        </p>
-      </TechBackdrop>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <p className="text-center text-red-600 font-medium">
+              Unable to determine learner context. Please refresh or log in again.
+            </p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <TechBackdrop>
-      <DashboardHero learnerName={learnerProfile?.learner_name || effectiveUser?.name} />
-
-      {loading && <p className="text-center text-white/70">Loading competitions…</p>}
-
-      {error && !loading && (
-        <p className="text-center text-red-300">
-          {error}
-        </p>
-      )}
-
-      {!loading && !error && pendingCompetitions.length === 0 && (
-        <div className="text-center text-white/70">
-          <p>Complete a course to unlock your first AI competition!</p>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-[0.4em] text-gray-500 font-medium mb-2">AI Competition Hub</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome, {learnerProfile?.learner_name || effectiveUser?.name || 'Learner'}!
+              </h1>
+              <p className="text-gray-600">
+                Complete courses, unlock competitions, and challenge the DevLab AI.
+              </p>
+            </div>
+          </div>
         </div>
-      )}
 
-      {!loading &&
-        !error &&
-        pendingCompetitions.map((competition) => (
-          <CompetitionCard
-            key={competition.competition_id}
-            competition={competition}
-            onStart={() => handleNavigateToIntro(competition)}
-          />
-        ))}
-    </TechBackdrop>
+        {/* Competitions Section */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+              <Trophy className="w-6 h-6 text-indigo-600 mr-2" />
+              Available Competitions
+            </h2>
+
+            {loading && (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading competitions…</p>
+              </div>
+            )}
+
+            {error && !loading && (
+              <div className="text-center py-8">
+                <p className="text-red-600 font-medium">{error}</p>
+              </div>
+            )}
+
+            {!loading && !error && pendingCompetitions.length === 0 && (
+              <div className="text-center py-12">
+                <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-lg font-medium mb-2">No competitions available</p>
+                <p className="text-gray-500">Complete a course to unlock your first AI competition!</p>
+              </div>
+            )}
+
+            {!loading &&
+              !error &&
+              pendingCompetitions.map((competition) => (
+                <CompetitionCard
+                  key={competition.competition_id}
+                  competition={competition}
+                  onStart={() => handleNavigateToIntro(competition)}
+                />
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
