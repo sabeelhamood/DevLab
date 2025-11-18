@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
-import { Code, Sparkles, Terminal, Cpu, Moon, Sun } from 'lucide-react'
+import { Code, Sparkles, Terminal, Cpu, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
@@ -27,6 +27,54 @@ export default function CompetitionIntro() {
   const [learnerProfile, setLearnerProfile] = useState(null)
   const [profileError, setProfileError] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [userInteracted, setUserInteracted] = useState(false)
+  const audioRef = useRef(null)
+
+  // Audio setup and auto-play
+  useEffect(() => {
+    const audio = new Audio('/assets/sfx/introGaming.mp3')
+    audio.loop = true
+    audio.volume = 0.3
+    audio.preload = 'auto'
+    
+    audioRef.current = audio
+    
+    // Try to play after user interaction
+    const handleInteraction = () => {
+      setUserInteracted(true)
+    }
+    
+    // Add event listeners for user interaction
+    window.addEventListener('click', handleInteraction, { once: true })
+    window.addEventListener('keydown', handleInteraction, { once: true })
+    window.addEventListener('touchstart', handleInteraction, { once: true })
+    
+    return () => {
+      window.removeEventListener('click', handleInteraction)
+      window.removeEventListener('keydown', handleInteraction)
+      window.removeEventListener('touchstart', handleInteraction)
+      audio.pause()
+      audio.currentTime = 0
+      audioRef.current = null
+    }
+  }, [])
+
+  // Control audio playback based on soundEnabled and userInteracted
+  useEffect(() => {
+    if (!audioRef.current) return
+    
+    if (soundEnabled && userInteracted) {
+      audioRef.current.play().catch(() => {
+        // Silently handle autoplay block
+      })
+    } else {
+      audioRef.current.pause()
+      if (!soundEnabled) {
+        audioRef.current.currentTime = 0
+      }
+    }
+  }, [soundEnabled, userInteracted])
 
   useEffect(() => {
     if (!learnerId) {
@@ -250,19 +298,41 @@ export default function CompetitionIntro() {
           ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
           : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
       }`}
+      onClick={() => setUserInteracted(true)}
+      onKeyDown={() => setUserInteracted(true)}
     >
-      {/* Dark Mode Toggle */}
-      <button
-        onClick={() => setDarkMode(!darkMode)}
-        className={`absolute top-4 right-4 z-50 p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
-          darkMode
-            ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
-            : 'bg-white/80 backdrop-blur border border-slate-300 text-slate-700 hover:bg-white shadow-lg'
-        }`}
-        aria-label="Toggle dark mode"
-      >
-        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-      </button>
+      {/* Sound and Dark Mode Toggles */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <button
+          onClick={() => {
+            setSoundEnabled(!soundEnabled)
+            setUserInteracted(true)
+          }}
+          className={`p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
+            darkMode
+              ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
+              : 'bg-white/80 backdrop-blur border border-slate-300 text-slate-700 hover:bg-white shadow-lg'
+          }`}
+          aria-label="Toggle background sound"
+          aria-pressed={soundEnabled}
+        >
+          {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+        </button>
+        <button
+          onClick={() => {
+            setDarkMode(!darkMode)
+            setUserInteracted(true)
+          }}
+          className={`p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
+            darkMode
+              ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
+              : 'bg-white/80 backdrop-blur border border-slate-300 text-slate-700 hover:bg-white shadow-lg'
+          }`}
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
 
       {/* Animated Background Icons */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
