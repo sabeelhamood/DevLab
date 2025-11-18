@@ -265,18 +265,35 @@ export const assessmentController = {
       }
 
       // Format questions for response
-      const formattedQuestions = questionArray.map((item, index) => ({
-        id: `assessment_coding_${index + 1}`,
-        title: item.title || `Coding Question ${index + 1}`,
-        description: item.description || '',
-        difficulty: item.difficulty || difficulty,
-        programming_language: item.language || programming_language,
-        skills: item.skills || normalizedSkills,
-        testCases: (item.testCases || []).map((tc) => ({
+      const formattedQuestions = questionArray.map((item, index) => {
+        const normalizedTestCases = (item.testCases || []).map((tc) => ({
           input: tc.input,
           expected_output: tc.expected_output || tc.output
         }))
-      }))
+
+        return {
+          id: `assessment_coding_${index + 1}`,
+          title: item.title || `Coding Question ${index + 1}`,
+          description: item.description || '',
+          difficulty: item.difficulty || difficulty,
+          programming_language: item.language || programming_language,
+          skills: item.skills || normalizedSkills,
+          testCases: normalizedTestCases,
+          test_cases: normalizedTestCases,
+          judge0: {
+            enabled: true,
+            instructions:
+              'Send the user solution and these test cases to the Judge0 API endpoints to run automated code validation.',
+            language: (item.language || programming_language || 'javascript').toLowerCase(),
+            humanLanguage,
+            endpoints: {
+              execute: '/api/judge0/execute',
+              runAllTestCases: '/api/judge0/test-cases'
+            },
+            testCases: normalizedTestCases
+          }
+        }
+      })
 
       // Render the component as HTML
       const componentHtml = renderAssessmentCodeQuestions(formattedQuestions)

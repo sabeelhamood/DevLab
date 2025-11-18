@@ -76,6 +76,8 @@ export function renderAssessmentCodeQuestions(questions = []) {
       `
       : ''
 
+    const judge0Html = renderJudge0Section(question)
+
     return `
       <div class="question-card" style="background: white; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 1.5rem; margin-bottom: 1.5rem; transition: box-shadow 0.2s;">
         <!-- Question Header -->
@@ -130,6 +132,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
 
         ${skillsHtml}
         ${testCasesHtml}
+        ${judge0Html}
       </div>
     `
   }).join('')
@@ -162,4 +165,60 @@ function escapeHtml(text) {
   }
   return text.replace(/[&<>"']/g, m => map[m])
 }
+
+function renderJudge0Section(question) {
+  const config = question?.judge0
+  if (!config || config.enabled === false) return ''
+
+  const testCaseCount =
+    Array.isArray(config.testCases) && config.testCases.length
+      ? config.testCases.length
+      : Array.isArray(question.testCases)
+        ? question.testCases.length
+        : 0
+
+  const configJson = serializeJsonForScript({
+    questionId: question.id,
+    ...config
+  })
+
+  return `
+    <div class="judge0-panel" style="margin-top: 1.25rem; border-top: 1px solid #e5e7eb; padding-top: 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <strong style="color: #065f46;">Judge0 Sandbox</strong>
+      </div>
+      <p style="margin: 0 0 0.5rem 0; color: #374151; font-size: 0.9rem;">
+        Language: <strong>${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())}</strong> •
+        Test Cases: <strong>${testCaseCount}</strong>
+      </p>
+      <p style="margin: 0 0 0.75rem 0; color: #4b5563; font-size: 0.85rem;">
+        ${escapeHtml(config.instructions || 'Use the provided endpoints to run these test cases via Judge0.')}
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8rem; color: #4b5563;">
+        <span>Execute single run: <code style="color: #2563eb;">${escapeHtml(config?.endpoints?.execute || '/api/judge0/execute')}</code></span>
+        <span>Run all test cases: <code style="color: #2563eb;">${escapeHtml(config?.endpoints?.runAllTestCases || '/api/judge0/test-cases')}</code></span>
+      </div>
+      <details style="margin-top: 0.75rem;">
+        <summary style="cursor: pointer; color: #2563eb; font-size: 0.85rem;">Judge0 payload preview</summary>
+        <pre style="margin-top: 0.5rem; background: #0f172a; color: #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; overflow-x: auto;">
+${escapeHtml(JSON.stringify(config.testCases || question.testCases || [], null, 2))}
+        </pre>
+      </details>
+      <script type="application/json" data-judge0-config="${escapeHtml(question.id || `question_${Date.now()}`)}">
+${configJson}
+      </script>
+    </div>
+  `
+}
+
+function serializeJsonForScript(value) {
+  return JSON.stringify(value, null, 2).replace(/</g, '\\u003c')
+}
+
+
+
 
