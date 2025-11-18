@@ -46,10 +46,23 @@ export default function CompetitionPlay() {
 
   // Audio setup
   useEffect(() => {
-    audioRef.current = new Audio('/assets/sfx/arena_loop.mp3')
-    audioRef.current.loop = true
-    audioRef.current.volume = 0.18
-    audioRef.current.preload = 'auto'
+    const audio = new Audio('/assets/sfx/arena_loop.mp3')
+    audio.loop = true
+    audio.volume = 0.18
+    audio.preload = 'auto'
+    
+    // Add error handling
+    audio.addEventListener('error', (e) => {
+      console.error('Audio file failed to load:', e)
+      console.warn('Audio file not found at /assets/sfx/arena_loop.mp3. Please add the audio file to enable background sound.')
+    })
+    
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Audio file loaded successfully')
+    })
+    
+    audioRef.current = audio
+    
     return () => {
       audioRef.current?.pause()
       audioRef.current = null
@@ -61,9 +74,17 @@ export default function CompetitionPlay() {
     if (!audioRef.current) return
     try {
       if (soundEnabled) {
-        audioRef.current.play().catch(() => {
-          // Autoplay blocked - user can press button to play
-        })
+        const playPromise = audioRef.current.play()
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Audio playback started')
+            })
+            .catch((error) => {
+              console.warn('Audio playback blocked or failed:', error)
+              console.info('User interaction required to play audio. Click the sound button to enable.')
+            })
+        }
       } else {
         audioRef.current.pause()
         audioRef.current.currentTime = 0
