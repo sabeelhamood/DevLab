@@ -86,60 +86,62 @@ export function renderAssessmentCodeQuestions(questions = []) {
     const judge0Html = renderJudge0Section(question)
 
     return `
-      <div class="question-card" style="background: white; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 1.5rem; margin-bottom: 1.5rem; transition: box-shadow 0.2s;">
-        <!-- Question Header -->
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem;">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="padding: 0.5rem; background: #dbeafe; border-radius: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-                <polyline points="16 18 22 12 16 6"></polyline>
-                <polyline points="8 6 2 12 8 18"></polyline>
-              </svg>
-            </div>
-            <div>
-              <h3 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin: 0 0 0.25rem 0;">
-                ${escapeHtml(question.title || `Question ${index + 1}`)}
-              </h3>
-              <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem;">
-                <span style="font-size: 0.875rem; color: #6b7280;">
-                  ${escapeHtml(question.programming_language || 'N/A')}
-                </span>
-                ${question.difficulty ? `
-                  <span class="${difficultyClass}" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 500; ${
-                    difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
-                    difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
-                    'background: #fee2e2; color: #991b1b;'
-                  }">
-                    ${escapeHtml(question.difficulty)}
-                  </span>
-                ` : ''}
+      <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
+        <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; align-items: flex-start;">
+          <div class="question-card" style="background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08); padding: 1.75rem;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div style="padding: 0.65rem; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 0.75rem;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h3 style="font-size: 1.4rem; font-weight: 700; color: #0f172a; margin: 0;">
+                    ${escapeHtml(question.title || `Question ${index + 1}`)}
+                  </h3>
+                  <div style="display: flex; align-items: center; gap: 0.85rem; margin-top: 0.4rem; font-size: 0.9rem; color: #475569;">
+                    <span style="font-weight: 600;">
+                      ${escapeHtml(question.programming_language || 'N/A')}
+                    </span>
+                    ${question.difficulty ? `
+                      <span class="${difficultyClass}" style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; ${
+                        difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
+                        difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
+                        'background: #fee2e2; color: #991b1b;'
+                      }">
+                        ${escapeHtml(question.difficulty)}
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Question Description -->
-        <div style="margin-bottom: 1rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">Description</span>
-          </div>
-          <div style="background: #f9fafb; border-radius: 0.5rem; padding: 1rem; border: 1px solid #e5e7eb;">
-            <p style="color: #374151; white-space: pre-wrap; margin: 0;">
-              ${escapeHtml(question.description || 'No description provided.')}
-            </p>
-          </div>
-        </div>
+            <div style="margin-bottom: 1.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span style="font-size: 0.9rem; font-weight: 600; color: #0f172a;">Description</span>
+              </div>
+              <div style="background: #f8fafc; border-radius: 1rem; padding: 1.15rem; border: 1px solid rgba(15, 23, 42, 0.05);">
+                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.65;">
+                  ${escapeHtml(question.description || 'No description provided.')}
+                </p>
+              </div>
+            </div>
 
-        ${skillsHtml}
-        ${testCasesHtml}
-        ${judge0Html}
+            ${skillsHtml}
+            ${testCasesHtml}
+          </div>
+          ${judge0Html}
+        </div>
       </div>
     `
   }).join('')
@@ -156,17 +158,30 @@ export function renderAssessmentCodeQuestions(questions = []) {
           ${questions.length} question${questions.length !== 1 ? 's' : ''} generated
         </p>
       </div>
-      ${questionsHtml}
-      <div style="margin-top: 2rem; text-align: center;">
-        <button type="button" data-submit-all-answers style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 2.75rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 600; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; box-shadow: 0 15px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
-          <span>Submit All Answers</span>
+      <div class="question-steps-wrapper">
+        ${questionsHtml}
+      </div>
+      <div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">
+        <button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">
+          ← Previous Question
         </button>
-        <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #64748b;">
-          (Backend validation coming soon. This button is currently informational.)
-        </p>
+        <div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ${questions.length}</div>
+        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: linear-gradient(135deg, #22c55e, #15803d); color: white; font-weight: 600; cursor: pointer;">
+          Next Question →
+        </button>
+      </div>
+      <div style="margin-top: 1.5rem; text-align: center;">
+        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
+          SUBMIT ALL SOLUTIONS
+        </button>
+      </div>
+      <div style="margin-top: 1rem;">
+        <pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>
       </div>
     </div>
+    ${renderQuestionMetaScript(questions)}
     ${judge0BootstrapScript}
+    ${renderStepperBootstrap()}
   `
 }
 
@@ -208,7 +223,7 @@ function renderJudge0Section(question) {
 
   return `
     <div class="judge0-panel" style="margin-top: 1.25rem;">
-      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" style="background: linear-gradient(135deg, #ffffff, #eef2ff); border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
+      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: linear-gradient(135deg, #ffffff, #eef2ff); border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
         <div style="display: flex; flex-direction: column; gap: 1rem;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
             <div>
@@ -630,6 +645,122 @@ function renderJudge0Bootstrap(questions) {
 
   return `
     <script data-api-base="${escapeHtml(baseFromEnv)}">
+${scriptBody}
+    </script>
+  `
+}
+
+function renderQuestionMetaScript(questions = []) {
+  const payload = questions.map((question, index) => ({
+    id: question.id || `question_${index + 1}`,
+    language: (question.programming_language || 'javascript').toLowerCase()
+  }))
+  const json = serializeJsonForScript(payload)
+  return `
+    <script type="application/json" data-question-meta>
+${json}
+    </script>
+  `
+}
+
+function renderStepperBootstrap() {
+  const scriptBody = `
+    (function () {
+      const init = () => {
+        const steps = Array.from(document.querySelectorAll('.question-step'));
+        if (!steps.length) return;
+
+        const prevBtn = document.querySelector('[data-nav-prev]');
+        const nextBtn = document.querySelector('[data-nav-next]');
+        const submitBtn = document.querySelector('[data-submit-all-answers]');
+        const stepIndicator = document.querySelector('[data-step-indicator]');
+        const submitOutput = document.querySelector('[data-submit-output]');
+
+        const metaScript = document.querySelector('script[data-question-meta]');
+        let meta = [];
+        if (metaScript) {
+          try {
+            meta = JSON.parse(metaScript.textContent || '[]');
+          } catch (err) {
+            console.error('Failed to parse question meta:', err);
+          }
+          metaScript.remove();
+        }
+
+        let currentIndex = 0;
+        const total = steps.length;
+
+        const updateVisibility = () => {
+          steps.forEach((step, idx) => {
+            step.style.display = idx === currentIndex ? '' : 'none';
+          });
+          if (prevBtn) prevBtn.disabled = currentIndex === 0;
+          if (nextBtn) nextBtn.disabled = currentIndex === total - 1;
+          if (stepIndicator) {
+            stepIndicator.textContent = 'Question ' + (currentIndex + 1) + ' of ' + total;
+          }
+          if (submitBtn) {
+            submitBtn.style.display = currentIndex === total - 1 ? 'inline-flex' : 'none';
+          }
+        };
+
+        const clampIndex = (value) => Math.max(0, Math.min(value, total - 1));
+
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            currentIndex = clampIndex(currentIndex - 1);
+            updateVisibility();
+          });
+        }
+
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            currentIndex = clampIndex(currentIndex + 1);
+            updateVisibility();
+          });
+        }
+
+        const gatherSolutions = () => {
+          return steps.map((step, idx) => {
+            const sandbox = step.querySelector('.judge0-sandbox-card');
+            const textarea = sandbox ? sandbox.querySelector('.judge0-code-input') : null;
+            const questionId = sandbox?.getAttribute('data-question-id') || meta[idx]?.id || 'question_' + (idx + 1);
+            const language = sandbox?.getAttribute('data-language') || meta[idx]?.language || 'javascript';
+            return {
+              id: questionId,
+              language,
+              solution: textarea ? textarea.value : ''
+            };
+          });
+        };
+
+        if (submitBtn) {
+          submitBtn.addEventListener('click', () => {
+            const payload = gatherSolutions();
+            console.log('Assessment submission payload:', payload);
+            if (submitOutput) {
+              submitOutput.style.display = 'block';
+              submitOutput.textContent = JSON.stringify(payload, null, 2);
+            }
+            const event = new CustomEvent('assessmentSolutionsSubmitted', { detail: payload });
+            document.dispatchEvent(event);
+            alert('Solutions captured. Check console output for the submission payload.');
+          });
+        }
+
+        updateVisibility();
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  `
+
+  return `
+    <script>
 ${scriptBody}
     </script>
   `
