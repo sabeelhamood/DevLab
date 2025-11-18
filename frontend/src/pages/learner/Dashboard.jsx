@@ -11,18 +11,20 @@ const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 const CompetitionCard = ({ competition, onStart }) => (
   <motion.div
     layout
-    className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200 hover:shadow-xl transition-shadow"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 mb-6 border border-slate-800 hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
     whileHover={{ scale: 1.01 }}
   >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex-1">
         <div className="flex items-center space-x-2 mb-2">
-          <Target className="w-5 h-5 text-indigo-600" />
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-medium">Course</p>
+          <Target className="w-5 h-5 text-emerald-400" />
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-medium">Course</p>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{competition.course_name}</h3>
-        <div className="flex items-center space-x-2 text-gray-600">
-          <Clock className="w-4 h-4" />
+        <h3 className="text-2xl font-bold text-slate-100 mb-2">{competition.course_name}</h3>
+        <div className="flex items-center space-x-2 text-slate-300">
+          <Clock className="w-4 h-4 text-emerald-400" />
           <p className="text-sm">
             Ready since {new Date(competition.created_at || competition.completed_at).toLocaleString()}
           </p>
@@ -30,7 +32,7 @@ const CompetitionCard = ({ competition, onStart }) => (
       </div>
       <button
         onClick={onStart}
-        className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 flex items-center space-x-2 font-semibold transition-colors"
+        className="bg-emerald-500/90 hover:bg-emerald-500 text-slate-900 px-6 py-3 rounded-lg flex items-center space-x-2 font-semibold transition-all hover:scale-[1.02] focus:ring-2 focus:ring-emerald-500/60 focus:outline-none"
       >
         <Play className="w-5 h-5" />
         <span>Start Competition</span>
@@ -104,61 +106,74 @@ export default function Dashboard() {
 
   if (!learnerId) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <p className="text-center text-red-600 font-medium">
+      <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800"
+          >
+            <p className="text-center text-red-400 font-medium">
               Unable to determine learner context. Please refresh or log in again.
             </p>
-          </div>
+          </motion.div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 py-10 px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800">
             <div className="mb-4">
-              <p className="text-xs uppercase tracking-[0.4em] text-gray-500 font-medium mb-2">AI Competition Hub</p>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400 font-medium mb-2">AI Competition Hub</p>
+              <h1 className="text-3xl font-bold text-slate-100 mb-2">
                 Welcome, {learnerProfile?.learner_name || effectiveUser?.name || 'Learner'}!
               </h1>
-              <p className="text-gray-600">
+              <p className="text-slate-300">
                 Complete courses, unlock competitions, and challenge the DevLab AI.
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Competitions Section */}
-        <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <Trophy className="w-6 h-6 text-indigo-600 mr-2" />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800">
+            <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center">
+              <Trophy className="w-6 h-6 text-emerald-400 mr-2" />
               Available Competitions
             </h2>
 
             {loading && (
               <div className="text-center py-8">
-                <p className="text-gray-600">Loading competitions…</p>
+                <p className="text-slate-300">Loading competitions…</p>
               </div>
             )}
 
             {error && !loading && (
               <div className="text-center py-8">
-                <p className="text-red-600 font-medium">{error}</p>
+                <p className="text-red-400 font-medium">{error}</p>
               </div>
             )}
 
             {!loading && !error && pendingCompetitions.length === 0 && (
               <div className="text-center py-12">
-                <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 text-lg font-medium mb-2">No competitions available</p>
-                <p className="text-gray-500">Complete a course to unlock your first AI competition!</p>
+                <Award className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-300 text-lg font-medium mb-2">No competitions available</p>
+                <p className="text-slate-400">Complete a course to unlock your first AI competition!</p>
               </div>
             )}
 
@@ -172,7 +187,7 @@ export default function Dashboard() {
                 />
               ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )
