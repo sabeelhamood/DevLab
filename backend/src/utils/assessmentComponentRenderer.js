@@ -399,10 +399,23 @@ function renderJudge0Bootstrap(questions) {
         });
 
         const postJson = async (endpoint, payload) => {
+          const extraHeaders = (() => {
+            const globalHeaders = window.__DEVLAB_SERVICE_HEADERS;
+            if (globalHeaders && typeof globalHeaders === 'object') {
+              try {
+                return JSON.parse(JSON.stringify(globalHeaders));
+              } catch {
+                return { ...globalHeaders };
+              }
+            }
+            return {};
+          })();
+
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              ...extraHeaders
             },
             body: JSON.stringify(payload)
           });

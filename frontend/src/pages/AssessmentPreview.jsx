@@ -96,6 +96,15 @@ function AssessmentPreview() {
     if (apiBase) {
       window.__DEVLAB_API_BASE__ = apiBase
     }
+
+    const apiKey = import.meta.env.VITE_SERVICE_API_KEY
+    const serviceId = import.meta.env.VITE_SERVICE_ID || 'assessment-preview'
+    if (apiKey || serviceId) {
+      window.__DEVLAB_SERVICE_HEADERS = {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(serviceId ? { 'x-service-id': serviceId } : {})
+      }
+    }
   }, [])
 
   useEffect(() => {
