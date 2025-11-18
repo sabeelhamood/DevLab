@@ -89,13 +89,27 @@ function AssessmentPreview() {
   }
 
   useEffect(() => {
-    const apiBase =
+    const rawBase =
       import.meta.env.VITE_API_URL ||
       (import.meta.env.VERCEL_URL ? `https://${import.meta.env.VERCEL_URL}` : '') ||
-      window.__DEVLAB_API_BASE__
-    if (apiBase) {
-      window.__DEVLAB_API_BASE__ = apiBase
+      window.__DEVLAB_API_BASE__ ||
+      window.location.origin
+
+    const normalizeBase = (value) => {
+      if (!value) return window.location.origin
+      try {
+        const parsed = new URL(value, window.location.origin)
+        let href = parsed.href.replace(/\/api\/?$/, '')
+        href = href.replace(/\/$/, '')
+        return href || window.location.origin
+      } catch {
+        const fallback = value.replace(/\/api\/?$/, '').replace(/\/$/, '')
+        return fallback || window.location.origin
+      }
     }
+
+    const normalizedBase = normalizeBase(rawBase)
+    window.__DEVLAB_API_BASE__ = normalizedBase
 
     const apiKey = import.meta.env.VITE_SERVICE_API_KEY
     const serviceId = import.meta.env.VITE_SERVICE_ID || 'assessment-preview'
