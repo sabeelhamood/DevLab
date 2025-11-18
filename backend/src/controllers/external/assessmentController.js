@@ -355,6 +355,56 @@ export const assessmentController = {
     } catch (error) {
       res.status(500).json({ success: false, error: error.message })
     }
+  },
+
+  async gradeAssessmentSolutions(req, res) {
+    try {
+      const { questions, solutions, skills } = req.body || {}
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing or invalid questions array'
+        })
+      }
+
+      if (!Array.isArray(solutions) || solutions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing or invalid solutions array'
+        })
+      }
+
+      if (questions.length !== solutions.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Questions and solutions arrays must have the same length'
+        })
+      }
+
+      // Extract all unique skills from questions if not provided
+      const allSkills = Array.isArray(skills) && skills.length > 0
+        ? skills
+        : Array.from(new Set(questions.flatMap(q => q.skills || [])))
+
+      // Grade solutions using OpenAI
+      const evaluation = await openAIService.gradeAssessmentSolutions(
+        questions,
+        solutions,
+        allSkills
+      )
+
+      res.json({
+        success: true,
+        data: evaluation
+      })
+    } catch (error) {
+      console.error('Assessment gradeAssessmentSolutions error:', error)
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to grade assessment solutions'
+      })
+    }
   }
 }
 
