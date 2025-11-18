@@ -107,6 +107,7 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
     try {
       const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
       parsed = JSON.parse(rawBody)
+      console.log('📦 [data-request] Parsed body preview:', JSON.stringify(parsed).slice(0, 500))
     } catch (parseError) {
       return res
         .status(400)
