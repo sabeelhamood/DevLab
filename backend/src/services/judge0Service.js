@@ -59,6 +59,32 @@ export class Judge0Service {
   }
 
   /**
+   * Ensure Judge0 availability before executing requests.
+   * If the service was marked unavailable, attempt a new health check.
+   * Even if the check fails again we still attempt execution so the real
+   * error from the upstream API can be captured.
+   */
+  async ensureAvailabilityBeforeExecution() {
+    if (this.isAvailable) {
+      return true;
+    }
+
+    try {
+      console.warn('⚠️ [Judge0] Previous health check failed. Re-checking availability...');
+      const available = await this.checkAvailability();
+      if (available) {
+        console.log('✅ [Judge0] Service restored.');
+        return true;
+      }
+      console.warn('⚠️ [Judge0] Service still marked unavailable. Proceeding with execution attempt.');
+      return false;
+    } catch (error) {
+      console.error('❌ [Judge0] Failed to re-check availability:', error);
+      return false;
+    }
+  }
+
+  /**
    * Check if Judge0 service is available
    */
   async checkAvailability() {
@@ -970,9 +996,7 @@ int main() {
    * Execute code with Judge0
    */
   async executeCode(sourceCode, language, input = '', expectedOutput = null) {
-    if (!this.isAvailable) {
-      throw new Error('Judge0 service is not available');
-    }
+    await this.ensureAvailabilityBeforeExecution();
 
     try {
       const languageId = this.getLanguageId(language);
@@ -1016,7 +1040,9 @@ int main() {
       }
 
       const result = await response.json();
+      this.isAvailable = true;
       const token = result.token;
+      this.isAvailable = true;
 
       // Poll for result
       return await this.pollSubmission(token, expectedOutput);
@@ -1221,9 +1247,7 @@ int main() {
    * Execute multiple test cases
    */
   async executeTestCases(sourceCode, language, testCases) {
-    if (!this.isAvailable) {
-      throw new Error('Judge0 service is not available');
-    }
+    await this.ensureAvailabilityBeforeExecution();
 
     const results = [];
     
@@ -1276,9 +1300,7 @@ int main() {
    * Batch execute multiple submissions (more efficient for multiple test cases)
    */
   async batchExecute(sourceCode, language, testCases) {
-    if (!this.isAvailable) {
-      throw new Error('Judge0 service is not available');
-    }
+    await this.ensureAvailabilityBeforeExecution();
 
     try {
       const languageId = this.getLanguageId(language);
