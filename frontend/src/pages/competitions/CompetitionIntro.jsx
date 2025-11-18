@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import Button from '../../components/ui/Button.jsx'
+import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
+import { Code, Sparkles, Terminal, Cpu } from 'lucide-react'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
@@ -125,64 +125,88 @@ export default function CompetitionIntro() {
   const renderContent = () => {
     if (!learnerId) {
       return (
-        <p className="text-center text-red-500">
+        <p className="text-center text-red-400 font-medium">
           Unable to determine learner context. Please sign in again.
         </p>
       )
     }
 
     if (loadingCompetition) {
-      return <p className="text-center text-white/80">Loading competition…</p>
+      return <p className="text-center text-slate-300">Loading competition…</p>
     }
 
     if (error) {
       return (
         <div className="space-y-4 text-center">
-          <p className="text-red-300">{error}</p>
-          <Button onClick={() => navigate('/dashboard')} variant="outline">
+          <p className="text-red-400 font-medium">{error}</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-transparent border border-slate-800 text-slate-300 hover:bg-slate-800/50 rounded-lg px-4 py-2 font-semibold transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none"
+          >
             Back to Dashboard
-          </Button>
+          </button>
         </div>
       )
     }
 
     return (
       <>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/60">Competition</p>
-          <h2 className="text-3xl font-semibold">{competition?.course_name}</h2>
-          <p className="text-white/80">
-            You’ll face three sequential coding questions generated specifically for this course. Each
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-lg shadow-black/30 p-6 space-y-4"
+        >
+          <p className="text-xs uppercase tracking-[0.4em] text-slate-400 font-medium">Competition</p>
+          <h2 className="text-3xl font-bold text-slate-100">{competition?.course_name}</h2>
+          <p className="text-slate-300">
+            You'll face three sequential coding questions generated specifically for this course. Each
             question unlocks only after you finish (or time out) the previous one.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/60">Format</p>
-            <ul className="list-disc list-inside text-white/80 mt-2 space-y-1 text-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-lg shadow-black/30 p-4"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-medium">Format</p>
+            <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1 text-sm">
               <li>3 coding questions, 10 minutes each.</li>
               <li>No skipping or jumping ahead.</li>
               <li>AI opponent answers simultaneously.</li>
             </ul>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/60">Scoring</p>
-            <ul className="list-disc list-inside text-white/80 mt-2 space-y-1 text-sm">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-lg shadow-black/30 p-4"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 font-medium">Scoring</p>
+            <ul className="list-disc list-inside text-slate-300 mt-2 space-y-1 text-sm">
               <li>Quality, correctness, and clarity matter.</li>
               <li>AI vs. learner evaluated at the end.</li>
               <li>Winner + learner score saved to your record.</li>
             </ul>
-          </div>
+          </motion.div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-transparent border border-slate-800 text-slate-300 hover:bg-slate-800/50 rounded-lg px-4 py-2 font-semibold transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none"
+          >
             Back to Dashboard
-          </Button>
-          <Button onClick={handleStartCompetition} disabled={starting}>
+          </button>
+          <button
+            onClick={handleStartCompetition}
+            disabled={starting}
+            className="bg-emerald-500/90 hover:bg-emerald-500 text-slate-900 rounded-lg px-6 py-3 font-semibold transition-all hover:scale-[1.02] focus:ring-2 focus:ring-emerald-500/60 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
             {starting ? 'Starting…' : 'Start Competition'}
-          </Button>
+          </button>
         </div>
       </>
     )
@@ -191,20 +215,85 @@ export default function CompetitionIntro() {
   const displayName = learnerProfile?.learner_name || user?.name || 'Learner'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white px-4 py-10">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/60">Competition Briefing</p>
-          <h1 className="text-4xl font-bold">
+    <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 px-4 py-10 overflow-hidden">
+      {/* Animated Background Icons */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+          animate={{ y: [-10, 10], rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-10 left-8 text-emerald-500/10"
+        >
+          <Code size={60} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [10, -10], rotate: [0, -15, 15, 0] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/4 right-12 text-emerald-500/10"
+        >
+          <Sparkles size={50} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [-8, 8], rotate: [0, 12, -12, 0] }}
+          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-16 left-12 text-emerald-500/10"
+        >
+          <Terminal size={55} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [8, -8], rotate: [0, -10, 10, 0] }}
+          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-1/3 right-20 text-emerald-500/10"
+        >
+          <Cpu size={48} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [-12, 12], rotate: [0, 8, -8, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/2 left-20 text-emerald-500/10"
+        >
+          <Code size={45} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [12, -12], rotate: [0, -12, 12, 0] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 right-1/4 text-emerald-500/10"
+        >
+          <Terminal size={52} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [-9, 9], rotate: [0, 15, -15, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-24 right-8 text-emerald-500/10"
+        >
+          <Sparkles size={58} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [9, -9], rotate: [0, -8, 8, 0] }}
+          transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-2/3 left-1/4 text-emerald-500/10"
+        >
+          <Cpu size={47} />
+        </motion.div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 max-w-3xl mx-auto space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-2"
+        >
+          <p className="text-xs uppercase tracking-[0.4em] text-slate-400 font-medium">Competition Briefing</p>
+          <h1 className="text-4xl font-bold text-slate-100">
             Ready for the Arena, {displayName}?
           </h1>
-          <p className="text-white/70">
-            Take a deep breath, review the rules, and start when you’re ready. The AI opponent is waiting.
+          <p className="text-slate-300">
+            Take a deep breath, review the rules, and start when you're ready. The AI opponent is waiting.
           </p>
           {profileError && (
-            <p className="text-xs text-red-300">{profileError}</p>
+            <p className="text-xs text-red-400 font-medium">{profileError}</p>
           )}
-        </div>
+        </motion.div>
 
         {renderContent()}
       </div>
