@@ -30,6 +30,7 @@ export default function CompetitionIntro() {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [userInteracted, setUserInteracted] = useState(false)
   const audioRef = useRef(null)
+  const audioLoadedRef = useRef(false)
 
   // Audio setup and auto-play
   useEffect(() => {
@@ -38,15 +39,31 @@ export default function CompetitionIntro() {
     audio.volume = 0.3
     audio.preload = 'auto'
     
+    audioLoadedRef.current = false
+    
+    // Check if audio file loads successfully
+    const handleCanPlay = () => {
+      audioLoadedRef.current = true
+    }
+    
+    const handleError = () => {
+      // File doesn't exist or can't be loaded - don't try to play
+      audioLoadedRef.current = false
+      audioRef.current = null
+    }
+    
+    audio.addEventListener('canplaythrough', handleCanPlay)
+    audio.addEventListener('error', handleError)
+    
     audioRef.current = audio
     
     // Event handler to play audio on user interaction - MUST call .play() directly in handler
     const handleUserInteraction = () => {
       setUserInteracted(true)
-      if (audioRef.current && soundEnabled) {
+      if (audioRef.current && soundEnabled && audioLoadedRef.current) {
         // Call .play() directly inside the user interaction handler
-        audioRef.current.play().catch(err => {
-          console.error('Audio play failed:', err)
+        audioRef.current.play().catch(() => {
+          // Silently handle - file may not be supported
         })
       }
     }
@@ -57,6 +74,8 @@ export default function CompetitionIntro() {
     window.addEventListener('touchstart', handleUserInteraction, { once: true })
     
     return () => {
+      audio.removeEventListener('canplaythrough', handleCanPlay)
+      audio.removeEventListener('error', handleError)
       window.removeEventListener('click', handleUserInteraction)
       window.removeEventListener('keydown', handleUserInteraction)
       window.removeEventListener('touchstart', handleUserInteraction)
@@ -72,8 +91,8 @@ export default function CompetitionIntro() {
     
     if (soundEnabled) {
       // Only play if user has already interacted
-      audioRef.current.play().catch(err => {
-        console.error('Audio play failed:', err)
+      audioRef.current.play().catch(() => {
+        // Silently handle - file may not be supported
       })
     } else {
       audioRef.current.pause()
@@ -306,18 +325,18 @@ export default function CompetitionIntro() {
       onClick={() => {
         setUserInteracted(true)
         // Call .play() directly inside the click handler
-        if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(err => {
-            console.error('Audio play failed:', err)
+        if (audioRef.current && soundEnabled && audioLoadedRef.current) {
+          audioRef.current.play().catch(() => {
+            // Silently handle - file may not be supported
           })
         }
       }}
       onKeyDown={() => {
         setUserInteracted(true)
         // Call .play() directly inside the keydown handler
-        if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(err => {
-            console.error('Audio play failed:', err)
+        if (audioRef.current && soundEnabled && audioLoadedRef.current) {
+          audioRef.current.play().catch(() => {
+            // Silently handle - file may not be supported
           })
         }
       }}
@@ -332,10 +351,10 @@ export default function CompetitionIntro() {
             
             // Call .play() directly inside the click handler
             if (audioRef.current) {
-              if (newState) {
+              if (newState && audioLoadedRef.current) {
                 // Enable sound - play directly in click handler
-                audioRef.current.play().catch(err => {
-                  console.error('Audio play failed:', err)
+                audioRef.current.play().catch(() => {
+                  // Silently handle - file may not be supported
                 })
               } else {
                 // Disable sound

@@ -84,7 +84,7 @@ export default function CompetitionPlay() {
       filterNode.frequency.setValueAtTime(300, context.currentTime)
       filterNode.Q.setValueAtTime(1, context.currentTime)
       
-      gainNode.gain.setValueAtTime(0.08, context.currentTime) // Very quiet ambient
+      gainNode.gain.setValueAtTime(0.15, context.currentTime) // Ambient volume (15%)
       filterNode.connect(gainNode)
       gainNode.connect(context.destination)
       
@@ -99,18 +99,27 @@ export default function CompetitionPlay() {
   const enableSoundAfterInteraction = useCallback(() => {
     if (!userInteracted) {
       setUserInteracted(true)
-      if (soundEnabled) {
-        if (audioRef.current && audioFileLoadedRef.current) {
-          audioRef.current.play().catch(() => {
-            // Silently handle autoplay block
-          })
-        } else if (!audioFileLoadedRef.current && !audioContextRef.current) {
-          // Use fallback audio if file didn't load
+    }
+    // If sound is enabled, start it immediately
+    if (soundEnabled) {
+      if (audioRef.current && audioFileLoadedRef.current) {
+        audioRef.current.play().catch(() => {
+          // Silently handle autoplay block
+        })
+      } else if (!audioFileLoadedRef.current) {
+        // Use fallback audio if file didn't load
+        if (!audioContextRef.current) {
           const fallback = createFallbackAudio()
           if (fallback) {
             audioContextRef.current = fallback.context
             audioSourceRef.current = fallback
+            // Resume context if suspended
+            if (fallback.context.state === 'suspended') {
+              fallback.context.resume().catch(() => {})
+            }
           }
+        } else if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().catch(() => {})
         }
       }
     }
@@ -183,10 +192,20 @@ export default function CompetitionPlay() {
           if (fallback) {
             audioContextRef.current = fallback.context
             audioSourceRef.current = fallback
+            // Ensure context is running
+            if (fallback.context.state === 'suspended') {
+              fallback.context.resume().then(() => {
+                console.log('Audio context resumed')
+              }).catch(() => {})
+            }
           }
-        } else if (audioContextRef.current.state === 'suspended') {
+        } else {
           // Resume suspended context
-          audioContextRef.current.resume().catch(() => {})
+          if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume().then(() => {
+              console.log('Audio context resumed')
+            }).catch(() => {})
+          }
         }
       }
     } else {
@@ -339,8 +358,10 @@ export default function CompetitionPlay() {
         return
       }
 
-      // Enable sound on user interaction
-      enableSoundAfterInteraction()
+      // Enable sound on user interaction (only for manual submissions)
+      if (!isTimeout) {
+        enableSoundAfterInteraction()
+      }
 
       // Allow empty answer on timeout
       if (!isTimeout && !currentAnswer.trim()) {
@@ -348,7 +369,11 @@ export default function CompetitionPlay() {
       }
 
       setAnswerSubmitting(true)
-      setError(null)
+      
+      // Don't show error messages for timeout submissions
+      if (!isTimeout) {
+        setError(null)
+      }
 
       try {
         const payload = {
@@ -362,13 +387,31 @@ export default function CompetitionPlay() {
         }
         setSession(updatedSession)
         setCurrentAnswer('')
+        // Clear any previous errors on successful submission
+        setError(null)
       } catch (submitError) {
-        console.error('[CompetitionPlay] Failed to submit answer:', submitError)
-        const message =
-          submitError?.response?.data?.error ||
-          submitError.message ||
-          'Unable to submit answer. Please try again.'
-        setError(message)
+        // For timeout submissions, don't show error messages to the user
+        if (isTimeout) {
+          console.log('[CompetitionPlay] Timeout submission completed silently')
+          // Still try to update session if possible
+          try {
+            // If there's a session update in the error response, use it
+            const errorSession = submitError?.response?.data?.session
+            if (errorSession) {
+              setSession(errorSession)
+            }
+          } catch (e) {
+            // Ignore errors during timeout submission
+          }
+        } else {
+          // For manual submissions, show errors normally
+          console.error('[CompetitionPlay] Failed to submit answer:', submitError)
+          const message =
+            submitError?.response?.data?.error ||
+            submitError.message ||
+            'Unable to submit answer. Please try again.'
+          setError(message)
+        }
       } finally {
         setAnswerSubmitting(false)
         autoSubmitRef.current = false
@@ -843,7 +886,46 @@ export default function CompetitionPlay() {
           onClick={() => {
             const newState = !soundEnabled
             setSoundEnabled(newState)
-            enableSoundAfterInteraction()
+            setUserInteracted(true) // Enable interaction immediately
+            
+            // Start audio immediately if enabling
+            if (newState) {
+              if (audioRef.current && audioFileLoadedRef.current) {
+                audioRef.current.play().catch(() => {})
+              } else if (!audioFileLoadedRef.current) {
+                // Use fallback audio
+                if (!audioContextRef.current) {
+                  const fallback = createFallbackAudio()
+                  if (fallback) {
+                    audioContextRef.current = fallback.context
+                    audioSourceRef.current = fallback
+                    if (fallback.context.state === 'suspended') {
+                      fallback.context.resume().catch(() => {})
+                    }
+                  }
+                } else if (audioContextRef.current.state === 'suspended') {
+                  audioContextRef.current.resume().catch(() => {})
+                }
+              }
+            } else {
+              // Stop audio if disabling
+              if (audioRef.current) {
+                audioRef.current.pause()
+                audioRef.current.currentTime = 0
+              }
+              if (audioSourceRef.current) {
+                try {
+                  if (audioSourceRef.current.oscillators) {
+                    audioSourceRef.current.oscillators.forEach(({ oscillator }) => {
+                      oscillator?.stop()
+                    })
+                  }
+                  audioSourceRef.current.context?.close()
+                } catch (e) {}
+                audioSourceRef.current = null
+                audioContextRef.current = null
+              }
+            }
           }}
           aria-pressed={soundEnabled}
           aria-label={soundEnabled ? 'Mute background sound' : 'Unmute background sound'}
