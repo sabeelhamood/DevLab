@@ -208,50 +208,56 @@ function renderJudge0Section(question) {
 
   return `
     <div class="judge0-panel" style="margin-top: 1.25rem;">
-      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" style="background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 1.25rem; padding: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.25); box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35); color: #e2e8f0;">
-        <div style="display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <div style="display: flex; gap: 0.25rem;">
-                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #f87171; display: inline-block;"></span>
-                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #fbbf24; display: inline-block;"></span>
-                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #34d399; display: inline-block;"></span>
-              </div>
-              <div>
-                <div style="font-size: 0.95rem; font-weight: 600;">Judge0 Live Sandbox</div>
-                <div style="font-size: 0.75rem; color: #a5b4fc;">
-                  ${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())} • ${testCaseCount} test case${testCaseCount === 1 ? '' : 's'}
-                </div>
-              </div>
+      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" style="background: linear-gradient(135deg, #ffffff, #eef2ff); border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
+                Powered by Judge0 • ${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())}
+              </p>
             </div>
-            <button type="button" data-judge0-reset style="background: rgba(255,255,255,0.08); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); border-radius: 9999px; font-size: 0.75rem; padding: 0.35rem 0.9rem; cursor: pointer;">
-              Reset Template
-            </button>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
+                Run Code
+              </button>
+              <button type="button" data-judge0-run-tests style="border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 9999px; background: rgba(59, 130, 246, 0.08); color: #1d4ed8; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+                Run All Tests (${testCaseCount})
+              </button>
+              <button type="button" data-judge0-reset style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+                Reset Editor
+              </button>
+            </div>
           </div>
-          <p style="margin: 0; font-size: 0.85rem; color: #cbd5f5;">
-            ${escapeHtml(config.instructions || 'Write your solution below and run it against the official Judge0-powered test suite.')}
-          </p>
+
+          <div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">
+            <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+            <div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-weight: 600;">Console Output</span>
+                <span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>
+              </div>
+              <pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">
+// Use "Run Code" to execute your solution or "Run All Tests" for full validation.
+              </pre>
+            </div>
+            <div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>
+                  <p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>
+                </div>
+                <span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">
+                  ${testCaseCount} tests
+                </span>
+              </div>
+              <div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>
+            </div>
+          </div>
         </div>
-
-        <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 220px; border-radius: 0.85rem; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(15, 23, 42, 0.85); padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; color: #e2e8f0; resize: vertical; line-height: 1.5;" placeholder="// Write your solution here..."></textarea>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0;">
-          <button type="button" data-judge0-run-single style="flex: 1; min-width: 180px; border-radius: 0.9rem; border: none; background: linear-gradient(135deg, #34d399, #059669); padding: 0.85rem 1rem; font-weight: 600; color: white; cursor: pointer; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.35);">
-            Run Sample Test
-          </button>
-          <button type="button" data-judge0-run-all style="flex: 1; min-width: 180px; border-radius: 0.9rem; border: 1px solid rgba(59, 130, 246, 0.6); background: rgba(59, 130, 246, 0.1); padding: 0.85rem 1rem; font-weight: 600; color: #bfdbfe; cursor: pointer; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);">
-            Run All Tests
-          </button>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #cbd5f5; margin-bottom: 0.5rem;">
-          <span>Status:</span>
-          <span data-judge0-status>Idle</span>
-        </div>
-
-        <pre data-judge0-output style="margin: 0; background: rgba(15, 23, 42, 0.65); border-radius: 0.85rem; border: 1px solid rgba(148, 163, 184, 0.25); padding: 1rem; font-size: 0.8rem; line-height: 1.6; color: #e2e8f0; min-height: 120px; white-space: pre-wrap; overflow-x: auto;">
-// Results will appear here. Use "Run Sample Test" for a quick sanity check or run all tests for full validation.
-        </pre>
       </div>
       <script type="application/json" data-judge0-config="${escapeHtml(questionId)}">
 ${configJson}
@@ -387,6 +393,42 @@ function renderJudge0Bootstrap(questions) {
           return data;
         };
 
+        const escapeHtml = (value) => {
+          if (value === null || value === undefined) return '';
+          return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        };
+
+        const formatValue = (value) => {
+          if (value === null || value === undefined) return 'null';
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            return trimmed === '' ? '""' : JSON.stringify(trimmed);
+          }
+          if (typeof value === 'number' || typeof value === 'boolean') {
+            return value.toString();
+          }
+          try {
+            return JSON.stringify(value);
+          } catch {
+            return String(value);
+          }
+        };
+
+        const getFieldValue = (obj, candidates = []) => {
+          if (!obj) return '';
+          for (const field of candidates) {
+            if (Object.prototype.hasOwnProperty.call(obj, field)) {
+              return obj[field];
+            }
+          }
+          return '';
+        };
+
         document.querySelectorAll('.judge0-sandbox-card').forEach((sandbox) => {
           const questionId = sandbox.getAttribute('data-question-id');
           if (!questionId) return;
@@ -395,9 +437,11 @@ function renderJudge0Bootstrap(questions) {
 
           const textarea = sandbox.querySelector('.judge0-code-input');
           const statusEl = sandbox.querySelector('[data-judge0-status]');
-          const outputEl = sandbox.querySelector('[data-judge0-output]');
-          const runSampleBtn = sandbox.querySelector('[data-judge0-run-single]');
-          const runAllBtn = sandbox.querySelector('[data-judge0-run-all]');
+          const consoleEl = sandbox.querySelector('[data-judge0-console]');
+          const resultsEl = sandbox.querySelector('[data-judge0-results]');
+          const summaryEl = sandbox.querySelector('[data-judge0-summary]');
+          const runCodeBtn = sandbox.querySelector('[data-judge0-run-code]');
+          const runTestsBtn = sandbox.querySelector('[data-judge0-run-tests]');
           const resetBtn = sandbox.querySelector('[data-judge0-reset]');
           const defaultTemplate = templates[questionId] || textarea?.value || '';
 
@@ -405,49 +449,103 @@ function renderJudge0Bootstrap(questions) {
             textarea.value = defaultTemplate;
           }
 
-          const setStatus = (message, options = {}) => {
+          const setStatus = (message, color = '#475569') => {
             if (statusEl) {
               statusEl.textContent = message;
-              statusEl.style.color = options.color || '#cbd5f5';
+              statusEl.style.color = color;
             }
           };
 
-          const setOutput = (message) => {
-            if (outputEl) {
-              outputEl.textContent = message;
+          const updateConsole = (lines, append = false) => {
+            if (!consoleEl) return;
+            const text = Array.isArray(lines) ? lines.join('\\n') : String(lines);
+            if (append) {
+              consoleEl.textContent = (consoleEl.textContent || '') + '\\n' + text;
+            } else {
+              consoleEl.textContent = text;
             }
           };
 
-          const runSample = async () => {
-            if (!textarea) return;
-            const code = textarea.value;
-            if (!code.trim()) {
-              setStatus('Please write some code before running tests.', { color: '#f87171' });
+          const updateSummary = (message) => {
+            if (summaryEl) {
+              summaryEl.textContent = message;
+            }
+          };
+
+          const renderResults = (results) => {
+            if (!resultsEl) return;
+            if (!results || !results.length) {
+              resultsEl.innerHTML = '<div style="font-size:0.85rem; color:#94a3b8;">Run the full suite to see pass/fail details here.</div>';
               return;
             }
 
-            const firstTest = (config.testCases && config.testCases[0]) || (config.test_cases && config.test_cases[0]);
-            if (!firstTest) {
-              setStatus('No sample test case available.', { color: '#facc15' });
+            const cards = results.map((result, idx) => {
+              const status = result.passed ? 'PASS' : 'FAIL';
+              const statusColor = result.passed ? '#22c55e' : '#ef4444';
+              const badgeBg = result.passed ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+
+              return '' +
+                '<div style="border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 0.85rem; padding: 0.85rem; background: white;">' +
+                  '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">' +
+                    '<span style="font-weight:600; color:#0f172a;">Test ' + (idx + 1) + '</span>' +
+                    '<span style="font-size:0.75rem; font-weight:600; color:' + statusColor + '; background:' + badgeBg + '; padding:0.2rem 0.75rem; border-radius:9999px;">' +
+                      escapeHtml(status) +
+                    '</span>' +
+                  '</div>' +
+                  '<div style="font-size:0.78rem; color:#475569; line-height:1.5;">' +
+                    '<div><strong>Input:</strong> ' + escapeHtml(formatValue(result.input)) + '</div>' +
+                    '<div><strong>Expected:</strong> ' + escapeHtml(formatValue(result.expected)) + '</div>' +
+                    '<div><strong>Received:</strong> ' + escapeHtml(formatValue(result.result)) + '</div>' +
+                    (result.stderr ? '<div><strong>Error:</strong> ' + escapeHtml(result.stderr) + '</div>' : '') +
+                    '<div style="margin-top:0.25rem; font-size:0.75rem; color:#94a3b8;">' +
+                      'Time: ' + escapeHtml(result.time || '0.000s') +
+                    '</div>' +
+                  '</div>' +
+                '</div>';
+            });
+
+            resultsEl.innerHTML = cards.join('');
+          };
+
+          const runCode = async () => {
+            if (!textarea) return;
+            const code = textarea.value;
+            if (!code.trim()) {
+              setStatus('Please write some code first.', '#ef4444');
               return;
             }
 
             try {
-              setStatus('Running sample test…', { color: '#38bdf8' });
-              setOutput('// Executing sample test via Judge0…');
+              setStatus('Running code through Judge0…', '#1d4ed8');
+              updateConsole('// Sending code to Judge0 execution service…', false);
               const endpoint = buildUrl(config.endpoints?.execute || '/api/judge0/execute');
-              const result = await postJson(endpoint, {
+              const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
-                input: firstTest.input || '',
-                expectedOutput: firstTest.expected_output ?? firstTest.output ?? ''
-              });
-              setStatus('Sample test completed.', { color: '#34d399' });
-              setOutput(JSON.stringify(result, null, 2));
+                input: '',
+                expectedOutput: null
+              };
+              const result = await postJson(endpoint, payload);
+              setStatus('Execution complete.', '#22c55e');
+
+              const lines = [];
+              if (result?.result?.stdout) {
+                lines.push('📤 Output:', result.result.stdout.trim());
+              }
+              if (result?.result?.stderr) {
+                lines.push('⚠️ Errors:', result.result.stderr.trim());
+              }
+              if (result?.result?.compile_output) {
+                lines.push('🔨 Compilation:', result.result.compile_output.trim());
+              }
+              lines.push('📊 Status: ' + (result?.result?.status || 'Unknown'));
+              lines.push('⏱️ Time: ' + (result?.result?.time || 'N/A'));
+              lines.push('💾 Memory: ' + (result?.result?.memory || 'N/A'));
+              updateConsole(lines);
             } catch (err) {
-              console.error('Judge0 sample run failed:', err);
-              setStatus('Sample test failed.', { color: '#f87171' });
-              setOutput('Error: ' + err.message);
+              console.error('Judge0 execute error:', err);
+              setStatus('Execution failed.', '#ef4444');
+              updateConsole('❌ Error: ' + err.message);
             }
           };
 
@@ -456,45 +554,71 @@ function renderJudge0Bootstrap(questions) {
             const code = textarea.value;
 
             if (!code.trim()) {
-              setStatus('Please write some code before running tests.', { color: '#f87171' });
+              setStatus('Please write some code first.', '#ef4444');
               return;
             }
 
             const allTestCases = config.testCases || config.test_cases || [];
             if (!allTestCases.length) {
-              setStatus('No test cases available to run.', { color: '#facc15' });
+              setStatus('No test cases available for this question.', '#f97316');
               return;
             }
 
             try {
-              setStatus('Running all tests…', { color: '#38bdf8' });
-              setOutput('// Executing Judge0 test suite…');
+              setStatus('Running Judge0 test suite…', '#1d4ed8');
+              updateConsole('// Executing official test suite via Judge0…', false);
+              renderResults([]);
+              updateSummary('Running tests…');
+
               const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
-              const result = await postJson(endpoint, {
+              const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
                 testCases: allTestCases
-              });
-              setStatus('All tests completed.', { color: '#34d399' });
-              setOutput(JSON.stringify(result, null, 2));
+              };
+              const result = await postJson(endpoint, payload);
+
+              const processed = (result?.results || []).map((testResult, index) => ({
+                input: getFieldValue(testResult, ['input', 'testInput', 'test_input']),
+                expected: getFieldValue(testResult, ['expected', 'expected_output', 'expectedOutput']),
+                result: getFieldValue(testResult, ['result', 'actual', 'output', 'actual_output']),
+                stderr: getFieldValue(testResult, ['stderr', 'error', 'errorMessage']),
+                passed: Boolean(getFieldValue(testResult, ['passed', 'success', 'isPassed'])),
+                time: getFieldValue(testResult, ['time', 'executionTime', 'execution_time'])
+              }));
+
+              const passed = processed.filter((p) => p.passed).length;
+              const total = processed.length;
+              setStatus('Tests completed.', '#22c55e');
+              updateSummary(\`\\\${passed}/\\\${total} tests passed\`);
+              renderResults(processed);
+
+              const lines = [
+                \`📊 Test Results: \\\${passed}/\\\${total} passed\`,
+                \`⏱️ Total tests: \\\${total}\`
+              ];
+              updateConsole(lines);
             } catch (err) {
-              console.error('Judge0 run-all failed:', err);
-              setStatus('Test execution failed.', { color: '#f87171' });
-              setOutput('Error: ' + err.message);
+              console.error('Judge0 run tests error:', err);
+              setStatus('Test run failed.', '#ef4444');
+              updateSummary('Unable to complete tests.');
+              updateConsole('❌ Error: ' + err.message);
             }
           };
 
-          if (runSampleBtn) {
-            runSampleBtn.addEventListener('click', runSample);
+          if (runCodeBtn) {
+            runCodeBtn.addEventListener('click', runCode);
           }
-          if (runAllBtn) {
-            runAllBtn.addEventListener('click', runAllTests);
+          if (runTestsBtn) {
+            runTestsBtn.addEventListener('click', runAllTests);
           }
           if (resetBtn && textarea) {
             resetBtn.addEventListener('click', () => {
               textarea.value = defaultTemplate;
-              setStatus('Template reset.', { color: '#cbd5f5' });
-              setOutput('// Editor reset to default template.');
+              renderResults([]);
+              updateSummary('Editor reset. Run tests to see results here.');
+              setStatus('Template reset.', '#475569');
+              updateConsole('// Editor reset to default template.');
             });
           }
         });
