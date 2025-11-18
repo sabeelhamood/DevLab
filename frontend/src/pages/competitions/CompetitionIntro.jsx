@@ -40,39 +40,44 @@ export default function CompetitionIntro() {
     
     audioRef.current = audio
     
-    // Try to play after user interaction
-    const handleInteraction = () => {
+    // Event handler to play audio on user interaction - MUST call .play() directly in handler
+    const handleUserInteraction = () => {
       setUserInteracted(true)
+      if (audioRef.current && soundEnabled) {
+        // Call .play() directly inside the user interaction handler
+        audioRef.current.play().catch(err => {
+          console.error('Audio play failed:', err)
+        })
+      }
     }
     
-    // Add event listeners for user interaction
-    window.addEventListener('click', handleInteraction, { once: true })
-    window.addEventListener('keydown', handleInteraction, { once: true })
-    window.addEventListener('touchstart', handleInteraction, { once: true })
+    // Add listeners for click, keydown, or touchstart
+    window.addEventListener('click', handleUserInteraction, { once: true })
+    window.addEventListener('keydown', handleUserInteraction, { once: true })
+    window.addEventListener('touchstart', handleUserInteraction, { once: true })
     
     return () => {
-      window.removeEventListener('click', handleInteraction)
-      window.removeEventListener('keydown', handleInteraction)
-      window.removeEventListener('touchstart', handleInteraction)
+      window.removeEventListener('click', handleUserInteraction)
+      window.removeEventListener('keydown', handleUserInteraction)
+      window.removeEventListener('touchstart', handleUserInteraction)
       audio.pause()
       audio.currentTime = 0
       audioRef.current = null
     }
-  }, [])
+  }, [soundEnabled])
 
-  // Control audio playback based on soundEnabled and userInteracted
+  // Control audio playback based on soundEnabled state changes
   useEffect(() => {
-    if (!audioRef.current) return
+    if (!audioRef.current || !userInteracted) return
     
-    if (soundEnabled && userInteracted) {
-      audioRef.current.play().catch(() => {
-        // Silently handle autoplay block
+    if (soundEnabled) {
+      // Only play if user has already interacted
+      audioRef.current.play().catch(err => {
+        console.error('Audio play failed:', err)
       })
     } else {
       audioRef.current.pause()
-      if (!soundEnabled) {
-        audioRef.current.currentTime = 0
-      }
+      audioRef.current.currentTime = 0
     }
   }, [soundEnabled, userInteracted])
 
@@ -298,15 +303,46 @@ export default function CompetitionIntro() {
           ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
           : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
       }`}
-      onClick={() => setUserInteracted(true)}
-      onKeyDown={() => setUserInteracted(true)}
+      onClick={() => {
+        setUserInteracted(true)
+        // Call .play() directly inside the click handler
+        if (audioRef.current && soundEnabled) {
+          audioRef.current.play().catch(err => {
+            console.error('Audio play failed:', err)
+          })
+        }
+      }}
+      onKeyDown={() => {
+        setUserInteracted(true)
+        // Call .play() directly inside the keydown handler
+        if (audioRef.current && soundEnabled) {
+          audioRef.current.play().catch(err => {
+            console.error('Audio play failed:', err)
+          })
+        }
+      }}
     >
       {/* Sound and Dark Mode Toggles */}
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <button
           onClick={() => {
-            setSoundEnabled(!soundEnabled)
+            const newState = !soundEnabled
+            setSoundEnabled(newState)
             setUserInteracted(true)
+            
+            // Call .play() directly inside the click handler
+            if (audioRef.current) {
+              if (newState) {
+                // Enable sound - play directly in click handler
+                audioRef.current.play().catch(err => {
+                  console.error('Audio play failed:', err)
+                })
+              } else {
+                // Disable sound
+                audioRef.current.pause()
+                audioRef.current.currentTime = 0
+              }
+            }
           }}
           className={`p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
             darkMode
