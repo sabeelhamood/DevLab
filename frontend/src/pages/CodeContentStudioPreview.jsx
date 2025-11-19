@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
 function CodeContentStudioPreview() {
@@ -16,8 +16,6 @@ function CodeContentStudioPreview() {
   const [requestJson, setRequestJson] = useState('')
   const [responseJson, setResponseJson] = useState('')
   const [html, setHtml] = useState('')
-
-  const previewRef = useRef(null)
 
   // Build a data-request style wrapper that matches the real microservice flow
   const requestBody = useMemo(() => {
@@ -49,38 +47,6 @@ function CodeContentStudioPreview() {
   useEffect(() => {
     setRequestJson(JSON.stringify(requestBody, null, 2))
   }, [requestBody])
-
-  // Render the HTML preview and safely execute any <script> tags,
-  // using a recursive DOM clone so nested scripts (like the Content Studio
-  // bootstrap script) are also executed.
-  useEffect(() => {
-    const container = previewRef.current
-    if (!container) return
-    container.innerHTML = ''
-    if (!html) return
-
-    const template = document.createElement('template')
-    template.innerHTML = html
-
-    const processNode = (node, parent) => {
-      if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === 'SCRIPT') {
-        const script = document.createElement('script')
-        Array.from(node.attributes || []).forEach((attr) => {
-          script.setAttribute(attr.name, attr.value)
-        })
-        script.textContent = node.textContent
-        parent.appendChild(script)
-        return
-      }
-
-      // Clone the node without children, then recursively process children.
-      const clone = node.cloneNode(false)
-      parent.appendChild(clone)
-      Array.from(node.childNodes || []).forEach((child) => processNode(child, clone))
-    }
-
-    Array.from(template.content.childNodes).forEach((child) => processNode(child, container))
-  }, [html])
 
   const handleGenerate = useCallback(async () => {
     setLoading(true)
@@ -330,12 +296,15 @@ function CodeContentStudioPreview() {
               </span>
             </div>
             {html ? (
-              <div
-                ref={previewRef}
-                className="preview-container rounded-xl border bg-white/95 p-4"
+              <iframe
+                title="Code Content Studio Preview"
+                srcDoc={html}
+                className="preview-container rounded-xl border bg-white/95"
                 style={{
                   borderColor: 'rgba(148, 163, 184, 0.4)',
-                  color: '#0f172a'
+                  color: '#0f172a',
+                  width: '100%',
+                  minHeight: '480px'
                 }}
               />
             ) : (
