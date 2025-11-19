@@ -660,13 +660,14 @@ export async function generateCodeContentStudioComponent({
     title: q.title || `Coding Question ${index + 1}`,
     description: q.description || '',
     language: q.language || programming_language,
-    topicName
+    topicName,
+    testCases: Array.isArray(q.testCases) ? q.testCases : []
   }))
 
   const bootstrapScript = renderBootstrapScript(meta)
 
   return `
-    <div class="content-studio-code-container" style="padding:28px;background:#020617;color:#e5e7eb;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <div class="content-studio-code-container" style="padding:32px;background:#f8fafc;color:#1e293b;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
       <div style="max-width:960px;margin:0 auto;display:grid;gap:24px;">
         ${questionsHtml}
       </div>
