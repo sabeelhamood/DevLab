@@ -151,12 +151,12 @@ function renderBootstrapScript(questionsMeta) {
   )
 
   return `
+    <script type="application/json" data-code-content-meta>
+${questionsJson}
+    </script>
     <script>
       (function () {
         const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
-
-        // Inline meta configuration for each code question card
-        const meta = ${questionsJson || '[]'};
 
         const buildUrl = (path) => {
           if (!path) return '';
@@ -165,6 +165,17 @@ function renderBootstrapScript(questionsMeta) {
           const normalized = path.startsWith('/') ? path : '/' + path;
           return base ? base + normalized : normalized;
         };
+
+        const metaScript = document.querySelector('script[data-code-content-meta]');
+        let meta = [];
+        if (metaScript) {
+          try {
+            meta = JSON.parse(metaScript.textContent || '[]');
+          } catch (err) {
+            console.error('Failed to parse code content meta:', err);
+          }
+          metaScript.remove();
+        }
 
         const containers = Array.from(document.querySelectorAll('[data-code-question]'));
         containers.forEach((container, index) => {
