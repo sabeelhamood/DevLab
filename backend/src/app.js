@@ -524,13 +524,15 @@ if (requireServiceAuth) {
       // - Test endpoints
       // - Gemini question generation endpoints (used by frontend at dev-lab-three.vercel.app)
       // - Judge0 endpoints (used by frontend for code execution)
+      // - Content Studio preview endpoints (used by frontend code preview UI)
       if (
         req.path.startsWith('/auth') || 
         req.path === '/health' || 
         req.path === '/test-supabase' ||
         req.path.startsWith('/gemini-questions') || // Frontend calls this without service auth
         req.path.startsWith('/gemini-test') || // Frontend test endpoints
-        req.path.startsWith('/judge0') // Frontend calls this without service auth
+        req.path.startsWith('/judge0') || // Frontend calls this without service auth
+        req.path.startsWith('/content-studio') // Frontend calls this without service auth
       ) {
         console.log('🔓 [auth] Skipping service auth for:', req.path)
         return next()
