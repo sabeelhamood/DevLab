@@ -71,3 +71,9 @@ WHERE "learner_id" = '0b51b923-1e6d-4f46-a4d0-7a3d0a701a94'::uuid
 ORDER BY "completed_at" DESC;
 
 
+
+
+
+
+
+

@@ -17,3 +17,4 @@ CREATE TABLE IF NOT EXISTS "assessment_codeQuestions" (
 CREATE INDEX IF NOT EXISTS assessment_code_questions_assessment_id_idx ON "assessment_codeQuestions" ("assessment_id");
 CREATE INDEX IF NOT EXISTS assessment_code_questions_created_at_idx ON "assessment_codeQuestions" ("createdAt");
 
+

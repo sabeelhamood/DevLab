@@ -13,6 +13,7 @@ function AssessmentPreview() {
   const [responseJson, setResponseJson] = useState('')
   const [customHtmlInput, setCustomHtmlInput] = useState('')
   const [statusMessage, setStatusMessage] = useState('Click “Generate Live Preview” to fetch real OpenAI questions.')
+  const [lastScore, setLastScore] = useState(null)
   const [loading, setLoading] = useState(false)
   const previewRef = useRef(null)
 
@@ -119,6 +120,34 @@ function AssessmentPreview() {
         ...(apiKey ? { 'x-api-key': apiKey } : {}),
         ...(serviceId ? { 'x-service-id': serviceId } : {})
       }
+    }
+  }, [])
+
+  // Listen for grading events fired by the embedded assessment HTML so we can
+  // surface the final score inside this React preview as well.
+  useEffect(() => {
+    const handler = (event) => {
+      const evaluation = event?.detail?.evaluation
+      if (!evaluation) return
+
+      let rawScore
+      if (typeof evaluation === 'number') {
+        rawScore = evaluation
+      } else if (typeof evaluation.score === 'number') {
+        rawScore = evaluation.score
+      } else if (typeof evaluation.data === 'object' && typeof evaluation.data.score === 'number') {
+        rawScore = evaluation.data.score
+      } else {
+        return
+      }
+
+      const normalized = Math.max(0, Math.min(100, Math.round(Number(rawScore) || 0)))
+      setLastScore(normalized)
+    }
+
+    document.addEventListener('assessmentSolutionsSubmitted', handler)
+    return () => {
+      document.removeEventListener('assessmentSolutionsSubmitted', handler)
     }
   }, [])
 
@@ -281,9 +310,16 @@ function AssessmentPreview() {
               <h2 className="text-lg font-semibold text-slate-200">
                 Rendered Assessment View
               </h2>
-              <span className="text-xs text-slate-500">
-                Using <code>dangerouslySetInnerHTML</code>
-              </span>
+              <div className="flex items-center gap-4">
+                {lastScore !== null && (
+                  <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/40">
+                    Last graded score: <span className="ml-1 text-emerald-200">{lastScore}/100</span>
+                  </div>
+                )}
+                <span className="text-xs text-slate-500 hidden sm:inline">
+                  Using <code>dangerouslySetInnerHTML</code>
+                </span>
+              </div>
             </div>
             {htmlPreview ? (
               <div ref={previewRef} className="preview-container prose max-w-none text-slate-200" />

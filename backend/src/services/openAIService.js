@@ -206,88 +206,40 @@ Skills Being Assessed: ${allSkills}
 QUESTIONS AND SOLUTIONS:
 ${questionsText}
 
+Using the criteria above and the provided skills, evaluate ALL questions and solutions and compute ONE final overall score from 0 to 100 for the entire assessment.
+
 Return your evaluation as a JSON object with this exact structure:
 {
-  "overallScore": <number 0-100, calculated as average of all question scores>,
-  "questions": [
-    {
-      "questionId": "<question id>",
-      "score": <number 0-100>,
-      "correctness": {
-        "score": <number 0-40>,
-        "explanation": "<detailed explanation>"
-      },
-      "skillApplication": {
-        "score": <number 0-30>,
-        "explanation": "<detailed explanation>"
-      },
-      "requirementCompliance": {
-        "score": <number 0-30>,
-        "explanation": "<detailed explanation>"
-      },
-      "detailedFeedback": "<comprehensive feedback on the solution>",
-      "strengths": ["<strength 1>", "<strength 2>", ...],
-      "improvements": ["<improvement 1>", "<improvement 2>", ...]
-    }
-  ],
-  "skillFeedback": [
-    {
-      "skill": "<skill name>",
-      "masteryLevel": "<beginner|intermediate|advanced|expert>",
-      "performance": "<description of performance>",
-      "recommendations": ["<recommendation 1>", "<recommendation 2>", ...]
-    }
-  ],
-  "summary": "<comprehensive evaluation summary covering overall performance, key strengths, and areas for improvement>"
+  "score": <number 0-100>
 }
 
-Return only the JSON object, no additional text or markdown formatting.`
+Return only this JSON object, with no additional text or markdown formatting.`
 
     try {
       const rawResponse = await this.#callOpenAI(prompt)
       const parsed = parseJsonResponse(rawResponse)
 
-      // Validate and normalize the response
-      if (!parsed || typeof parsed !== 'object') {
+      if (parsed === null || parsed === undefined) {
         throw new Error('Invalid response format from OpenAI')
       }
 
-      // Ensure all required fields are present
-      const normalized = {
-        overallScore: typeof parsed.overallScore === 'number' ? Math.max(0, Math.min(100, parsed.overallScore)) : 0,
-        questions: Array.isArray(parsed.questions) ? parsed.questions.map((q, idx) => ({
-          questionId: q.questionId || questions[idx]?.id || `question_${idx + 1}`,
-          score: typeof q.score === 'number' ? Math.max(0, Math.min(100, q.score)) : 0,
-          correctness: {
-            score: typeof q.correctness?.score === 'number' ? Math.max(0, Math.min(40, q.correctness.score)) : 0,
-            explanation: q.correctness?.explanation || 'No explanation provided'
-          },
-          skillApplication: {
-            score: typeof q.skillApplication?.score === 'number' ? Math.max(0, Math.min(30, q.skillApplication.score)) : 0,
-            explanation: q.skillApplication?.explanation || 'No explanation provided'
-          },
-          requirementCompliance: {
-            score: typeof q.requirementCompliance?.score === 'number' ? Math.max(0, Math.min(30, q.requirementCompliance.score)) : 0,
-            explanation: q.requirementCompliance?.explanation || 'No explanation provided'
-          },
-          detailedFeedback: q.detailedFeedback || q.feedback || 'No detailed feedback provided',
-          strengths: Array.isArray(q.strengths) ? q.strengths : [],
-          improvements: Array.isArray(q.improvements) ? q.improvements : []
-        })) : [],
-        skillFeedback: Array.isArray(parsed.skillFeedback) ? parsed.skillFeedback : [],
-        summary: parsed.summary || parsed.evaluationSummary || 'No summary provided'
-      }
-
-      // Always calculate overall score as the average of all question scores
-      if (normalized.questions.length > 0) {
-        const calculatedScore = normalized.questions.reduce((sum, q) => sum + q.score, 0) / normalized.questions.length
-        normalized.overallScore = Math.round(calculatedScore * 100) / 100
+      // Support either a raw number or an object with score/overallScore
+      let rawScore
+      if (typeof parsed === 'number') {
+        rawScore = parsed
+      } else if (typeof parsed.score === 'number') {
+        rawScore = parsed.score
+      } else if (typeof parsed.overallScore === 'number') {
+        rawScore = parsed.overallScore
       } else {
-        // If no questions were evaluated, set overall score to 0
-        normalized.overallScore = 0
+        throw new Error('OpenAI response does not contain a valid score field')
       }
 
-      return normalized
+      const normalizedScore = Math.max(0, Math.min(100, Number(rawScore) || 0))
+
+      return {
+        score: normalizedScore
+      }
     } catch (error) {
       console.error('OpenAI gradeAssessmentSolutions error:', error)
       throw new Error(`Failed to grade assessment solutions: ${error.message}`)

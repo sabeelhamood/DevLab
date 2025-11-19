@@ -913,96 +913,28 @@ function renderStepperBootstrap() {
         };
 
         const renderGradingResults = (evaluation) => {
-          if (!evaluation || !evaluation.data) return '';
-          const data = evaluation.data;
-          const overallScore = data.overallScore || 0;
-          const scoreColor = overallScore >= 80 ? '#22c55e' : overallScore >= 60 ? '#f59e0b' : '#ef4444';
-          
-          let html = '<div style="background: white; border-radius: 1rem; padding: 2rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 1.5rem;">';
-          
-          // Overall Score
-          html += '<div style="text-align: center; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 2px solid #e5e7eb;">';
-          html += '<h3 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0 0 0.5rem 0;">Assessment Results</h3>';
-          html += '<div style="display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, ' + scoreColor + ', ' + scoreColor + 'dd); margin: 1rem 0;">';
-          html += '<span style="font-size: 2.5rem; font-weight: 700; color: white;">' + Math.round(overallScore) + '</span>';
+          if (!evaluation) return '';
+
+          const rawScore = typeof evaluation === 'number'
+            ? evaluation
+            : (typeof evaluation.score === 'number'
+                ? evaluation.score
+                : (typeof evaluation.data === 'object' && typeof evaluation.data.score === 'number'
+                    ? evaluation.data.score
+                    : 0));
+
+          const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+          const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+
+          let html = '<div style="background: white; border-radius: 1rem; padding: 2rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 1.5rem; text-align: center;">';
+          html += '<h3 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0 0 0.75rem 0;">Assessment Score</h3>';
+          html += '<p style="font-size: 0.95rem; color: #6b7280; margin: 0 0 1.5rem 0;">This score was computed by the centralized grading service.</p>';
+          html += '<div style="display: inline-flex; align-items: center; justify-content: center; width: 140px; height: 140px; border-radius: 50%; background: linear-gradient(135deg, ' + scoreColor + ', ' + scoreColor + 'dd); margin-bottom: 0.75rem;">';
+          html += '<span style="font-size: 2.75rem; font-weight: 800; color: white;">' + score + '</span>';
           html += '</div>';
-          html += '<p style="font-size: 1.1rem; color: #475569; margin: 0.5rem 0 0 0;">Overall Score</p>';
+          html += '<p style="font-size: 1rem; color: #475569; margin: 0;">Final Score (0–100)</p>';
           html += '</div>';
 
-          // Summary
-          if (data.summary) {
-            html += '<div style="margin-bottom: 2rem;">';
-            html += '<h4 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0;">Summary</h4>';
-            html += '<p style="color: #475569; line-height: 1.6; margin: 0;">' + escapeHtml(data.summary) + '</p>';
-            html += '</div>';
-          }
-
-          // Per-Question Results
-          if (Array.isArray(data.questions) && data.questions.length > 0) {
-            html += '<div style="margin-bottom: 2rem;">';
-            html += '<h4 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0;">Question Results</h4>';
-            data.questions.forEach((q, idx) => {
-              const qScoreColor = q.score >= 80 ? '#22c55e' : q.score >= 60 ? '#f59e0b' : '#ef4444';
-              html += '<div style="background: #f8fafc; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e7eb;">';
-              html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">';
-              html += '<h5 style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Question ' + (idx + 1) + ': ' + escapeHtml(q.questionId) + '</h5>';
-              html += '<span style="font-size: 1.25rem; font-weight: 700; color: ' + qScoreColor + ';">' + Math.round(q.score) + '/100</span>';
-              html += '</div>';
-              
-              // Criteria Breakdown
-              html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">';
-              html += '<div><strong style="color: #475569;">Correctness:</strong> <span style="color: #0f172a;">' + Math.round(q.correctness?.score || 0) + '/40</span></div>';
-              html += '<div><strong style="color: #475569;">Skill Application:</strong> <span style="color: #0f172a;">' + Math.round(q.skillApplication?.score || 0) + '/30</span></div>';
-              html += '<div><strong style="color: #475569;">Requirements:</strong> <span style="color: #0f172a;">' + Math.round(q.requirementCompliance?.score || 0) + '/30</span></div>';
-              html += '</div>';
-
-              if (q.detailedFeedback) {
-                html += '<div style="margin-bottom: 1rem;"><strong style="color: #475569; display: block; margin-bottom: 0.5rem;">Feedback:</strong>';
-                html += '<p style="color: #475569; line-height: 1.6; margin: 0;">' + escapeHtml(q.detailedFeedback) + '</p></div>';
-              }
-
-              if (Array.isArray(q.strengths) && q.strengths.length > 0) {
-                html += '<div style="margin-bottom: 1rem;"><strong style="color: #22c55e; display: block; margin-bottom: 0.5rem;">Strengths:</strong><ul style="margin: 0; padding-left: 1.5rem; color: #475569;">';
-                q.strengths.forEach(s => html += '<li>' + escapeHtml(s) + '</li>');
-                html += '</ul></div>';
-              }
-
-              if (Array.isArray(q.improvements) && q.improvements.length > 0) {
-                html += '<div><strong style="color: #f59e0b; display: block; margin-bottom: 0.5rem;">Areas for Improvement:</strong><ul style="margin: 0; padding-left: 1.5rem; color: #475569;">';
-                q.improvements.forEach(i => html += '<li>' + escapeHtml(i) + '</li>');
-                html += '</ul></div>';
-              }
-
-              html += '</div>';
-            });
-            html += '</div>';
-          }
-
-          // Skill Feedback
-          if (Array.isArray(data.skillFeedback) && data.skillFeedback.length > 0) {
-            html += '<div>';
-            html += '<h4 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0;">Skill Performance</h4>';
-            data.skillFeedback.forEach((skill) => {
-              const masteryColor = skill.masteryLevel === 'expert' ? '#22c55e' : skill.masteryLevel === 'advanced' ? '#3b82f6' : skill.masteryLevel === 'intermediate' ? '#f59e0b' : '#ef4444';
-              html += '<div style="background: #f8fafc; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e7eb;">';
-              html += '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">';
-              html += '<h5 style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">' + escapeHtml(skill.skill) + '</h5>';
-              html += '<span style="font-size: 0.875rem; font-weight: 600; color: ' + masteryColor + '; background: ' + masteryColor + '22; padding: 0.25rem 0.75rem; border-radius: 9999px; text-transform: capitalize;">' + escapeHtml(skill.masteryLevel || 'N/A') + '</span>';
-              html += '</div>';
-              if (skill.performance) {
-                html += '<p style="color: #475569; line-height: 1.6; margin: 0 0 0.75rem 0;">' + escapeHtml(skill.performance) + '</p>';
-              }
-              if (Array.isArray(skill.recommendations) && skill.recommendations.length > 0) {
-                html += '<div><strong style="color: #475569; display: block; margin-bottom: 0.5rem;">Recommendations:</strong><ul style="margin: 0; padding-left: 1.5rem; color: #475569;">';
-                skill.recommendations.forEach(r => html += '<li>' + escapeHtml(r) + '</li>');
-                html += '</ul></div>';
-              }
-              html += '</div>';
-            });
-            html += '</div>';
-          }
-
-          html += '</div>';
           return html;
         };
 
@@ -1018,6 +950,14 @@ function renderStepperBootstrap() {
           submitBtn.addEventListener('click', async () => {
             const questions = gatherQuestions();
             const solutions = gatherSolutions();
+            const skills = Array.isArray(meta)
+              ? Array.from(new Set(
+                  meta
+                    .flatMap((q) => Array.isArray(q.skills) ? q.skills : [])
+                    .map((s) => (typeof s === 'string' ? s.trim() : s))
+                    .filter(Boolean)
+                ))
+              : [];
             
             // Validate solutions
             const emptySolutions = solutions.filter(s => !s.solution || !s.solution.trim());
@@ -1044,7 +984,7 @@ function renderStepperBootstrap() {
               const response = await fetch(endpoint, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ questions, solutions })
+                body: JSON.stringify({ questions, solutions, skills })
               });
 
               const result = await response.json();
@@ -1053,16 +993,20 @@ function renderStepperBootstrap() {
                 throw new Error(result.error || 'Failed to grade assessment');
               }
 
-              // Display results
+              const scorePayload = result && typeof result === 'object'
+                ? (result.data || result)
+                : result;
+
+              // Display only the final score
               if (gradingResults) {
-                gradingResults.innerHTML = renderGradingResults(result);
+                gradingResults.innerHTML = renderGradingResults(scorePayload);
               }
 
               // Also log to console
-              console.log('Assessment grading results:', result);
+              console.log('Assessment grading results (score only):', result);
               
-              // Dispatch event
-              const event = new CustomEvent('assessmentSolutionsSubmitted', { detail: { questions, solutions, evaluation: result } });
+              // Dispatch event with score-focused payload
+              const event = new CustomEvent('assessmentSolutionsSubmitted', { detail: { questions, solutions, evaluation: scorePayload } });
               document.dispatchEvent(event);
 
               // Scroll to results

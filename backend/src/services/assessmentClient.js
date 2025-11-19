@@ -63,7 +63,7 @@ export const fetchAssessmentTheoreticalQuestions = async ({
 
   // Build the generic gateway request body (must be stringified as a single value)
   const gatewayBodyObject = {
-    requester_service: 'assessment',
+    requester_service: 'devlab',
     payload: {
       action: 'theoretical',
       topic_id,

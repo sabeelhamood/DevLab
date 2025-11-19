@@ -402,7 +402,7 @@ export const assessmentController = {
         ? skills
         : Array.from(new Set(questions.flatMap(q => q.skills || [])))
 
-      // Grade solutions using OpenAI
+      // Grade solutions using OpenAI (centralized evaluation logic)
       const evaluation = await openAIService.gradeAssessmentSolutions(
         questions,
         solutions,
@@ -411,7 +411,10 @@ export const assessmentController = {
 
       res.json({
         success: true,
-        data: evaluation
+        data: {
+          // Ensure we always expose a single numeric score
+          score: typeof evaluation?.score === 'number' ? evaluation.score : 0
+        }
       })
     } catch (error) {
       console.error('Assessment gradeAssessmentSolutions error:', error)
