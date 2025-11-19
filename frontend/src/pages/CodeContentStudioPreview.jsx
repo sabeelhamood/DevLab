@@ -19,6 +19,7 @@ function CodeContentStudioPreview() {
 
   const previewRef = useRef(null)
 
+  // Build a data-request style wrapper that matches the real microservice flow
   const requestBody = useMemo(() => {
     const skills = skillsInput
       .split(',')
@@ -30,21 +31,19 @@ function CodeContentStudioPreview() {
       topic_id: Number(topicId) || 0,
       topic_name: topicName || '',
       question_type: 'code',
-      amount: Number(amount) > 0 ? Number(amount) : 1,
       programming_language: programmingLanguage || 'javascript',
+      amount: Number(amount) > 0 ? Number(amount) : 1,
       skills,
       humanLanguage: humanLanguage || 'en'
     }
 
-    const wrapper = {
+    return {
       requester_service: 'content-studio',
       payload,
       response: {
         answer: ''
       }
     }
-
-    return wrapper
   }, [topicId, topicName, amount, programmingLanguage, skillsInput, humanLanguage])
 
   useEffect(() => {
@@ -73,37 +72,43 @@ function CodeContentStudioPreview() {
 
   const handleGenerate = useCallback(async () => {
     setLoading(true)
-    setStatusMessage('Calling /api/data-request…')
+    setStatusMessage(
+      'Calling /api/content-studio/code-preview with requester_service="content-studio"...'
+    )
     try {
-      const response = await apiClient.post('/data-request', requestBody)
-      setResponseJson(JSON.stringify(response, null, 2))
+      const previewResponse = await apiClient.post(
+        '/content-studio/code-preview',
+        requestBody
+      )
+      setResponseJson(JSON.stringify(previewResponse, null, 2))
 
-      if (!response || response.error) {
+      if (!previewResponse?.success) {
         setStatusMessage(
-          response?.error || 'Request completed but an error was returned from backend.'
+          previewResponse?.error ||
+            'code-preview request completed but success=false was returned from backend.'
         )
         setHtml('')
         return
       }
 
-      // Try to extract HTML from response.response.answer if the backend ever returns it
-      const answer = response?.response?.answer
-      if (typeof answer === 'string' && answer.trim().startsWith('<')) {
-        setHtml(answer)
-        setStatusMessage('Rendered HTML from response.answer. Try hints and submit.')
-      } else {
+      const htmlString = previewResponse.html || ''
+      if (!htmlString) {
+        setStatusMessage('code-preview backend returned success but no html field.')
         setHtml('')
-        setStatusMessage(
-          'Request to /api/data-request succeeded. See "Raw Backend Response" for JSON payload.'
-        )
+        return
       }
+
+      setHtml(htmlString)
+      setStatusMessage(
+        'Rendered Content Studio code component from codeContentStudioRender.js. Try hints and submit.'
+      )
     } catch (error) {
       console.error('CodeContentStudioPreview error:', error)
       const message =
         error?.response?.data?.error ||
         error?.message ||
-        'Unknown error while calling /api/data-request'
-      setStatusMessage(`Failed to execute data request: ${message}`)
+        'Unknown error while calling /api/content-studio/code-preview'
+      setStatusMessage(`Failed to render code component: ${message}`)
       setHtml('')
       setResponseJson(JSON.stringify(error?.response?.data || {}, null, 2))
     } finally {
@@ -140,10 +145,12 @@ function CodeContentStudioPreview() {
             </div>
           </div>
           <p className="text-sm max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
-            This page sends a <code>/api/data-request</code> call with{' '}
+            This page sends a <code>/api/content-studio/code-preview</code> request with{' '}
             <code>requester_service = &quot;content-studio&quot;</code> and{' '}
-            <code>action = &quot;generate-questions&quot;</code>, matching the Content Studio
-            microservice integration and using the OpenAI-backed Content Studio service.
+            <code>action = &quot;generate-questions&quot;</code>, and the backend uses{' '}
+            <code>codeContentStudioRender.js</code> and the OpenAI-backed Content Studio service to
+            generate the exact HTML component (with hints, solution checking, and AI fraud
+            detection) that Content Studio will use.
           </p>
           {statusMessage && (
             <div
@@ -263,7 +270,7 @@ function CodeContentStudioPreview() {
 
             <div className="space-y-3">
               <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                Request Payload (sent to /api/data-request)
+                Request Payload (sent to /api/content-studio/code-preview)
               </label>
               <textarea
                 value={requestJson}

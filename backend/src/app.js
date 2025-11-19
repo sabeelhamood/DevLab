@@ -54,6 +54,7 @@ import competitionRoutes from './routes/competitions/competitionRoutes.js'
 // External service routes
 import assessmentRoutes from './routes/external/assessmentRoutes.js'
 import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
+import contentStudioPreviewRoutes from './routes/contentStudio/contentStudioPreviewRoutes.js'
 import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
 import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
 import { initializeDatabases } from './config/initDatabase.js'
@@ -655,6 +656,9 @@ app.use('/api/gemini-test', geminiTestRoutes)
 console.log('🔍 [app] Registering gemini-questions routes...')
 app.use('/api/gemini-questions', geminiQuestionRoutes)
 console.log('✅ [app] gemini-questions routes registered')
+
+// Content Studio HTML preview routes (OpenAI-backed, no gemini naming)
+app.use('/api/content-studio', contentStudioPreviewRoutes)
 
 // List all registered routes in gemini-questions router
 try {
