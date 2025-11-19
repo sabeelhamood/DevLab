@@ -108,6 +108,9 @@ function renderSingleQuestion(question, index, topicName, language) {
           <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#22c55e;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
             🚀 Submit Solution
           </button>
+          <button type="button" data-action="run-tests" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#6366f1;color:white;font-weight:600;box-shadow:0 16px 32px rgba(79,70,229,0.35);">
+            🧪 Run All Tests
+          </button>
         </div>
       </section>
 
@@ -117,7 +120,7 @@ function renderSingleQuestion(question, index, topicName, language) {
             <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.28);color:#0ea5e9;">{ }</span>
             <div>
               <h2 style="margin:0;font-size:1rem;font-weight:600;">Code Editor</h2>
-              <p style="margin:2px 0 0;font-size:0.8rem;color:rgba(226,232,240,0.75);">Write your solution and submit for AI feedback.</p>
+              <p style="margin:2px 0 0;font-size:0.8rem;color:rgba(226,232,240,0.75);">Write your solution, run all tests via Judge0, or submit for AI feedback.</p>
             </div>
           </div>
         </header>
@@ -133,6 +136,14 @@ function renderSingleQuestion(question, index, topicName, language) {
         <ul data-role="hints-list" style="margin:0;padding-left:18px;display:grid;gap:8px;font-size:0.9rem;color:#475569;"></ul>
       </section>
 
+      <section data-role="tests-result" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
+        <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:rgba(79,70,229,0.12);color:#4f46e5;font-weight:600;">🧪</span>
+          <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Test Results (Judge0)</h2>
+        </header>
+        <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
+      </section>
+
       ${testCasesHtml}
     </article>
   `
@@ -146,7 +157,8 @@ function renderBootstrapScript(questionsMeta) {
       title: q.title,
       description: q.description,
       language: q.language,
-      topicName: q.topicName
+      topicName: q.topicName,
+      testCases: q.testCases || []
     }))
   )
 
@@ -185,12 +197,16 @@ ${questionsJson}
           const resultEl = container.querySelector('[data-role="result"]');
           const hintBtn = container.querySelector('[data-action="hint"]');
           const submitBtn = container.querySelector('[data-action="submit"]');
+          const runTestsBtn = container.querySelector('[data-action="run-tests"]');
           const hintsSection = container.querySelector('[data-role="hints"]');
           const hintsList = container.querySelector('[data-role="hints-list"]');
+          const testsResultSection = container.querySelector('[data-role="tests-result"]');
+          const testsResultBody = container.querySelector('[data-role="tests-result-body"]');
 
           const metaEntry = meta.find((m) => m.id === questionId) || meta[index] || {};
           const questionText = metaEntry.description || metaEntry.title || '';
           const topicName = metaEntry.topicName || '';
+          const testCases = Array.isArray(metaEntry.testCases) ? metaEntry.testCases : [];
 
           let hintsUsed = 0;
           const allHints = [];
@@ -390,6 +406,46 @@ ${questionsJson}
             hintsList.appendChild(li);
           };
 
+          const renderTestResults = (results) => {
+            if (!testsResultSection || !testsResultBody) return;
+            testsResultSection.style.display = 'block';
+            testsResultBody.innerHTML = '';
+
+            if (!results || !results.length) {
+              const p = document.createElement('p');
+              p.textContent = 'No test results available.';
+              testsResultBody.appendChild(p);
+              return;
+            }
+
+            results.forEach((res) => {
+              const card = document.createElement('div');
+              card.style.borderRadius = '12px';
+              card.style.padding = '10px 12px';
+              card.style.border = '1px solid rgba(148,163,184,0.5)';
+              card.style.background = res.passed ? 'rgba(22,163,74,0.06)' : 'rgba(248,113,113,0.06)';
+
+              const statusColor = res.passed ? '#16a34a' : '#b91c1c';
+              const statusLabel = res.passed ? 'PASS' : 'FAIL';
+
+              card.innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                '<span style="font-weight:600;color:#0f172a;">Test ' + (res.testNumber || '') + '</span>' +
+                '<span style="font-size:0.75rem;font-weight:600;color:' + statusColor + ';">' + statusLabel + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.8rem;color:#475569;display:grid;gap:2px;">' +
+                '<div><strong>Input:</strong> ' + (res.input != null ? String(res.input) : '—') + '</div>' +
+                '<div><strong>Expected:</strong> ' + (res.expected != null ? String(res.expected) : '—') + '</div>' +
+                '<div><strong>Received:</strong> ' + (res.result != null ? String(res.result) : '—') + '</div>' +
+                (res.stderr
+                  ? '<div><strong>Error:</strong> ' + String(res.stderr) + '</div>'
+                  : '') +
+                '</div>';
+
+              testsResultBody.appendChild(card);
+            });
+          };
+
           if (hintBtn && codeInput) {
             hintBtn.addEventListener('click', async () => {
               const userAttempt = codeInput.value || '';
@@ -482,6 +538,80 @@ ${questionsJson}
                 setResult('Failed to check solution: ' + (error.message || 'Unknown error'), '#ef4444');
               } finally {
                 submitBtn.disabled = false;
+              }
+            });
+          }
+
+          if (runTestsBtn && codeInput) {
+            runTestsBtn.addEventListener('click', async () => {
+              const userSolution = codeInput.value || '';
+              if (!userSolution.trim()) {
+                setResult('Please write a solution before running tests.', '#f97316');
+                return;
+              }
+
+              if (!testCases.length) {
+                setResult('No test cases available for this question.', '#f97316');
+                return;
+              }
+
+              try {
+                runTestsBtn.disabled = true;
+                setResult('Running all tests via Judge0...', '#38bdf8');
+                if (testsResultSection && testsResultBody) {
+                  testsResultSection.style.display = 'none';
+                  testsResultBody.innerHTML = '';
+                }
+
+                const endpoint = buildUrl('/api/judge0/test-cases');
+                const response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    sourceCode: userSolution,
+                    language,
+                    testCases
+                  })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) {
+                  throw new Error(data.error || 'Failed to run Judge0 test-cases');
+                }
+
+                const results = Array.isArray(data.results) ? data.results : [];
+                renderTestResults(results);
+
+                const total = data.totalTests || results.length;
+                const passed =
+                  typeof data.passedTests === 'number'
+                    ? data.passedTests
+                    : results.filter((r) => r.passed).length;
+
+                if (total > 0) {
+                  const allPassed = passed === total;
+                  const somePassed = passed > 0 && passed < total;
+                  setResult(
+                    'Judge0: ' + passed + '/' + total + ' tests passed.',
+                    allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
+                  );
+                } else {
+                  setResult('Judge0: No test results returned.', '#f97316');
+                }
+              } catch (error) {
+                console.error('Judge0 Run All Tests error:', error);
+                setResult(
+                  'Failed to run tests via Judge0: ' + (error.message || 'Unknown error'),
+                  '#ef4444'
+                );
+                if (testsResultSection && testsResultBody) {
+                  testsResultSection.style.display = 'none';
+                  testsResultBody.innerHTML = '';
+                }
+              } finally {
+                runTestsBtn.disabled = false;
               }
             });
           }
