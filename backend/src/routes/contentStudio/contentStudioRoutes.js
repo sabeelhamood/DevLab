@@ -1,5 +1,5 @@
 import express from 'express'
-import { geminiService } from '../../services/gemini.js'
+import { openAIContentStudioService } from '../../services/openAIContentStudioService.js'
 import {
   createRequestId,
   saveTempQuestions,
@@ -232,9 +232,9 @@ const generateCodingQuestions = async ({
   skills,
   humanLanguage,
   seedQuestion
-}) => {
+  }) => {
   try {
-    const generated = await geminiService.generateCodingQuestion(
+    const generated = await openAIContentStudioService.generateCodingQuestion(
       topic_name,
       Array.isArray(skills) ? skills : [],
       amount,
@@ -505,7 +505,7 @@ export const checkSolutionHandler = async (req, res) => {
     // Send solution to Gemini for evaluation
     let evaluation
     if (question_type === 'code') {
-      evaluation = await geminiService.evaluateCodeSubmission(
+      evaluation = await openAIContentStudioService.evaluateCodeSubmission(
         solution,
         originalQuestion.content,
         'javascript',
@@ -714,7 +714,7 @@ export const getQuestionFeedbackHandler = async (req, res) => {
       // Get solution evaluation if user solution provided
       let evaluation = null
       if (user_solution) {
-        evaluation = await geminiService.evaluateCodeSubmission(
+        evaluation = await openAIContentStudioService.evaluateCodeSubmission(
           question_content,
           user_solution,
           language || 'javascript'
