@@ -5,6 +5,7 @@ import Dashboard from './pages/learner/Dashboard'
 import CompetitionIntro from './pages/competitions/CompetitionIntro.jsx'
 import CompetitionPlay from './pages/competitions/CompetitionPlay.jsx'
 import AssessmentPreview from './pages/AssessmentPreview.jsx'
+import ContentStudioPreview from './pages/ContentStudioPreview.jsx'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/competitions/:competitionId/intro" element={<CompetitionIntro />} />
           <Route path="/competitions/:competitionId/play" element={<CompetitionPlay />} />
           <Route path="/assessment-preview" element={<AssessmentPreview />} />
+          <Route path="/content-studio-preview" element={<ContentStudioPreview />} />
         </Routes>
       </Layout>
     </Router>
