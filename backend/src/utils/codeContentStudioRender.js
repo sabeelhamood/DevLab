@@ -74,7 +74,9 @@ function renderSingleQuestion(question, index, topicName, language) {
   return `
     <article data-code-question="${escapeHtml(
       id
-    )}" data-language="${escapeHtml((language || 'javascript').toLowerCase())}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); padding: 28px; border-radius: 24px; box-shadow: 0 28px 60px rgba(15, 23, 42, 0.16); display: grid; gap: 22px;">
+    )}" data-language="${escapeHtml(
+      (language || 'javascript').toLowerCase()
+    )}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #ffffff; padding: 24px; border-radius: 20px; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12); display: grid; gap: 22px;">
       <header style="display:flex;align-items:center;justify-content:space-between;gap:18px;">
         <div style="display:grid;gap:10px;">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(15,23,42,0.55);">

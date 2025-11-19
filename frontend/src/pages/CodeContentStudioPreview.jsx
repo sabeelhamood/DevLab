@@ -100,137 +100,229 @@ function CodeContentStudioPreview() {
   }, [requestBody])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="space-y-2">
-          <p className="text-sm uppercase tracking-wide text-slate-400">
-            Temporary Utility
-          </p>
-          <h1 className="text-3xl font-semibold">Code Content Studio Renderer Preview</h1>
-          <p className="text-slate-400 max-w-3xl">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      <div className="max-w-7xl mx-auto px-4 py-6 pt-20 space-y-6">
+        {/* Header card */}
+        <div
+          className="p-6 rounded-xl shadow-lg border transition-all duration-300 hover:shadow-xl"
+          style={{
+            background: 'var(--gradient-card)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            boxShadow: 'var(--shadow-card)'
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p
+                className="text-xs font-semibold uppercase tracking-wide mb-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Content Studio
+              </p>
+              <h1
+                className="text-2xl font-bold font-display"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Code Content Studio Renderer Preview
+              </h1>
+            </div>
+          </div>
+          <p
+            className="text-sm max-w-3xl"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             This page calls the <code>/api/gemini-questions/code-preview</code> endpoint, which
-            uses <code>codeContentStudioRender.js</code> and the OpenAI-backed
-            Content Studio service to generate a full HTML component. The returned HTML includes
-            interactive hints, solution checking, and AI fraud detection.
+            uses <code>codeContentStudioRender.js</code> and the OpenAI-backed Content Studio
+            service to generate a full HTML component with hints, solution checking, and AI fraud
+            detection.
           </p>
           {statusMessage && (
-            <div className="text-sm text-emerald-300">{statusMessage}</div>
+            <div
+              className="mt-3 text-sm px-3 py-2 rounded-lg inline-flex items-center"
+              style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: 'var(--text-primary)',
+                border: '1px solid rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              {statusMessage}
+            </div>
           )}
-        </header>
+        </div>
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
-          <div className="space-y-6">
+        {/* Controls + request/response */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Configuration panel */}
+          <div
+            className="card p-6 transition-all duration-300 hover:shadow-xl"
+            style={{
+              background: 'var(--gradient-card)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              boxShadow: 'var(--shadow-card)'
+            }}
+          >
+            <h2
+              className="text-lg font-bold mb-4"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Generation Parameters
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className="text-sm font-medium flex flex-col gap-2" style={{ color: 'var(--text-primary)' }}>
                 Topic ID
                 <input
                   type="number"
                   min="1"
                   value={topicId}
                   onChange={(event) => setTopicId(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className="text-sm font-medium flex flex-col gap-2" style={{ color: 'var(--text-primary)' }}>
                 Topic Name
                 <input
                   value={topicName}
                   onChange={(event) => setTopicName(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className="text-sm font-medium flex flex-col gap-2" style={{ color: 'var(--text-primary)' }}>
                 Programming Language
                 <input
                   value={programmingLanguage}
                   onChange={(event) => setProgrammingLanguage(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className="text-sm font-medium flex flex-col gap-2" style={{ color: 'var(--text-primary)' }}>
                 Amount (questions)
                 <input
                   type="number"
                   min="1"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+            <div className="grid gap-4 sm:grid-cols-3 mt-4">
+              <label className="text-sm font-medium flex flex-col gap-2" style={{ color: 'var(--text-primary)' }}>
                 Human Language
                 <input
                   value={humanLanguage}
                   onChange={(event) => setHumanLanguage(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2 sm:col-span-2">
+              <label className="text-sm font-medium flex flex-col gap-2 sm:col-span-2" style={{ color: 'var(--text-primary)' }}>
                 Skills (comma separated)
                 <input
                   value={skillsInput}
                   onChange={(event) => setSkillsInput(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className="input px-3 py-2 text-sm"
                 />
               </label>
             </div>
 
-            <div className="flex gap-3 flex-wrap">
+            <div className="mt-6 flex gap-3 flex-wrap">
               <button
                 onClick={handleGenerate}
                 disabled={loading}
-                className="rounded-md bg-emerald-500/90 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                className="btn btn-primary flex items-center justify-center text-sm px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Generating…' : 'Generate Code Component'}
               </button>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-slate-300">
-              Request Payload (sent to /api/gemini-questions/code-preview)
-            </label>
-            <textarea
-              value={requestJson}
-              readOnly
-              rows={10}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
-            />
+          {/* Request/response panel */}
+          <div
+            className="card p-6 transition-all duration-300 hover:shadow-xl"
+            style={{
+              background: 'var(--gradient-card)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              boxShadow: 'var(--shadow-card)'
+            }}
+          >
+            <h2
+              className="text-lg font-bold mb-4"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Debug Payload & Response
+            </h2>
 
-            <label className="text-sm font-medium text-slate-300">
-              Raw Backend Response
-            </label>
-            <textarea
-              value={responseJson}
-              readOnly
-              placeholder="Response from backend will appear here after fetching."
-              rows={10}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
-            />
+            <div className="space-y-3">
+              <label
+                className="text-sm font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Request Payload (sent to /api/gemini-questions/code-preview)
+              </label>
+              <textarea
+                value={requestJson}
+                readOnly
+                rows={8}
+                className="w-full rounded-lg border bg-white/90 px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none"
+              />
+
+              <label
+                className="text-sm font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Raw Backend Response
+              </label>
+              <textarea
+                value={responseJson}
+                readOnly
+                placeholder="Response from backend will appear here after fetching."
+                rows={8}
+                className="w-full rounded-lg border bg-white/90 px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none"
+              />
+            </div>
           </div>
         </section>
 
+        {/* Rendered component preview */}
         <section>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-4">
-              <h2 className="text-lg font-semibold text-slate-200">
+          <div
+            className="rounded-2xl p-6 shadow-lg border"
+            style={{
+              background: 'var(--gradient-card)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              boxShadow: 'var(--shadow-card)'
+            }}
+          >
+            <div className="mb-4 flex items-center justify-between border-b pb-4 border-gray-200/40">
+              <h2
+                className="text-lg font-semibold"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 Rendered Code Content Studio Component
               </h2>
-              <span className="text-xs text-slate-500 hidden sm:inline">
+              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
                 Uses <code>dangerouslySetInnerHTML</code> and replays embedded scripts
               </span>
             </div>
             {html ? (
               <div
                 ref={previewRef}
-                className="preview-container prose max-w-none text-slate-200 rounded-xl border border-slate-800 bg-slate-950/40 p-4"
+                className="preview-container rounded-xl border bg-white/95 p-4"
+                style={{
+                  borderColor: 'rgba(148, 163, 184, 0.4)',
+                  color: '#0f172a'
+                }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/70 p-8 text-center text-sm text-slate-500">
+              <div
+                className="rounded-lg border border-dashed p-8 text-center text-sm"
+                style={{
+                  borderColor: 'rgba(148, 163, 184, 0.5)',
+                  background: 'rgba(15, 23, 42, 0.03)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
                 No component rendered yet. Configure the payload above and click
                 &ldquo;Generate Code Component&rdquo;.
               </div>
