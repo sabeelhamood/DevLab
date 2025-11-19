@@ -66,7 +66,9 @@ function CodeContentStudioPreview() {
       } else {
         newScript.text = oldScript.text || oldScript.innerHTML
       }
-      oldScript.parentNode.replaceChild(newScript, oldScript)
+      // Execute the script in the global context without mutating the
+      // React-managed DOM tree, to avoid replaceChild() conflicts.
+      document.body.appendChild(newScript)
     })
   }, [html])
 
