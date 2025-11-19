@@ -236,8 +236,13 @@ ${questionsJson}
 
             resultEl.style.color = '#0f172a';
             resultEl.innerHTML =
-              '<div style="border-radius: 16px; overflow: hidden; border: 1px solid rgba(22,163,74,0.25); box-shadow: 0 18px 40px rgba(22,163,74,0.15); background: linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
+              '<style>@keyframes devlabModalFade{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}</style>' +
+              '<div data-modal-root="true" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.55);padding:16px;">' +
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);animation:devlabModalFade 250ms ease-in-out;">' +
+              '<button type="button" onclick="var m=this.closest(\'[data-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
+              '✕' +
+              '</button>' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
               '<div style="display:flex;align-items:center;gap:12px;">' +
               '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16a34a,#22c55e);color:#ecfdf5;font-size:20px;">' +
               '✅' +
@@ -254,7 +259,7 @@ ${questionsJson}
               '<div style="font-size:11px;font-weight:600;color:#16a34a;">SCORE</div>' +
               '</div>' +
               '</div>' +
-              '<div style="padding:16px 18px 18px;background:#f9fafb;">' +
+              '<div style="padding:16px 20px 18px 20px;background:#f9fafb;">' +
               '<div style="margin-bottom:14px;">' +
               '<div style="font-size:13px;font-weight:600;color:#047857;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
               '<span style="width:6px;height:6px;border-radius:999px;background:#22c55e;"></span>' +
@@ -265,6 +270,87 @@ ${questionsJson}
               '</div>' +
               '</div>' +
               suggestionsHtml +
+              '</div>' +
+              '</div>' +
+              '</div>';
+          };
+
+          const renderFailureCard = (evaluation) => {
+            if (!resultEl) return;
+            const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
+            const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+            const feedback =
+              typeof evaluation.feedback === 'string'
+                ? evaluation.feedback
+                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
+                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
+                  : '';
+            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+
+            let suggestionsHtml = '';
+            if (suggestions.length) {
+              let items = '';
+              suggestions.slice(0, 3).forEach((s, idx) => {
+                const text = typeof s === 'string' ? s : JSON.stringify(s);
+                items +=
+                  '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(254,243,199,0.4);border:1px solid rgba(245,158,11,0.6);">' +
+                  '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
+                  (idx + 1) +
+                  '</div>' +
+                  '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
+                  text +
+                  '</div>' +
+                  '</div>';
+              });
+
+              suggestionsHtml =
+                '<div>' +
+                '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                '💡 Suggestions' +
+                '</div>' +
+                '<div style="display:grid;gap:8px;">' +
+                items +
+                '</div>' +
+                '</div>';
+            }
+
+            resultEl.style.color = '#0f172a';
+            resultEl.innerHTML =
+              '<style>@keyframes devlabModalFade{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}</style>' +
+              '<div data-modal-root="true" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.55);padding:16px;">' +
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);animation:devlabModalFade 250ms ease-in-out;">' +
+              '<button type="button" onclick="var m=this.closest(\'[data-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
+              '✕' +
+              '</button>' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(245,158,11,0.45);">' +
+              '<div style="display:flex;align-items:center;gap:12px;">' +
+              '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff7ed;font-size:20px;">' +
+              '🎯' +
+              '</div>' +
+              '<div>' +
+              '<div style="font-weight:700;font-size:16px;color:#92400e;">📚 Keep Learning!</div>' +
+              '<div style="font-size:13px;color:#b45309;">Let\'s review and improve together.</div>' +
+              '</div>' +
+              '</div>' +
+              '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff7ed;border:2px solid rgba(245,158,11,0.7);box-shadow:0 10px 25px rgba(245,158,11,0.45);">' +
+              '<div style="font-weight:800;font-size:18px;color:#b45309;">' +
+              safeScore +
+              '%</div>' +
+              '<div style="font-size:11px;font-weight:600;color:#b45309;">SCORE</div>' +
+              '</div>' +
+              '</div>' +
+              '<div style="padding:16px 20px 18px 20px;background:#ffffff;">' +
+              '<div style="margin-bottom:14px;">' +
+              '<div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+              '<span style="width:6px;height:6px;border-radius:999px;background:#f97316;"></span>' +
+              'Feedback' +
+              '</div>' +
+              '<div style="border-radius:12px;padding:12px 14px;background:rgba(254,242,242,0.85);border:1px solid rgba(248,113,113,0.6);font-size:13px;line-height:1.6;color:#7f1d1d;">' +
+              (feedback || 'There are a few issues with your solution. Review the details and try again.') +
+              '</div>' +
+              '</div>' +
+              suggestionsHtml +
+              '</div>' +
               '</div>' +
               '</div>';
           };
@@ -368,12 +454,7 @@ ${questionsJson}
                 } else if (score >= 80) {
                   renderEvaluationCard(evaluation);
                 } else {
-                  setResult(
-                    'Your solution needs improvement. Score: ' +
-                      score +
-                      '/100. Check feedback and try again.',
-                    '#fbbf24'
-                  );
+                  renderFailureCard(evaluation);
                 }
               } catch (error) {
                 console.error('Check solution error:', error);
