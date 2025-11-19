@@ -195,6 +195,29 @@ ${questionsJson}
           let hintsUsed = 0;
           const allHints = [];
 
+          const openFeedbackModal = (cardHtml) => {
+            try {
+              const existing = document.querySelector('[data-devlab-modal-root="true"]');
+              if (existing && existing.parentNode) {
+                existing.parentNode.removeChild(existing);
+              }
+              const overlay = document.createElement('div');
+              overlay.setAttribute('data-devlab-modal-root', 'true');
+              overlay.style.position = 'fixed';
+              overlay.style.inset = '0';
+              overlay.style.zIndex = '50';
+              overlay.style.display = 'flex';
+              overlay.style.alignItems = 'center';
+              overlay.style.justifyContent = 'center';
+              overlay.style.background = 'rgba(15,23,42,0.55)';
+              overlay.style.padding = '16px';
+              overlay.innerHTML = cardHtml;
+              document.body.appendChild(overlay);
+            } catch (e) {
+              console.error('Failed to render feedback modal:', e);
+            }
+          };
+
           const renderEvaluationCard = (evaluation) => {
             if (!resultEl) return;
             const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
@@ -235,11 +258,9 @@ ${questionsJson}
             }
 
             resultEl.style.color = '#0f172a';
-            resultEl.innerHTML =
-              '<style>@keyframes devlabModalFade{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}</style>' +
-              '<div data-modal-root="true" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.55);padding:16px;">' +
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);animation:devlabModalFade 250ms ease-in-out;">' +
-              '<button type="button" onclick="var m=this.closest(\'[data-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
+            const cardHtml =
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
+              '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
               '✕' +
               '</button>' +
               '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
@@ -271,8 +292,9 @@ ${questionsJson}
               '</div>' +
               suggestionsHtml +
               '</div>' +
-              '</div>' +
               '</div>';
+
+            openFeedbackModal(cardHtml);
           };
 
           const renderFailureCard = (evaluation) => {
@@ -315,11 +337,9 @@ ${questionsJson}
             }
 
             resultEl.style.color = '#0f172a';
-            resultEl.innerHTML =
-              '<style>@keyframes devlabModalFade{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:translateY(0);}}</style>' +
-              '<div data-modal-root="true" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.55);padding:16px;">' +
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);animation:devlabModalFade 250ms ease-in-out;">' +
-              '<button type="button" onclick="var m=this.closest(\'[data-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
+            const cardHtml =
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);">' +
+              '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
               '✕' +
               '</button>' +
               '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(245,158,11,0.45);">' +
@@ -351,8 +371,9 @@ ${questionsJson}
               '</div>' +
               suggestionsHtml +
               '</div>' +
-              '</div>' +
               '</div>';
+
+            openFeedbackModal(cardHtml);
           };
 
           const setResult = (message, color) => {
