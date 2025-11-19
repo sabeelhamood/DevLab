@@ -1357,4 +1357,8 @@ Rules:
   }
 }
 
-export const geminiService = new GeminiService();
+import { openAIContentStudioService } from './openAIContentStudioService.js'
+
+// Backwards compatibility: any existing imports of geminiService will now use
+// the OpenAI-backed implementation instead of the old Gemini client.
+export const geminiService = openAIContentStudioService;
