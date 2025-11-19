@@ -1,5 +1,6 @@
 import express from 'express'
 import { generateCodeContentStudioComponent } from '../../utils/codeContentStudioRender.js'
+import { openAIContentStudioService } from '../../services/openAIContentStudioService.js'
 
 const router = express.Router()
 
@@ -89,6 +90,154 @@ router.post('/code-preview', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to generate Content Studio code preview component',
+      message: error?.message
+    })
+  }
+})
+
+/**
+ * Generate a hint for the rendered code question using OpenAI Content Studio service.
+ *
+ * Path: POST /api/content-studio/generate-hint
+ *
+ * Body:
+ * {
+ *   question: "<question text>",
+ *   userAttempt: "<current code>",
+ *   hintsUsed: 0 | 1 | 2,
+ *   allHints: ["previous hint 1", "previous hint 2"],
+ *   topicName: "Arrays"
+ * }
+ */
+router.post('/generate-hint', async (req, res) => {
+  const {
+    question,
+    userAttempt = '',
+    hintsUsed = 0,
+    allHints = [],
+    topicName
+  } = req.body || {}
+
+  if (!question) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: question'
+    })
+  }
+
+  try {
+    const hintResult = await openAIContentStudioService.generateHints(
+      question,
+      userAttempt,
+      hintsUsed,
+      Array.isArray(allHints) ? allHints : []
+    )
+
+    let hintText = hintResult
+    if (typeof hintResult === 'object' && hintResult !== null) {
+      hintText =
+        hintResult.hint ||
+        hintResult.text ||
+        hintResult.message ||
+        JSON.stringify(hintResult)
+    }
+    if (typeof hintText !== 'string') {
+      hintText = String(hintText || '')
+    }
+
+    if (!hintText.trim()) {
+      return res.status(500).json({
+        success: false,
+        error: 'OpenAI service returned an empty hint'
+      })
+    }
+
+    return res.json({
+      success: true,
+      hint: hintText,
+      metadata: {
+        topicName: topicName || null,
+        hintsUsed: (hintsUsed || 0) + 1,
+        generatedAt: new Date().toISOString(),
+        fallback: !!hintResult?.fallback,
+        source: 'openai_content_studio'
+      }
+    })
+  } catch (error) {
+    console.error('❌ Error generating Content Studio hint with OpenAI:', error)
+
+    const fallback = openAIContentStudioService.generateFallbackHints(
+      question,
+      userAttempt,
+      hintsUsed
+    )
+
+    return res.json({
+      success: true,
+      hint: fallback.hint,
+      metadata: {
+        topicName: topicName || null,
+        hintsUsed: fallback.hintLevel,
+        generatedAt: new Date().toISOString(),
+        fallback: true,
+        source: 'openai_fallback',
+        message: fallback.message
+      }
+    })
+  }
+})
+
+/**
+ * Check a learner's solution for the rendered code question using OpenAI Content Studio service.
+ *
+ * Path: POST /api/content-studio/check-solution
+ *
+ * Body:
+ * {
+ *   question: "<question text>",
+ *   userSolution: "<user code>",
+ *   language: "javascript",
+ *   topicName: "Arrays"
+ * }
+ */
+router.post('/check-solution', async (req, res) => {
+  const {
+    question,
+    userSolution,
+    language = 'javascript',
+    topicName
+  } = req.body || {}
+
+  if (!question || !userSolution) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields: question, userSolution'
+    })
+  }
+
+  try {
+    const evaluation = await openAIContentStudioService.evaluateCodeSubmission(
+      userSolution,
+      question,
+      language,
+      [] // test cases not wired through this preview endpoint
+    )
+
+    return res.json({
+      success: true,
+      evaluation,
+      metadata: {
+        topicName: topicName || null,
+        language,
+        checkedAt: new Date().toISOString(),
+        source: 'openai_content_studio'
+      }
+    })
+  } catch (error) {
+    console.error('❌ Error checking solution with OpenAI Content Studio service:', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to check solution',
       message: error?.message
     })
   }

@@ -215,7 +215,7 @@ ${questionsJson}
               try {
                 hintBtn.disabled = true;
                 setResult('Generating hint...', '#38bdf8');
-                const endpoint = buildUrl('/api/gemini-questions/generate-hint');
+                const endpoint = buildUrl('/api/content-studio/generate-hint');
                 const response = await fetch(endpoint, {
                   method: 'POST',
                   headers: {
@@ -261,7 +261,7 @@ ${questionsJson}
               try {
                 submitBtn.disabled = true;
                 setResult('Checking solution and running AI analysis...', '#38bdf8');
-                const endpoint = buildUrl('/api/gemini-questions/check-solution');
+                const endpoint = buildUrl('/api/content-studio/check-solution');
                 const response = await fetch(endpoint, {
                   method: 'POST',
                   headers: {
