@@ -7,6 +7,10 @@ function AssessmentPreview() {
   const [programmingLanguage, setProgrammingLanguage] = useState('javascript')
   const [humanLanguage, setHumanLanguage] = useState('en')
   const [skillsInput, setSkillsInput] = useState('loops,array-methods')
+   // Optional assessment identifier – when provided, generated coding questions
+   // will also be saved into Supabase `assessment_codeQuestions` without
+   // affecting existing behavior when left blank.
+  const [assessmentId, setAssessmentId] = useState('')
 
   const [htmlPreview, setHtmlPreview] = useState('')
   const [requestJson, setRequestJson] = useState('')
@@ -23,7 +27,7 @@ function AssessmentPreview() {
       .map((skill) => skill.trim())
       .filter(Boolean)
 
-    return {
+    const payload = {
       requester_service: 'assessment',
       action: 'coding',
       payload: {
@@ -32,13 +36,19 @@ function AssessmentPreview() {
         difficulty: difficulty || 'medium',
         humanLanguage: humanLanguage || 'en',
         programming_language: programmingLanguage || 'javascript',
-        skills
+        skills,
+        // Only include assessment_id when user has provided a value,
+        // keeping the original contract untouched for existing callers.
+        ...(assessmentId && assessmentId.trim()
+          ? { assessment_id: assessmentId.trim() }
+          : {})
       },
       response: {
         answer: ''
       }
     }
-  }, [amount, difficulty, humanLanguage, programmingLanguage, skillsInput])
+    return payload
+  }, [amount, difficulty, humanLanguage, programmingLanguage, skillsInput, assessmentId])
 
   useEffect(() => {
     setRequestJson(JSON.stringify(requestBody, null, 2))
@@ -240,6 +250,19 @@ function AssessmentPreview() {
                 />
               </label>
             </div>
+
+            <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              Assessment ID (optional)
+              <input
+                value={assessmentId}
+                onChange={(event) => setAssessmentId(event.target.value)}
+                placeholder="e.g. assessment_123"
+                className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+              />
+              <span className="text-xs text-slate-500">
+                When provided, generated coding questions will be saved to Supabase under this assessment.
+              </span>
+            </label>
 
             <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
               Skills (comma separated)
