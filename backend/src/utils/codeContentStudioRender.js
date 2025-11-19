@@ -136,9 +136,9 @@ function renderSingleQuestion(question, index, topicName, language) {
         <ul data-role="hints-list" style="margin:0;padding-left:18px;display:grid;gap:8px;font-size:0.9rem;color:#475569;"></ul>
       </section>
 
-      <section data-role="tests-result" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
+      <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
         <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:rgba(79,70,229,0.12);color:#4f46e5;font-weight:600;">🧪</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
           <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Test Results (Judge0)</h2>
         </header>
         <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
