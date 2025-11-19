@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
 function CodeContentStudioPreview() {
@@ -13,7 +13,6 @@ function CodeContentStudioPreview() {
     'Configure params and click “Generate Code Component” to render the Content Studio code experience (with hints, solution checking, and AI fraud detection).'
   )
   const [loading, setLoading] = useState(false)
-  const [requestJson, setRequestJson] = useState('')
   const [responseJson, setResponseJson] = useState('')
   const [html, setHtml] = useState('')
 
@@ -44,9 +43,10 @@ function CodeContentStudioPreview() {
     }
   }, [topicId, topicName, amount, programmingLanguage, skillsInput, humanLanguage])
 
-  useEffect(() => {
-    setRequestJson(JSON.stringify(requestBody, null, 2))
-  }, [requestBody])
+  const requestJson = useMemo(
+    () => JSON.stringify(requestBody, null, 2),
+    [requestBody]
+  )
 
   const handleGenerate = useCallback(async () => {
     setLoading(true)
@@ -57,6 +57,10 @@ function CodeContentStudioPreview() {
       const previewResponse = await apiClient.post(
         '/content-studio/code-preview',
         requestBody
+      )
+      console.log(
+        '[CodeContentStudioPreview] previewResponse:',
+        previewResponse
       )
       setResponseJson(JSON.stringify(previewResponse, null, 2))
 
@@ -75,6 +79,11 @@ function CodeContentStudioPreview() {
         setHtml('')
         return
       }
+
+      console.log(
+        '[CodeContentStudioPreview] HTML from backend (first 500 chars):',
+        htmlString.slice(0, 500)
+      )
 
       setHtml(htmlString)
       setStatusMessage(
