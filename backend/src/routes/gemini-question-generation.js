@@ -5,6 +5,7 @@ import { saveTempQuestions, createRequestId } from '../services/tempQuestionStor
 import { saveGeminiQuestionsToSupabase } from '../services/tempQuestionStorageService.js'
 import { postgres } from '../config/database.js'
 import { fetchAssessmentTheoreticalQuestions } from '../services/assessmentClient.js'
+import { generateCodeContentStudioComponent } from '../utils/codeContentStudioRender.js'
 
 const router = express.Router()
 
@@ -1713,6 +1714,49 @@ router.post('/reveal-solution', async (req, res) => {
     res.status(500).json({
       error: 'Failed to reveal solution',
       message: error.message
+    })
+  }
+})
+
+// Generate Content Studio style code component (HTML) using OpenAI-backed renderer
+router.post('/code-preview', async (req, res) => {
+  try {
+    const {
+      topicName,
+      topic_name,
+      topic_id,
+      amount = 3,
+      programming_language = 'javascript',
+      skills = [],
+      humanLanguage = 'en'
+    } = req.body || {}
+
+    const safeTopicId =
+      typeof topic_id === 'number' || typeof topic_id === 'string'
+        ? topic_id
+        : 123
+
+    const safeAmount = Number(amount) > 0 ? Number(amount) : 3
+
+    const html = await generateCodeContentStudioComponent({
+      topicName: topicName || topic_name || 'Content Studio Preview',
+      topic_id: safeTopicId,
+      amount: safeAmount,
+      programming_language,
+      skills: Array.isArray(skills) ? skills : [],
+      humanLanguage
+    })
+
+    return res.json({
+      success: true,
+      html
+    })
+  } catch (error) {
+    console.error('❌ Error generating code-preview component:', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to generate Content Studio code preview component',
+      message: error?.message
     })
   }
 })
