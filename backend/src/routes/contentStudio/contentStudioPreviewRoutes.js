@@ -233,9 +233,45 @@ router.post('/check-solution', async (req, res) => {
       [] // test cases not wired through this preview endpoint
     )
 
+    let aiDetection = null
+    let enrichedEvaluation = evaluation
+
+    // Run fraud detection whenever the solution is judged correct by OpenAI.
+    const score = typeof evaluation.score === 'number' ? evaluation.score : 0
+    const isCorrectFlag = evaluation.isCorrect === true || score >= 80
+
+    if (isCorrectFlag) {
+      try {
+        aiDetection = await openAIContentStudioService.detectFraud(
+          userSolution,
+          questionText
+        )
+
+        const aiLikelihood =
+          typeof aiDetection.aiLikelihood === 'number' ? aiDetection.aiLikelihood : 0
+        const isAiGenerated =
+          aiDetection.verdict === 'AI' ||
+          aiLikelihood >= 70
+
+        enrichedEvaluation = {
+          ...evaluation,
+          isAiGenerated
+        }
+
+        aiDetection = {
+          ...aiDetection,
+          isAiGenerated
+        }
+      } catch (fraudError) {
+        console.error('❌ Error running OpenAI fraud detection for Content Studio preview:', fraudError)
+        aiDetection = null
+      }
+    }
+
     return res.json({
       success: true,
-      evaluation,
+      evaluation: enrichedEvaluation,
+      aiDetection,
       metadata: {
         topicName: topicName || null,
         language,

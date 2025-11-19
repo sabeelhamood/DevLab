@@ -195,6 +195,80 @@ ${questionsJson}
           let hintsUsed = 0;
           const allHints = [];
 
+          const renderEvaluationCard = (evaluation) => {
+            if (!resultEl) return;
+            const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
+            const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+            const feedback =
+              typeof evaluation.feedback === 'string'
+                ? evaluation.feedback
+                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
+                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
+                  : '';
+            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+
+            let suggestionsHtml = '';
+            if (suggestions.length) {
+              let items = '';
+              suggestions.slice(0, 3).forEach((s, idx) => {
+                const text = typeof s === 'string' ? s : JSON.stringify(s);
+                items +=
+                  '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.4);">' +
+                  '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
+                  (idx + 1) +
+                  '</div>' +
+                  '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
+                  text +
+                  '</div>' +
+                  '</div>';
+              });
+
+              suggestionsHtml =
+                '<div>' +
+                '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                '💡 Suggestions' +
+                '</div>' +
+                '<div style="display:grid;gap:8px;">' +
+                items +
+                '</div>' +
+                '</div>';
+            }
+
+            resultEl.style.color = '#0f172a';
+            resultEl.innerHTML =
+              '<div style="border-radius: 16px; overflow: hidden; border: 1px solid rgba(22,163,74,0.25); box-shadow: 0 18px 40px rgba(22,163,74,0.15); background: linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
+              '<div style="display:flex;align-items:center;gap:12px;">' +
+              '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16a34a,#22c55e);color:#ecfdf5;font-size:20px;">' +
+              '✅' +
+              '</div>' +
+              '<div>' +
+              '<div style="font-weight:700;font-size:16px;color:#14532d;">🎉 Excellent Work!</div>' +
+              '<div style="font-size:13px;color:#166534;">Your solution looks correct and well structured.</div>' +
+              '</div>' +
+              '</div>' +
+              '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ecfdf5;border:2px solid rgba(22,163,74,0.35);box-shadow:0 10px 25px rgba(22,163,74,0.25);">' +
+              '<div style="font-weight:800;font-size:18px;color:#166534;">' +
+              safeScore +
+              '%</div>' +
+              '<div style="font-size:11px;font-weight:600;color:#16a34a;">SCORE</div>' +
+              '</div>' +
+              '</div>' +
+              '<div style="padding:16px 18px 18px;background:#f9fafb;">' +
+              '<div style="margin-bottom:14px;">' +
+              '<div style="font-size:13px;font-weight:600;color:#047857;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+              '<span style="width:6px;height:6px;border-radius:999px;background:#22c55e;"></span>' +
+              'Feedback' +
+              '</div>' +
+              '<div style="border-radius:12px;padding:12px 14px;background:#ffffff;border:1px solid rgba(148,163,184,0.4);font-size:13px;line-height:1.6;color:#111827;">' +
+              (feedback || 'Great job! Your solution passes the automated checks.') +
+              '</div>' +
+              '</div>' +
+              suggestionsHtml +
+              '</div>' +
+              '</div>';
+          };
+
           const setResult = (message, color) => {
             if (!resultEl) return;
             resultEl.textContent = message;
@@ -292,10 +366,7 @@ ${questionsJson}
                     '#f97316'
                   );
                 } else if (score >= 80) {
-                  setResult(
-                    '✅ Great job! Your solution looks correct. Score: ' + score + '/100',
-                    '#22c55e'
-                  );
+                  renderEvaluationCard(evaluation);
                 } else {
                   setResult(
                     'Your solution needs improvement. Score: ' +
