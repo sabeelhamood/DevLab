@@ -51,7 +51,8 @@ function CodeContentStudioPreview() {
   }, [requestBody])
 
   // Render the HTML preview and safely execute any <script> tags,
-  // similar to the AssessmentPreview pattern.
+  // using a recursive DOM clone so nested scripts (like the Content Studio
+  // bootstrap script) are also executed.
   useEffect(() => {
     const container = previewRef.current
     if (!container) return
@@ -61,20 +62,24 @@ function CodeContentStudioPreview() {
     const template = document.createElement('template')
     template.innerHTML = html
 
-    const injectNode = (node) => {
-      if (node.nodeName === 'SCRIPT') {
+    const processNode = (node, parent) => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === 'SCRIPT') {
         const script = document.createElement('script')
         Array.from(node.attributes || []).forEach((attr) => {
           script.setAttribute(attr.name, attr.value)
         })
         script.textContent = node.textContent
-        container.appendChild(script)
-      } else {
-        container.appendChild(node.cloneNode(true))
+        parent.appendChild(script)
+        return
       }
+
+      // Clone the node without children, then recursively process children.
+      const clone = node.cloneNode(false)
+      parent.appendChild(clone)
+      Array.from(node.childNodes || []).forEach((child) => processNode(child, clone))
     }
 
-    Array.from(template.content.childNodes).forEach(injectNode)
+    Array.from(template.content.childNodes).forEach((child) => processNode(child, container))
   }, [html])
 
   const handleGenerate = useCallback(async () => {
