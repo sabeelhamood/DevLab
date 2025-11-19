@@ -50,26 +50,31 @@ function CodeContentStudioPreview() {
     setRequestJson(JSON.stringify(requestBody, null, 2))
   }, [requestBody])
 
-  // After HTML is injected, manually execute any <script> tags so the
-  // inline bootstrap logic from codeContentStudioRender.js runs.
+  // Render the HTML preview and safely execute any <script> tags,
+  // similar to the AssessmentPreview pattern.
   useEffect(() => {
-    if (!html) return
     const container = previewRef.current
     if (!container) return
+    container.innerHTML = ''
+    if (!html) return
 
-    const scripts = Array.from(container.querySelectorAll('script'))
-    scripts.forEach((oldScript) => {
-      const newScript = document.createElement('script')
-      if (oldScript.type) newScript.type = oldScript.type
-      if (oldScript.src) {
-        newScript.src = oldScript.src
+    const template = document.createElement('template')
+    template.innerHTML = html
+
+    const injectNode = (node) => {
+      if (node.nodeName === 'SCRIPT') {
+        const script = document.createElement('script')
+        Array.from(node.attributes || []).forEach((attr) => {
+          script.setAttribute(attr.name, attr.value)
+        })
+        script.textContent = node.textContent
+        container.appendChild(script)
       } else {
-        newScript.text = oldScript.text || oldScript.innerHTML
+        container.appendChild(node.cloneNode(true))
       }
-      // Execute the script in the global context without mutating the
-      // React-managed DOM tree, to avoid replaceChild() conflicts.
-      document.body.appendChild(newScript)
-    })
+    }
+
+    Array.from(template.content.childNodes).forEach(injectNode)
   }, [html])
 
   const handleGenerate = useCallback(async () => {
@@ -327,7 +332,6 @@ function CodeContentStudioPreview() {
                   borderColor: 'rgba(148, 163, 184, 0.4)',
                   color: '#0f172a'
                 }}
-                dangerouslySetInnerHTML={{ __html: html }}
               />
             ) : (
               <div
