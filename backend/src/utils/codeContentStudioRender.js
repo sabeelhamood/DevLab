@@ -156,12 +156,12 @@ ${questionsJson}
     </script>
     <script>
       (function () {
-        const API_BASE = '${baseFromEnv}';
+        const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
 
         const buildUrl = (path) => {
           if (!path) return '';
           if (/^https?:\\/\\//i.test(path)) return path;
-          const base = (API_BASE || window.__DEVLAB_API_BASE__ || '').replace(/\\/+$/, '');
+          const base = (DEFAULT_BASE || window.__DEVLAB_API_BASE__ || '').replace(/\\/+$/, '');
           const normalized = path.startsWith('/') ? path : '/' + path;
           return base ? base + normalized : normalized;
         };
