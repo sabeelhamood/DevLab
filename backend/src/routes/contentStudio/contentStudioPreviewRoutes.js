@@ -118,16 +118,20 @@ router.post('/generate-hint', async (req, res) => {
     topicName
   } = req.body || {}
 
-  if (!question) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing required field: question'
-    })
+  // Ensure we always have some question text to send to OpenAI.
+  // Prefer the question from the client; otherwise fall back to topicName.
+  let questionText = (question || '').toString().trim()
+  if (!questionText) {
+    if (topicName) {
+      questionText = `Coding challenge about ${topicName}`
+    } else {
+      questionText = 'Coding challenge'
+    }
   }
 
   try {
     const hintResult = await openAIContentStudioService.generateHints(
-      question,
+      questionText,
       userAttempt,
       hintsUsed,
       Array.isArray(allHints) ? allHints : []
@@ -166,11 +170,7 @@ router.post('/generate-hint', async (req, res) => {
   } catch (error) {
     console.error('❌ Error generating Content Studio hint with OpenAI:', error)
 
-    const fallback = openAIContentStudioService.generateFallbackHints(
-      question,
-      userAttempt,
-      hintsUsed
-    )
+    const fallback = openAIContentStudioService.generateFallbackHints(questionText, userAttempt, hintsUsed)
 
     return res.json({
       success: true,
@@ -208,17 +208,27 @@ router.post('/check-solution', async (req, res) => {
     topicName
   } = req.body || {}
 
-  if (!question || !userSolution) {
+  if (!userSolution) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: question, userSolution'
+      error: 'Missing required field: userSolution'
     })
+  }
+
+  // Ensure we always send some question context to OpenAI.
+  let questionText = (question || '').toString().trim()
+  if (!questionText) {
+    if (topicName) {
+      questionText = `Coding challenge about ${topicName}`
+    } else {
+      questionText = 'Coding challenge'
+    }
   }
 
   try {
     const evaluation = await openAIContentStudioService.evaluateCodeSubmission(
       userSolution,
-      question,
+      questionText,
       language,
       [] // test cases not wired through this preview endpoint
     )
