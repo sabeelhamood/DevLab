@@ -236,9 +236,9 @@ router.post('/check-solution', async (req, res) => {
     let aiDetection = null
     let enrichedEvaluation = evaluation
 
-    // Run fraud detection whenever the solution is judged correct by OpenAI.
-    const score = typeof evaluation.score === 'number' ? evaluation.score : 0
-    const isCorrectFlag = evaluation.isCorrect === true || score >= 80
+    // Run fraud detection whenever the solution is explicitly judged correct by OpenAI,
+    // regardless of the numeric score.
+    const isCorrectFlag = evaluation.isCorrect === true
 
     if (isCorrectFlag) {
       try {
