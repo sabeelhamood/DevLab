@@ -26,15 +26,25 @@ function CodeContentStudioPreview() {
       .filter(Boolean)
 
     const payload = {
+      action: 'generate-questions',
       topic_id: Number(topicId) || 0,
-      topicName: topicName || '',
+      topic_name: topicName || '',
+      question_type: 'code',
       amount: Number(amount) > 0 ? Number(amount) : 1,
       programming_language: programmingLanguage || 'javascript',
       skills,
       humanLanguage: humanLanguage || 'en'
     }
 
-    return payload
+    const wrapper = {
+      requester_service: 'content-studio',
+      payload,
+      response: {
+        answer: ''
+      }
+    }
+
+    return wrapper
   }, [topicId, topicName, amount, programmingLanguage, skillsInput, humanLanguage])
 
   useEffect(() => {
@@ -63,35 +73,37 @@ function CodeContentStudioPreview() {
 
   const handleGenerate = useCallback(async () => {
     setLoading(true)
-    setStatusMessage('Calling /api/gemini-questions/code-preview…')
+    setStatusMessage('Calling /api/data-request…')
     try {
-      const response = await apiClient.post('/gemini-questions/code-preview', requestBody)
+      const response = await apiClient.post('/data-request', requestBody)
       setResponseJson(JSON.stringify(response, null, 2))
 
-      if (!response?.success) {
+      if (!response || response.error) {
         setStatusMessage(
-          response?.error || 'Request completed but success=false was returned from backend.'
+          response?.error || 'Request completed but an error was returned from backend.'
         )
         setHtml('')
         return
       }
 
-      const htmlString = response.html || ''
-      if (!htmlString) {
-        setStatusMessage('Backend returned success but no html field.')
+      // Try to extract HTML from response.response.answer if the backend ever returns it
+      const answer = response?.response?.answer
+      if (typeof answer === 'string' && answer.trim().startsWith('<')) {
+        setHtml(answer)
+        setStatusMessage('Rendered HTML from response.answer. Try hints and submit.')
+      } else {
         setHtml('')
-        return
+        setStatusMessage(
+          'Request to /api/data-request succeeded. See "Raw Backend Response" for JSON payload.'
+        )
       }
-
-      setHtml(htmlString)
-      setStatusMessage('Rendered Content Studio code component. Try hints and submit.')
     } catch (error) {
       console.error('CodeContentStudioPreview error:', error)
       const message =
         error?.response?.data?.error ||
         error?.message ||
-        'Unknown error while calling /gemini-questions/code-preview'
-      setStatusMessage(`Failed to render code component: ${message}`)
+        'Unknown error while calling /api/data-request'
+      setStatusMessage(`Failed to execute data request: ${message}`)
       setHtml('')
       setResponseJson(JSON.stringify(error?.response?.data || {}, null, 2))
     } finally {
@@ -127,14 +139,11 @@ function CodeContentStudioPreview() {
               </h1>
             </div>
           </div>
-          <p
-            className="text-sm max-w-3xl"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            This page calls the <code>/api/gemini-questions/code-preview</code> endpoint, which
-            uses <code>codeContentStudioRender.js</code> and the OpenAI-backed Content Studio
-            service to generate a full HTML component with hints, solution checking, and AI fraud
-            detection.
+          <p className="text-sm max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+            This page sends a <code>/api/data-request</code> call with{' '}
+            <code>requester_service = &quot;content-studio&quot;</code> and{' '}
+            <code>action = &quot;generate-questions&quot;</code>, matching the Content Studio
+            microservice integration and using the OpenAI-backed Content Studio service.
           </p>
           {statusMessage && (
             <div
@@ -253,11 +262,8 @@ function CodeContentStudioPreview() {
             </h2>
 
             <div className="space-y-3">
-              <label
-                className="text-sm font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Request Payload (sent to /api/gemini-questions/code-preview)
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                Request Payload (sent to /api/data-request)
               </label>
               <textarea
                 value={requestJson}
