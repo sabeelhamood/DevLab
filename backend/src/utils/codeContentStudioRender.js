@@ -75,7 +75,7 @@ function renderSingleQuestion(question, index, topicName, language) {
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(15,23,42,0.55);">
             ${escapeHtml(topicName || 'Coding Challenge')}
           </span>
-          <h1 style="margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-0.01em;">
+          <h1 data-role="question-title" style="margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-0.01em;">
             ${escapeHtml(question.title || `Coding Question ${index + 1}`)}
           </h1>
         </div>
@@ -92,10 +92,14 @@ function renderSingleQuestion(question, index, topicName, language) {
       <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);gap:20px;align-items:flex-start;">
         <div data-role="question-pane" style="display:grid;gap:16px;">
           <section style="background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;border:1px solid rgba(15,23,42,0.06);">
-            <p style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(description)}</p>
+            <p data-role="question-description" style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(
+              description
+            )}</p>
           </section>
 
-          ${testCasesHtml}
+          <div data-role="test-cases-container">
+            ${testCasesHtml}
+          </div>
         </div>
 
         <div data-role="editor-pane" style="display:grid;gap:16px;">
@@ -188,487 +192,708 @@ ${questionsJson}
           metaScript.remove();
         }
 
-        const containers = Array.from(document.querySelectorAll('[data-code-question]'));
-        containers.forEach((container, index) => {
-          const questionId = container.getAttribute('data-code-question');
-          const language = container.getAttribute('data-language') || 'javascript';
-          const codeInput = container.querySelector('[data-role="code-input"]');
-          const resultEl = container.querySelector('[data-role="result"]');
-          const hintBtn = container.querySelector('[data-action="hint"]');
-          const submitBtn = container.querySelector('[data-action="submit"]');
-          const runTestsBtn = container.querySelector('[data-action="run-tests"]');
-          const hintsSection = container.querySelector('[data-role="hints"]');
-          const hintsList = container.querySelector('[data-role="hints-list"]');
-          const testsResultSection = container.querySelector('[data-role="tests-result"]');
-          const testsResultBody = container.querySelector('[data-role="tests-result-body"]');
+        const container = document.querySelector('[data-code-question]');
+        if (!container || !meta.length) {
+          return;
+        }
 
-          const metaEntry = meta.find((m) => m.id === questionId) || meta[index] || {};
-          const questionText = metaEntry.description || metaEntry.title || '';
-          const topicName = metaEntry.topicName || '';
+        const baseLanguage = container.getAttribute('data-language') || 'javascript';
+        const codeInput = container.querySelector('[data-role="code-input"]');
+        const resultEl = container.querySelector('[data-role="result"]');
+        const hintBtn = container.querySelector('[data-action="hint"]');
+        const submitBtn = container.querySelector('[data-action="submit"]');
+        const runTestsBtn = container.querySelector('[data-action="run-tests"]');
+        const hintsSection = container.querySelector('[data-role="hints"]');
+        const hintsList = container.querySelector('[data-role="hints-list"]');
+        const testsResultSection = container.querySelector('[data-role="tests-result"]');
+        const testsResultBody = container.querySelector('[data-role="tests-result-body"]');
+        const questionTitleEl = container.querySelector('[data-role="question-title"]');
+        const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
+        const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
+
+        if (!codeInput || !resultEl) {
+          return;
+        }
+
+        const totalQuestions = meta.length;
+        let currentIndex = 0;
+        const codeStateById = {};
+        const hintsStateById = {};
+
+        const getMetaAtIndex = (idx) => meta[idx] || meta[0] || {};
+        const getCurrentMeta = () => getMetaAtIndex(currentIndex);
+        const getCurrentQuestionId = () => {
+          const m = getCurrentMeta();
+          return m.id || String(currentIndex || 0);
+        };
+
+        const getHintStateForQuestion = (questionId) => {
+          if (!hintsStateById[questionId]) {
+            hintsStateById[questionId] = { hintsUsed: 0, allHints: [] };
+          }
+          return hintsStateById[questionId];
+        };
+
+        const saveCurrentCode = () => {
+          const m = getCurrentMeta();
+          if (!m) return;
+          const id = m.id || String(currentIndex || 0);
+          codeStateById[id] = codeInput.value || '';
+        };
+
+        const restoreCodeForCurrentQuestion = () => {
+          const m = getCurrentMeta();
+          if (!m) return;
+          const id = m.id || String(currentIndex || 0);
+          const stored = Object.prototype.hasOwnProperty.call(codeStateById, id)
+            ? codeStateById[id]
+            : '';
+          codeInput.value = stored;
+        };
+
+        const openFeedbackModal = (cardHtml) => {
+          try {
+            const existing = document.querySelector('[data-devlab-modal-root="true"]');
+            if (existing && existing.parentNode) {
+              existing.parentNode.removeChild(existing);
+            }
+            const overlay = document.createElement('div');
+            overlay.setAttribute('data-devlab-modal-root', 'true');
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.zIndex = '50';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.background = 'rgba(15,23,42,0.55)';
+            overlay.style.padding = '16px';
+            overlay.innerHTML = cardHtml;
+            document.body.appendChild(overlay);
+          } catch (e) {
+            console.error('Failed to render feedback modal:', e);
+          }
+        };
+
+        const renderEvaluationCard = (evaluation) => {
+          if (!resultEl) return;
+          const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
+          const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+          const feedback =
+            typeof evaluation.feedback === 'string'
+              ? evaluation.feedback
+              : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
+                ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
+                : '';
+          const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+
+          let suggestionsHtml = '';
+          if (suggestions.length) {
+            let items = '';
+            suggestions.slice(0, 3).forEach((s, idx) => {
+              const text = typeof s === 'string' ? s : JSON.stringify(s);
+              items +=
+                '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.4);">' +
+                '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
+                (idx + 1) +
+                '</div>' +
+                '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
+                text +
+                '</div>' +
+                '</div>';
+            });
+
+            suggestionsHtml =
+              '<div>' +
+              '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+              '💡 Suggestions' +
+              '</div>' +
+              '<div style="display:grid;gap:8px;">' +
+              items +
+              '</div>' +
+              '</div>';
+          }
+
+          resultEl.style.color = '#0f172a';
+          const cardHtml =
+            '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
+            '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
+            '✕' +
+            '</button>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
+            '<div style="display:flex;align-items:center;gap:12px;">' +
+            '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16a34a,#22c55e);color:#ecfdf5;font-size:20px;">' +
+            '✅' +
+            '</div>' +
+            '<div>' +
+            '<div style="font-weight:700;font-size:16px;color:#14532d;">🎉 Excellent Work!</div>' +
+            '<div style="font-size:13px;color:#166534;">Your solution looks correct and well structured.</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ecfdf5;border:2px solid rgba(22,163,74,0.35);box-shadow:0 10px 25px rgba(22,163,74,0.25);">' +
+            '<div style="font-weight:800;font-size:18px;color:#166534;">' +
+            safeScore +
+            '%</div>' +
+            '<div style="font-size:11px;font-weight:600;color:#16a34a;">SCORE</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="padding:16px 20px 18px 20px;background:#f9fafb;">' +
+            '<div style="margin-bottom:14px;">' +
+            '<div style="font-size:13px;font-weight:600;color:#047857;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+            '<span style="width:6px;height:6px;border-radius:999px;background:#22c55e;"></span>' +
+            'Feedback' +
+            '</div>' +
+            '<div style="border-radius:12px;padding:12px 14px;background:#ffffff;border:1px solid rgba(148,163,184,0.4);font-size:13px;line-height:1.6;color:#111827;">' +
+            (feedback || 'Great job! Your solution passes the automated checks.') +
+            '</div>' +
+            '</div>' +
+            suggestionsHtml +
+            '</div>' +
+            '</div>';
+
+          openFeedbackModal(cardHtml);
+        };
+
+        const renderFailureCard = (evaluation) => {
+          if (!resultEl) return;
+          const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
+          const safeScore = Math.max(0, Math.min(100, Math.round(score)));
+          const feedback =
+            typeof evaluation.feedback === 'string'
+              ? evaluation.feedback
+              : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
+                ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
+                : '';
+          const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+
+          let suggestionsHtml = '';
+          if (suggestions.length) {
+            let items = '';
+            suggestions.slice(0, 3).forEach((s, idx) => {
+              const text = typeof s === 'string' ? s : JSON.stringify(s);
+              items +=
+                '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(254,243,199,0.4);border:1px solid rgba(245,158,11,0.6);">' +
+                '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
+                (idx + 1) +
+                '</div>' +
+                '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
+                text +
+                '</div>' +
+                '</div>';
+            });
+
+            suggestionsHtml =
+              '<div>' +
+              '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+              '💡 Suggestions' +
+              '</div>' +
+              '<div style="display:grid;gap:8px;">' +
+              items +
+              '</div>' +
+              '</div>';
+          }
+
+          resultEl.style.color = '#0f172a';
+          const cardHtml =
+            '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);">' +
+            '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
+            '✕' +
+            '</button>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(245,158,11,0.45);">' +
+            '<div style="display:flex;align-items:center;gap:12px;">' +
+            '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff7ed;font-size:20px;">' +
+            '🎯' +
+            '</div>' +
+            '<div>' +
+            '<div style="font-weight:700;font-size:16px;color:#92400e;">📚 Keep Learning!</div>' +
+            '<div style="font-size:13px;color:#b45309;">Let\'s review and improve together.</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff7ed;border:2px solid rgba(245,158,11,0.7);box-shadow:0 10px 25px rgba(245,158,11,0.45);">' +
+            '<div style="font-weight:800;font-size:18px;color:#b45309;">' +
+            safeScore +
+            '%</div>' +
+            '<div style="font-size:11px;font-weight:600;color:#b45309;">SCORE</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="padding:16px 20px 18px 20px;background:#ffffff;">' +
+            '<div style="margin-bottom:14px;">' +
+            '<div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+            '<span style="width:6px;height:6px;border-radius:999px;background:#f97316;"></span>' +
+            'Feedback' +
+            '</div>' +
+            '<div style="border-radius:12px;padding:12px 14px;background:rgba(254,242,242,0.85);border:1px solid rgba(248,113,113,0.6);font-size:13px;line-height:1.6;color:#7f1d1d;">' +
+            (feedback || 'There are a few issues with your solution. Review the details and try again.') +
+            '</div>' +
+            '</div>' +
+            suggestionsHtml +
+            '</div>' +
+            '</div>';
+
+          openFeedbackModal(cardHtml);
+        };
+
+        const setResult = (message, color) => {
+          if (!resultEl) return;
+          resultEl.textContent = message;
+          resultEl.style.color = color || '#e5e7eb';
+        };
+
+        const appendHintElement = (hintText) => {
+          if (!hintsList || !hintsSection) return;
+          const li = document.createElement('li');
+          li.textContent = hintText;
+          hintsList.appendChild(li);
+        };
+
+        const renderTestResults = (results) => {
+          if (!testsResultSection || !testsResultBody) return;
+          testsResultSection.style.display = 'block';
+          testsResultBody.innerHTML = '';
+
+          if (!results || !results.length) {
+            const p = document.createElement('p');
+            p.textContent = 'No test results available.';
+            testsResultBody.appendChild(p);
+            return;
+          }
+
+          results.forEach((res) => {
+            const card = document.createElement('div');
+            card.style.borderRadius = '12px';
+            card.style.padding = '10px 12px';
+            card.style.border = '1px solid rgba(148,163,184,0.5)';
+            card.style.background = res.passed ? 'rgba(22,163,74,0.06)' : 'rgba(248,113,113,0.06)';
+
+            const statusColor = res.passed ? '#16a34a' : '#b91c1c';
+            const statusLabel = res.passed ? 'PASS' : 'FAIL';
+
+            card.innerHTML =
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+              '<span style="font-weight:600;color:#0f172a;">Test ' + (res.testNumber || '') + '</span>' +
+              '<span style="font-size:0.75rem;font-weight:600;color:' + statusColor + ';">' + statusLabel + '</span>' +
+              '</div>' +
+              '<div style="font-size:0.8rem;color:#475569;display:grid;gap:2px;">' +
+              '<div><strong>Input:</strong> ' + (res.input != null ? String(res.input) : '—') + '</div>' +
+              '<div><strong>Expected:</strong> ' + (res.expected != null ? String(res.expected) : '—') + '</div>' +
+              '<div><strong>Received:</strong> ' + (res.result != null ? String(res.result) : '—') + '</div>' +
+              (res.stderr
+                ? '<div><strong>Error:</strong> ' + String(res.stderr) + '</div>'
+                : '') +
+              '</div>';
+
+            testsResultBody.appendChild(card);
+          });
+        };
+
+        const renderTestCasesForCurrentQuestion = () => {
+          if (!testCasesContainer) return;
+          const metaEntry = getCurrentMeta();
           const testCases = Array.isArray(metaEntry.testCases) ? metaEntry.testCases : [];
 
-          let hintsUsed = 0;
-          const allHints = [];
+          testCasesContainer.innerHTML = '';
+          if (!testCases.length) {
+            return;
+          }
 
-          const openFeedbackModal = (cardHtml) => {
-            try {
-              const existing = document.querySelector('[data-devlab-modal-root="true"]');
-              if (existing && existing.parentNode) {
-                existing.parentNode.removeChild(existing);
-              }
-              const overlay = document.createElement('div');
-              overlay.setAttribute('data-devlab-modal-root', 'true');
-              overlay.style.position = 'fixed';
-              overlay.style.inset = '0';
-              overlay.style.zIndex = '50';
-              overlay.style.display = 'flex';
-              overlay.style.alignItems = 'center';
-              overlay.style.justifyContent = 'center';
-              overlay.style.background = 'rgba(15,23,42,0.55)';
-              overlay.style.padding = '16px';
-              overlay.innerHTML = cardHtml;
-              document.body.appendChild(overlay);
-            } catch (e) {
-              console.error('Failed to render feedback modal:', e);
-            }
-          };
+          const section = document.createElement('section');
+          section.style.background = 'rgba(255,255,255,0.92)';
+          section.style.borderRadius = '20px';
+          section.style.padding = '18px';
+          section.style.border = '1px solid rgba(15,23,42,0.06)';
 
-          const renderEvaluationCard = (evaluation) => {
-            if (!resultEl) return;
-            const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
-            const safeScore = Math.max(0, Math.min(100, Math.round(score)));
-            const feedback =
-              typeof evaluation.feedback === 'string'
-                ? evaluation.feedback
-                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
-                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
-                  : '';
-            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+          const header = document.createElement('header');
+          header.style.display = 'flex';
+          header.style.alignItems = 'center';
+          header.style.gap = '10px';
+          header.style.marginBottom = '12px';
 
-            let suggestionsHtml = '';
-            if (suggestions.length) {
-              let items = '';
-              suggestions.slice(0, 3).forEach((s, idx) => {
-                const text = typeof s === 'string' ? s : JSON.stringify(s);
-                items +=
-                  '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.4);">' +
-                  '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
-                  (idx + 1) +
-                  '</div>' +
-                  '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
-                  text +
-                  '</div>' +
-                  '</div>';
-              });
+          const badge = document.createElement('span');
+          badge.textContent = 'TC';
+          badge.style.display = 'inline-flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          badge.style.width = '32px';
+          badge.style.height = '32px';
+          badge.style.borderRadius = '12px';
+          badge.style.background = 'rgba(14,165,233,0.12)';
+          badge.style.color = '#0ea5e9';
+          badge.style.fontWeight = '600';
 
-              suggestionsHtml =
-                '<div>' +
-                '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-                '💡 Suggestions' +
-                '</div>' +
-                '<div style="display:grid;gap:8px;">' +
-                items +
-                '</div>' +
-                '</div>';
-            }
+          const heading = document.createElement('h2');
+          heading.textContent = 'Test Cases';
+          heading.style.margin = '0';
+          heading.style.fontSize = '1rem';
+          heading.style.fontWeight = '600';
+          heading.style.color = '#0f172a';
 
-            resultEl.style.color = '#0f172a';
-            const cardHtml =
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
-              '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
-              '✕' +
-              '</button>' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
-              '<div style="display:flex;align-items:center;gap:12px;">' +
-              '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#16a34a,#22c55e);color:#ecfdf5;font-size:20px;">' +
-              '✅' +
-              '</div>' +
-              '<div>' +
-              '<div style="font-weight:700;font-size:16px;color:#14532d;">🎉 Excellent Work!</div>' +
-              '<div style="font-size:13px;color:#166534;">Your solution looks correct and well structured.</div>' +
-              '</div>' +
-              '</div>' +
-              '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ecfdf5;border:2px solid rgba(22,163,74,0.35);box-shadow:0 10px 25px rgba(22,163,74,0.25);">' +
-              '<div style="font-weight:800;font-size:18px;color:#166534;">' +
-              safeScore +
-              '%</div>' +
-              '<div style="font-size:11px;font-weight:600;color:#16a34a;">SCORE</div>' +
-              '</div>' +
-              '</div>' +
-              '<div style="padding:16px 20px 18px 20px;background:#f9fafb;">' +
-              '<div style="margin-bottom:14px;">' +
-              '<div style="font-size:13px;font-weight:600;color:#047857;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-              '<span style="width:6px;height:6px;border-radius:999px;background:#22c55e;"></span>' +
-              'Feedback' +
-              '</div>' +
-              '<div style="border-radius:12px;padding:12px 14px;background:#ffffff;border:1px solid rgba(148,163,184,0.4);font-size:13px;line-height:1.6;color:#111827;">' +
-              (feedback || 'Great job! Your solution passes the automated checks.') +
-              '</div>' +
-              '</div>' +
-              suggestionsHtml +
-              '</div>' +
-              '</div>';
+          header.appendChild(badge);
+          header.appendChild(heading);
+          section.appendChild(header);
 
-            openFeedbackModal(cardHtml);
-          };
+          const list = document.createElement('ol');
+          list.style.margin = '0';
+          list.style.padding = '0';
+          list.style.display = 'grid';
+          list.style.gap = '10px';
 
-          const renderFailureCard = (evaluation) => {
-            if (!resultEl) return;
-            const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
-            const safeScore = Math.max(0, Math.min(100, Math.round(score)));
-            const feedback =
-              typeof evaluation.feedback === 'string'
-                ? evaluation.feedback
-                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
-                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
-                  : '';
-            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
-
-            let suggestionsHtml = '';
-            if (suggestions.length) {
-              let items = '';
-              suggestions.slice(0, 3).forEach((s, idx) => {
-                const text = typeof s === 'string' ? s : JSON.stringify(s);
-                items +=
-                  '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(254,243,199,0.4);border:1px solid rgba(245,158,11,0.6);">' +
-                  '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
-                  (idx + 1) +
-                  '</div>' +
-                  '<div style="font-size:13px;line-height:1.5;color:#78350f;">' +
-                  text +
-                  '</div>' +
-                  '</div>';
-              });
-
-              suggestionsHtml =
-                '<div>' +
-                '<div style="font-size:13px;font-weight:600;color:#b45309;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-                '💡 Suggestions' +
-                '</div>' +
-                '<div style="display:grid;gap:8px;">' +
-                items +
-                '</div>' +
-                '</div>';
-            }
-
-            resultEl.style.color = '#0f172a';
-            const cardHtml =
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);">' +
-              '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
-              '✕' +
-              '</button>' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(245,158,11,0.45);">' +
-              '<div style="display:flex;align-items:center;gap:12px;">' +
-              '<div style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff7ed;font-size:20px;">' +
-              '🎯' +
-              '</div>' +
-              '<div>' +
-              '<div style="font-weight:700;font-size:16px;color:#92400e;">📚 Keep Learning!</div>' +
-              '<div style="font-size:13px;color:#b45309;">Let\'s review and improve together.</div>' +
-              '</div>' +
-              '</div>' +
-              '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff7ed;border:2px solid rgba(245,158,11,0.7);box-shadow:0 10px 25px rgba(245,158,11,0.45);">' +
-              '<div style="font-weight:800;font-size:18px;color:#b45309;">' +
-              safeScore +
-              '%</div>' +
-              '<div style="font-size:11px;font-weight:600;color:#b45309;">SCORE</div>' +
-              '</div>' +
-              '</div>' +
-              '<div style="padding:16px 20px 18px 20px;background:#ffffff;">' +
-              '<div style="margin-bottom:14px;">' +
-              '<div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-              '<span style="width:6px;height:6px;border-radius:999px;background:#f97316;"></span>' +
-              'Feedback' +
-              '</div>' +
-              '<div style="border-radius:12px;padding:12px 14px;background:rgba(254,242,242,0.85);border:1px solid rgba(248,113,113,0.6);font-size:13px;line-height:1.6;color:#7f1d1d;">' +
-              (feedback || 'There are a few issues with your solution. Review the details and try again.') +
-              '</div>' +
-              '</div>' +
-              suggestionsHtml +
-              '</div>' +
-              '</div>';
-
-            openFeedbackModal(cardHtml);
-          };
-
-          const setResult = (message, color) => {
-            if (!resultEl) return;
-            resultEl.textContent = message;
-            resultEl.style.color = color || '#e5e7eb';
-          };
-
-          const appendHint = (hintText) => {
-            if (!hintsList || !hintsSection) return;
-            hintsSection.style.display = 'block';
+          testCases.forEach((tc, idx) => {
             const li = document.createElement('li');
-            li.textContent = hintText;
-            hintsList.appendChild(li);
-          };
+            li.style.listStyle = 'none';
+            li.style.background = 'rgba(15,23,42,0.02)';
+            li.style.borderRadius = '16px';
+            li.style.padding = '14px';
+            li.style.border = '1px solid rgba(15,23,42,0.06)';
 
-          const renderTestResults = (results) => {
-            if (!testsResultSection || !testsResultBody) return;
-            testsResultSection.style.display = 'block';
+            const liHeader = document.createElement('header');
+            liHeader.style.display = 'flex';
+            liHeader.style.alignItems = 'center';
+            liHeader.style.justifyContent = 'space-between';
+            liHeader.style.marginBottom = '8px';
+
+            const label = document.createElement('span');
+            label.textContent = 'Test Case ' + (idx + 1);
+            label.style.fontSize = '0.75rem';
+            label.style.fontWeight = '600';
+            label.style.letterSpacing = '0.04em';
+            label.style.color = '#0ea5e9';
+            label.style.textTransform = 'uppercase';
+
+            liHeader.appendChild(label);
+            li.appendChild(liHeader);
+
+            const contentGrid = document.createElement('div');
+            contentGrid.style.display = 'grid';
+            contentGrid.style.gap = '8px';
+
+            const inputBlock = document.createElement('div');
+            const inputLabel = document.createElement('span');
+            inputLabel.textContent = 'Input';
+            inputLabel.style.display = 'inline-block';
+            inputLabel.style.fontSize = '0.75rem';
+            inputLabel.style.fontWeight = '600';
+            inputLabel.style.marginBottom = '4px';
+            inputLabel.style.color = 'rgba(15,23,42,0.55)';
+
+            const inputPre = document.createElement('pre');
+            inputPre.style.margin = '0';
+            inputPre.style.padding = '10px';
+            inputPre.style.borderRadius = '10px';
+            inputPre.style.background = '#0f172a';
+            inputPre.style.color = '#e0f2fe';
+            inputPre.style.fontFamily = "'JetBrains Mono','Fira Code',monospace";
+            inputPre.style.fontSize = '0.8rem';
+            inputPre.style.whiteSpace = 'pre-wrap';
+            inputPre.style.wordBreak = 'break-word';
+            inputPre.textContent = tc && tc.input != null ? String(tc.input) : '';
+
+            inputBlock.appendChild(inputLabel);
+            inputBlock.appendChild(inputPre);
+
+            const expectedBlock = document.createElement('div');
+            const expectedLabel = document.createElement('span');
+            expectedLabel.textContent = 'Expected Output';
+            expectedLabel.style.display = 'inline-block';
+            expectedLabel.style.fontSize = '0.75rem';
+            expectedLabel.style.fontWeight = '600';
+            expectedLabel.style.marginBottom = '4px';
+            expectedLabel.style.color = 'rgba(15,23,42,0.55)';
+
+            const expectedPre = document.createElement('pre');
+            expectedPre.style.margin = '0';
+            expectedPre.style.padding = '10px';
+            expectedPre.style.borderRadius = '10px';
+            expectedPre.style.background = '#0f172a';
+            expectedPre.style.color = '#e0f2fe';
+            expectedPre.style.fontFamily = "'JetBrains Mono','Fira Code',monospace";
+            expectedPre.style.fontSize = '0.8rem';
+            expectedPre.style.whiteSpace = 'pre-wrap';
+            expectedPre.style.wordBreak = 'break-word';
+            const expectedValue =
+              (tc && tc.expected_output != null && tc.expected_output) ||
+              (tc && tc.expectedOutput != null && tc.expectedOutput) ||
+              (tc && tc.output != null && tc.output) ||
+              '';
+            expectedPre.textContent = String(expectedValue);
+
+            expectedBlock.appendChild(expectedLabel);
+            expectedBlock.appendChild(expectedPre);
+
+            contentGrid.appendChild(inputBlock);
+            contentGrid.appendChild(expectedBlock);
+
+            li.appendChild(contentGrid);
+            list.appendChild(li);
+          });
+
+          section.appendChild(list);
+          testCasesContainer.appendChild(section);
+        };
+
+        const syncHintsForCurrentQuestion = () => {
+          if (!hintsSection || !hintsList) return;
+          const id = getCurrentQuestionId();
+          const state = getHintStateForQuestion(id);
+          hintsList.innerHTML = '';
+          if (!state.allHints.length) {
+            hintsSection.style.display = 'none';
+            return;
+          }
+          hintsSection.style.display = 'block';
+          state.allHints.forEach((hint) => appendHintElement(hint));
+        };
+
+        const syncQuestionViewFromMeta = () => {
+          const m = getCurrentMeta();
+          if (!m) return;
+          const questionText = m.description || m.title || '';
+
+          if (questionTitleEl) {
+            questionTitleEl.textContent = m.title || 'Coding Question ' + (currentIndex + 1);
+          }
+          if (questionDescriptionEl) {
+            questionDescriptionEl.textContent = questionText;
+          }
+
+          renderTestCasesForCurrentQuestion();
+          restoreCodeForCurrentQuestion();
+          syncHintsForCurrentQuestion();
+
+          if (testsResultSection && testsResultBody) {
+            testsResultSection.style.display = 'none';
             testsResultBody.innerHTML = '';
+          }
 
-            if (!results || !results.length) {
-              const p = document.createElement('p');
-              p.textContent = 'No test results available.';
-              testsResultBody.appendChild(p);
+          setResult('', '#e5e7eb');
+        };
+
+        if (hintBtn && codeInput) {
+          hintBtn.addEventListener('click', async () => {
+            const metaEntry = getCurrentMeta();
+            const questionText = metaEntry.description || metaEntry.title || '';
+            const topicName = metaEntry.topicName || '';
+            const questionId = metaEntry.id || String(currentIndex || 0);
+            const hintState = getHintStateForQuestion(questionId);
+            const userAttempt = codeInput.value || '';
+            try {
+              hintBtn.disabled = true;
+              setResult('Generating hint...', '#38bdf8');
+              const endpoint = buildUrl('/api/content-studio/generate-hint');
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  question: questionText,
+                  userAttempt,
+                  hintsUsed: hintState.hintsUsed,
+                  allHints: hintState.allHints,
+                  topicName
+                })
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate hint');
+              }
+              const hint = data.hint || data.data?.hint || '';
+              if (hint) {
+                hintState.allHints.push(hint);
+                hintState.hintsUsed += 1;
+                syncHintsForCurrentQuestion();
+                setResult('Hint added below.', '#22c55e');
+              } else {
+                setResult('No hint returned from service.', '#f97316');
+              }
+            } catch (error) {
+              console.error('Hint error:', error);
+              setResult('Failed to generate hint: ' + (error.message || 'Unknown error'), '#ef4444');
+            } finally {
+              hintBtn.disabled = false;
+            }
+          });
+        }
+
+        if (submitBtn && codeInput) {
+          submitBtn.addEventListener('click', async () => {
+            const userSolution = codeInput.value || '';
+            if (!userSolution.trim()) {
+              setResult('Please write a solution before submitting.', '#f97316');
+              return;
+            }
+            const metaEntry = getCurrentMeta();
+            const questionText = metaEntry.description || metaEntry.title || '';
+            const topicName = metaEntry.topicName || '';
+            const language = metaEntry.language || baseLanguage;
+
+            try {
+              submitBtn.disabled = true;
+              setResult('Checking solution and running AI analysis...', '#38bdf8');
+              const endpoint = buildUrl('/api/content-studio/check-solution');
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  question: questionText,
+                  userSolution,
+                  language,
+                  topicName
+                })
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                throw new Error(data.error || 'Failed to check solution');
+              }
+
+              const evaluation = data.evaluation || data.data || data || {};
+              const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
+              const isAiGenerated =
+                evaluation.isAiGenerated ||
+                data.feedback?.isAiGenerated ||
+                data.aiDetection?.isAiGenerated;
+
+              if (isAiGenerated) {
+                setResult(
+                  'AI-generated solution detected. Please try to solve it yourself.',
+                  '#f97316'
+                );
+              } else if (score >= 80) {
+                renderEvaluationCard(evaluation);
+              } else {
+                renderFailureCard(evaluation);
+              }
+            } catch (error) {
+              console.error('Check solution error:', error);
+              setResult('Failed to check solution: ' + (error.message || 'Unknown error'), '#ef4444');
+            } finally {
+              submitBtn.disabled = false;
+            }
+          });
+        }
+
+        if (runTestsBtn && codeInput) {
+          runTestsBtn.addEventListener('click', async () => {
+            const userSolution = codeInput.value || '';
+            if (!userSolution.trim()) {
+              setResult('Please write a solution before running tests.', '#f97316');
               return;
             }
 
-            results.forEach((res) => {
-              const card = document.createElement('div');
-              card.style.borderRadius = '12px';
-              card.style.padding = '10px 12px';
-              card.style.border = '1px solid rgba(148,163,184,0.5)';
-              card.style.background = res.passed ? 'rgba(22,163,74,0.06)' : 'rgba(248,113,113,0.06)';
+            const metaEntry = getCurrentMeta();
+            const testCases = Array.isArray(metaEntry.testCases) ? metaEntry.testCases : [];
+            const language = metaEntry.language || baseLanguage;
 
-              const statusColor = res.passed ? '#16a34a' : '#b91c1c';
-              const statusLabel = res.passed ? 'PASS' : 'FAIL';
+            if (!testCases.length) {
+              setResult('No test cases available for this question.', '#f97316');
+              return;
+            }
 
-              card.innerHTML =
-                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-                '<span style="font-weight:600;color:#0f172a;">Test ' + (res.testNumber || '') + '</span>' +
-                '<span style="font-size:0.75rem;font-weight:600;color:' + statusColor + ';">' + statusLabel + '</span>' +
-                '</div>' +
-                '<div style="font-size:0.8rem;color:#475569;display:grid;gap:2px;">' +
-                '<div><strong>Input:</strong> ' + (res.input != null ? String(res.input) : '—') + '</div>' +
-                '<div><strong>Expected:</strong> ' + (res.expected != null ? String(res.expected) : '—') + '</div>' +
-                '<div><strong>Received:</strong> ' + (res.result != null ? String(res.result) : '—') + '</div>' +
-                (res.stderr
-                  ? '<div><strong>Error:</strong> ' + String(res.stderr) + '</div>'
-                  : '') +
-                '</div>';
-
-              testsResultBody.appendChild(card);
-            });
-          };
-
-          if (hintBtn && codeInput) {
-            hintBtn.addEventListener('click', async () => {
-              const userAttempt = codeInput.value || '';
-              try {
-                hintBtn.disabled = true;
-                setResult('Generating hint...', '#38bdf8');
-                const endpoint = buildUrl('/api/content-studio/generate-hint');
-                const response = await fetch(endpoint, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    question: questionText,
-                    userAttempt,
-                    hintsUsed,
-                    allHints,
-                    topicName
-                  })
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                  throw new Error(data.error || 'Failed to generate hint');
-                }
-                const hint = data.hint || data.data?.hint || '';
-                if (hint) {
-                  allHints.push(hint);
-                  hintsUsed += 1;
-                  appendHint(hint);
-                  setResult('Hint added below.', '#22c55e');
-                } else {
-                  setResult('No hint returned from service.', '#f97316');
-                }
-              } catch (error) {
-                console.error('Hint error:', error);
-                setResult('Failed to generate hint: ' + (error.message || 'Unknown error'), '#ef4444');
-              } finally {
-                hintBtn.disabled = false;
-              }
-            });
-          }
-
-          if (submitBtn && codeInput) {
-            submitBtn.addEventListener('click', async () => {
-              const userSolution = codeInput.value || '';
-              if (!userSolution.trim()) {
-                setResult('Please write a solution before submitting.', '#f97316');
-                return;
-              }
-              try {
-                submitBtn.disabled = true;
-                setResult('Checking solution and running AI analysis...', '#38bdf8');
-                const endpoint = buildUrl('/api/content-studio/check-solution');
-                const response = await fetch(endpoint, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    question: questionText,
-                    userSolution,
-                    language,
-                    topicName
-                  })
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                  throw new Error(data.error || 'Failed to check solution');
-                }
-
-                const evaluation = data.evaluation || data.data || data || {};
-                const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
-                const isAiGenerated =
-                  evaluation.isAiGenerated ||
-                  data.feedback?.isAiGenerated ||
-                  data.aiDetection?.isAiGenerated;
-
-                if (isAiGenerated) {
-                  setResult(
-                    'AI-generated solution detected. Please try to solve it yourself.',
-                    '#f97316'
-                  );
-                } else if (score >= 80) {
-                  renderEvaluationCard(evaluation);
-                } else {
-                  renderFailureCard(evaluation);
-                }
-              } catch (error) {
-                console.error('Check solution error:', error);
-                setResult('Failed to check solution: ' + (error.message || 'Unknown error'), '#ef4444');
-              } finally {
-                submitBtn.disabled = false;
-              }
-            });
-          }
-
-          if (runTestsBtn && codeInput) {
-            runTestsBtn.addEventListener('click', async () => {
-              const userSolution = codeInput.value || '';
-              if (!userSolution.trim()) {
-                setResult('Please write a solution before running tests.', '#f97316');
-                return;
+            try {
+              runTestsBtn.disabled = true;
+              setResult('Running all tests via Judge0...', '#38bdf8');
+              if (testsResultSection && testsResultBody) {
+                testsResultSection.style.display = 'none';
+                testsResultBody.innerHTML = '';
               }
 
-              if (!testCases.length) {
-                setResult('No test cases available for this question.', '#f97316');
-                return;
+              const endpoint = buildUrl('/api/judge0/test-cases');
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  sourceCode: userSolution,
+                  language,
+                  testCases
+                })
+              });
+
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || data.success === false) {
+                throw new Error(data.error || 'Failed to run Judge0 test-cases');
               }
 
-              try {
-                runTestsBtn.disabled = true;
-                setResult('Running all tests via Judge0...', '#38bdf8');
-                if (testsResultSection && testsResultBody) {
-                  testsResultSection.style.display = 'none';
-                  testsResultBody.innerHTML = '';
-                }
+              const results = Array.isArray(data.results) ? data.results : [];
+              renderTestResults(results);
 
-                const endpoint = buildUrl('/api/judge0/test-cases');
-                const response = await fetch(endpoint, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    sourceCode: userSolution,
-                    language,
-                    testCases
-                  })
-                });
+              const total = data.totalTests || results.length;
+              const passed =
+                typeof data.passedTests === 'number'
+                  ? data.passedTests
+                  : results.filter((r) => r.passed).length;
 
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok || data.success === false) {
-                  throw new Error(data.error || 'Failed to run Judge0 test-cases');
-                }
-
-                const results = Array.isArray(data.results) ? data.results : [];
-                renderTestResults(results);
-
-                const total = data.totalTests || results.length;
-                const passed =
-                  typeof data.passedTests === 'number'
-                    ? data.passedTests
-                    : results.filter((r) => r.passed).length;
-
-                if (total > 0) {
-                  const allPassed = passed === total;
-                  const somePassed = passed > 0 && passed < total;
-                  setResult(
-                    'Judge0: ' + passed + '/' + total + ' tests passed.',
-                    allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
-                  );
-                } else {
-                  setResult('Judge0: No test results returned.', '#f97316');
-                }
-              } catch (error) {
-                console.error('Judge0 Run All Tests error:', error);
+              if (total > 0) {
+                const allPassed = passed === total;
+                const somePassed = passed > 0 && passed < total;
                 setResult(
-                  'Failed to run tests via Judge0: ' + (error.message || 'Unknown error'),
-                  '#ef4444'
+                  'Judge0: ' + passed + '/' + total + ' tests passed.',
+                  allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
                 );
-                if (testsResultSection && testsResultBody) {
-                  testsResultSection.style.display = 'none';
-                  testsResultBody.innerHTML = '';
-                }
-              } finally {
-                runTestsBtn.disabled = false;
-              }
-            });
-          }
-        });
-
-        // Navigation: single-card view with Next/Previous controls
-        const totalQuestions = containers.length;
-        if (totalQuestions > 0) {
-          const navPrev = document.querySelector('[data-role="code-question-prev"]');
-          const navNext = document.querySelector('[data-role="code-question-next"]');
-          const navIndicator = document.querySelector('[data-role="code-question-indicator"]');
-
-          let currentIndex = 0;
-
-          const updateView = () => {
-            containers.forEach((container, idx) => {
-              if (idx === currentIndex) {
-                container.style.display = '';
               } else {
-                container.style.display = 'none';
+                setResult('Judge0: No test results returned.', '#f97316');
               }
-            });
-
-            if (navIndicator) {
-              navIndicator.textContent = 'Question ' + (currentIndex + 1) + ' of ' + totalQuestions;
+            } catch (error) {
+              console.error('Judge0 Run All Tests error:', error);
+              setResult(
+                'Failed to run tests via Judge0: ' + (error.message || 'Unknown error'),
+                '#ef4444'
+              );
+              if (testsResultSection && testsResultBody) {
+                testsResultSection.style.display = 'none';
+                testsResultBody.innerHTML = '';
+              }
+            } finally {
+              runTestsBtn.disabled = false;
             }
-            if (navPrev) {
-              navPrev.disabled = currentIndex === 0;
-              navPrev.style.opacity = currentIndex === 0 ? '0.5' : '1';
-              navPrev.style.cursor = currentIndex === 0 ? 'not-allowed' : 'pointer';
-            }
-            if (navNext) {
-              navNext.disabled = currentIndex === totalQuestions - 1;
-              navNext.style.opacity = currentIndex === totalQuestions - 1 ? '0.5' : '1';
-              navNext.style.cursor =
-                currentIndex === totalQuestions - 1 ? 'not-allowed' : 'pointer';
-            }
-          };
+          });
+        }
 
-          updateView();
+        const navPrev = document.querySelector('[data-role="code-question-prev"]');
+        const navNext = document.querySelector('[data-role="code-question-next"]');
+        const navIndicator = document.querySelector('[data-role="code-question-indicator"]');
 
+        const updateNavState = () => {
+          if (navIndicator && totalQuestions > 1) {
+            navIndicator.textContent =
+              'Question ' + (currentIndex + 1) + ' of ' + totalQuestions;
+          }
           if (navPrev) {
-            navPrev.addEventListener('click', () => {
-              if (currentIndex > 0) {
-                currentIndex -= 1;
-                updateView();
-              }
-            });
+            navPrev.disabled = currentIndex === 0 || totalQuestions <= 1;
+            navPrev.style.opacity = navPrev.disabled ? '0.5' : '1';
+            navPrev.style.cursor = navPrev.disabled ? 'not-allowed' : 'pointer';
           }
-
           if (navNext) {
-            navNext.addEventListener('click', () => {
-              if (currentIndex < totalQuestions - 1) {
-                currentIndex += 1;
-                updateView();
-              }
-            });
+            navNext.disabled = currentIndex === totalQuestions - 1 || totalQuestions <= 1;
+            navNext.style.opacity = navNext.disabled ? '0.5' : '1';
+            navNext.style.cursor = navNext.disabled ? 'not-allowed' : 'pointer';
           }
+        };
+
+        syncQuestionViewFromMeta();
+        updateNavState();
+
+        if (navPrev && totalQuestions > 1) {
+          navPrev.addEventListener('click', () => {
+            if (currentIndex > 0) {
+              saveCurrentCode();
+              currentIndex -= 1;
+              syncQuestionViewFromMeta();
+              updateNavState();
+            }
+          });
+        }
+
+        if (navNext && totalQuestions > 1) {
+          navNext.addEventListener('click', () => {
+            if (currentIndex < totalQuestions - 1) {
+              saveCurrentCode();
+              currentIndex += 1;
+              syncQuestionViewFromMeta();
+              updateNavState();
+            }
+          });
         }
       })();
     </script>
@@ -698,16 +923,15 @@ export async function generateCodeContentStudioComponent({
     }
   )
 
-  const questionsHtml = questions
-    .map((q, index) =>
-      renderSingleQuestion(
-        { ...q, id: `code_${topic_id || 'preview'}_${index + 1}` },
-        index,
-        topicName,
-        programming_language
-      )
-    )
-    .join('')
+  const questionsHtml =
+    questions.length > 0
+      ? renderSingleQuestion(
+          { ...questions[0], id: `code_${topic_id || 'preview'}_1` },
+          0,
+          topicName,
+          programming_language
+        )
+      : ''
 
   const meta = questions.map((q, index) => ({
     id: `code_${topic_id || 'preview'}_${index + 1}`,
