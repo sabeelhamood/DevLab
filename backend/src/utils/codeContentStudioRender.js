@@ -76,8 +76,8 @@ function renderSingleQuestion(question, index, topicName, language) {
       id
     )}" data-language="${escapeHtml(
       (language || 'javascript').toLowerCase()
-    )}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #ffffff; padding: 24px; border-radius: 20px; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12); display: grid; gap: 22px;">
-      <header style="display:flex;align-items:center;justify-content:space-between;gap:18px;">
+    )}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #ffffff; padding: 24px; border-radius: 20px; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);">
+      <header style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px;">
         <div style="display:grid;gap:10px;">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(15,23,42,0.55);">
             ${escapeHtml(topicName || 'Coding Challenge')}
@@ -96,55 +96,61 @@ function renderSingleQuestion(question, index, topicName, language) {
         </div>
       </header>
 
-      <section style="background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;border:1px solid rgba(15,23,42,0.06);">
-        <p style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(description)}</p>
-      </section>
+      <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);gap:20px;align-items:flex-start;">
+        <div data-role="question-pane" style="display:grid;gap:16px;">
+          <section style="background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;border:1px solid rgba(15,23,42,0.06);">
+            <p style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(description)}</p>
+          </section>
 
-      <section style="display:grid;gap:16px;">
-        <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0ea5e9;color:white;font-weight:600;box-shadow:0 14px 28px rgba(14,165,233,0.32);">
-            💡 Get Hint
-          </button>
-          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#22c55e;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
-            🚀 Submit Solution
-          </button>
-          <button type="button" data-action="run-tests" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#6366f1;color:white;font-weight:600;box-shadow:0 16px 32px rgba(79,70,229,0.35);">
-            🧪 Run All Tests
-          </button>
+          ${testCasesHtml}
         </div>
-      </section>
 
-      <section style="background:rgba(15,23,42,0.9);border-radius:20px;padding:18px;color:white;display:grid;gap:12px;">
-        <header style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.28);color:#0ea5e9;">{ }</span>
-            <div>
-              <h2 style="margin:0;font-size:1rem;font-weight:600;">Code Editor</h2>
-              <p style="margin:2px 0 0;font-size:0.8rem;color:rgba(226,232,240,0.75);">Write your solution, run all tests via Judge0, or submit for AI feedback.</p>
+        <div data-role="editor-pane" style="display:grid;gap:16px;">
+          <section style="display:grid;gap:16px;">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;">
+              <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0ea5e9;color:white;font-weight:600;box-shadow:0 14px 28px rgba(14,165,233,0.32);">
+                💡 Get Hint
+              </button>
+              <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#22c55e;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
+                🚀 Submit Solution
+              </button>
+              <button type="button" data-action="run-tests" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#6366f1;color:white;font-weight:600;box-shadow:0 16px 32px rgba(79,70,229,0.35);">
+                🧪 Run All Tests
+              </button>
             </div>
-          </div>
-        </header>
-        <textarea data-role="code-input" spellcheck="false" style="width:100%;min-height:200px;border-radius:14px;border:1px solid rgba(148,163,184,0.4);background:#020617;color:#e2e8f0;padding:10px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.85rem;resize:vertical;" placeholder="// Write your solution here..."></textarea>
-        <div data-role="result" style="margin-top:6px;font-size:0.8rem;color:#e5e7eb;"></div>
-      </section>
+          </section>
 
-      <section data-role="hints" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
-        <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:rgba(14,165,233,0.12);color:#0ea5e9;font-weight:600;">💡</span>
-          <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Hints</h2>
-        </header>
-        <ul data-role="hints-list" style="margin:0;padding-left:18px;display:grid;gap:8px;font-size:0.9rem;color:#475569;"></ul>
-      </section>
+          <section style="background:rgba(15,23,42,0.9);border-radius:20px;padding:18px;color:white;display:grid;gap:12px;">
+            <header style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.28);color:#0ea5e9;">{ }</span>
+                <div>
+                  <h2 style="margin:0;font-size:1rem;font-weight:600;">Code Editor</h2>
+                  <p style="margin:2px 0 0;font-size:0.8rem;color:rgba(226,232,240,0.75);">Write your solution, run all tests via Judge0, or submit for AI feedback.</p>
+                </div>
+              </div>
+            </header>
+            <textarea data-role="code-input" spellcheck="false" style="width:100%;min-height:200px;border-radius:14px;border:1px solid rgba(148,163,184,0.4);background:#020617;color:#e2e8f0;padding:10px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.85rem;resize:vertical;" placeholder="// Write your solution here..."></textarea>
+            <div data-role="result" style="margin-top:6px;font-size:0.8rem;color:#e5e7eb;"></div>
+          </section>
 
-      <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
-        <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
-          <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Test Results (Judge0)</h2>
-        </header>
-        <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
-      </section>
+          <section data-role="hints" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
+            <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:rgba(14,165,233,0.12);color:#0ea5e9;font-weight:600;">💡</span>
+              <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Hints</h2>
+            </header>
+            <ul data-role="hints-list" style="margin:0;padding-left:18px;display:grid;gap:8px;font-size:0.9rem;color:#475569;"></ul>
+          </section>
 
-      ${testCasesHtml}
+          <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
+            <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
+              <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Test Results (Judge0)</h2>
+            </header>
+            <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
+          </section>
+        </div>
+      </div>
     </article>
   `
 }
@@ -616,6 +622,61 @@ ${questionsJson}
             });
           }
         });
+
+        // Navigation: single-card view with Next/Previous controls
+        const totalQuestions = containers.length;
+        if (totalQuestions > 0) {
+          const navPrev = document.querySelector('[data-role="code-question-prev"]');
+          const navNext = document.querySelector('[data-role="code-question-next"]');
+          const navIndicator = document.querySelector('[data-role="code-question-indicator"]');
+
+          let currentIndex = 0;
+
+          const updateView = () => {
+            containers.forEach((container, idx) => {
+              if (idx === currentIndex) {
+                container.style.display = '';
+              } else {
+                container.style.display = 'none';
+              }
+            });
+
+            if (navIndicator) {
+              navIndicator.textContent = 'Question ' + (currentIndex + 1) + ' of ' + totalQuestions;
+            }
+            if (navPrev) {
+              navPrev.disabled = currentIndex === 0;
+              navPrev.style.opacity = currentIndex === 0 ? '0.5' : '1';
+              navPrev.style.cursor = currentIndex === 0 ? 'not-allowed' : 'pointer';
+            }
+            if (navNext) {
+              navNext.disabled = currentIndex === totalQuestions - 1;
+              navNext.style.opacity = currentIndex === totalQuestions - 1 ? '0.5' : '1';
+              navNext.style.cursor =
+                currentIndex === totalQuestions - 1 ? 'not-allowed' : 'pointer';
+            }
+          };
+
+          updateView();
+
+          if (navPrev) {
+            navPrev.addEventListener('click', () => {
+              if (currentIndex > 0) {
+                currentIndex -= 1;
+                updateView();
+              }
+            });
+          }
+
+          if (navNext) {
+            navNext.addEventListener('click', () => {
+              if (currentIndex < totalQuestions - 1) {
+                currentIndex += 1;
+                updateView();
+              }
+            });
+          }
+        }
       })();
     </script>
   `
@@ -666,10 +727,27 @@ export async function generateCodeContentStudioComponent({
 
   const bootstrapScript = renderBootstrapScript(meta)
 
+  const totalQuestions = questions.length
+
   return `
     <div class="content-studio-code-container" style="padding:32px;background:#f8fafc;color:#1e293b;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <div style="max-width:960px;margin:0 auto;display:grid;gap:24px;">
-        ${questionsHtml}
+      <div style="max-width:960px;margin:0 auto;display:grid;gap:16px;">
+        <div data-role="code-question-nav" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" data-role="code-question-prev" style="border:none;border-radius:999px;padding:8px 14px;background:#e2e8f0;color:#0f172a;font-size:0.85rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              ← Previous
+            </button>
+            <button type="button" data-role="code-question-next" style="border:none;border-radius:999px;padding:8px 14px;background:#0f172a;color:#f9fafb;font-size:0.85rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              Next →
+            </button>
+          </div>
+          <div data-role="code-question-indicator" style="font-size:0.85rem;color:#64748b;">
+            ${totalQuestions > 0 ? `Question 1 of ${totalQuestions}` : ''}
+          </div>
+        </div>
+        <div data-role="code-question-cards" style="display:grid;gap:24px;">
+          ${questionsHtml}
+        </div>
       </div>
       ${bootstrapScript}
     </div>
