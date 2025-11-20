@@ -149,13 +149,13 @@ function renderSingleQuestion(question, index, topicName, language) {
         <div data-role="editor-pane" style="display:grid;gap:16px;">
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;box-shadow:0 14px 28px rgba(14,165,233,0.32);">
+          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;">
             💡 Get Hint
           </button>
           <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
             🔍 Show Solution
           </button>
-          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
+          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;">
             🚀 Submit Solution
           </button>
         </div>
@@ -171,10 +171,10 @@ function renderSingleQuestion(question, index, topicName, language) {
             </div>
           </div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
-                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:#0F6B52;color:white;font-size:0.8rem;font-weight:600;box-shadow:0 12px 24px rgba(34,197,94,0.3);">
+                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:#0F6B52;color:white;font-size:0.8rem;font-weight:600;">
                   ▶ Run Code
                 </button>
-                <button type="button" data-action="run-tests" style="border:1px solid rgba(59,130,246,0.5);cursor:pointer;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#000000;font-size:0.8rem;font-weight:600;">
+                <button type="button" data-action="run-tests" style="border:1px solid #0F6B52;cursor:pointer;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#000000;font-size:0.8rem;font-weight:600;">
                   🧪 Run All Tests
                 </button>
                 <button type="button" data-action="reset-editor" style="border:1px solid rgba(148,163,184,0.6);cursor:pointer;padding:8px 14px;border-radius:999px;background:#ffffff;color:#475569;font-size:0.8rem;font-weight:500;">
@@ -649,13 +649,14 @@ ${questionsJson}
           const setResult = (message, color) => {
             if (!resultEl) return;
             resultEl.textContent = message;
-          resultEl.style.color = color || '#64748b';
+            resultEl.style.color = color || '#64748b';
           };
 
         const appendHintElement = (hintText) => {
             if (!hintsList || !hintsSection) return;
             const li = document.createElement('li');
             li.textContent = hintText;
+            li.style.fontWeight = '600';
             hintsList.appendChild(li);
           };
 
@@ -909,7 +910,7 @@ ${questionsJson}
               const userAttempt = codeInput.value || '';
               try {
                 hintBtn.disabled = true;
-                setResult('Generating hint...', '#38bdf8');
+                setResult('Generating hint...', '#000000');
                 const endpoint = buildUrl('/api/content-studio/generate-hint');
                 const response = await fetch(endpoint, {
                   method: 'POST',
@@ -1006,12 +1007,12 @@ ${questionsJson}
                     }
 
                     const solutionCard =
-                      '<div style="position:relative;width:100%;max-width:720px;border-radius:16px;overflow:hidden;border:1px solid rgba(59,130,246,0.45);box-shadow:0 22px 50px rgba(30,64,175,0.55);background:linear-gradient(135deg,#eff6ff,#e0f2fe);">' +
+                      '<div style="position:relative;width:100%;max-width:720px;border-radius:16px;overflow:hidden;border:1px solid rgba(15,107,82,0.45);box-shadow:none;background:linear-gradient(135deg,#ecfdf5,#d1fae5);">' +
                       '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">✕</button>' +
-                      '<div style="padding:18px 22px 10px 22px;border-bottom:1px solid rgba(59,130,246,0.4);display:flex;align-items:center;gap:10px;">' +
-                      '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:rgba(59,130,246,0.14);color:#1d4ed8;font-size:18px;">💡</span>' +
+                      '<div style="padding:18px 22px 10px 22px;border-bottom:1px solid rgba(15,107,82,0.4);display:flex;align-items:center;gap:10px;">' +
+                      '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:rgba(15,107,82,0.14);color:#0F6B52;font-size:18px;">💡</span>' +
                       '<div>' +
-                      '<div style="font-weight:700;font-size:15px;color:#1d4ed8;">Suggested Solution</div>' +
+                      '<div style="font-weight:700;font-size:15px;color:#0F6B52;">Suggested Solution</div>' +
                       '<div style="font-size:12px;color:#1e293b;">Review this solution carefully and compare it with your own attempt.</div>' +
                       '</div>' +
                       '</div>' +
@@ -1023,7 +1024,7 @@ ${questionsJson}
                       '</div>';
 
                     openFeedbackModal(solutionCard);
-                    setResult('Solution revealed. Study it and compare with your own attempt.', '#0ea5e9');
+                    setResult('Solution revealed. Study it and compare with your own attempt.', '#0F6B52');
                   } catch (err) {
                     console.error('Show solution error:', err);
                     if (status) {
@@ -1136,7 +1137,7 @@ ${questionsJson}
                 const parts = [];
                 if (stdout) parts.push('Output: ' + stdout.trim());
                 if (stderr) parts.push('Errors: ' + stderr.trim());
-                setResult(parts.join(' | '), '#e5e7eb');
+                setResult(parts.join(' | '), '#000000');
               } else {
                 setResult('Code executed successfully (no output).', '#22c55e');
               }
