@@ -615,6 +615,37 @@ ${questionsJson}
             openFeedbackModal(cardHtml);
           };
 
+          const renderAiFraudCard = () => {
+            if (!resultEl) return;
+            resultEl.style.color = '#f97316';
+
+            const cardHtml =
+              '<div style="position:relative;width:100%;max-width:620px;border-radius:16px;overflow:hidden;background:#ffffff;box-shadow:0 18px 40px rgba(15,23,42,0.45);border:1px solid rgba(148,163,184,0.5);font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;">' +
+              '<div style="width:100%;background:#FFF4E0;padding:12px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(248,181,85,0.7);">' +
+              '<div style="width:28px;height:28px;border-radius:999px;background:#FFEDD5;color:#F97316;display:flex;align-items:center;justify-content:center;font-size:16px;">📚</div>' +
+              '<div style="display:flex;align-items:center;gap:6px;font-size:0.9rem;font-weight:600;color:#92400E;">' +
+              '<span>Keep Learning!</span>' +
+              '</div>' +
+              '</div>' +
+              '<div style="padding:18px 20px 20px 20px;background:#ffffff;">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">' +
+              '<span style="font-size:0.95rem;font-weight:600;color:#0F172A;">Feedback</span>' +
+              '<span style="font-size:1rem;color:#FF9500;">*</span>' +
+              '</div>' +
+              '<div style="border-radius:14px;padding:12px 14px;background:#FFE5E5;border:1px solid rgba(220,53,69,0.65);display:flex;align-items:flex-start;gap:10px;">' +
+              '<div style="width:28px;height:28px;border-radius:999px;background:#FEE2E2;color:#DC3545;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;">!</div>' +
+              '<div style="display:grid;gap:2px;">' +
+              '<div style="font-size:0.9rem;font-weight:700;color:#DC3545;">AI-Generated Solution Detected</div>' +
+              '<div style="font-size:0.85rem;color:#374151;">🤖 AI-generated solution detected. Please try to solve it yourself!</div>' +
+              '</div>' +
+              '</div>' +
+              '</div>' +
+              '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:999px;border:1px solid rgba(148,163,184,0.7);background:#ffffff;display:flex;align-items:center;justify-content:center;font-size:14px;color:#4B5563;cursor:pointer;">✕</button>' +
+              '</div>';
+
+            openFeedbackModal(cardHtml);
+          };
+
           const setResult = (message, color) => {
             if (!resultEl) return;
             resultEl.textContent = message;
@@ -1048,10 +1079,7 @@ ${questionsJson}
                   data.aiDetection?.isAiGenerated;
 
                 if (isAiGenerated) {
-                  setResult(
-                    'AI-generated solution detected. Please try to solve it yourself.',
-                    '#f97316'
-                  );
+                  renderAiFraudCard();
                 } else if (score >= 80) {
                   renderEvaluationCard(evaluation);
                 } else {
