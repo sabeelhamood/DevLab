@@ -326,7 +326,7 @@ ${questionsJson}
           resultEl.style.color = '#0f172a';
           const cardHtml =
             '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
-            '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
+            '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
             '✕' +
             '</button>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(22,163,74,0.25);">' +
@@ -405,7 +405,7 @@ ${questionsJson}
           resultEl.style.color = '#0f172a';
           const cardHtml =
             '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);">' +
-            '<button type="button" onclick="var m=this.closest(\'[data-devlab-modal-root]\');if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
+            '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
             '✕' +
             '</button>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px 22px;border-bottom:1px solid rgba(245,158,11,0.45);">' +
@@ -415,7 +415,7 @@ ${questionsJson}
             '</div>' +
             '<div>' +
             '<div style="font-weight:700;font-size:16px;color:#92400e;">📚 Keep Learning!</div>' +
-            '<div style="font-size:13px;color:#b45309;">Let\'s review and improve together.</div>' +
+            '<div style="font-size:13px;color:#b45309;">Let us review and improve together.</div>' +
             '</div>' +
             '</div>' +
             '<div style="min-width:64px;height:64px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff7ed;border:2px solid rgba(245,158,11,0.7);box-shadow:0 10px 25px rgba(245,158,11,0.45);">' +
