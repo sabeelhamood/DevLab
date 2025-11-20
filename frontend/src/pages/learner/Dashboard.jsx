@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore.js'
 import { apiClient } from '../../services/api/client.js'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { Trophy, Clock, Play, Target, Award } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext.jsx'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
@@ -44,6 +45,7 @@ const CompetitionCard = ({ competition, onStart }) => (
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { theme } = useTheme()
   const forcedLearnerId =
     import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
   const effectiveUser = forcedLearnerId
@@ -106,12 +108,22 @@ export default function Dashboard() {
 
   if (!learnerId) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4">
+      <div
+        className={`min-h-screen py-10 px-4 transition-colors duration-300 ${
+          theme === 'day-mode'
+            ? 'bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 text-slate-900'
+            : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
+        }`}
+      >
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800"
+            className={`rounded-xl shadow-lg p-6 border transition-colors duration-300 ${
+              theme === 'day-mode'
+                ? 'bg-white/90 border-slate-200 shadow-slate-300/60'
+                : 'bg-slate-900/70 border-slate-800 shadow-black/30'
+            }`}
           >
             <p className="text-center text-red-400 font-medium">
               Unable to determine learner context. Please refresh or log in again.
@@ -123,7 +135,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 py-10 px-4">
+    <div
+      className={`min-h-screen py-10 px-4 transition-colors duration-300 ${
+        theme === 'day-mode'
+          ? 'bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 text-slate-900'
+          : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -131,13 +149,29 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800">
+          <div
+            className={`rounded-xl shadow-lg p-6 border transition-colors duration-300 ${
+              theme === 'day-mode'
+                ? 'bg-white/90 border-slate-200 shadow-slate-300/60'
+                : 'bg-slate-900/70 border-slate-800 shadow-black/30'
+            }`}
+          >
             <div className="mb-4">
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400 font-medium mb-2">AI Competition Hub</p>
-              <h1 className="text-3xl font-bold text-slate-100 mb-2">
+              <p
+                className={`text-xs uppercase tracking-[0.4em] font-medium mb-2 ${
+                  theme === 'day-mode' ? 'text-slate-500' : 'text-slate-400'
+                }`}
+              >
+                AI Competition Hub
+              </p>
+              <h1
+                className={`text-3xl font-bold mb-2 ${
+                  theme === 'day-mode' ? 'text-slate-900' : 'text-slate-100'
+                }`}
+              >
                 Welcome, {learnerProfile?.learner_name || effectiveUser?.name || 'Learner'}!
               </h1>
-              <p className="text-slate-300">
+              <p className={theme === 'day-mode' ? 'text-slate-600' : 'text-slate-300'}>
                 Complete courses, unlock competitions, and challenge the DevLab AI.
               </p>
             </div>
@@ -151,15 +185,27 @@ export default function Dashboard() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 border border-slate-800">
-            <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center">
+          <div
+            className={`rounded-xl shadow-lg p-6 border transition-colors duration-300 ${
+              theme === 'day-mode'
+                ? 'bg-white/90 border-slate-200 shadow-slate-300/60'
+                : 'bg-slate-900/70 border-slate-800 shadow-black/30'
+            }`}
+          >
+            <h2
+              className={`text-xl font-bold mb-4 flex items-center ${
+                theme === 'day-mode' ? 'text-slate-900' : 'text-slate-100'
+              }`}
+            >
               <Trophy className="w-6 h-6 text-emerald-400 mr-2" />
               Available Competitions
             </h2>
 
             {loading && (
               <div className="text-center py-8">
-                <p className="text-slate-300">Loading competitions…</p>
+                <p className={theme === 'day-mode' ? 'text-slate-600' : 'text-slate-300'}>
+                  Loading competitions…
+                </p>
               </div>
             )}
 
@@ -171,9 +217,21 @@ export default function Dashboard() {
 
             {!loading && !error && pendingCompetitions.length === 0 && (
               <div className="text-center py-12">
-                <Award className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-300 text-lg font-medium mb-2">No competitions available</p>
-                <p className="text-slate-400">Complete a course to unlock your first AI competition!</p>
+                <Award
+                  className={`w-16 h-16 mx-auto mb-4 ${
+                    theme === 'day-mode' ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                />
+                <p
+                  className={`text-lg font-medium mb-2 ${
+                    theme === 'day-mode' ? 'text-slate-700' : 'text-slate-300'
+                  }`}
+                >
+                  No competitions available
+                </p>
+                <p className={theme === 'day-mode' ? 'text-slate-500' : 'text-slate-400'}>
+                  Complete a course to unlock your first AI competition!
+                </p>
               </div>
             )}
 
