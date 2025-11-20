@@ -6,7 +6,6 @@ import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Volume2, VolumeX } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
-import introSound from '/assets/sfx/introGaming.mp3'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
@@ -34,9 +33,9 @@ export default function CompetitionIntro() {
   const [userInteracted, setUserInteracted] = useState(false)
   const audioRef = useRef(null)
 
-  // Audio setup (no autoplay here)
+  // Audio setup
   useEffect(() => {
-    const audio = new Audio(introSound)
+    const audio = new Audio('/assets/sfx/introGaming.mp3')
     audio.loop = true
     audio.volume = 0.3
 
@@ -45,8 +44,23 @@ export default function CompetitionIntro() {
     return () => {
       audio.pause()
       audio.currentTime = 0
+      audioRef.current = null
     }
   }, [])
+
+  // Control audio playback based on soundEnabled and user interaction
+  useEffect(() => {
+    if (!audioRef.current) return
+
+    if (soundEnabled && userInteracted) {
+      audioRef.current.play().catch(() => {
+        // Silently handle - file may not be supported or autoplay blocked
+      })
+    } else {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [soundEnabled, userInteracted])
 
   useEffect(() => {
     if (!learnerId) {
@@ -295,14 +309,17 @@ export default function CompetitionIntro() {
           : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
       }`}
       onClick={() => {
-        if (!userInteracted) setUserInteracted(true)
-
+        setUserInteracted(true)
+        // Try to play directly on user click (required by browser policies)
         if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(() => {})
+          audioRef.current.play().catch(() => {
+            // Silently handle - file may not be supported
+          })
         }
       }}
       onKeyDown={() => {
         setUserInteracted(true)
+        // Try to play directly on key press
         if (audioRef.current && soundEnabled) {
           audioRef.current.play().catch(() => {
             // Silently handle - file may not be supported
