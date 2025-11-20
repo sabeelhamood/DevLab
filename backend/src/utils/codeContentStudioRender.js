@@ -73,7 +73,7 @@ function renderSingleQuestion(question, index, topicName, language) {
     ? `
       <section style="background: rgba(255,255,255,0.92); border-radius: 20px; padding: 18px; border: 1px solid rgba(15,23,42,0.06);">
         <header style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:#F0FFF0;color:#0ea5e9;font-weight:600;">TC</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:#F0FFF0;color:#0F6B52;font-weight:600;">TC</span>
           <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Test Cases</h2>
         </header>
         <ol style="margin:0;padding:0;display:grid;gap:10px;">
@@ -124,10 +124,10 @@ function renderSingleQuestion(question, index, topicName, language) {
           </h1>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:#0ea5e9;color:white;font-size:0.78rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:#2F4F4F;color:white;font-size:0.78rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
             ${escapeHtml(question.difficulty || 'intermediate')}
           </span>
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:rgba(14,165,233,0.12);color:#0f172a;font-size:0.78rem;font-weight:600;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#0f172a;font-size:0.78rem;font-weight:600;">
             ${escapeHtml(language || 'javascript')}
           </span>
         </div>
@@ -149,7 +149,7 @@ function renderSingleQuestion(question, index, topicName, language) {
         <div data-role="editor-pane" style="display:grid;gap:16px;">
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0ea5e9;color:white;font-weight:600;box-shadow:0 14px 28px rgba(14,165,233,0.32);">
+          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;box-shadow:0 14px 28px rgba(14,165,233,0.32);">
             💡 Get Hint
           </button>
           <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
@@ -161,10 +161,10 @@ function renderSingleQuestion(question, index, topicName, language) {
         </div>
       </section>
 
-          <section class="judge0-panel" style="background:linear-gradient(135deg,#ffffff,#eef2ff);border-radius:20px;padding:18px;color:#0f172a;display:grid;gap:14px;border:1px solid rgba(148,163,184,0.4);box-shadow:0 18px 40px rgba(15,23,42,0.12);">
+          <section class="judge0-panel" style="background:#F5F5F5;border-radius:20px;padding:18px;color:#0f172a;display:grid;gap:14px;border:1px solid rgba(148,163,184,0.4);box-shadow:0 18px 40px rgba(15,23,42,0.12);">
         <header style="display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:10px;">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#F0FFF0;color:#0ea5e9;">{ }</span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#F0FFF0;color:#0F6B52;">{ }</span>
             <div>
                   <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Judge0 Code Execution</h2>
                   <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
@@ -174,7 +174,7 @@ function renderSingleQuestion(question, index, topicName, language) {
                 <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:#0F6B52;color:white;font-size:0.8rem;font-weight:600;box-shadow:0 12px 24px rgba(34,197,94,0.3);">
                   ▶ Run Code
                 </button>
-                <button type="button" data-action="run-tests" style="border:1px solid rgba(59,130,246,0.5);cursor:pointer;padding:8px 14px;border-radius:999px;background:rgba(59,130,246,0.08);color:#1d4ed8;font-size:0.8rem;font-weight:600;">
+                <button type="button" data-action="run-tests" style="border:1px solid rgba(59,130,246,0.5);cursor:pointer;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#000000;font-size:0.8rem;font-weight:600;">
                   🧪 Run All Tests
                 </button>
                 <button type="button" data-action="reset-editor" style="border:1px solid rgba(148,163,184,0.6);cursor:pointer;padding:8px 14px;border-radius:999px;background:#ffffff;color:#475569;font-size:0.8rem;font-weight:500;">
@@ -730,7 +730,7 @@ ${questionsJson}
           badge.style.height = '32px';
           badge.style.borderRadius = '12px';
           badge.style.background = '#F0FFF0';
-          badge.style.color = '#0ea5e9';
+          badge.style.color = '#0F6B52';
           badge.style.fontWeight = '600';
 
           const heading = document.createElement('h2');
@@ -1199,7 +1199,7 @@ ${questionsJson}
 
               try {
                 runTestsBtn.disabled = true;
-                setResult('Running all tests via Judge0...', '#38bdf8');
+                setResult('Running all tests via Judge0...', '#000000');
                 if (testsResultSection && testsResultBody) {
                   testsResultSection.style.display = 'none';
                   testsResultBody.innerHTML = '';
@@ -1236,10 +1236,17 @@ ${questionsJson}
                 if (total > 0) {
                   const allPassed = passed === total;
                   const somePassed = passed > 0 && passed < total;
-                  setResult(
-                    'Judge0: ' + passed + '/' + total + ' tests passed.',
-                    allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
-                  );
+                  const message = 'Judge0: ' + passed + '/' + total + ' tests passed.';
+
+                  if (!passed && total > 0 && resultEl) {
+                    resultEl.innerHTML = '<strong>' + message + '</strong>';
+                    resultEl.style.color = '#ef4444';
+                  } else {
+                    setResult(
+                      message,
+                      allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
+                    );
+                  }
                 } else {
                   setResult('Judge0: No test results returned.', '#f97316');
                 }
