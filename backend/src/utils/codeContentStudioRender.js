@@ -73,7 +73,7 @@ function renderSingleQuestion(question, index, topicName, language) {
     ? `
       <section style="background: rgba(255,255,255,0.92); border-radius: 20px; padding: 18px; border: 1px solid rgba(15,23,42,0.06);">
         <header style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:rgba(14,165,233,0.12);color:#0ea5e9;font-weight:600;">TC</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:12px;background:#F0FFF0;color:#0ea5e9;font-weight:600;">TC</span>
           <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Test Cases</h2>
         </header>
         <ol style="margin:0;padding:0;display:grid;gap:10px;">
@@ -82,7 +82,7 @@ function renderSingleQuestion(question, index, topicName, language) {
               (tc, idx) => `
             <li style="list-style:none;background:rgba(15,23,42,0.02);border-radius:16px;padding:14px;border:1px solid rgba(15,23,42,0.06);">
               <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:0.75rem;font-weight:600;letter-spacing:0.04em;color:#0ea5e9;text-transform:uppercase;">Test Case ${
+                <span style="font-size:0.75rem;font-weight:600;letter-spacing:0.04em;color:#0F6B52;text-transform:uppercase;">Test Case ${
                   idx + 1
                 }</span>
               </header>
@@ -155,7 +155,7 @@ function renderSingleQuestion(question, index, topicName, language) {
           <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
             🔍 Show Solution
           </button>
-          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#22c55e;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
+          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
             🚀 Submit Solution
           </button>
         </div>
@@ -164,14 +164,14 @@ function renderSingleQuestion(question, index, topicName, language) {
           <section class="judge0-panel" style="background:linear-gradient(135deg,#ffffff,#eef2ff);border-radius:20px;padding:18px;color:#0f172a;display:grid;gap:14px;border:1px solid rgba(148,163,184,0.4);box-shadow:0 18px 40px rgba(15,23,42,0.12);">
         <header style="display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:10px;">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.18);color:#0ea5e9;">{ }</span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#F0FFF0;color:#0ea5e9;">{ }</span>
             <div>
                   <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Judge0 Code Execution</h2>
                   <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
             </div>
           </div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
-                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;font-size:0.8rem;font-weight:600;box-shadow:0 12px 24px rgba(34,197,94,0.3);">
+                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:#0F6B52;color:white;font-size:0.8rem;font-weight:600;box-shadow:0 12px 24px rgba(34,197,94,0.3);">
                   ▶ Run Code
                 </button>
                 <button type="button" data-action="run-tests" style="border:1px solid rgba(59,130,246,0.5);cursor:pointer;padding:8px 14px;border-radius:999px;background:rgba(59,130,246,0.08);color:#1d4ed8;font-size:0.8rem;font-weight:600;">
@@ -729,7 +729,7 @@ ${questionsJson}
           badge.style.width = '32px';
           badge.style.height = '32px';
           badge.style.borderRadius = '12px';
-          badge.style.background = 'rgba(14,165,233,0.12)';
+          badge.style.background = '#F0FFF0';
           badge.style.color = '#0ea5e9';
           badge.style.fontWeight = '600';
 
@@ -769,7 +769,7 @@ ${questionsJson}
             label.style.fontSize = '0.75rem';
             label.style.fontWeight = '600';
             label.style.letterSpacing = '0.04em';
-            label.style.color = '#0ea5e9';
+            label.style.color = '#0F6B52';
             label.style.textTransform = 'uppercase';
 
             liHeader.appendChild(label);
