@@ -87,8 +87,12 @@ Provide a comprehensive evaluation that:
 1. Tests the code against the provided test cases
 2. Evaluates code quality, readability, and efficiency
 3. Checks for best practices and potential improvements
-4. Provides constructive feedback
-5. Suggests specific improvements
+4. Syntax correctness: Ensure the code runs without errors. Highlight any syntax issues with line numbers.
+5. Logical correctness: Verify the solution fully satisfies all requirements specified in the question.
+6. Code quality: Assess readability, maintainability, efficiency, and adherence to best practices.
+7. Constructive feedback: Provide actionable suggestions for improvements, optimizations, or better coding style.
+8. Provides constructive feedback
+9. Suggests specific improvements
 
 EVALUATION REQUIREMENTS:
 - If code is WRONG: Highlight the SPECIFIC mistake line or logic error
@@ -145,10 +149,11 @@ Previous hints: ${allHints.join(' | ')}
 Generate a short, actionable hint for level ${hintsUsed + 1}:
 - Level 1: Basic concept or approach
 - Level 2: Specific implementation guidance  
-- Level 3: Near-solution direction
+- Level 3: Give near-solution direction, without revealing the full answer.
 
 Requirements:
 - Keep hint under 20 words
+- Avoid repeating any phrasing, terms, or ideas from previous hints.
 - Be direct and actionable
 - No encouragement or extra text
 - Focus only on key guidance
@@ -174,8 +179,8 @@ export function buildFraudDetectionPrompt({ code, question }) {
 You are an expert code analysis AI specialized in detecting AI-generated code submissions.
 
 🎯 GOAL:
-Determine whether the given code was written by a human student or generated (fully or partially) by an AI tool such as ChatGPT or Gemini. 
-Your output must be clear, structured, and concise.
+Determine whether the given code was written by a human student or generated (fully or partially) by an AI tool such as ChatGPT, Gemini or similar. 
+Provide a likelihood score and a short explanation, highlighting patterns and behavioral indicators.
 
 ---
 
@@ -194,25 +199,27 @@ ${code}
 Evaluate the following dimensions carefully:
 
 1. **Syntax & Structure**
-   - Is the syntax unusually clean, perfect, or standardized beyond the expected level for a student?
-   - Does it use consistent indentation and spacing without any variation or minor mistakes?
+  - Is the syntax unusually clean, perfect, or standardized beyond the expected level for a student?
+  - Consistent indentation and spacing without minor mistakes may indicate AI.
+  - Lack of any small errors typical for human students.
 
 2. **Naming & Style**
-   - Are variable/function names generic (e.g., \`calculateSomething\`, \`solveProblem\`, \`resultArray\`)?
-   - Is there a lack of creative or task-specific naming that students typically show?
-   - Are naming conventions uniform across all variables (a strong AI indicator)?
+  - Generic variable/function names (e.g., \`calculateSomething\`, \`solveProblem\`) may indicate AI.
+   - Consistent naming conventions throughout the code.
+   - Overly formal or “template-like” style.
 
 3. **Comments & Explanations**
-   - Are there comments explaining trivial steps (e.g., \`// Initialize variable\`, \`// Return result\`)?
-   - Are comments written in a formal, tutorial-like tone rather than a natural learning tone?
-   - Does the code contain no comments or overly perfect ones?
+   - Comments that explain trivial steps or are overly formal/tutorial-like.
+   - Absence of comments in otherwise polished code may also be an AI indicator.
+   - Human students often leave informal, partial, or context-specific comments.
 
 4. **Complexity & Efficiency**
-   - Is the code more optimized than needed for the task?
-   - Does it use advanced patterns (e.g., comprehensions, high-order functions) unlikely for a typical student at this level?
+   - Over-optimization for the task, unnecessary use of advanced patterns.
+   - Solutions that are more sophisticated than typical for the student’s expected skill level.
 
 5. **Error Handling & Edge Cases**
-   - Does it include overly broad error handling or perfect edge case management not required by the problem?
+   - Broad or perfect error handling beyond the scope of the question.
+   - Overly complete edge case coverage could indicate AI assistance.
 
 6. **Signature Patterns of AI Tools**
    - Look for patterns commonly produced by AI tools, such as:
@@ -220,6 +227,8 @@ Evaluate the following dimensions carefully:
      - Explicit step-by-step comments (“// Step 1: Initialize variables”).
      - Overuse of blank lines between logical sections.
      - Imports that are declared but never used (AI leftover pattern).
+     - Repeated idioms or code templates common in AI outputs.
+
 
 7. **Human Behavioral Patterns**
    - Check for small human-like inconsistencies:
@@ -238,6 +247,8 @@ Evaluate the following dimensions carefully:
 🧠 THINKING PROCESS:
 Analyze all of the above before making a decision.
 Avoid bias toward “AI” just because the code is good — some students write clean code.
+Use patterns, human-like inconsistencies, and context to balance your judgment.
+
 
 ---
 
@@ -255,6 +266,8 @@ Return your analysis as a valid JSON object exactly in this structure:
 - Ensure the two likelihoods add up to ~100.
 - Base your reasoning only on the provided code and question context.
 - Be objective and explain the decision succinctly.
+- Include in the explanation at least one concrete pattern or observation that influenced your verdict.
+
 
 `.trim()
 }
@@ -367,4 +380,44 @@ Return ONLY the JSON object in the specified format, no additional text.
 `.trim()
 }
 
+export function buildRevealSolutionPrompt({ language = 'javascript', skills = [], humanLanguage = 'en', question }) {
+  const skillsText =
+    Array.isArray(skills) && skills.length ? skills.join(', ') : 'general programming skills'
+
+  return `
+You are an expert ${language} instructor. The learner has already tried solving the problem and used several hints.
+
+Your task: PROVIDE THE IDEAL REFERENCE SOLUTION IMPLEMENTATION for the following coding question.
+
+Coding Question (to be solved in ${language}, explanation/output language: ${humanLanguage}):
+${question}
+
+Relevant skills and context: ${skillsText}
+
+CRITICAL REQUIREMENTS:
+- Write a clean, correct, and idiomatic ${language} solution.
+- Focus ONLY on the final code the learner should study.
+- Do NOT include test code, console logs, or example calls unless they are part of the expected solution.
+- Do NOT include any natural language explanation in the "solution" field.
+- The solution should be something a strong mid-level engineer could have written.
+
+OUTPUT FORMAT:
+- Return ONLY a valid JSON object wrapped in triple backticks with "json" language identifier.
+- NO extra commentary, no markdown outside the JSON block.
+- The JSON must have exactly this structure:
+
+\`\`\`json
+{
+  "solution": "FULL_SOURCE_CODE_HERE_AS_A_SINGLE_STRING"
+}
+\`\`\`
+
+IMPORTANT:
+- The "solution" value must contain ONLY the source code, with newlines and indentation preserved.
+- Do NOT escape code with additional markdown fences.
+- Do NOT add any additional fields.
+
+Return ONLY the JSON object in the specified format, no additional text.
+`.trim()
+}
 

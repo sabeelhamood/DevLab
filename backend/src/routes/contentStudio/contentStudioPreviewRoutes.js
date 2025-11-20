@@ -289,6 +289,73 @@ router.post('/check-solution', async (req, res) => {
   }
 })
 
+/**
+ * Reveal an ideal reference solution for the rendered code question using OpenAI Content Studio service.
+ *
+ * Path: POST /api/content-studio/show-solution
+ *
+ * Body:
+ * {
+ *   language: "javascript",
+ *   skills: ["arrays", "loops"],
+ *   humanLanguage: "en",
+ *   question: "<question text>"
+ * }
+ */
+router.post('/show-solution', async (req, res) => {
+  const {
+    language = 'javascript',
+    skills = [],
+    humanLanguage = 'en',
+    question
+  } = req.body || {}
+
+  const questionText = (question || '').toString().trim()
+
+  if (!questionText) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required field: question'
+    })
+  }
+
+  try {
+    const result = await openAIContentStudioService.showSolution({
+      language,
+      skills: Array.isArray(skills) ? skills : [],
+      humanLanguage,
+      question: questionText
+    })
+
+    if (!result || !result.solution) {
+      return res.status(500).json({
+        success: false,
+        error: result?.message || 'OpenAI service returned an empty solution'
+      })
+    }
+
+    return res.json({
+      success: true,
+      solution: result.solution,
+      metadata: {
+        language,
+        skills: Array.isArray(skills) ? skills : [],
+        humanLanguage,
+        generatedAt: new Date().toISOString(),
+        fallback: !!result.fallback,
+        source: 'openai_content_studio'
+      }
+    })
+  } catch (error) {
+    console.error('❌ Error revealing solution with OpenAI Content Studio service:', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to reveal solution',
+      message: error?.message
+    })
+  }
+})
+
 export default router
 
 

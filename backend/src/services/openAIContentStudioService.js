@@ -5,7 +5,8 @@ import {
   buildHintPrompt,
   buildFraudDetectionPrompt,
   buildEnhancedFraudPatternPrompt,
-  buildLearningRecommendationsPrompt
+  buildLearningRecommendationsPrompt,
+  buildRevealSolutionPrompt
 } from '../prompts/openAIContentStudioPrompts.js'
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
@@ -279,6 +280,44 @@ class OpenAIContentStudioService {
       canShowSolution: safeHintsUsed >= 2,
       fallback: true,
       message: 'Using fallback hint due to service unavailability'
+    }
+  }
+
+  async showSolution({ language = 'javascript', skills = [], humanLanguage = 'en', question }) {
+    const prompt = buildRevealSolutionPrompt({ language, skills, humanLanguage, question })
+
+    try {
+      const raw = await this.#callOpenAI(prompt)
+      const parsed = parseJsonResponse(raw)
+
+      let solution = ''
+      if (typeof parsed === 'string') {
+        solution = parsed
+      } else if (parsed && typeof parsed === 'object') {
+        solution =
+          parsed.solution ||
+          parsed.code ||
+          parsed.answer ||
+          parsed.text ||
+          ''
+      }
+
+      if (!solution || typeof solution !== 'string') {
+        return {
+          solution: '',
+          fallback: true,
+          message: 'OpenAI did not return a usable solution payload.'
+        }
+      }
+
+      return { solution }
+    } catch (error) {
+      console.error('[OpenAIContentStudio] showSolution error:', error)
+      return {
+        solution: '',
+        fallback: true,
+        message: 'Solution generation service is temporarily unavailable.'
+      }
     }
   }
 
