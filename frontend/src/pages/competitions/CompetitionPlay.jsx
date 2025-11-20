@@ -718,13 +718,31 @@ export default function CompetitionPlay() {
 
         {isAIWinner && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-4"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className={`
+              p-6 rounded-2xl backdrop-blur-md shadow-lg border 
+              ${isDark ? "border-red-900/40 bg-red-900/10" : "border-red-300/60 bg-red-50/60"}
+            `}
           >
-            <Bot className="w-16 h-16 text-red-500 mx-auto mb-3" />
-            <p className={`text-lg font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              AI won this time — try again!
+            <motion.div
+              initial={{ y: -10 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Bot
+                className="w-20 h-20 text-red-500 mx-auto mb-3 drop-shadow-[0_0_12px_rgba(255,0,0,0.55)]"
+              />
+            </motion.div>
+
+            <p
+              className={`
+                text-xl font-semibold text-center tracking-wide
+                bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent
+              `}
+            >
+              OOPS… AI got you this time!
             </p>
           </motion.div>
         )}
