@@ -111,24 +111,39 @@ function renderSingleQuestion(question, index, topicName, language) {
               <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#22c55e;color:white;font-weight:600;box-shadow:0 16px 32px rgba(34,197,94,0.28);">
                 🚀 Submit Solution
               </button>
-              <button type="button" data-action="run-tests" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#6366f1;color:white;font-weight:600;box-shadow:0 16px 32px rgba(79,70,229,0.35);">
-                🧪 Run All Tests
-              </button>
             </div>
           </section>
 
-          <section style="background:rgba(15,23,42,0.9);border-radius:20px;padding:18px;color:white;display:grid;gap:12px;">
+          <section class="judge0-panel" style="background:linear-gradient(135deg,#ffffff,#eef2ff);border-radius:20px;padding:18px;color:#0f172a;display:grid;gap:14px;border:1px solid rgba(148,163,184,0.4);box-shadow:0 18px 40px rgba(15,23,42,0.12);">
             <header style="display:flex;align-items:center;justify-content:space-between;">
               <div style="display:flex;align-items:center;gap:10px;">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.28);color:#0ea5e9;">{ }</span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(14,165,233,0.18);color:#0ea5e9;">{ }</span>
                 <div>
-                  <h2 style="margin:0;font-size:1rem;font-weight:600;">Code Editor</h2>
-                  <p style="margin:2px 0 0;font-size:0.8rem;color:rgba(226,232,240,0.75);">Write your solution, run all tests via Judge0, or submit for AI feedback.</p>
+                  <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Judge0 Code Execution</h2>
+                  <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
                 </div>
               </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
+                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;font-size:0.8rem;font-weight:600;box-shadow:0 12px 24px rgba(34,197,94,0.3);">
+                  ▶ Run Code
+                </button>
+                <button type="button" data-action="run-tests" style="border:1px solid rgba(59,130,246,0.5);cursor:pointer;padding:8px 14px;border-radius:999px;background:rgba(59,130,246,0.08);color:#1d4ed8;font-size:0.8rem;font-weight:600;">
+                  🧪 Run All Tests
+                </button>
+                <button type="button" data-action="reset-editor" style="border:1px solid rgba(148,163,184,0.6);cursor:pointer;padding:8px 14px;border-radius:999px;background:#ffffff;color:#475569;font-size:0.8rem;font-weight:500;">
+                  ⟲ Reset Editor
+                </button>
+              </div>
             </header>
-            <textarea data-role="code-input" spellcheck="false" style="width:100%;min-height:200px;border-radius:14px;border:1px solid rgba(148,163,184,0.4);background:#020617;color:#e2e8f0;padding:10px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.85rem;resize:vertical;" placeholder="// Write your solution here..."></textarea>
-            <div data-role="result" style="margin-top:6px;font-size:0.8rem;color:#e5e7eb;"></div>
+            <textarea data-role="code-input" spellcheck="false" style="width:100%;min-height:220px;border-radius:14px;border:1px solid rgba(148,163,184,0.5);background:#020617;color:#e2e8f0;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.85rem;resize:vertical;" placeholder="// Write your solution here..."></textarea>
+            <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
+            <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:14px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
+              <header style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
+                <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Judge0 Test Results</h2>
+              </header>
+              <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
+            </section>
           </section>
 
           <section data-role="hints" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
@@ -139,13 +154,6 @@ function renderSingleQuestion(question, index, topicName, language) {
             <ul data-role="hints-list" style="margin:0;padding-left:18px;display:grid;gap:8px;font-size:0.9rem;color:#475569;"></ul>
           </section>
 
-          <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
-            <header style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
-              <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Test Results (Judge0)</h2>
-            </header>
-            <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
-          </section>
         </div>
       </div>
     </article>
@@ -202,7 +210,9 @@ ${questionsJson}
         const resultEl = container.querySelector('[data-role="result"]');
         const hintBtn = container.querySelector('[data-action="hint"]');
         const submitBtn = container.querySelector('[data-action="submit"]');
+        const runCodeBtn = container.querySelector('[data-action="run-code"]');
         const runTestsBtn = container.querySelector('[data-action="run-tests"]');
+        const resetBtn = container.querySelector('[data-action="reset-editor"]');
         const hintsSection = container.querySelector('[data-role="hints"]');
         const hintsList = container.querySelector('[data-role="hints-list"]');
         const testsResultSection = container.querySelector('[data-role="tests-result"]');
@@ -435,7 +445,7 @@ ${questionsJson}
         const setResult = (message, color) => {
           if (!resultEl) return;
           resultEl.textContent = message;
-          resultEl.style.color = color || '#e5e7eb';
+          resultEl.style.color = color || '#64748b';
         };
 
         const appendHintElement = (hintText) => {
@@ -769,6 +779,89 @@ ${questionsJson}
             } finally {
               submitBtn.disabled = false;
             }
+          });
+        }
+
+        if (runCodeBtn && codeInput) {
+          runCodeBtn.addEventListener('click', async () => {
+            const userSolution = codeInput.value || '';
+            if (!userSolution.trim()) {
+              setResult('Please write a solution before running code.', '#f97316');
+              return;
+            }
+
+            const metaEntry = getCurrentMeta();
+            const language = metaEntry.language || baseLanguage;
+
+            try {
+              runCodeBtn.disabled = true;
+              setResult('Running code via Judge0...', '#38bdf8');
+
+              const endpoint = buildUrl('/api/judge0/execute');
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  sourceCode: userSolution,
+                  language,
+                  input: '',
+                  expectedOutput: null
+                })
+              });
+
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || data.success === false) {
+                throw new Error(data.error || 'Failed to execute code via Judge0');
+              }
+
+              const stdout = data.result?.stdout || '';
+              const stderr = data.result?.stderr || data.result?.compile_output || '';
+
+              if (stdout || stderr) {
+                const parts = [];
+                if (stdout) parts.push('Output: ' + stdout.trim());
+                if (stderr) parts.push('Errors: ' + stderr.trim());
+                setResult(parts.join(' | '), '#e5e7eb');
+              } else {
+                setResult('Code executed successfully (no output).', '#22c55e');
+              }
+            } catch (error) {
+              console.error('Judge0 Run Code error:', error);
+              setResult(
+                'Failed to run code via Judge0: ' + (error.message || 'Unknown error'),
+                '#ef4444'
+              );
+            } finally {
+              runCodeBtn.disabled = false;
+            }
+          });
+        }
+
+        if (resetBtn && codeInput) {
+          resetBtn.addEventListener('click', () => {
+            const metaEntry = getCurrentMeta();
+            const id = metaEntry.id || String(currentIndex || 0);
+
+            codeInput.value = '';
+            codeStateById[id] = '';
+
+            const hintState = getHintStateForQuestion(id);
+            hintState.hintsUsed = 0;
+            hintState.allHints = [];
+
+            if (hintsList && hintsSection) {
+              hintsList.innerHTML = '';
+              hintsSection.style.display = 'none';
+            }
+
+            if (testsResultSection && testsResultBody) {
+              testsResultSection.style.display = 'none';
+              testsResultBody.innerHTML = '';
+            }
+
+            setResult('Editor reset. You can start fresh on this question.', '#64748b');
           });
         }
 
