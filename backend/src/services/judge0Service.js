@@ -1005,11 +1005,15 @@ int main() {
       const wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
       
       // Create submission
+      // IMPORTANT:
+      // Do NOT send expected_output to Judge0 for comparison.
+      // We want Judge0 to only check compilation/runtime, and we perform
+      // our own flexible comparison in compareOutputs.
       const submissionData = {
         source_code: wrappedCode,
         language_id: languageId,
         stdin: '',
-        expected_output: expectedOutput,
+        expected_output: null,
         cpu_time_limit: '2.0',
         memory_limit: '128000',
         wall_time_limit: '5.0',
@@ -1333,11 +1337,15 @@ int main() {
         // Wrap code for each test case for all languages
         const wrappedSourceCode = this.wrapCodeForLanguage(sourceCode, language, input);
 
+        // IMPORTANT:
+        // Do NOT send expected_output to Judge0 for comparison.
+        // We want Judge0 to only check compilation/runtime, and we perform
+        // our own flexible comparison in compareOutputs.
         return {
           source_code: wrappedSourceCode,
           language_id: languageId,
           stdin: '', // Input is handled in the wrapped code for all languages
-          expected_output: expectedOutput,
+          expected_output: null,
           cpu_time_limit: '2.0',
           memory_limit: '128000',
           wall_time_limit: '5.0',
