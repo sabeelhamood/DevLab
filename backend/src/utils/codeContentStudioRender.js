@@ -20,6 +20,50 @@ function buildBaseUrl() {
   return ''
 }
 
+function getDefaultServiceApiKey() {
+  if (process.env['SERVICE_API_KEY']) {
+    return process.env['SERVICE_API_KEY']
+  }
+  const raw = process.env['SERVICE_API_KEYS'] || ''
+  const tokens = raw
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean)
+  return tokens.length ? tokens[0] : ''
+}
+
+function getDefaultServiceId() {
+  return process.env['SERVICE_ID'] || process.env['SERVICE_API_ID'] || 'content-studio-service'
+}
+
+function renderContentStudioServiceHeadersScript() {
+  const serviceKey = getDefaultServiceApiKey()
+  const serviceId = getDefaultServiceId()
+  if (!serviceKey && !serviceId) {
+    return ''
+  }
+
+  const payload = serializeJsonForScript({
+    ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
+    ...(serviceId ? { 'x-service-id': serviceId } : {})
+  })
+
+  return `
+    <script>
+      (function () {
+        try {
+          var existing = window.__DEVLAB_SERVICE_HEADERS || {};
+          var provided = ${payload};
+          window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
+        } catch (err) {
+          console.error('Failed to initialize content studio service headers', err);
+          window.__DEVLAB_SERVICE_HEADERS = ${payload};
+        }
+      })();
+    </script>
+  `
+}
+
 function renderSingleQuestion(question, index, topicName, language) {
   const id = question.id || `code_content_${index + 1}`
   const description = question.description || ''
@@ -187,6 +231,18 @@ ${questionsJson}
           const base = (DEFAULT_BASE || window.__DEVLAB_API_BASE__ || '').replace(/\\/+$/, '');
           const normalized = path.startsWith('/') ? path : '/' + path;
           return base ? base + normalized : normalized;
+        };
+
+        const getServiceHeaders = () => {
+          const globalHeaders = window.__DEVLAB_SERVICE_HEADERS;
+          if (globalHeaders && typeof globalHeaders === 'object') {
+            try {
+              return JSON.parse(JSON.stringify(globalHeaders));
+            } catch {
+              return { ...globalHeaders };
+            }
+          }
+          return {};
         };
 
         const metaScript = document.querySelector('script[data-code-content-meta]');
@@ -691,7 +747,8 @@ ${questionsJson}
               const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  ...getServiceHeaders()
                 },
                 body: JSON.stringify({
                   question: questionText,
@@ -742,7 +799,8 @@ ${questionsJson}
               const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  ...getServiceHeaders()
                 },
                 body: JSON.stringify({
                   question: questionText,
@@ -801,7 +859,8 @@ ${questionsJson}
               const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  ...getServiceHeaders()
                 },
                 body: JSON.stringify({
                   sourceCode: userSolution,
@@ -894,7 +953,8 @@ ${questionsJson}
               const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  ...getServiceHeaders()
                 },
                 body: JSON.stringify({
                   sourceCode: userSolution,
@@ -1036,6 +1096,7 @@ export async function generateCodeContentStudioComponent({
   }))
 
   const bootstrapScript = renderBootstrapScript(meta)
+  const serviceHeadersScript = renderContentStudioServiceHeadersScript()
 
   const totalQuestions = questions.length
 
@@ -1065,6 +1126,7 @@ export async function generateCodeContentStudioComponent({
           ${questionsHtml}
         </div>
       </div>
+      ${serviceHeadersScript}
       ${bootstrapScript}
     </div>
   `
