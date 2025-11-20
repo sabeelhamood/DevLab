@@ -491,14 +491,36 @@ int main() {
     // Create function call based on input type
     let functionCall;
     if (Array.isArray(parsedInput)) {
-      // For arrays, spread the arguments
-      const args = parsedInput.map(arg => {
+      // Heuristic:
+      // - If the original input string looks like a JSON array (e.g. "[1, 2, 3]"),
+      //   treat it as a SINGLE array argument: func([1,2,3])
+      // - Otherwise (e.g. "f(1,2,3)" or "a=1, b=2"), treat it as multiple args: func(1,2,3)
+      const originalInput =
+        typeof input === 'string'
+          ? input.trim()
+          : null;
+      const looksLikeJsonArray =
+        typeof originalInput === 'string' &&
+        originalInput.startsWith('[') &&
+        originalInput.endsWith(']');
+
+      if (looksLikeJsonArray) {
+        const arg = parsedInput;
         if (typeof arg === 'string') {
-          return `"${arg.replace(/"/g, '\\"')}"`;
+          functionCall = `${functionName}("${arg.replace(/"/g, '\\"')}")`;
+        } else {
+          functionCall = `${functionName}(${JSON.stringify(arg)})`;
         }
-        return JSON.stringify(arg);
-      }).join(', ');
-      functionCall = `${functionName}(${args})`;
+      } else {
+        // For arrays that represent a list of arguments, spread them
+        const args = parsedInput.map(arg => {
+          if (typeof arg === 'string') {
+            return `"${arg.replace(/"/g, '\\"')}"`;
+          }
+          return JSON.stringify(arg);
+        }).join(', ');
+        functionCall = `${functionName}(${args})`;
+      }
     } else if (parsedInput !== null && parsedInput !== undefined) {
       // Single argument
       if (typeof parsedInput === 'string') {
