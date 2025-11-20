@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
-import { Code, Sparkles, Terminal, Cpu, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
+import { Code, Sparkles, Terminal, Cpu, Volume2, VolumeX } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext.jsx'
 
 const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
 
@@ -13,6 +14,8 @@ export default function CompetitionIntro() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
+  const { theme } = useTheme()
+  const isDark = theme === 'night-mode'
 
   const forcedLearnerId =
     import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
@@ -26,7 +29,6 @@ export default function CompetitionIntro() {
   const [error, setError] = useState(null)
   const [learnerProfile, setLearnerProfile] = useState(null)
   const [profileError, setProfileError] = useState(null)
-  const [darkMode, setDarkMode] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [userInteracted, setUserInteracted] = useState(false)
   const audioRef = useRef(null)
@@ -198,24 +200,28 @@ export default function CompetitionIntro() {
   const renderContent = () => {
     if (!learnerId) {
       return (
-        <p className={`text-center font-medium ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+        <p className={`text-center font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>
           Unable to determine learner context. Please sign in again.
         </p>
       )
     }
 
     if (loadingCompetition) {
-      return <p className={`text-center ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Loading competition…</p>
+      return (
+        <p className={`text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+          Loading competition…
+        </p>
+      )
     }
 
     if (error) {
       return (
         <div className="space-y-4 text-center">
-          <p className={`font-medium ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+          <p className={`font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
           <button
             onClick={() => navigate('/dashboard')}
             className={`bg-transparent border rounded-lg px-4 py-2 font-semibold transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
-              darkMode
+              isDark
                 ? 'border-slate-800 text-slate-300 hover:bg-slate-800/50'
                 : 'border-slate-400 text-slate-700 hover:bg-slate-200'
             }`}
@@ -232,18 +238,22 @@ export default function CompetitionIntro() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`${
-            darkMode
+              isDark
               ? 'bg-slate-900/70 border-slate-800 shadow-black/30'
               : 'bg-white/80 backdrop-blur border-slate-300 shadow-xl'
           } border rounded-xl shadow-lg p-6 space-y-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] transition-shadow`}
         >
-          <p className={`text-xs uppercase tracking-[0.4em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p
+            className={`text-xs uppercase tracking-[0.4em] font-medium ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}
+          >
             Competition
           </p>
-          <h2 className={`text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+          <h2 className={`text-3xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
             {competition?.course_name}
           </h2>
-          <p className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+          <p className={isDark ? 'text-slate-300' : 'text-slate-700'}>
             You'll face three sequential coding questions generated specifically for this course. Each
             question unlocks only after you finish (or time out) the previous one.
           </p>
@@ -255,15 +265,23 @@ export default function CompetitionIntro() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className={`${
-              darkMode
+              isDark
                 ? 'bg-slate-900/70 border-slate-800 shadow-black/30'
                 : 'bg-white/80 backdrop-blur border-slate-300 shadow-xl'
             } border rounded-xl shadow-lg p-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] transition-shadow`}
           >
-            <p className={`text-xs uppercase tracking-[0.3em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p
+              className={`text-xs uppercase tracking-[0.3em] font-medium ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}
+            >
               Format
             </p>
-            <ul className={`list-disc list-inside mt-2 space-y-1 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            <ul
+              className={`list-disc list-inside mt-2 space-y-1 text-sm ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               <li>3 coding questions, 10 minutes each.</li>
               <li>No skipping or jumping ahead.</li>
               <li>AI opponent answers simultaneously.</li>
@@ -274,15 +292,23 @@ export default function CompetitionIntro() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className={`${
-              darkMode
+              isDark
                 ? 'bg-slate-900/70 border-slate-800 shadow-black/30'
                 : 'bg-white/80 backdrop-blur border-slate-300 shadow-xl'
             } border rounded-xl shadow-lg p-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] transition-shadow`}
           >
-            <p className={`text-xs uppercase tracking-[0.3em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p
+              className={`text-xs uppercase tracking-[0.3em] font-medium ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}
+            >
               Scoring
             </p>
-            <ul className={`list-disc list-inside mt-2 space-y-1 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            <ul
+              className={`list-disc list-inside mt-2 space-y-1 text-sm ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               <li>Quality, correctness, and clarity matter.</li>
               <li>AI vs. learner evaluated at the end.</li>
               <li>Winner + learner score saved to your record.</li>
@@ -294,7 +320,7 @@ export default function CompetitionIntro() {
           <button
             onClick={() => navigate('/dashboard')}
             className={`bg-transparent border rounded-lg px-4 py-2 font-semibold transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
-              darkMode
+              isDark
                 ? 'border-slate-800 text-slate-300 hover:bg-slate-800/50'
                 : 'border-slate-400 text-slate-700 hover:bg-slate-200'
             }`}
@@ -318,7 +344,7 @@ export default function CompetitionIntro() {
   return (
     <div
       className={`relative min-h-screen px-4 py-10 overflow-hidden ${
-        darkMode
+        isDark
           ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
           : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 text-slate-900'
       }`}
@@ -341,7 +367,7 @@ export default function CompetitionIntro() {
         }
       }}
     >
-      {/* Sound and Dark Mode Toggles */}
+      {/* Sound Toggle (theme is controlled globally from the header) */}
       <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
         <button
           onClick={() => {
@@ -364,7 +390,7 @@ export default function CompetitionIntro() {
             }
           }}
           className={`p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
-            darkMode
+            isDark
               ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
               : 'bg-white/80 backdrop-blur border border-slate-300 text-slate-700 hover:bg-white shadow-lg'
           }`}
@@ -373,20 +399,6 @@ export default function CompetitionIntro() {
         >
           {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
-        <button
-          onClick={() => {
-            setDarkMode(!darkMode)
-            setUserInteracted(true)
-          }}
-          className={`p-3 rounded-lg transition-all focus:ring-2 focus:ring-emerald-500/60 focus:outline-none ${
-            darkMode
-              ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
-              : 'bg-white/80 backdrop-blur border border-slate-300 text-slate-700 hover:bg-white shadow-lg'
-          }`}
-          aria-label="Toggle dark mode"
-        >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
       </div>
 
       {/* Animated Background Icons */}
@@ -394,56 +406,56 @@ export default function CompetitionIntro() {
         <motion.div
           animate={{ y: [-10, 10], rotate: [0, 10, -10, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-10 left-8 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute top-10 left-8 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Code size={60} />
         </motion.div>
         <motion.div
           animate={{ y: [10, -10], rotate: [0, -15, 15, 0] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-1/4 right-12 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute top-1/4 right-12 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Sparkles size={50} />
         </motion.div>
         <motion.div
           animate={{ y: [-8, 8], rotate: [0, 12, -12, 0] }}
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-16 left-12 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute bottom-16 left-12 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Terminal size={55} />
         </motion.div>
         <motion.div
           animate={{ y: [8, -8], rotate: [0, -10, 10, 0] }}
           transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-1/3 right-20 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute bottom-1/3 right-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Cpu size={48} />
         </motion.div>
         <motion.div
           animate={{ y: [-12, 12], rotate: [0, 8, -8, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-1/2 left-20 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute top-1/2 left-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Code size={45} />
         </motion.div>
         <motion.div
           animate={{ y: [12, -12], rotate: [0, -12, 12, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-20 right-1/4 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute top-20 right-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Terminal size={52} />
         </motion.div>
         <motion.div
           animate={{ y: [-9, 9], rotate: [0, 15, -15, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-24 right-8 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute bottom-24 right-8 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Sparkles size={58} />
         </motion.div>
         <motion.div
           animate={{ y: [9, -9], rotate: [0, -8, 8, 0] }}
           transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-2/3 left-1/4 ${darkMode ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className={`absolute top-2/3 left-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
           <Cpu size={47} />
         </motion.div>
@@ -456,18 +468,24 @@ export default function CompetitionIntro() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center space-y-2"
         >
-          <p className={`text-xs uppercase tracking-[0.4em] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p
+            className={`text-xs uppercase tracking-[0.4em] font-medium ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}
+          >
             Competition Briefing
           </p>
-          <h1 className={`text-4xl font-bold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+          <h1 className={`text-4xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
             Ready for the Arena, {displayName}?
             <div className="h-1 w-24 bg-emerald-500 mx-auto rounded-full mt-2"></div>
           </h1>
-          <p className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+          <p className={isDark ? 'text-slate-300' : 'text-slate-700'}>
             Take a deep breath, review the rules, and start when you're ready. The AI opponent is waiting.
           </p>
           {profileError && (
-            <p className={`text-xs font-medium ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{profileError}</p>
+            <p className={`text-xs font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              {profileError}
+            </p>
           )}
         </motion.div>
 
