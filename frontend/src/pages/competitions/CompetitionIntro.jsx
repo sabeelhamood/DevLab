@@ -32,69 +32,29 @@ export default function CompetitionIntro() {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [userInteracted, setUserInteracted] = useState(false)
   const audioRef = useRef(null)
-  const audioLoadedRef = useRef(false)
 
-  // Audio setup and auto-play
+  // Audio setup
   useEffect(() => {
     const audio = new Audio('/assets/sfx/introGaming.mp3')
     audio.loop = true
     audio.volume = 0.3
-    audio.preload = 'auto'
-    
-    audioLoadedRef.current = false
-    
-    // Check if audio file loads successfully
-    const handleCanPlay = () => {
-      audioLoadedRef.current = true
-    }
-    
-    const handleError = () => {
-      // File doesn't exist or can't be loaded - don't try to play
-      audioLoadedRef.current = false
-      audioRef.current = null
-    }
-    
-    audio.addEventListener('canplaythrough', handleCanPlay)
-    audio.addEventListener('error', handleError)
-    
+
     audioRef.current = audio
-    
-    // Event handler to play audio on user interaction - MUST call .play() directly in handler
-    const handleUserInteraction = () => {
-      setUserInteracted(true)
-      if (audioRef.current && soundEnabled && audioLoadedRef.current) {
-        // Call .play() directly inside the user interaction handler
-        audioRef.current.play().catch(() => {
-          // Silently handle - file may not be supported
-        })
-      }
-    }
-    
-    // Add listeners for click, keydown, or touchstart
-    window.addEventListener('click', handleUserInteraction, { once: true })
-    window.addEventListener('keydown', handleUserInteraction, { once: true })
-    window.addEventListener('touchstart', handleUserInteraction, { once: true })
-    
+
     return () => {
-      audio.removeEventListener('canplaythrough', handleCanPlay)
-      audio.removeEventListener('error', handleError)
-      window.removeEventListener('click', handleUserInteraction)
-      window.removeEventListener('keydown', handleUserInteraction)
-      window.removeEventListener('touchstart', handleUserInteraction)
       audio.pause()
       audio.currentTime = 0
       audioRef.current = null
     }
-  }, [soundEnabled])
+  }, [])
 
-  // Control audio playback based on soundEnabled state changes
+  // Control audio playback based on soundEnabled and user interaction
   useEffect(() => {
-    if (!audioRef.current || !userInteracted) return
-    
-    if (soundEnabled) {
-      // Only play if user has already interacted
+    if (!audioRef.current) return
+
+    if (soundEnabled && userInteracted) {
       audioRef.current.play().catch(() => {
-        // Silently handle - file may not be supported
+        // Silently handle - file may not be supported or autoplay blocked
       })
     } else {
       audioRef.current.pause()
@@ -350,8 +310,8 @@ export default function CompetitionIntro() {
       }`}
       onClick={() => {
         setUserInteracted(true)
-        // Call .play() directly inside the click handler
-        if (audioRef.current && soundEnabled && audioLoadedRef.current) {
+        // Try to play directly on user click (required by browser policies)
+        if (audioRef.current && soundEnabled) {
           audioRef.current.play().catch(() => {
             // Silently handle - file may not be supported
           })
@@ -359,8 +319,8 @@ export default function CompetitionIntro() {
       }}
       onKeyDown={() => {
         setUserInteracted(true)
-        // Call .play() directly inside the keydown handler
-        if (audioRef.current && soundEnabled && audioLoadedRef.current) {
+        // Try to play directly on key press
+        if (audioRef.current && soundEnabled) {
           audioRef.current.play().catch(() => {
             // Silently handle - file may not be supported
           })
@@ -374,11 +334,11 @@ export default function CompetitionIntro() {
             const newState = !soundEnabled
             setSoundEnabled(newState)
             setUserInteracted(true)
-            
-            // Call .play() directly inside the click handler
+
+            // Try to play/stop directly in the toggle handler
             if (audioRef.current) {
-              if (newState && audioLoadedRef.current) {
-                // Enable sound - play directly in click handler
+              if (newState) {
+                // Enable sound - play directly on toggle
                 audioRef.current.play().catch(() => {
                   // Silently handle - file may not be supported
                 })
