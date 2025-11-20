@@ -55,13 +55,6 @@ function renderSingleQuestion(question, index, topicName, language) {
                     tc.expected_output ?? tc.expectedOutput ?? tc.output ?? ''
                   )}</pre>
                 </div>
-                ${
-                  tc.explanation
-                    ? `<p style="margin:0;font-size:0.85rem;line-height:1.5;color:rgba(15,23,42,0.7);">${escapeHtml(
-                        tc.explanation
-                      )}</p>`
-                    : ''
-                }
               </div>
             </li>`
             )
@@ -732,6 +725,9 @@ export async function generateCodeContentStudioComponent({
   return `
     <div class="content-studio-code-container" style="padding:32px;background:#f8fafc;color:#1e293b;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
       <div style="max-width:960px;margin:0 auto;display:grid;gap:16px;">
+        ${
+          totalQuestions > 1
+            ? `
         <div data-role="code-question-nav" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="display:flex;align-items:center;gap:8px;">
             <button type="button" data-role="code-question-prev" style="border:none;border-radius:999px;padding:8px 14px;background:#e2e8f0;color:#0f172a;font-size:0.85rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
@@ -742,9 +738,12 @@ export async function generateCodeContentStudioComponent({
             </button>
           </div>
           <div data-role="code-question-indicator" style="font-size:0.85rem;color:#64748b;">
-            ${totalQuestions > 0 ? `Question 1 of ${totalQuestions}` : ''}
+            Question 1 of ${totalQuestions}
           </div>
         </div>
+        `
+            : ''
+        }
         <div data-role="code-question-cards" style="display:grid;gap:24px;">
           ${questionsHtml}
         </div>
