@@ -123,7 +123,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #f9fafb; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+              <div style="background: #DCDCDC; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                   <div>
                     <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
@@ -233,13 +233,13 @@ export function renderAssessmentCodeQuestions(questions = []) {
           ← Previous Question
         </button>
         <div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ${questions.length}</div>
-        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: linear-gradient(135deg, #22c55e, #15803d); color: white; font-weight: 600; cursor: pointer;">
+        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">
           Next Question →
         </button>
       </div>
       <div style="margin-top: 1.5rem; text-align: center;">
-        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
-          SUBMIT ALL SOLUTIONS
+        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
+          Submit All Solutions 🚀
         </button>
       </div>
       <div style="margin-top: 1rem;">
@@ -292,7 +292,7 @@ function renderJudge0Section(question) {
 
   return `
     <div class="judge0-panel" style="margin-top: 1.25rem;">
-      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: linear-gradient(135deg, #ffffff, #eef2ff); border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
+      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
         <div style="display: flex; flex-direction: column; gap: 1rem;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
             <div>
@@ -302,10 +302,10 @@ function renderJudge0Section(question) {
               </p>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
+              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
                 Run Code
               </button>
-              <button type="button" data-judge0-run-tests style="border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 9999px; background: rgba(59, 130, 246, 0.08); color: #1d4ed8; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+              <button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
                 Run All Tests (${testCaseCount})
               </button>
               <button type="button" data-judge0-reset style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
@@ -318,7 +318,7 @@ function renderJudge0Section(question) {
             <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             <div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                 <span style="font-weight: 600;">Console Output</span>
@@ -696,7 +696,7 @@ function renderJudge0Bootstrap(questions) {
               const passed = processed.filter((p) => p.passed).length;
               const total = processed.length;
               setStatus('Tests completed.', '#22c55e');
-              updateSummary(\`\\\${passed}/\\\${total} tests passed\`);
+              updateSummary(total && passed === total ? 'All tests passed.' : 'Tests completed. Review detailed feedback below.');
               renderResults(processed);
 
               const lines = [
