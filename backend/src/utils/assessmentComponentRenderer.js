@@ -568,14 +568,43 @@ function renderJudge0Bootstrap(questions) {
           const language = config.language || textarea?.getAttribute('data-language') || 'javascript';
           const getDefaultCodeTemplate = (lang) => {
             const normalized = (lang || 'javascript').toLowerCase();
+            const joinLines = (lines) => lines.join('\\n');
             if (normalized === 'python') {
-              return 'def solve(data):\n    # TODO: implement your logic here\n    return data';
+              return joinLines([
+                'def solve(data):',
+                '    # TODO: implement your logic here',
+                '    return data',
+                '',
+                'if __name__ == "__main__":',
+                '    print(solve("sample input"))'
+              ]);
             } else if (normalized === 'java') {
-              return 'public class Solution {\n    public static void main(String[] args) {\n        // TODO: implement your logic here\n    }\n}';
+              return joinLines([
+                'public class Solution {',
+                '    public static void main(String[] args) {',
+                '        // TODO: implement your logic here',
+                '    }',
+                '}'
+              ]);
             } else if (normalized === 'cpp' || normalized === 'c++') {
-              return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // TODO: implement your logic here\n    return 0;\n}';
+              return joinLines([
+                '#include <iostream>',
+                'using namespace std;',
+                '',
+                'int main() {',
+                '    // TODO: implement your logic here',
+                '    return 0;',
+                '}'
+              ]);
             } else {
-              return 'function solve(data) {\n    // TODO: implement your logic here\n    return data;\n}';
+              return joinLines([
+                'function solve(data) {',
+                '    // TODO: implement your logic here',
+                '    return data;',
+                '}',
+                '',
+                'console.log(solve("sample input"));'
+              ]);
             }
           };
           const defaultTemplate = templates[questionId] || textarea?.value || getDefaultCodeTemplate(language);
@@ -720,7 +749,7 @@ function renderJudge0Bootstrap(questions) {
             }
 
             // Collect test cases from multiple possible sources
-            const allTestCases = config.testCases || config.test_cases || question.testCases || question.test_cases || [];
+            const allTestCases = config.testCases || config.test_cases || [];
             if (!allTestCases.length) {
               setStatus('No test cases available for this question.', '#f97316');
               return;
