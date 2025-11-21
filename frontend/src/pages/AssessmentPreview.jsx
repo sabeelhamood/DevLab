@@ -1,7 +1,30 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
+import { useTheme } from '../contexts/ThemeContext.jsx'
 
 function AssessmentPreview() {
+  const { theme } = useTheme()
+  const isNightMode = theme === 'night-mode'
+
+  const pageBgClass = isNightMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+  const mutedTextClass = isNightMode ? 'text-slate-400' : 'text-slate-500'
+  const subtleTextClass = isNightMode ? 'text-slate-300' : 'text-slate-600'
+  const borderClass = isNightMode ? 'border-slate-800' : 'border-slate-200'
+  const cardBgClass = isNightMode ? 'bg-slate-900/60' : 'bg-white/90'
+  const cardShadow = isNightMode ? 'shadow-lg shadow-emerald-900/20' : 'shadow-md shadow-emerald-200/40'
+  const inputBgClass = isNightMode ? 'bg-slate-900/70 text-slate-200' : 'bg-white text-slate-900'
+  const inputBorderFocus = isNightMode ? 'focus:ring-emerald-500/60' : 'focus:ring-emerald-500/80'
+  const badgeBg = isNightMode ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/40' : 'bg-emerald-50 text-emerald-700 border-emerald-500/40'
+  const secondaryButtonClass = isNightMode
+    ? 'bg-slate-800 hover:bg-slate-700 text-slate-100'
+    : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+  const dashedBoxClass = isNightMode
+    ? 'border-slate-700 bg-slate-900/70 text-slate-500'
+    : 'border-slate-300 bg-white text-slate-500'
+  const textareaReadOnlyBg = isNightMode ? 'bg-slate-900/70 text-slate-300' : 'bg-slate-100 text-slate-700'
+  const labelClass = `text-sm font-medium flex flex-col gap-2 ${subtleTextClass}`
+  const helperTextClass = `text-xs ${mutedTextClass}`
+
   const [amount, setAmount] = useState(2)
   const [difficulty, setDifficulty] = useState('medium')
   const [programmingLanguage, setProgrammingLanguage] = useState('javascript')
@@ -186,46 +209,54 @@ function AssessmentPreview() {
     Array.from(template.content.childNodes).forEach(injectNode)
   }, [htmlPreview])
 
+  const inputBaseClass =
+    'rounded-lg border px-3 py-2 text-sm focus:outline-none ' +
+    `${inputBorderFocus}`
+  const inputClass = `${inputBaseClass} ${inputBgClass} ${borderClass}`
+  const textareaClass = `${inputClass} w-full`
+  const readonlyTextareaClass = `w-full rounded-lg border ${borderClass} px-3 py-2 text-xs font-mono focus:outline-none ${textareaReadOnlyBg}`
+  const sectionCardClass = `rounded-2xl border ${borderClass} ${cardBgClass} ${cardShadow} p-6`
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4">
+    <div className={`min-h-screen py-12 px-4 transition-colors duration-300 ${pageBgClass}`}>
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="space-y-2">
-          <p className="text-sm uppercase tracking-wide text-slate-400">
+          <p className={`text-sm uppercase tracking-wide ${mutedTextClass}`}>
             Temporary Utility
           </p>
           <h1 className="text-3xl font-semibold">
             Assessment Question Preview
           </h1>
-          <p className="text-slate-400 max-w-3xl">
+          <p className={`${mutedTextClass} max-w-3xl`}>
             Use this page to preview the HTML that Assessment receives. The
             controls below trigger a sample request through the existing
             `/api/data-request` gateway or let you paste custom HTML from any
             assessment payload. This page does not affect production flows.
           </p>
           {statusMessage && (
-            <div className="text-sm text-emerald-300">{statusMessage}</div>
+            <div className={`text-sm ${isNightMode ? 'text-emerald-300' : 'text-emerald-600'}`}>{statusMessage}</div>
           )}
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className={labelClass}>
                 Amount
                 <input
                   type="number"
                   min="1"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className={inputClass}
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className={labelClass}>
                 Difficulty
                 <select
                   value={difficulty}
                   onChange={(event) => setDifficulty(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className={inputClass}
                 >
                   <option value="easy">easy</option>
                   <option value="medium">medium</option>
@@ -233,43 +264,43 @@ function AssessmentPreview() {
                   <option value="advanced">advanced</option>
                 </select>
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className={labelClass}>
                 Programming Language
                 <input
                   value={programmingLanguage}
                   onChange={(event) => setProgrammingLanguage(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className={inputClass}
                 />
               </label>
-              <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+              <label className={labelClass}>
                 Human Language
                 <input
                   value={humanLanguage}
                   onChange={(event) => setHumanLanguage(event.target.value)}
-                  className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                  className={inputClass}
                 />
               </label>
             </div>
 
-            <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+            <label className={labelClass}>
               Assessment ID (optional)
               <input
                 value={assessmentId}
                 onChange={(event) => setAssessmentId(event.target.value)}
                 placeholder="e.g. assessment_123"
-                className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                className={inputClass}
               />
-              <span className="text-xs text-slate-500">
+              <span className={helperTextClass}>
                 When provided, generated coding questions will be saved to Supabase under this assessment.
               </span>
             </label>
 
-            <label className="text-sm font-medium text-slate-300 flex flex-col gap-2">
+            <label className={labelClass}>
               Skills (comma separated)
               <input
                 value={skillsInput}
                 onChange={(event) => setSkillsInput(event.target.value)}
-                className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                className={inputClass}
               />
             </label>
 
@@ -283,14 +314,14 @@ function AssessmentPreview() {
               </button>
               <button
                 onClick={handleApplyCustomHtml}
-                className="rounded-md bg-slate-800 hover:bg-slate-700 px-4 py-2 text-sm font-semibold transition"
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${secondaryButtonClass}`}
               >
                 Apply Custom HTML
               </button>
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-medium text-slate-300">
+              <label className={`text-sm font-medium ${subtleTextClass}`}>
                 Custom HTML (renderedQuestion)
               </label>
               <textarea
@@ -298,23 +329,23 @@ function AssessmentPreview() {
                 onChange={(event) => setCustomHtmlInput(event.target.value)}
                 placeholder="<article>…</article>"
                 rows={8}
-                className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                className={`${textareaClass} text-sm`}
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <label className="text-sm font-medium text-slate-300">
+            <label className={`text-sm font-medium ${subtleTextClass}`}>
               Request Payload (sent to /api/data-request)
             </label>
             <textarea
               value={requestJson}
               readOnly
               rows={12}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
+              className={readonlyTextareaClass}
             />
 
-            <label className="text-sm font-medium text-slate-300">
+            <label className={`text-sm font-medium ${subtleTextClass}`}>
               Raw Gateway Response
             </label>
             <textarea
@@ -322,32 +353,35 @@ function AssessmentPreview() {
               readOnly
               placeholder="Response from gateway will appear here after fetching."
               rows={12}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none"
+              className={readonlyTextareaClass}
             />
           </div>
         </section>
 
         <section>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-4">
-              <h2 className="text-lg font-semibold text-slate-200">
+          <div className={sectionCardClass}>
+            <div className={`mb-4 flex items-center justify-between border-b pb-4 ${borderClass}`}>
+              <h2 className={`text-lg font-semibold ${subtleTextClass}`}>
                 Rendered Assessment View
               </h2>
               <div className="flex items-center gap-4">
                 {lastScore !== null && (
-                  <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/40">
-                    Last graded score: <span className="ml-1 text-emerald-200">{lastScore}/100</span>
+                  <div className={`rounded-full px-3 py-1 text-xs font-semibold border ${badgeBg}`}>
+                    Last graded score: <span className="ml-1">{lastScore}/100</span>
                   </div>
                 )}
-                <span className="text-xs text-slate-500 hidden sm:inline">
+                <span className={`text-xs hidden sm:inline ${mutedTextClass}`}>
                   Using <code>dangerouslySetInnerHTML</code>
                 </span>
               </div>
             </div>
             {htmlPreview ? (
-              <div ref={previewRef} className="preview-container prose max-w-none text-slate-200" />
+              <div
+                ref={previewRef}
+                className={`preview-container prose max-w-none ${isNightMode ? 'text-slate-200' : 'text-slate-800'}`}
+              />
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/70 p-8 text-center text-sm text-slate-500">
+              <div className={`rounded-lg border border-dashed p-8 text-center text-sm ${dashedBoxClass}`}>
                 No preview loaded yet. Click &ldquo;Load Sample Question&rdquo;
                 or paste custom HTML above.
               </div>
