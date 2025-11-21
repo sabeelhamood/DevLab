@@ -306,9 +306,9 @@ function renderJudge0Section(question, index = 0) {
     template: getDefaultCodeTemplate(config.language || question.programming_language)
   }
 
-  // Serialize JSON and escape for safe insertion into template literal
-  const configJson = serializeJsonForScript(configData)
-  const templateJson = serializeJsonForScript(templateData)
+  // Use base64 encoding for JSON to prevent HTML parsing issues
+  const configJsonBase64 = Buffer.from(JSON.stringify(configData)).toString('base64')
+  const templateJsonBase64 = Buffer.from(JSON.stringify(templateData)).toString('base64')
 
   // Build HTML with safe string concatenation for script content
   const escapedQuestionId = escapeHtml(questionId)
@@ -354,11 +354,12 @@ function renderJudge0Section(question, index = 0) {
     '</div>',
     '</div>',
     '</div>',
-    `<script type="application/json" data-judge0-config="${escapedQuestionId}">`,
-    configJson,
+    '</div>',
+    `<script type="application/json" data-judge0-config="${escapedQuestionId}" data-encoded="base64">`,
+    configJsonBase64,
     '</script>',
-    `<script type="application/json" data-judge0-template="${escapedQuestionId}">`,
-    templateJson,
+    `<script type="application/json" data-judge0-template="${escapedQuestionId}" data-encoded="base64">`,
+    templateJsonBase64,
     '</script>',
     '</div>'
   ].join('')
@@ -460,7 +461,13 @@ function renderJudge0Bootstrap(questions) {
           const key = script.getAttribute('data-judge0-config');
           if (!key) return;
           try {
-            configMap[key] = JSON.parse(script.textContent || '{}');
+            const isBase64 = script.getAttribute('data-encoded') === 'base64';
+            let content = script.textContent || '{}';
+            if (isBase64) {
+              // Decode base64 to get original JSON string
+              content = atob(content);
+            }
+            configMap[key] = JSON.parse(content);
           } catch (err) {
             console.error('Failed to parse judge0 config for', key, err);
           }
@@ -472,7 +479,13 @@ function renderJudge0Bootstrap(questions) {
           const key = script.getAttribute('data-judge0-template');
           if (!key) return;
           try {
-            const parsed = JSON.parse(script.textContent || '{}');
+            const isBase64 = script.getAttribute('data-encoded') === 'base64';
+            let content = script.textContent || '{}';
+            if (isBase64) {
+              // Decode base64 to get original JSON string
+              content = atob(content);
+            }
+            const parsed = JSON.parse(content);
             templates[key] = parsed.template || '';
           } catch (err) {
             console.error('Failed to parse judge0 template for', key, err);
@@ -491,11 +504,14 @@ function renderJudge0Bootstrap(questions) {
               }
             }
             const headers = {};
-            if (attrServiceKey) {
-              headers['x-api-key'] = attrServiceKey;
+            // Use service key from data attribute, global headers, or fallback
+            const serviceKey = attrServiceKey || (globalHeaders && globalHeaders['x-api-key']) || '';
+            const serviceId = attrServiceId || (globalHeaders && globalHeaders['x-service-id']) || '';
+            if (serviceKey) {
+              headers['x-api-key'] = serviceKey;
             }
-            if (attrServiceId) {
-              headers['x-service-id'] = attrServiceId;
+            if (serviceId) {
+              headers['x-service-id'] = serviceId;
             }
             return headers;
           })();
