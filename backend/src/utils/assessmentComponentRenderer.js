@@ -100,7 +100,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           <span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>
           <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
             ${question.skills.map(skill => `
-              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #7c3aed; border-radius: 9999px;">
+              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">
                 ${escapeHtml(skill)}
               </span>
             `).join('')}
@@ -123,7 +123,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #F0FFF0; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+              <div style="background: #F8F8FF; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                   <div>
                     <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
@@ -197,8 +197,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
                 <span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>
               </div>
               <div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">
-                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">
-                  ${escapeHtml(question.description || 'No description provided.')}
+                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">${escapeHtml(question.description || 'No description provided.')}
                 </p>
               </div>
             </div>
