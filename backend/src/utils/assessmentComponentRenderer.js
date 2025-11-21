@@ -146,111 +146,90 @@ export function renderAssessmentCodeQuestions(questions = []) {
       : ''
 
     const judge0Html = renderJudge0Section(question, index)
+    
+    // Prepare escaped values
+    const questionTitle = escapeHtml(question.title || 'Question ' + (index + 1))
+    const questionLanguage = escapeHtml(question.programming_language || 'N/A')
+    const questionDescription = escapeHtml(question.description || 'No description provided.')
+    const questionDifficulty = escapeHtml(difficulty)
+    const displayStyle = index === 0 ? '' : 'display:none;'
+    const difficultyStyle = difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
+                            difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
+                            'background: #fee2e2; color: #991b1b;'
 
-    return `
-      <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
-        <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">
-          <div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-                    <polyline points="16 18 22 12 16 6"></polyline>
-                    <polyline points="8 6 2 12 8 18"></polyline>
-                  </svg>
-                </div>
-                <div>
-                  <h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">
-                    ${escapeHtml(question.title || `Question ${index + 1}`)}
-                  </h3>
-                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">
-                    <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
-                      ${escapeHtml(question.programming_language || 'N/A')}
-                    </span>
-                    <span class="${difficultyClass}" style="
-                      font-size: 12px;
-                      padding: 4px 12px;
-                      border-radius: 9999px;
-                      font-weight: 600;
-                      letter-spacing: 0.05em;
-                      ${
-                        difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
-                        difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
-                        'background: #fee2e2; color: #991b1b;'
-                      }">
-                      ${escapeHtml(difficulty)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-bottom: 24px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>
-              </div>
-              <div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">
-                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">${escapeHtml(question.description || 'No description provided.')}
-                </p>
-              </div>
-            </div>
-
-            ${skillsHtml}
-            ${testCasesHtml}
-          </div>
-          ${judge0Html}
-        </div>
-      </div>
-    `
+    // Use string concatenation to avoid template literal issues
+    return [
+      '<div class="question-step" data-question-index="' + String(index) + '" style="' + displayStyle + '">',
+      '<div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">',
+      '<div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">',
+      '<div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">',
+      '<div style="display: flex; align-items: center; gap: 12px;">',
+      '<div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">',
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>',
+      '</div>',
+      '<div>',
+      '<h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">' + questionTitle + '</h3>',
+      '<div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">',
+      '<span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">' + questionLanguage + '</span>',
+      '<span class="' + difficultyClass + '" style="font-size: 12px; padding: 4px 12px; border-radius: 9999px; font-weight: 600; letter-spacing: 0.05em; ' + difficultyStyle + '">' + questionDifficulty + '</span>',
+      '</div>',
+      '</div>',
+      '</div>',
+      '</div>',
+      '<div style="margin-bottom: 24px;">',
+      '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">',
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+      '<span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>',
+      '</div>',
+      '<div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">',
+      '<p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">' + questionDescription + '</p>',
+      '</div>',
+      '</div>',
+      skillsHtml,
+      testCasesHtml,
+      '</div>',
+      judge0Html,
+      '</div>',
+      '</div>'
+    ].join('')
   }).join('')
 
   const serviceHeadersScript = renderServiceHeadersScript()
   const judge0BootstrapScript = renderJudge0Bootstrap(questions)
-
-  return `
-    <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
-      <div style="margin-bottom: 32px;">
-        <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
-          Coding Assessment Questions
-        </h2>
-        <p style="color: #475569; margin: 0; font-size: 16px;">
-          ${questions.length} question${questions.length !== 1 ? 's' : ''} generated
-        </p>
-      </div>
-      <div class="question-steps-wrapper">
-        ${questionsHtml}
-      </div>
-      <div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">
-        <button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">
-          ← Previous Question
-        </button>
-        <div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ${questions.length}</div>
-        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">
-          Next Question →
-        </button>
-      </div>
-      <div style="margin-top: 1.5rem; text-align: center;">
-        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
-          Submit All Solutions 🚀
-        </button>
-      </div>
-      <div style="margin-top: 1rem;">
-        <div data-grading-results style="display: none;"></div>
-        <pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>
-      </div>
-    </div>
-    ${renderQuestionMetaScript(questions)}
-    ${serviceHeadersScript}
-    ${judge0BootstrapScript}
-    ${renderStepperBootstrap()}
-  `
+  const questionMetaScript = renderQuestionMetaScript(questions)
+  const stepperBootstrap = renderStepperBootstrap()
+  
+  // Use string concatenation to avoid template literal issues with inserted HTML
+  const questionsCount = String(questions.length)
+  const questionsPlural = questions.length !== 1 ? 's' : ''
+  
+  return [
+    '<div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; color: #1e293b;">',
+    '<div style="margin-bottom: 32px;">',
+    '<h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">Coding Assessment Questions</h2>',
+    '<p style="color: #475569; margin: 0; font-size: 16px;">' + questionsCount + ' question' + questionsPlural + ' generated</p>',
+    '</div>',
+    '<div class="question-steps-wrapper">',
+    questionsHtml,
+    '</div>',
+    '<div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">',
+    '<button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">← Previous Question</button>',
+    '<div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ' + questionsCount + '</div>',
+    '<button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">Next Question →</button>',
+    '</div>',
+    '<div style="margin-top: 1.5rem; text-align: center;">',
+    '<button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">Submit All Solutions 🚀</button>',
+    '</div>',
+    '<div style="margin-top: 1rem;">',
+    '<div data-grading-results style="display: none;"></div>',
+    '<pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>',
+    '</div>',
+    '</div>',
+    questionMetaScript,
+    serviceHeadersScript,
+    judge0BootstrapScript,
+    stepperBootstrap
+  ].join('')
 }
 
 function escapeHtml(text) {
