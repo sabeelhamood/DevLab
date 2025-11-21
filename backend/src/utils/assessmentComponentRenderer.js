@@ -95,135 +95,162 @@ export function renderAssessmentCodeQuestions(questions = []) {
       'difficulty-hard'
 
     const skillsHtml = question.skills && question.skills.length > 0
-      ? [
-          '<div style="margin-bottom: 1rem;">',
-          '<span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>',
-          '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">',
-          question.skills.map(skill => {
-            const escapedSkill = escapeHtml(skill)
-            return '<span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">' + escapedSkill + '</span>'
-          }).join(''),
-          '</div>',
-          '</div>'
-        ].join('')
+      ? `
+        <div style="margin-bottom: 1rem;">
+          <span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            ${question.skills.map(skill => `
+              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">
+                ${escapeHtml(skill)}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `
       : ''
 
     const testCasesHtml = question.testCases && question.testCases.length > 0
-      ? [
-          '<div>',
-          '<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">',
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
-          '<span style="font-size: 0.875rem; font-weight: 500; color: #374151;">Test Cases (' + String(question.testCases.length) + ')</span>',
-          '</div>',
-          '<div style="display: flex; flex-direction: column; gap: 0.5rem;">',
-          question.testCases.map((testCase, testIndex) => {
-            const escapedInput = escapeHtml(testCase.input || 'N/A')
-            const escapedOutput = escapeHtml(testCase.expected_output || testCase.output || 'N/A')
-            return [
-              '<div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">',
-              '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">',
-              '<div>',
-              '<span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>',
-              '<code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">' + escapedInput + '</code>',
-              '</div>',
-              '<div>',
-              '<span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Expected Output:</span>',
-              '<code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">' + escapedOutput + '</code>',
-              '</div>',
-              '</div>',
-              '</div>'
-            ].join('')
-          }).join(''),
-          '</div>',
-          '</div>'
-        ].join('')
+      ? `
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">
+              Test Cases (${question.testCases.length})
+            </span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${question.testCases.map((testCase, testIndex) => `
+              <div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
+                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
+                      ${escapeHtml(testCase.input || 'N/A')}
+                    </code>
+                  </div>
+                  <div>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Expected Output:</span>
+                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
+                      ${escapeHtml(testCase.expected_output || testCase.output || 'N/A')}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `
       : ''
 
-    const judge0Html = renderJudge0Section(question, index)
-    
-    // Prepare escaped values
-    const questionTitle = escapeHtml(question.title || 'Question ' + (index + 1))
-    const questionLanguage = escapeHtml(question.programming_language || 'N/A')
-    const questionDescription = escapeHtml(question.description || 'No description provided.')
-    const questionDifficulty = escapeHtml(difficulty)
-    const displayStyle = index === 0 ? '' : 'display:none;'
-    const difficultyStyle = difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
-                            difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
-                            'background: #fee2e2; color: #991b1b;'
+    const judge0Html = renderJudge0Section(question)
 
-    // Use string concatenation to avoid template literal issues
-    return [
-      '<div class="question-step" data-question-index="' + String(index) + '" style="' + displayStyle + '">',
-      '<div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">',
-      '<div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">',
-      '<div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">',
-      '<div style="display: flex; align-items: center; gap: 12px;">',
-      '<div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">',
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>',
-      '</div>',
-      '<div>',
-      '<h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">' + questionTitle + '</h3>',
-      '<div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">',
-      '<span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">' + questionLanguage + '</span>',
-      '<span class="' + difficultyClass + '" style="font-size: 12px; padding: 4px 12px; border-radius: 9999px; font-weight: 600; letter-spacing: 0.05em; ' + difficultyStyle + '">' + questionDifficulty + '</span>',
-      '</div>',
-      '</div>',
-      '</div>',
-      '</div>',
-      '<div style="margin-bottom: 24px;">',
-      '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">',
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
-      '<span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>',
-      '</div>',
-      '<div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">',
-      '<p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">' + questionDescription + '</p>',
-      '</div>',
-      '</div>',
-      skillsHtml,
-      testCasesHtml,
-      '</div>',
-      judge0Html,
-      '</div>',
-      '</div>'
-    ].join('')
+    return `
+      <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
+        <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">
+          <div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">
+                    ${escapeHtml(question.title || `Question ${index + 1}`)}
+                  </h3>
+                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">
+                    <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                      ${escapeHtml(question.programming_language || 'N/A')}
+                    </span>
+                    <span class="${difficultyClass}" style="
+                      font-size: 12px;
+                      padding: 4px 12px;
+                      border-radius: 9999px;
+                      font-weight: 600;
+                      letter-spacing: 0.05em;
+                      ${
+                        difficultyClass === 'difficulty-easy' ? 'background: #dcfce7; color: #166534;' :
+                        difficultyClass === 'difficulty-medium' ? 'background: #fef3c7; color: #92400e;' :
+                        'background: #fee2e2; color: #991b1b;'
+                      }">
+                      ${escapeHtml(difficulty)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>
+              </div>
+              <div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">
+                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">${escapeHtml(question.description || 'No description provided.')}
+                </p>
+              </div>
+            </div>
+
+            ${skillsHtml}
+            ${testCasesHtml}
+          </div>
+          ${judge0Html}
+        </div>
+      </div>
+    `
   }).join('')
 
   const serviceHeadersScript = renderServiceHeadersScript()
   const judge0BootstrapScript = renderJudge0Bootstrap(questions)
-  const questionMetaScript = renderQuestionMetaScript(questions)
-  const stepperBootstrap = renderStepperBootstrap()
-  
-  // Use string concatenation to avoid template literal issues with inserted HTML
-  const questionsCount = String(questions.length)
-  const questionsPlural = questions.length !== 1 ? 's' : ''
-  
-  return [
-    '<div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; color: #1e293b;">',
-    '<div style="margin-bottom: 32px;">',
-    '<h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">Coding Assessment Questions</h2>',
-    '<p style="color: #475569; margin: 0; font-size: 16px;">' + questionsCount + ' question' + questionsPlural + ' generated</p>',
-    '</div>',
-    '<div class="question-steps-wrapper">',
-    questionsHtml,
-    '</div>',
-    '<div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">',
-    '<button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">← Previous Question</button>',
-    '<div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ' + questionsCount + '</div>',
-    '<button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">Next Question →</button>',
-    '</div>',
-    '<div style="margin-top: 1.5rem; text-align: center;">',
-    '<button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">Submit All Solutions 🚀</button>',
-    '</div>',
-    '<div style="margin-top: 1rem;">',
-    '<div data-grading-results style="display: none;"></div>',
-    '<pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>',
-    '</div>',
-    '</div>',
-    questionMetaScript,
-    serviceHeadersScript,
-    judge0BootstrapScript,
-    stepperBootstrap
-  ].join('')
+
+  return `
+    <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
+      <div style="margin-bottom: 32px;">
+        <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
+          Coding Assessment Questions
+        </h2>
+        <p style="color: #475569; margin: 0; font-size: 16px;">
+          ${questions.length} question${questions.length !== 1 ? 's' : ''} generated
+        </p>
+      </div>
+      <div class="question-steps-wrapper">
+        ${questionsHtml}
+      </div>
+      <div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">
+        <button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">
+          ← Previous Question
+        </button>
+        <div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ${questions.length}</div>
+        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">
+          Next Question →
+        </button>
+      </div>
+      <div style="margin-top: 1.5rem; text-align: center;">
+        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
+          Submit All Solutions 🚀
+        </button>
+      </div>
+      <div style="margin-top: 1rem;">
+        <div data-grading-results style="display: none;"></div>
+        <pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>
+      </div>
+    </div>
+    ${renderQuestionMetaScript(questions)}
+    ${serviceHeadersScript}
+    ${judge0BootstrapScript}
+    ${renderStepperBootstrap()}
+  `
 }
 
 function escapeHtml(text) {
@@ -240,112 +267,93 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
-function renderJudge0Section(question, index = 0) {
-  // Ensure judge0 config exists with defaults
-  const judge0Defaults = {
-    enabled: true,
-    language: question.programming_language || question.language || 'javascript',
-    endpoints: {
-      execute: '/api/judge0/execute',
-      runAllTestCases: '/api/judge0/test-cases'
-    },
-    testCases: Array.isArray(question.testCases)
-      ? question.testCases
-      : Array.isArray(question.test_cases)
-        ? question.test_cases
-        : []
-  }
-  const config = Object.assign({}, judge0Defaults, question?.judge0 || {})
-  
-  if (config.enabled === false) return ''
+function renderJudge0Section(question) {
+  const config = question?.judge0
+  if (!config || config.enabled === false) return ''
 
   const testCaseCount =
     Array.isArray(config.testCases) && config.testCases.length
       ? config.testCases.length
       : Array.isArray(question.testCases)
         ? question.testCases.length
-        : Array.isArray(question.test_cases)
-          ? question.test_cases.length
-          : 0
+        : 0
 
-  // Generate unique questionId with index to prevent collisions
-  const questionId = question.id || `question_${index}_${Date.now()}_${Math.floor(Math.random() * 1e9)}`
-  const configData = {
+  const questionId = question.id || `question_${Date.now()}`
+  const configJson = serializeJsonForScript({
     questionId,
     ...config
-  }
-  const templateData = {
+  })
+
+  const templateJson = serializeJsonForScript({
     questionId,
     template: getDefaultCodeTemplate(config.language || question.programming_language)
-  }
+  })
 
-  // Use base64 encoding for JSON to prevent HTML parsing issues
-  const configJsonBase64 = Buffer.from(JSON.stringify(configData)).toString('base64')
-  const templateJsonBase64 = Buffer.from(JSON.stringify(templateData)).toString('base64')
+  return `
+    <div class="judge0-panel" style="margin-top: 1.25rem;">
+      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
+              <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
+                Powered by Judge0 • ${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())}
+              </p>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
+                Run Code
+              </button>
+              <button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+                Run All Tests (${testCaseCount})
+              </button>
+              <button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+                ↺
+              </button>
+            </div>
+          </div>
 
-  // Build HTML with safe string concatenation for script content
-  const escapedQuestionId = escapeHtml(questionId)
-  const escapedLanguage = escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())
-  const escapedLanguageLower = escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())
+          <div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">
+            <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>
+          </div>
 
-  return [
-    '<div class="judge0-panel" style="margin-top: 1.25rem;">',
-    '<div class="judge0-sandbox-card" data-question-id="' + escapedQuestionId + '" data-language="' + escapedLanguageLower + '" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">',
-    '<div style="display: flex; flex-direction: column; gap: 1rem;">',
-    '<div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">',
-    '<div>',
-    '<div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>',
-    '<p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">Powered by Judge0 • ' + escapedLanguage + '</p>',
-    '</div>',
-    '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">',
-    '<button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">Run Code</button>',
-    '<button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">Run All Tests (' + String(testCaseCount) + ')</button>',
-    '<button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">↺</button>',
-    '</div>',
-    '</div>',
-    '<div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">',
-    '<textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: \'JetBrains Mono\', \'Fira Code\', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>',
-    '</div>',
-    '<div style="display: flex; flex-direction: column; gap: 0.75rem;">',
-    '<div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">',
-    '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">',
-    '<span style="font-weight: 600;">Console Output</span>',
-    '<span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>',
-    '</div>',
-    '<pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">// Use "Run Code" to execute your solution or "Run All Tests" for full validation.</pre>',
-    '</div>',
-    '<div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">',
-    '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">',
-    '<div>',
-    '<div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>',
-    '<p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>',
-    '</div>',
-    '<span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">' + String(testCaseCount) + ' tests</span>',
-    '</div>',
-    '<div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>',
-    '</div>',
-    '</div>',
-    '</div>',
-    '</div>',
-    '</div>',
-    '<script type="application/json" data-judge0-config="' + escapedQuestionId + '" data-encoded="base64">',
-    configJsonBase64,
-    '</script>',
-    '<script type="application/json" data-judge0-template="' + escapedQuestionId + '" data-encoded="base64">',
-    templateJsonBase64,
-    '</script>',
-    '</div>'
-  ].join('')
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-weight: 600;">Console Output</span>
+                <span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>
+              </div>
+              <pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">
+// Use "Run Code" to execute your solution or "Run All Tests" for full validation.
+              </pre>
+            </div>
+            <div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>
+                  <p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>
+                </div>
+                <span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">
+                  ${testCaseCount} tests
+                </span>
+              </div>
+              <div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script type="application/json" data-judge0-config="${escapeHtml(questionId)}">
+${configJson}
+      </script>
+      <script type="application/json" data-judge0-template="${escapeHtml(questionId)}">
+${templateJson}
+      </script>
+    </div>
+  `
 }
 
 function serializeJsonForScript(value) {
-  const jsonString = JSON.stringify(value, null, 2);
-  // Escape only what's necessary for HTML script tag content
-  // Since we're using array.join(), we don't need to escape template literal characters
-  // Only need to escape </script> to prevent premature tag closing
-  return jsonString
-    .replace(/<\/script>/gi, '<\\/script>')  // Escape </script> to prevent tag closing
-    .replace(/-->/g, '--\\x3e');            // Escape --> for HTML comment safety
+  return JSON.stringify(value, null, 2).replace(/</g, '\\u003c')
 }
 
 function getDefaultCodeTemplate(language = 'javascript') {
@@ -411,15 +419,13 @@ function renderJudge0Bootstrap(questions) {
   if (!hasJudge0) return ''
 
   const baseFromEnv = PUBLIC_API_BASE_URL ? PUBLIC_API_BASE_URL.replace(/"/g, '\\"') : ''
-  const defaultBaseUrl = baseFromEnv || 'https://devlab-backend-production.up.railway.app'
-  const escapedDefaultBaseUrl = defaultBaseUrl.replace(/'/g, "\\'")
 
-  // Build script body - use template literal but escape the dynamic value properly
-  const scriptBody = `    (function () {
+  const scriptBody = `
+    (function () {
       try {
         const scriptEl = document.currentScript;
         const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
-        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${escapedDefaultBaseUrl}';
+        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
         const attrServiceKey = scriptEl ? scriptEl.getAttribute('data-service-key') : '';
         const attrServiceId = scriptEl ? scriptEl.getAttribute('data-service-id') : '';
 
@@ -436,13 +442,7 @@ function renderJudge0Bootstrap(questions) {
           const key = script.getAttribute('data-judge0-config');
           if (!key) return;
           try {
-            const isBase64 = script.getAttribute('data-encoded') === 'base64';
-            let content = script.textContent || '{}';
-            if (isBase64) {
-              // Decode base64 to get original JSON string
-              content = atob(content);
-            }
-            configMap[key] = JSON.parse(content);
+            configMap[key] = JSON.parse(script.textContent || '{}');
           } catch (err) {
             console.error('Failed to parse judge0 config for', key, err);
           }
@@ -454,13 +454,7 @@ function renderJudge0Bootstrap(questions) {
           const key = script.getAttribute('data-judge0-template');
           if (!key) return;
           try {
-            const isBase64 = script.getAttribute('data-encoded') === 'base64';
-            let content = script.textContent || '{}';
-            if (isBase64) {
-              // Decode base64 to get original JSON string
-              content = atob(content);
-            }
-            const parsed = JSON.parse(content);
+            const parsed = JSON.parse(script.textContent || '{}');
             templates[key] = parsed.template || '';
           } catch (err) {
             console.error('Failed to parse judge0 template for', key, err);
@@ -479,14 +473,11 @@ function renderJudge0Bootstrap(questions) {
               }
             }
             const headers = {};
-            // Use service key from data attribute, global headers, or fallback
-            const serviceKey = attrServiceKey || (globalHeaders && globalHeaders['x-api-key']) || '';
-            const serviceId = attrServiceId || (globalHeaders && globalHeaders['x-service-id']) || '';
-            if (serviceKey) {
-              headers['x-api-key'] = serviceKey;
+            if (attrServiceKey) {
+              headers['x-api-key'] = attrServiceKey;
             }
-            if (serviceId) {
-              headers['x-service-id'] = serviceId;
+            if (attrServiceId) {
+              headers['x-service-id'] = attrServiceId;
             }
             return headers;
           })();
@@ -502,12 +493,6 @@ function renderJudge0Bootstrap(questions) {
           const data = await response.json().catch(() => ({}));
           if (!response.ok) {
             const message = data?.error || data?.message || response.statusText;
-            console.error('❌ Bad response from Judge0 endpoint', {
-              endpoint,
-              status: response.status,
-              statusText: response.statusText,
-              body: data
-            });
             throw new Error(message);
           }
           return data;
@@ -563,53 +548,8 @@ function renderJudge0Bootstrap(questions) {
           const runCodeBtn = sandbox.querySelector('[data-judge0-run-code]');
           const runTestsBtn = sandbox.querySelector('[data-judge0-run-tests]');
           const resetBtn = sandbox.querySelector('[data-judge0-reset]');
-          
-          // Get default template - prefer saved template, then textarea value, then fallback based on language
-          const language = config.language || textarea?.getAttribute('data-language') || 'javascript';
-          const getDefaultCodeTemplate = (lang) => {
-            const normalized = (lang || 'javascript').toLowerCase();
-            const joinLines = (lines) => lines.join('\\n');
-            if (normalized === 'python') {
-              return joinLines([
-                'def solve(data):',
-                '    # TODO: implement your logic here',
-                '    return data',
-                '',
-                'if __name__ == "__main__":',
-                '    print(solve("sample input"))'
-              ]);
-            } else if (normalized === 'java') {
-              return joinLines([
-                'public class Solution {',
-                '    public static void main(String[] args) {',
-                '        // TODO: implement your logic here',
-                '    }',
-                '}'
-              ]);
-            } else if (normalized === 'cpp' || normalized === 'c++') {
-              return joinLines([
-                '#include <iostream>',
-                'using namespace std;',
-                '',
-                'int main() {',
-                '    // TODO: implement your logic here',
-                '    return 0;',
-                '}'
-              ]);
-            } else {
-              return joinLines([
-                'function solve(data) {',
-                '    // TODO: implement your logic here',
-                '    return data;',
-                '}',
-                '',
-                'console.log(solve("sample input"));'
-              ]);
-            }
-          };
-          const defaultTemplate = templates[questionId] || textarea?.value || getDefaultCodeTemplate(language);
+          const defaultTemplate = templates[questionId] || textarea?.value || '';
 
-          // Ensure textarea is populated with default template if empty
           if (textarea && !textarea.value.trim()) {
             textarea.value = defaultTemplate;
           }
@@ -714,31 +654,6 @@ function renderJudge0Bootstrap(questions) {
             }
           };
 
-          // Normalize test case helper - single source of truth for field names
-          const normalizeTestCase = (tc) => {
-            // Prefer canonical fields: input, expected_output
-            const rawInput = tc.input ?? tc.testInput ?? tc.test_input ?? tc.args ?? tc.inputValue ?? '';
-            const rawExpected = tc.expected_output ?? tc.expectedOutput ?? tc.expected ?? tc.output ?? null;
-
-            const parseIfJson = (v) => {
-              if (typeof v !== 'string') return v;
-              const s = v.trim();
-              if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
-                try {
-                  return JSON.parse(s);
-                } catch {
-                  return v;
-                }
-              }
-              return v;
-            };
-
-            return {
-              input: parseIfJson(rawInput),
-              expected_output: parseIfJson(rawExpected)
-            };
-          };
-
           const runAllTests = async () => {
             if (!textarea) return;
             const code = textarea.value;
@@ -748,7 +663,6 @@ function renderJudge0Bootstrap(questions) {
               return;
             }
 
-            // Collect test cases from multiple possible sources
             const allTestCases = config.testCases || config.test_cases || [];
             if (!allTestCases.length) {
               setStatus('No test cases available for this question.', '#f97316');
@@ -761,8 +675,74 @@ function renderJudge0Bootstrap(questions) {
               renderResults([]);
               updateSummary('Running tests…');
 
-              // Normalize all test cases using the helper
-              const normalizedTestCases = allTestCases.map(normalizeTestCase);
+              // Normalize test cases to ensure they have the correct structure for Judge0
+              const normalizedTestCases = allTestCases.map((testCase) => {
+                const normalized = {};
+                
+                // Get raw input value (handle multiple possible field names)
+                let rawInput = testCase.input;
+                if (rawInput === undefined) {
+                  rawInput = testCase.testInput;
+                }
+                if (rawInput === undefined) {
+                  rawInput = testCase.test_input;
+                }
+                if (rawInput === undefined) {
+                  rawInput = '';
+                }
+                
+                // Parse input if it's a JSON string, otherwise use as-is
+                // This ensures the backend receives proper arrays/objects, not JSON strings
+                if (typeof rawInput === 'string' && rawInput.trim()) {
+                  const trimmed = rawInput.trim();
+                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                    try {
+                      normalized.input = JSON.parse(trimmed);
+                    } catch {
+                      normalized.input = rawInput;
+                    }
+                  } else {
+                    normalized.input = rawInput;
+                  }
+                } else {
+                  normalized.input = rawInput;
+                }
+                
+                // Get raw expected output value (handle multiple possible field names)
+                let rawExpected = testCase.expected_output;
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.expectedOutput;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.expected;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.output;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = null;
+                }
+                
+                // Parse expected output if it's a JSON string, otherwise use as-is
+                if (rawExpected !== null && typeof rawExpected === 'string' && rawExpected.trim()) {
+                  const trimmed = rawExpected.trim();
+                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                    try {
+                      normalized.expected_output = JSON.parse(trimmed);
+                    } catch {
+                      normalized.expected_output = rawExpected;
+                    }
+                  } else {
+                    normalized.expected_output = rawExpected;
+                  }
+                } else {
+                  normalized.expected_output = rawExpected;
+                }
+                
+                return normalized;
+              });
 
               console.log('🔧 Assessment: Sending test cases to Judge0', {
                 testCasesCount: normalizedTestCases.length,
@@ -771,29 +751,18 @@ function renderJudge0Bootstrap(questions) {
               });
 
               const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
-              // Explicit payload contract: backend expects sourceCode, language, and testCases array
-              // Each testCase has input and expected_output (may be primitives, arrays, or objects)
-              // Backend should parse/wrap the code and execute against each test case
               const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
-                testCases: normalizedTestCases.map(tc => ({
-                  input: tc.input,
-                  expected_output: tc.expected_output
-                })),
-                meta: { questionId }
+                testCases: normalizedTestCases
               };
               const result = await postJson(endpoint, payload);
 
-              // Process results - prefer structured fields (actual, result) over raw stdout
-              // This prevents console.log outputs from mixing into the "Received" field
               const processed = (result?.results || []).map((testResult, index) => ({
                 input: getFieldValue(testResult, ['input', 'testInput', 'test_input']),
                 expected: getFieldValue(testResult, ['expected', 'expected_output', 'expectedOutput']),
-                // Prefer structured fields: actual, result, output (not stdout which may contain debug logs)
-                result: getFieldValue(testResult, ['actual', 'result', 'output', 'actual_output']) || '',
+                result: getFieldValue(testResult, ['result', 'actual', 'output', 'actual_output']),
                 stderr: getFieldValue(testResult, ['stderr', 'error', 'errorMessage']),
-                // Use passed boolean from backend - this is the authoritative pass/fail indicator
                 passed: Boolean(getFieldValue(testResult, ['passed', 'success', 'isPassed'])),
                 time: getFieldValue(testResult, ['time', 'executionTime', 'execution_time'])
               }));
@@ -805,16 +774,15 @@ function renderJudge0Bootstrap(questions) {
               renderResults(processed);
 
               const lines = [
-                '📊 Test Results: ' + passed + '/' + total + ' passed',
-                '⏱️ Total tests: ' + total
+                \`📊 Test Results: \\\${passed}/\\\${total} passed\`,
+                \`⏱️ Total tests: \\\${total}\`
               ];
               updateConsole(lines);
             } catch (err) {
-              console.error('❌ Judge0 test execution error:', err);
+              console.error('Judge0 run tests error:', err);
               setStatus('Test run failed.', '#ef4444');
-              updateSummary('Unable to complete tests. Check console for details.');
-              const errorMessage = err.message || 'Unknown error occurred';
-              updateConsole('❌ Error: ' + errorMessage + (err.stack ? '\n' + err.stack : ''));
+              updateSummary('Unable to complete tests.');
+              updateConsole('❌ Error: ' + err.message);
             }
           };
 
@@ -841,17 +809,16 @@ function renderJudge0Bootstrap(questions) {
   `
 
   const attrs = [
-    'data-api-base="' + escapeHtml(baseFromEnv) + '"',
-    'data-service-key="' + escapeHtml(getDefaultServiceApiKey()) + '"',
-    'data-service-id="' + escapeHtml(getDefaultServiceId()) + '"'
+    `data-api-base="${escapeHtml(baseFromEnv)}"`,
+    `data-service-key="${escapeHtml(getDefaultServiceApiKey())}"`,
+    `data-service-id="${escapeHtml(getDefaultServiceId())}"`
   ].join(' ')
 
-  // Use string concatenation to avoid template literal issues
-  return [
-    '<script ' + attrs + '>',
-    scriptBody,
-    '</script>'
-  ].join('\n')
+  return `
+    <script ${attrs}>
+${scriptBody}
+    </script>
+  `
 }
 
 function getDefaultServiceApiKey() {
@@ -877,30 +844,25 @@ function renderServiceHeadersScript() {
     return ''
   }
 
-  const payloadObj = {
+  const payload = serializeJsonForScript({
     ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
     ...(serviceId ? { 'x-service-id': serviceId } : {})
-  }
-  // Serialize JSON and escape for JavaScript string context
-  const payloadJson = JSON.stringify(payloadObj)
-    .replace(/\\/g, '\\\\')  // Escape backslashes
-    .replace(/'/g, "\\'")   // Escape single quotes
+  })
 
-  // Use string concatenation to avoid template literal issues
-  return [
-    '<script>',
-    '(function () {',
-    '  try {',
-    '    var existing = window.__DEVLAB_SERVICE_HEADERS || {};',
-    "    var provided = JSON.parse('" + payloadJson + "');",
-    '    window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);',
-    '  } catch (err) {',
-    "    console.error('Failed to initialize service headers', err);",
-    "    window.__DEVLAB_SERVICE_HEADERS = JSON.parse('" + payloadJson + "');",
-    '  }',
-    '})();',
-    '</script>'
-  ].join('\n')
+  return `
+    <script>
+      (function () {
+        try {
+          var existing = window.__DEVLAB_SERVICE_HEADERS || {};
+          var provided = ${payload};
+          window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
+        } catch (err) {
+          console.error('Failed to initialize service headers', err);
+          window.__DEVLAB_SERVICE_HEADERS = ${payload};
+        }
+      })();
+    </script>
+  `
 }
 
 function renderQuestionMetaScript(questions = []) {
@@ -914,12 +876,11 @@ function renderQuestionMetaScript(questions = []) {
     testCases: Array.isArray(question.testCases) ? question.testCases : (Array.isArray(question.test_cases) ? question.test_cases : [])
   }))
   const json = serializeJsonForScript(payload)
-  // Use string concatenation to avoid template literal issues
-  return [
-    '<script type="application/json" data-question-meta>',
-    json,
-    '</script>'
-  ].join('\n')
+  return `
+    <script type="application/json" data-question-meta>
+${json}
+    </script>
+  `
 }
 
 function renderStepperBootstrap() {
@@ -1149,14 +1110,9 @@ function renderStepperBootstrap() {
     })();
   `
 
-  // Use string concatenation to avoid template literal issues
-  return [
-    '<script>',
-    scriptBody,
-    '</script>'
-  ].join('\n')
+  return `
+    <script>
+${scriptBody}
+    </script>
+  `
 }
-
-
-
-
