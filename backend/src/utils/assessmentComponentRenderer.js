@@ -317,16 +317,16 @@ function renderJudge0Section(question, index = 0) {
 
   return [
     '<div class="judge0-panel" style="margin-top: 1.25rem;">',
-    `<div class="judge0-sandbox-card" data-question-id="${escapedQuestionId}" data-language="${escapedLanguageLower}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">`,
+    '<div class="judge0-sandbox-card" data-question-id="' + escapedQuestionId + '" data-language="' + escapedLanguageLower + '" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">',
     '<div style="display: flex; flex-direction: column; gap: 1rem;">',
     '<div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">',
     '<div>',
     '<div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>',
-    `<p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">Powered by Judge0 • ${escapedLanguage}</p>`,
+    '<p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">Powered by Judge0 • ' + escapedLanguage + '</p>',
     '</div>',
     '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">',
     '<button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">Run Code</button>',
-    `<button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">Run All Tests (${testCaseCount})</button>`,
+    '<button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">Run All Tests (' + String(testCaseCount) + ')</button>',
     '<button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">↺</button>',
     '</div>',
     '</div>',
@@ -347,7 +347,7 @@ function renderJudge0Section(question, index = 0) {
     '<div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>',
     '<p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>',
     '</div>',
-    `<span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">${testCaseCount} tests</span>`,
+    '<span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">' + String(testCaseCount) + ' tests</span>',
     '</div>',
     '<div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>',
     '</div>',
@@ -355,10 +355,10 @@ function renderJudge0Section(question, index = 0) {
     '</div>',
     '</div>',
     '</div>',
-    `<script type="application/json" data-judge0-config="${escapedQuestionId}" data-encoded="base64">`,
+    '<script type="application/json" data-judge0-config="' + escapedQuestionId + '" data-encoded="base64">',
     configJsonBase64,
     '</script>',
-    `<script type="application/json" data-judge0-template="${escapedQuestionId}" data-encoded="base64">`,
+    '<script type="application/json" data-judge0-template="' + escapedQuestionId + '" data-encoded="base64">',
     templateJsonBase64,
     '</script>',
     '</div>'
@@ -438,13 +438,14 @@ function renderJudge0Bootstrap(questions) {
   if (!hasJudge0) return ''
 
   const baseFromEnv = PUBLIC_API_BASE_URL ? PUBLIC_API_BASE_URL.replace(/"/g, '\\"') : ''
+  const defaultBaseUrl = baseFromEnv || 'https://devlab-backend-production.up.railway.app'
 
   const scriptBody = `
     (function () {
       try {
         const scriptEl = document.currentScript;
         const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
-        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
+        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '` + defaultBaseUrl.replace(/'/g, "\\'") + `';
         const attrServiceKey = scriptEl ? scriptEl.getAttribute('data-service-key') : '';
         const attrServiceId = scriptEl ? scriptEl.getAttribute('data-service-id') : '';
 
@@ -872,21 +873,27 @@ function renderServiceHeadersScript() {
     return ''
   }
 
-  const payload = serializeJsonForScript({
+  const payloadObj = {
     ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
     ...(serviceId ? { 'x-service-id': serviceId } : {})
-  })
+  }
+  // Serialize JSON and escape for template literal context
+  const payloadJson = JSON.stringify(payloadObj)
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/`/g, '\\`')     // Escape backticks
+    .replace(/\$\{/g, '\\${') // Escape ${ sequences
+    .replace(/'/g, "\\'")     // Escape single quotes
 
   return `
     <script>
       (function () {
         try {
           var existing = window.__DEVLAB_SERVICE_HEADERS || {};
-          var provided = ${payload};
+          var provided = JSON.parse('` + payloadJson + `');
           window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
         } catch (err) {
           console.error('Failed to initialize service headers', err);
-          window.__DEVLAB_SERVICE_HEADERS = ${payload};
+          window.__DEVLAB_SERVICE_HEADERS = JSON.parse('` + payloadJson + `');
         }
       })();
     </script>
