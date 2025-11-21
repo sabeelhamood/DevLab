@@ -806,13 +806,14 @@ function renderJudge0Bootstrap(questions) {
                   return assignmentString;
                 }
                 // For single array/object strings, ensure they're valid JSON
-                // The sanitized value (without outer quotes) will be sent as a string
-                // and the backend will parse it correctly
+                // Keep as sanitized string - when the payload is JSON.stringify'd, it will be
+                // properly quoted as a string value, not parsed as an array object
                 if ((sanitizedValue.startsWith('[') && sanitizedValue.endsWith(']')) ||
                     (sanitizedValue.startsWith('{') && sanitizedValue.endsWith('}'))) {
                   try {
                     JSON.parse(sanitizedValue);
-                    // Return sanitized value so backend receives it as a JSON-parseable string
+                    // Return sanitized value as string - JSON.stringify of payload will quote it correctly
+                    // Backend will receive: "input":"[1, 2, 3, 4, 5]" (as a string, not an array)
                     return sanitizedValue;
                   } catch {
                     return sanitizedValue;
