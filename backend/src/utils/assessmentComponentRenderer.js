@@ -675,11 +675,41 @@ function renderJudge0Bootstrap(questions) {
               renderResults([]);
               updateSummary('Running tests…');
 
+              // Normalize test cases to ensure they have the correct structure for Judge0
+              const normalizedTestCases = allTestCases.map((testCase) => {
+                const normalized = {};
+                // Normalize input field (handle multiple possible field names)
+                if (testCase.input !== undefined) {
+                  normalized.input = testCase.input;
+                } else if (testCase.testInput !== undefined) {
+                  normalized.input = testCase.testInput;
+                } else if (testCase.test_input !== undefined) {
+                  normalized.input = testCase.test_input;
+                } else {
+                  normalized.input = '';
+                }
+                
+                // Normalize expected output field (handle multiple possible field names)
+                if (testCase.expected_output !== undefined) {
+                  normalized.expected_output = testCase.expected_output;
+                } else if (testCase.expectedOutput !== undefined) {
+                  normalized.expected_output = testCase.expectedOutput;
+                } else if (testCase.expected !== undefined) {
+                  normalized.expected_output = testCase.expected;
+                } else if (testCase.output !== undefined) {
+                  normalized.expected_output = testCase.output;
+                } else {
+                  normalized.expected_output = null;
+                }
+                
+                return normalized;
+              });
+
               const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
               const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
-                testCases: allTestCases
+                testCases: normalizedTestCases
               };
               const result = await postJson(endpoint, payload);
 
