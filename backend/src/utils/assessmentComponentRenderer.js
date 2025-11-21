@@ -145,7 +145,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
       `
       : ''
 
-    const judge0Html = renderJudge0Section(question)
+    const judge0Html = renderJudge0Section(question, index)
 
     return `
       <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
@@ -267,18 +267,36 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
-function renderJudge0Section(question) {
-  const config = question?.judge0
-  if (!config || config.enabled === false) return ''
+function renderJudge0Section(question, index = 0) {
+  // Ensure judge0 config exists with defaults
+  const judge0Defaults = {
+    enabled: true,
+    language: question.programming_language || question.language || 'javascript',
+    endpoints: {
+      execute: '/api/judge0/execute',
+      runAllTestCases: '/api/judge0/test-cases'
+    },
+    testCases: Array.isArray(question.testCases)
+      ? question.testCases
+      : Array.isArray(question.test_cases)
+        ? question.test_cases
+        : []
+  }
+  const config = Object.assign({}, judge0Defaults, question?.judge0 || {})
+  
+  if (config.enabled === false) return ''
 
   const testCaseCount =
     Array.isArray(config.testCases) && config.testCases.length
       ? config.testCases.length
       : Array.isArray(question.testCases)
         ? question.testCases.length
-        : 0
+        : Array.isArray(question.test_cases)
+          ? question.test_cases.length
+          : 0
 
-  const questionId = question.id || `question_${Date.now()}`
+  // Generate unique questionId with index to prevent collisions
+  const questionId = question.id || `question_${index}_${Date.now()}_${Math.floor(Math.random() * 1e9)}`
   const configJson = serializeJsonForScript({
     questionId,
     ...config
@@ -353,7 +371,10 @@ ${templateJson}
 }
 
 function serializeJsonForScript(value) {
-  return JSON.stringify(value, null, 2).replace(/</g, '\\u003c')
+  return JSON.stringify(value, null, 2)
+    .replace(/</g, '\\u003c')  // Escape < to prevent closing script tags
+    .replace(/<\/script>/gi, '<\\/script>')  // Escape </script> sequences
+    .replace(/-->/g, '--\\x3e')  // Escape --> to prevent HTML comment issues
 }
 
 function getDefaultCodeTemplate(language = 'javascript') {
@@ -493,6 +514,12 @@ function renderJudge0Bootstrap(questions) {
           const data = await response.json().catch(() => ({}));
           if (!response.ok) {
             const message = data?.error || data?.message || response.statusText;
+            console.error('❌ Bad response from Judge0 endpoint', {
+              endpoint,
+              status: response.status,
+              statusText: response.statusText,
+              body: data
+            });
             throw new Error(message);
           }
           return data;
@@ -548,8 +575,24 @@ function renderJudge0Bootstrap(questions) {
           const runCodeBtn = sandbox.querySelector('[data-judge0-run-code]');
           const runTestsBtn = sandbox.querySelector('[data-judge0-run-tests]');
           const resetBtn = sandbox.querySelector('[data-judge0-reset]');
-          const defaultTemplate = templates[questionId] || textarea?.value || '';
+          
+          // Get default template - prefer saved template, then textarea value, then fallback based on language
+          const language = config.language || textarea?.getAttribute('data-language') || 'javascript';
+          const getDefaultCodeTemplate = (lang) => {
+            const normalized = (lang || 'javascript').toLowerCase();
+            if (normalized === 'python') {
+              return 'def solve(data):\n    # TODO: implement your logic here\n    return data';
+            } else if (normalized === 'java') {
+              return 'public class Solution {\n    public static void main(String[] args) {\n        // TODO: implement your logic here\n    }\n}';
+            } else if (normalized === 'cpp' || normalized === 'c++') {
+              return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // TODO: implement your logic here\n    return 0;\n}';
+            } else {
+              return 'function solve(data) {\n    // TODO: implement your logic here\n    return data;\n}';
+            }
+          };
+          const defaultTemplate = templates[questionId] || textarea?.value || getDefaultCodeTemplate(language);
 
+          // Ensure textarea is populated with default template if empty
           if (textarea && !textarea.value.trim()) {
             textarea.value = defaultTemplate;
           }
@@ -654,6 +697,31 @@ function renderJudge0Bootstrap(questions) {
             }
           };
 
+          // Normalize test case helper - single source of truth for field names
+          const normalizeTestCase = (tc) => {
+            // Prefer canonical fields: input, expected_output
+            const rawInput = tc.input ?? tc.testInput ?? tc.test_input ?? tc.args ?? tc.inputValue ?? '';
+            const rawExpected = tc.expected_output ?? tc.expectedOutput ?? tc.expected ?? tc.output ?? null;
+
+            const parseIfJson = (v) => {
+              if (typeof v !== 'string') return v;
+              const s = v.trim();
+              if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
+                try {
+                  return JSON.parse(s);
+                } catch {
+                  return v;
+                }
+              }
+              return v;
+            };
+
+            return {
+              input: parseIfJson(rawInput),
+              expected_output: parseIfJson(rawExpected)
+            };
+          };
+
           const runAllTests = async () => {
             if (!textarea) return;
             const code = textarea.value;
@@ -663,7 +731,8 @@ function renderJudge0Bootstrap(questions) {
               return;
             }
 
-            const allTestCases = config.testCases || config.test_cases || [];
+            // Collect test cases from multiple possible sources
+            const allTestCases = config.testCases || config.test_cases || question.testCases || question.test_cases || [];
             if (!allTestCases.length) {
               setStatus('No test cases available for this question.', '#f97316');
               return;
@@ -675,74 +744,8 @@ function renderJudge0Bootstrap(questions) {
               renderResults([]);
               updateSummary('Running tests…');
 
-              // Normalize test cases to ensure they have the correct structure for Judge0
-              const normalizedTestCases = allTestCases.map((testCase) => {
-                const normalized = {};
-                
-                // Get raw input value (handle multiple possible field names)
-                let rawInput = testCase.input;
-                if (rawInput === undefined) {
-                  rawInput = testCase.testInput;
-                }
-                if (rawInput === undefined) {
-                  rawInput = testCase.test_input;
-                }
-                if (rawInput === undefined) {
-                  rawInput = '';
-                }
-                
-                // Parse input if it's a JSON string, otherwise use as-is
-                // This ensures the backend receives proper arrays/objects, not JSON strings
-                if (typeof rawInput === 'string' && rawInput.trim()) {
-                  const trimmed = rawInput.trim();
-                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
-                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
-                    try {
-                      normalized.input = JSON.parse(trimmed);
-                    } catch {
-                      normalized.input = rawInput;
-                    }
-                  } else {
-                    normalized.input = rawInput;
-                  }
-                } else {
-                  normalized.input = rawInput;
-                }
-                
-                // Get raw expected output value (handle multiple possible field names)
-                let rawExpected = testCase.expected_output;
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.expectedOutput;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.expected;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.output;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = null;
-                }
-                
-                // Parse expected output if it's a JSON string, otherwise use as-is
-                if (rawExpected !== null && typeof rawExpected === 'string' && rawExpected.trim()) {
-                  const trimmed = rawExpected.trim();
-                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
-                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
-                    try {
-                      normalized.expected_output = JSON.parse(trimmed);
-                    } catch {
-                      normalized.expected_output = rawExpected;
-                    }
-                  } else {
-                    normalized.expected_output = rawExpected;
-                  }
-                } else {
-                  normalized.expected_output = rawExpected;
-                }
-                
-                return normalized;
-              });
+              // Normalize all test cases using the helper
+              const normalizedTestCases = allTestCases.map(normalizeTestCase);
 
               console.log('🔧 Assessment: Sending test cases to Judge0', {
                 testCasesCount: normalizedTestCases.length,
@@ -751,18 +754,29 @@ function renderJudge0Bootstrap(questions) {
               });
 
               const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
+              // Explicit payload contract: backend expects sourceCode, language, and testCases array
+              // Each testCase has input and expected_output (may be primitives, arrays, or objects)
+              // Backend should parse/wrap the code and execute against each test case
               const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
-                testCases: normalizedTestCases
+                testCases: normalizedTestCases.map(tc => ({
+                  input: tc.input,
+                  expected_output: tc.expected_output
+                })),
+                meta: { questionId }
               };
               const result = await postJson(endpoint, payload);
 
+              // Process results - prefer structured fields (actual, result) over raw stdout
+              // This prevents console.log outputs from mixing into the "Received" field
               const processed = (result?.results || []).map((testResult, index) => ({
                 input: getFieldValue(testResult, ['input', 'testInput', 'test_input']),
                 expected: getFieldValue(testResult, ['expected', 'expected_output', 'expectedOutput']),
-                result: getFieldValue(testResult, ['result', 'actual', 'output', 'actual_output']),
+                // Prefer structured fields: actual, result, output (not stdout which may contain debug logs)
+                result: getFieldValue(testResult, ['actual', 'result', 'output', 'actual_output']) || '',
                 stderr: getFieldValue(testResult, ['stderr', 'error', 'errorMessage']),
+                // Use passed boolean from backend - this is the authoritative pass/fail indicator
                 passed: Boolean(getFieldValue(testResult, ['passed', 'success', 'isPassed'])),
                 time: getFieldValue(testResult, ['time', 'executionTime', 'execution_time'])
               }));
@@ -779,10 +793,11 @@ function renderJudge0Bootstrap(questions) {
               ];
               updateConsole(lines);
             } catch (err) {
-              console.error('Judge0 run tests error:', err);
+              console.error('❌ Judge0 test execution error:', err);
               setStatus('Test run failed.', '#ef4444');
-              updateSummary('Unable to complete tests.');
-              updateConsole('❌ Error: ' + err.message);
+              updateSummary('Unable to complete tests. Check console for details.');
+              const errorMessage = err.message || 'Unknown error occurred';
+              updateConsole('❌ Error: ' + errorMessage + (err.stack ? '\n' + err.stack : ''));
             }
           };
 
