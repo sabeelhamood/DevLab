@@ -654,10 +654,144 @@ function renderJudge0Bootstrap(questions) {
             }
           };
 
+          const findArrayBoundary = (text) => {
+            let depth = 0;
+            let inString = false;
+            let stringChar = '';
+            for (let i = 0; i < text.length; i++) {
+              const char = text[i];
+              const prevChar = i > 0 ? text[i - 1] : '';
+              if (inString) {
+                if (char === stringChar && prevChar !== '\\\\') {
+                  inString = false;
+                  stringChar = '';
+                }
+                continue;
+              }
+              if (char === '"' || char === "'") {
+                inString = true;
+                stringChar = char;
+                continue;
+              }
+              if (char === '[') {
+                depth++;
+              } else if (char === ']') {
+                depth--;
+                if (depth === 0) {
+                  return i;
+                }
+              }
+            }
+            return -1;
+          };
+
+          const splitTopLevelValues = (text) => {
+            const values = [];
+            let current = '';
+            let depth = 0;
+            let inString = false;
+            let stringChar = '';
+
+            for (let i = 0; i < text.length; i++) {
+              const char = text[i];
+              const prevChar = i > 0 ? text[i - 1] : '';
+
+              if (inString) {
+                current += char;
+                if (char === stringChar && prevChar !== '\\\\') {
+                  inString = false;
+                  stringChar = '';
+                }
+                continue;
+              }
+
+              if (char === '"' || char === "'") {
+                inString = true;
+                stringChar = char;
+                current += char;
+                continue;
+              }
+
+              if (char === '[' || char === '{' || char === '(') {
+                depth++;
+                current += char;
+                continue;
+              }
+
+              if (char === ']' || char === '}' || char === ')') {
+                depth = Math.max(depth - 1, 0);
+                current += char;
+                continue;
+              }
+
+              if (char === ',' && depth === 0) {
+                if (current.trim()) {
+                  values.push(current.trim());
+                }
+                current = '';
+                continue;
+              }
+
+              current += char;
+            }
+
+            if (current.trim()) {
+              values.push(current.trim());
+            }
+
+            return values;
+          };
+
+          const convertArrayArgumentString = (raw) => {
+            if (typeof raw !== 'string') return null;
+            const trimmed = raw.trim();
+            if (!trimmed.startsWith('[')) return null;
+            const boundaryIndex = findArrayBoundary(trimmed);
+            if (boundaryIndex === -1 || boundaryIndex === trimmed.length - 1) {
+              return null;
+            }
+
+            const arraySegment = trimmed.slice(0, boundaryIndex + 1);
+            try {
+              JSON.parse(arraySegment);
+            } catch {
+              return null;
+            }
+
+            const remainder = trimmed.slice(boundaryIndex + 1).trim();
+            if (!remainder.startsWith(',')) {
+              return null;
+            }
+
+            const rest = remainder.slice(1).trim();
+            if (!rest) {
+              return null;
+            }
+
+            const extraSegments = splitTopLevelValues(rest);
+            if (!extraSegments.length) {
+              return null;
+            }
+
+            const assignments = ['arg0 = ' + arraySegment];
+            extraSegments.forEach((segment, index) => {
+              if (segment) {
+                assignments.push('arg' + (index + 1) + ' = ' + segment);
+              }
+            });
+            return assignments.join(', ');
+          };
+
           const normalizeTestCaseValue = (value) => {
             if (value === null || value === undefined) return value;
             const primitiveTypes = ['string', 'number', 'boolean'];
             if (primitiveTypes.includes(typeof value)) {
+              if (typeof value === 'string') {
+                const assignmentString = convertArrayArgumentString(value);
+                if (assignmentString) {
+                  return assignmentString;
+                }
+              }
               return value;
             }
             try {
