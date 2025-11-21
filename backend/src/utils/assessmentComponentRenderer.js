@@ -297,84 +297,81 @@ function renderJudge0Section(question, index = 0) {
 
   // Generate unique questionId with index to prevent collisions
   const questionId = question.id || `question_${index}_${Date.now()}_${Math.floor(Math.random() * 1e9)}`
-  const configJson = serializeJsonForScript({
+  const configData = {
     questionId,
     ...config
-  })
-
-  const templateJson = serializeJsonForScript({
+  }
+  const templateData = {
     questionId,
     template: getDefaultCodeTemplate(config.language || question.programming_language)
-  })
+  }
 
-  return `
-    <div class="judge0-panel" style="margin-top: 1.25rem;">
-      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-            <div>
-              <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
-              <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
-                Powered by Judge0 • ${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())}
-              </p>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
-                Run Code
-              </button>
-              <button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
-                Run All Tests (${testCaseCount})
-              </button>
-              <button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
-                ↺
-              </button>
-            </div>
-          </div>
+  // Serialize JSON and escape for safe insertion into template literal
+  const configJson = serializeJsonForScript(configData)
+  const templateJson = serializeJsonForScript(templateData)
 
-          <div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">
-            <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>
-          </div>
+  // Build HTML with safe string concatenation for script content
+  const escapedQuestionId = escapeHtml(questionId)
+  const escapedLanguage = escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())
+  const escapedLanguageLower = escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())
 
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                <span style="font-weight: 600;">Console Output</span>
-                <span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>
-              </div>
-              <pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">
-// Use "Run Code" to execute your solution or "Run All Tests" for full validation.
-              </pre>
-            </div>
-            <div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <div>
-                  <div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>
-                  <p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>
-                </div>
-                <span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">
-                  ${testCaseCount} tests
-                </span>
-              </div>
-              <div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <script type="application/json" data-judge0-config="${escapeHtml(questionId)}">
-${configJson}
-      </script>
-      <script type="application/json" data-judge0-template="${escapeHtml(questionId)}">
-${templateJson}
-      </script>
-    </div>
-  `
+  return [
+    '<div class="judge0-panel" style="margin-top: 1.25rem;">',
+    `<div class="judge0-sandbox-card" data-question-id="${escapedQuestionId}" data-language="${escapedLanguageLower}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">`,
+    '<div style="display: flex; flex-direction: column; gap: 1rem;">',
+    '<div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">',
+    '<div>',
+    '<div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>',
+    `<p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">Powered by Judge0 • ${escapedLanguage}</p>`,
+    '</div>',
+    '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">',
+    '<button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">Run Code</button>',
+    `<button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">Run All Tests (${testCaseCount})</button>`,
+    '<button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">↺</button>',
+    '</div>',
+    '</div>',
+    '<div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">',
+    '<textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: \'JetBrains Mono\', \'Fira Code\', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>',
+    '</div>',
+    '<div style="display: flex; flex-direction: column; gap: 0.75rem;">',
+    '<div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">',
+    '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">',
+    '<span style="font-weight: 600;">Console Output</span>',
+    '<span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>',
+    '</div>',
+    '<pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">// Use "Run Code" to execute your solution or "Run All Tests" for full validation.</pre>',
+    '</div>',
+    '<div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">',
+    '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">',
+    '<div>',
+    '<div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>',
+    '<p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>',
+    '</div>',
+    `<span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">${testCaseCount} tests</span>`,
+    '</div>',
+    '<div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>',
+    '</div>',
+    '</div>',
+    '</div>',
+    '</div>',
+    `<script type="application/json" data-judge0-config="${escapedQuestionId}">`,
+    configJson,
+    '</script>',
+    `<script type="application/json" data-judge0-template="${escapedQuestionId}">`,
+    templateJson,
+    '</script>',
+    '</div>'
+  ].join('')
 }
 
 function serializeJsonForScript(value) {
-  return JSON.stringify(value, null, 2)
-    .replace(/</g, '\\u003c')  // Escape < to prevent closing script tags
-    .replace(/<\/script>/gi, '<\\/script>')  // Escape </script> sequences
-    .replace(/-->/g, '--\\x3e')  // Escape --> to prevent HTML comment issues
+  const jsonString = JSON.stringify(value, null, 2);
+  // Escape only what's necessary for HTML script tag content
+  // Since we're using array.join(), we don't need to escape template literal characters
+  // Only need to escape </script> to prevent premature tag closing
+  return jsonString
+    .replace(/<\/script>/gi, '<\\/script>')  // Escape </script> to prevent tag closing
+    .replace(/-->/g, '--\\x3e');            // Escape --> for HTML comment safety
 }
 
 function getDefaultCodeTemplate(language = 'javascript') {
