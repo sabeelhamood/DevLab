@@ -654,6 +654,44 @@ function renderJudge0Bootstrap(questions) {
             }
           };
 
+          const normalizeTestCaseValue = (value) => {
+            if (value === null || value === undefined) return value;
+            const primitiveTypes = ['string', 'number', 'boolean'];
+            if (primitiveTypes.includes(typeof value)) {
+              return value;
+            }
+            try {
+              return JSON.stringify(value);
+            } catch {
+              return String(value);
+            }
+          };
+
+          const normalizeTestCases = (testCases = []) => {
+            return testCases.map((testCase) => {
+              const normalized = { ...testCase };
+              if (Object.prototype.hasOwnProperty.call(normalized, 'input')) {
+                normalized.input = normalizeTestCaseValue(normalized.input);
+              }
+              if (Object.prototype.hasOwnProperty.call(normalized, 'testInput')) {
+                normalized.testInput = normalizeTestCaseValue(normalized.testInput);
+              }
+              if (Object.prototype.hasOwnProperty.call(normalized, 'test_input')) {
+                normalized.test_input = normalizeTestCaseValue(normalized.test_input);
+              }
+              if (Object.prototype.hasOwnProperty.call(normalized, 'expected')) {
+                normalized.expected = normalizeTestCaseValue(normalized.expected);
+              }
+              if (Object.prototype.hasOwnProperty.call(normalized, 'expected_output')) {
+                normalized.expected_output = normalizeTestCaseValue(normalized.expected_output);
+              }
+              if (Object.prototype.hasOwnProperty.call(normalized, 'output')) {
+                normalized.output = normalizeTestCaseValue(normalized.output);
+              }
+              return normalized;
+            });
+          };
+
           const runAllTests = async () => {
             if (!textarea) return;
             const code = textarea.value;
@@ -679,7 +717,7 @@ function renderJudge0Bootstrap(questions) {
               const payload = {
                 sourceCode: code,
                 language: config.language || 'javascript',
-                testCases: allTestCases
+                testCases: normalizeTestCases(allTestCases)
               };
               const result = await postJson(endpoint, payload);
 
