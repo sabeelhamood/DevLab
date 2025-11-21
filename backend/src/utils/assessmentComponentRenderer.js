@@ -100,7 +100,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           <span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>
           <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
             ${question.skills.map(skill => `
-              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #f3e8ff; color: #7c3aed; border-radius: 9999px;">
+              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #7c3aed; border-radius: 9999px;">
                 ${escapeHtml(skill)}
               </span>
             `).join('')}
@@ -123,7 +123,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #DCDCDC; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+              <div style="background: #F0FFF0; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                   <div>
                     <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
@@ -308,8 +308,8 @@ function renderJudge0Section(question) {
               <button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
                 Run All Tests (${testCaseCount})
               </button>
-              <button type="button" data-judge0-reset style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
-                Reset Editor
+              <button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
+                ↺
               </button>
             </div>
           </div>
