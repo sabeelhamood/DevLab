@@ -744,6 +744,12 @@ function renderJudge0Bootstrap(questions) {
                 return normalized;
               });
 
+              console.log('🔧 Assessment: Sending test cases to Judge0', {
+                testCasesCount: normalizedTestCases.length,
+                language: config.language || 'javascript',
+                normalizedTestCases
+              });
+
               const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
               const payload = {
                 sourceCode: code,
