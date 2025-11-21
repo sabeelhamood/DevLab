@@ -95,54 +95,48 @@ export function renderAssessmentCodeQuestions(questions = []) {
       'difficulty-hard'
 
     const skillsHtml = question.skills && question.skills.length > 0
-      ? `
-        <div style="margin-bottom: 1rem;">
-          <span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            ${question.skills.map(skill => `
-              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">
-                ${escapeHtml(skill)}
-              </span>
-            `).join('')}
-          </div>
-        </div>
-      `
+      ? [
+          '<div style="margin-bottom: 1rem;">',
+          '<span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>',
+          '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">',
+          question.skills.map(skill => {
+            const escapedSkill = escapeHtml(skill)
+            return '<span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">' + escapedSkill + '</span>'
+          }).join(''),
+          '</div>',
+          '</div>'
+        ].join('')
       : ''
 
     const testCasesHtml = question.testCases && question.testCases.length > 0
-      ? `
-        <div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
-              <path d="M9 11l3 3L22 4"></path>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-            </svg>
-            <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">
-              Test Cases (${question.testCases.length})
-            </span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                  <div>
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
-                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
-                      ${escapeHtml(testCase.input || 'N/A')}
-                    </code>
-                  </div>
-                  <div>
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Expected Output:</span>
-                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
-                      ${escapeHtml(testCase.expected_output || testCase.output || 'N/A')}
-                    </code>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `
+      ? [
+          '<div>',
+          '<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">',
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
+          '<span style="font-size: 0.875rem; font-weight: 500; color: #374151;">Test Cases (' + String(question.testCases.length) + ')</span>',
+          '</div>',
+          '<div style="display: flex; flex-direction: column; gap: 0.5rem;">',
+          question.testCases.map((testCase, testIndex) => {
+            const escapedInput = escapeHtml(testCase.input || 'N/A')
+            const escapedOutput = escapeHtml(testCase.expected_output || testCase.output || 'N/A')
+            return [
+              '<div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">',
+              '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">',
+              '<div>',
+              '<span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>',
+              '<code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">' + escapedInput + '</code>',
+              '</div>',
+              '<div>',
+              '<span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Expected Output:</span>',
+              '<code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">' + escapedOutput + '</code>',
+              '</div>',
+              '</div>',
+              '</div>'
+            ].join('')
+          }).join(''),
+          '</div>',
+          '</div>'
+        ].join('')
       : ''
 
     const judge0Html = renderJudge0Section(question, index)
@@ -418,13 +412,14 @@ function renderJudge0Bootstrap(questions) {
 
   const baseFromEnv = PUBLIC_API_BASE_URL ? PUBLIC_API_BASE_URL.replace(/"/g, '\\"') : ''
   const defaultBaseUrl = baseFromEnv || 'https://devlab-backend-production.up.railway.app'
+  const escapedDefaultBaseUrl = defaultBaseUrl.replace(/'/g, "\\'")
 
-  const scriptBody = `
-    (function () {
+  // Build script body - use template literal but escape the dynamic value properly
+  const scriptBody = `    (function () {
       try {
         const scriptEl = document.currentScript;
         const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
-        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '` + defaultBaseUrl.replace(/'/g, "\\'") + `';
+        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${escapedDefaultBaseUrl}';
         const attrServiceKey = scriptEl ? scriptEl.getAttribute('data-service-key') : '';
         const attrServiceId = scriptEl ? scriptEl.getAttribute('data-service-id') : '';
 
@@ -781,8 +776,8 @@ function renderJudge0Bootstrap(questions) {
               renderResults(processed);
 
               const lines = [
-                \`📊 Test Results: \\\${passed}/\\\${total} passed\`,
-                \`⏱️ Total tests: \\\${total}\`
+                '📊 Test Results: ' + passed + '/' + total + ' passed',
+                '⏱️ Total tests: ' + total
               ];
               updateConsole(lines);
             } catch (err) {
@@ -817,16 +812,17 @@ function renderJudge0Bootstrap(questions) {
   `
 
   const attrs = [
-    `data-api-base="${escapeHtml(baseFromEnv)}"`,
-    `data-service-key="${escapeHtml(getDefaultServiceApiKey())}"`,
-    `data-service-id="${escapeHtml(getDefaultServiceId())}"`
+    'data-api-base="' + escapeHtml(baseFromEnv) + '"',
+    'data-service-key="' + escapeHtml(getDefaultServiceApiKey()) + '"',
+    'data-service-id="' + escapeHtml(getDefaultServiceId()) + '"'
   ].join(' ')
 
-  return `
-    <script ${attrs}>
-${scriptBody}
-    </script>
-  `
+  // Use string concatenation to avoid template literal issues
+  return [
+    '<script ' + attrs + '>',
+    scriptBody,
+    '</script>'
+  ].join('\n')
 }
 
 function getDefaultServiceApiKey() {
@@ -856,27 +852,26 @@ function renderServiceHeadersScript() {
     ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
     ...(serviceId ? { 'x-service-id': serviceId } : {})
   }
-  // Serialize JSON and escape for template literal context
+  // Serialize JSON and escape for JavaScript string context
   const payloadJson = JSON.stringify(payloadObj)
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/`/g, '\\`')     // Escape backticks
-    .replace(/\$\{/g, '\\${') // Escape ${ sequences
-    .replace(/'/g, "\\'")     // Escape single quotes
+    .replace(/\\/g, '\\\\')  // Escape backslashes
+    .replace(/'/g, "\\'")   // Escape single quotes
 
-  return `
-    <script>
-      (function () {
-        try {
-          var existing = window.__DEVLAB_SERVICE_HEADERS || {};
-          var provided = JSON.parse('` + payloadJson + `');
-          window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
-        } catch (err) {
-          console.error('Failed to initialize service headers', err);
-          window.__DEVLAB_SERVICE_HEADERS = JSON.parse('` + payloadJson + `');
-        }
-      })();
-    </script>
-  `
+  // Use string concatenation to avoid template literal issues
+  return [
+    '<script>',
+    '(function () {',
+    '  try {',
+    '    var existing = window.__DEVLAB_SERVICE_HEADERS || {};',
+    "    var provided = JSON.parse('" + payloadJson + "');",
+    '    window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);',
+    '  } catch (err) {',
+    "    console.error('Failed to initialize service headers', err);",
+    "    window.__DEVLAB_SERVICE_HEADERS = JSON.parse('" + payloadJson + "');",
+    '  }',
+    '})();',
+    '</script>'
+  ].join('\n')
 }
 
 function renderQuestionMetaScript(questions = []) {
@@ -890,11 +885,12 @@ function renderQuestionMetaScript(questions = []) {
     testCases: Array.isArray(question.testCases) ? question.testCases : (Array.isArray(question.test_cases) ? question.test_cases : [])
   }))
   const json = serializeJsonForScript(payload)
-  return `
-    <script type="application/json" data-question-meta>
-${json}
-    </script>
-  `
+  // Use string concatenation to avoid template literal issues
+  return [
+    '<script type="application/json" data-question-meta>',
+    json,
+    '</script>'
+  ].join('\n')
 }
 
 function renderStepperBootstrap() {
@@ -1124,11 +1120,12 @@ function renderStepperBootstrap() {
     })();
   `
 
-  return `
-    <script>
-${scriptBody}
-    </script>
-  `
+  // Use string concatenation to avoid template literal issues
+  return [
+    '<script>',
+    scriptBody,
+    '</script>'
+  ].join('\n')
 }
 
 
