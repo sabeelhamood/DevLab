@@ -678,28 +678,67 @@ function renderJudge0Bootstrap(questions) {
               // Normalize test cases to ensure they have the correct structure for Judge0
               const normalizedTestCases = allTestCases.map((testCase) => {
                 const normalized = {};
-                // Normalize input field (handle multiple possible field names)
-                if (testCase.input !== undefined) {
-                  normalized.input = testCase.input;
-                } else if (testCase.testInput !== undefined) {
-                  normalized.input = testCase.testInput;
-                } else if (testCase.test_input !== undefined) {
-                  normalized.input = testCase.test_input;
-                } else {
-                  normalized.input = '';
+                
+                // Get raw input value (handle multiple possible field names)
+                let rawInput = testCase.input;
+                if (rawInput === undefined) {
+                  rawInput = testCase.testInput;
+                }
+                if (rawInput === undefined) {
+                  rawInput = testCase.test_input;
+                }
+                if (rawInput === undefined) {
+                  rawInput = '';
                 }
                 
-                // Normalize expected output field (handle multiple possible field names)
-                if (testCase.expected_output !== undefined) {
-                  normalized.expected_output = testCase.expected_output;
-                } else if (testCase.expectedOutput !== undefined) {
-                  normalized.expected_output = testCase.expectedOutput;
-                } else if (testCase.expected !== undefined) {
-                  normalized.expected_output = testCase.expected;
-                } else if (testCase.output !== undefined) {
-                  normalized.expected_output = testCase.output;
+                // Parse input if it's a JSON string, otherwise use as-is
+                // This ensures the backend receives proper arrays/objects, not JSON strings
+                if (typeof rawInput === 'string' && rawInput.trim()) {
+                  const trimmed = rawInput.trim();
+                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                    try {
+                      normalized.input = JSON.parse(trimmed);
+                    } catch {
+                      normalized.input = rawInput;
+                    }
+                  } else {
+                    normalized.input = rawInput;
+                  }
                 } else {
-                  normalized.expected_output = null;
+                  normalized.input = rawInput;
+                }
+                
+                // Get raw expected output value (handle multiple possible field names)
+                let rawExpected = testCase.expected_output;
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.expectedOutput;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.expected;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = testCase.output;
+                }
+                if (rawExpected === undefined) {
+                  rawExpected = null;
+                }
+                
+                // Parse expected output if it's a JSON string, otherwise use as-is
+                if (rawExpected !== null && typeof rawExpected === 'string' && rawExpected.trim()) {
+                  const trimmed = rawExpected.trim();
+                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                    try {
+                      normalized.expected_output = JSON.parse(trimmed);
+                    } catch {
+                      normalized.expected_output = rawExpected;
+                    }
+                  } else {
+                    normalized.expected_output = rawExpected;
+                  }
+                } else {
+                  normalized.expected_output = rawExpected;
                 }
                 
                 return normalized;
