@@ -800,9 +800,23 @@ function renderJudge0Bootstrap(questions) {
             if (primitiveTypes.includes(typeof value)) {
               if (typeof value === 'string') {
                 const sanitizedValue = sanitizeValueString(value);
+                // Check if it's a multi-argument case like "[1, 2, 3], 2"
                 const assignmentString = convertArrayArgumentString(sanitizedValue);
                 if (assignmentString) {
                   return assignmentString;
+                }
+                // For single array/object strings, ensure they're valid JSON
+                // The sanitized value (without outer quotes) will be sent as a string
+                // and the backend will parse it correctly
+                if ((sanitizedValue.startsWith('[') && sanitizedValue.endsWith(']')) ||
+                    (sanitizedValue.startsWith('{') && sanitizedValue.endsWith('}'))) {
+                  try {
+                    JSON.parse(sanitizedValue);
+                    // Return sanitized value so backend receives it as a JSON-parseable string
+                    return sanitizedValue;
+                  } catch {
+                    return sanitizedValue;
+                  }
                 }
                 return sanitizedValue;
               }
