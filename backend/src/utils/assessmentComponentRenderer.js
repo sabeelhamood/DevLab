@@ -123,7 +123,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #F8F8FF; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+              <div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                   <div>
                     <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
