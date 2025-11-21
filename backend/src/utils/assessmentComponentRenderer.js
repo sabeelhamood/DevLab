@@ -742,9 +742,21 @@ function renderJudge0Bootstrap(questions) {
             return values;
           };
 
+          const sanitizeValueString = (raw) => {
+            if (typeof raw !== 'string') return raw;
+            let trimmed = raw.trim();
+            const startsWithQuote =
+              (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+              (trimmed.startsWith("'") && trimmed.endsWith("'"));
+            if (startsWithQuote) {
+              trimmed = trimmed.slice(1, -1);
+            }
+            return trimmed.trim();
+          };
+
           const convertArrayArgumentString = (raw) => {
             if (typeof raw !== 'string') return null;
-            const trimmed = raw.trim();
+            const trimmed = sanitizeValueString(raw);
             if (!trimmed.startsWith('[')) return null;
             const boundaryIndex = findArrayBoundary(trimmed);
             if (boundaryIndex === -1 || boundaryIndex === trimmed.length - 1) {
@@ -787,10 +799,12 @@ function renderJudge0Bootstrap(questions) {
             const primitiveTypes = ['string', 'number', 'boolean'];
             if (primitiveTypes.includes(typeof value)) {
               if (typeof value === 'string') {
-                const assignmentString = convertArrayArgumentString(value);
+                const sanitizedValue = sanitizeValueString(value);
+                const assignmentString = convertArrayArgumentString(sanitizedValue);
                 if (assignmentString) {
                   return assignmentString;
                 }
+                return sanitizedValue;
               }
               return value;
             }
