@@ -53,13 +53,12 @@ textarea#otherEditor {
 </style>
 
 <script type="module">
-import { EditorView, basicSetup } from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@0.20.0/+esm";
-import { EditorState } from "https://cdn.jsdelivr.net/npm/@codemirror/state@6.5.2/+esm";
-import { javascript } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.2.1/+esm";
-import { python } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.2.1/+esm";
+import { EditorState, EditorView, basicSetup } from "https://cdn.jsdelivr.net/npm/codemirror@6.0.1/+esm";
+import { javascript } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.0.2/+esm";
+import { python } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.0.4/+esm";
 import { cpp } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.0.3/+esm";
 import { java } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.0.2/+esm";
-import { oneDark } from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.1.3/+esm";
+import { oneDark } from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.0.0/+esm";
 
 let editor = null;
 let currentTheme = "light";
