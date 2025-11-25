@@ -23,7 +23,11 @@ function getBackendBaseUrl() {
   return (base || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
 }
 
-const CODEMIRROR_BUNDLE_URL = `${getBackendBaseUrl()}/codemirror-bundle.js`
+const CODEMIRROR_BUNDLE_URL_PLACEHOLDER = '__CODEMIRROR_BUNDLE_URL__'
+
+function getCodeMirrorBundleUrl() {
+  return `${getBackendBaseUrl()}/codemirror-bundle.js`
+}
 
 const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
 
@@ -286,13 +290,18 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
     return '<p>Unable to load code editor.</p>'
   }
 
+  let template = baseCodeMirrorTemplate
+
   const normalizedTestCases = extractNormalizedTestCases(question)
-  if (!normalizedTestCases.length) {
-    return baseCodeMirrorTemplate
+  if (normalizedTestCases.length) {
+    const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
+    template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
-  const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
-  return baseCodeMirrorTemplate.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
+  const bundleUrl = getCodeMirrorBundleUrl()
+  template = template.replace(new RegExp(CODEMIRROR_BUNDLE_URL_PLACEHOLDER, 'g'), bundleUrl)
+
+  return template
 }
 
 function extractNormalizedTestCases(question = {}) {
