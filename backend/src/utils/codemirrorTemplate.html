@@ -53,13 +53,17 @@ textarea#otherEditor {
 </style>
 
 <script type="module">
-import {
+const CODEMIRROR_BUNDLE_URL =
+    window.__DEVLAB_CODEMIRROR_BUNDLE__ ||
+    '${CODEMIRROR_BUNDLE_URL}';
+
+const {
     EditorState,
     EditorView,
     basicSetup,
     languageExtensions,
     themeExtensions
-} from "/codemirror-bundle.js";
+} = await import(CODEMIRROR_BUNDLE_URL);
 
 let editor = null;
 let currentTheme = "light";

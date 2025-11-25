@@ -12,6 +12,19 @@ const PUBLIC_API_BASE_URL =
   process.env['API_BASE_URL'] ||
   ''
 
+function getBackendBaseUrl() {
+  const base =
+    PUBLIC_API_BASE_URL ||
+    process.env['PUBLIC_BACKEND_URL'] ||
+    process.env['PUBLIC_API_URL'] ||
+    process.env['API_BASE_URL'] ||
+    'https://devlab-backend-production.up.railway.app'
+
+  return (base || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
+}
+
+const CODEMIRROR_BUNDLE_URL = `${getBackendBaseUrl()}/codemirror-bundle.js`
+
 const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
 
 /**
