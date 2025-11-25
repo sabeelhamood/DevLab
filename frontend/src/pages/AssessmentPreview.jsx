@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext.jsx'
 
 function AssessmentPreview() {
   const { theme } = useTheme()
+  console.log('[AssessmentPreview] rendering with theme:', theme)
   const isNightMode = theme === 'night-mode'
 
   const pageBgClass = isNightMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
