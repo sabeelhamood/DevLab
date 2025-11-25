@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CodeMirror Editor</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+    margin: 0;
+}
+#editorContainer {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 5px;
+    background: #fff;
+    margin-bottom: 10px;
+    min-height: 400px;
+}
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+button {
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+#output {
+    white-space: pre-wrap;
+    background: #222;
+    color: #0f0;
+    padding: 15px;
+    border-radius: 10px;
+    min-height: 120px;
+}
+textarea#otherEditor {
+    width: 100%;
+    height: 400px;
+    font-family: monospace;
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+</style>
+
+<script type="module">
+import { EditorView, basicSetup } from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@0.20.0/dist/index.js";
+import { EditorState } from "https://cdn.jsdelivr.net/npm/@codemirror/state@6.4.0/dist/index.js";
+import { javascript } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-javascript@6.2.1/dist/index.js";
+import { python } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.4/dist/index.js";
+import { cpp } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-cpp@6.1.4/dist/index.js";
+import { java } from "https://cdn.jsdelivr.net/npm/@codemirror/lang-java@6.1.2/dist/index.js";
+import { oneDark } from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.1.0/dist/index.js";
+
+let editor = null;
+let currentTheme = "light";
+
+const languageExtensions = { javascript, python, cpp, java };
+const themeExtensions = { "light": [], "dark": oneDark };
+
+function createEditor(language = "javascript", theme = "light") {
+    const container = document.getElementById("editorContainer");
+    container.innerHTML = ""; // reset
+    if(language === "other") {
+        container.innerHTML = '<textarea id="otherEditor"></textarea>';
+        return;
+    }
+
+    editor = new EditorView({
+        parent: container,
+        state: EditorState.create({
+            doc: "",
+            extensions: [ basicSetup, languageExtensions[language]? languageExtensions[language]() : [], themeExtensions[theme] ]
+        })
+    });
+}
+
+function getCode() {
+    const lang = document.getElementById("languageSelect").value;
+    if(lang === "other") return document.getElementById("otherEditor").value;
+    return editor.state.doc.toString();
+}
+
+async function runCode() {
+    const lang = document.getElementById("languageSelect").value;
+    const code = getCode();
+    if(!code) return alert("No code to run!");
+
+    try {
+        const res = await fetch("/judge0/execute", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ sourceCode: code, language: lang, input:"" })
+        });
+        const result = await res.json();
+        document.getElementById("output").innerText = JSON.stringify(result, null, 2);
+    } catch(e) { console.error(e); }
+}
+
+async function runAllTests() {
+    const lang = document.getElementById("languageSelect").value;
+    const code = getCode();
+    if(!code) return alert("No code to run!");
+
+    const tests = [
+        { input: "1 2", expectedOutput: "3" },
+        { input: "5 7", expectedOutput: "12" }
+    ];
+
+    try {
+        const res = await fetch("/judge0/test-cases", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ sourceCode: code, language: lang, testCases: tests })
+        });
+        const result = await res.json();
+        document.getElementById("output").innerText = JSON.stringify(result, null, 2);
+    } catch(e) { console.error(e); }
+}
+
+function resetEditor() {
+    const lang = document.getElementById("languageSelect").value;
+    createEditor(lang, currentTheme);
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+    createEditor("javascript", currentTheme);
+
+    document.getElementById("languageSelect").addEventListener("change", e=>{
+        createEditor(e.target.value, currentTheme);
+    });
+
+    document.getElementById("themeSelect").addEventListener("change", e=>{
+        currentTheme = e.target.value;
+        const lang = document.getElementById("languageSelect").value;
+        createEditor(lang, currentTheme);
+    });
+
+    document.getElementById("runBtn").onclick = runCode;
+    document.getElementById("runAllBtn").onclick = runAllTests;
+    document.getElementById("resetBtn").onclick = resetEditor;
+});
+</script>
+</head>
+
+<body>
+<h2>Code Editor</h2>
+
+<div class="controls">
+<select id="languageSelect">
+    <option value="javascript">JavaScript</option>
+    <option value="python">Python</option>
+    <option value="cpp">C/C++</option>
+    <option value="java">Java</option>
+    <option value="other">Other</option>
+</select>
+
+<select id="themeSelect">
+    <option value="light">Light</option>
+    <option value="dark">One Dark</option>
+</select>
+
+<button id="runBtn">▶ Run</button>
+<button id="runAllBtn">🧪 Run All Tests</button>
+<button id="resetBtn">🔹 Reset</button>
+</div>
+
+<div id="editorContainer"></div>
+
+<h3>Output:</h3>
+<pre id="output"></pre>
+
+</body>
+</html>

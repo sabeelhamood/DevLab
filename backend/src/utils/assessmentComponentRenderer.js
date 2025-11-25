@@ -3,6 +3,7 @@
  * This generates HTML that matches the React component structure
  */
 import { postgres } from '../config/database.js'
+import { codeMirrorLoader } from './codeMirrorLoader.js'
 
 const PUBLIC_API_BASE_URL =
   process.env['ASSESSMENT_PUBLIC_API_BASE_URL'] ||
@@ -10,6 +11,8 @@ const PUBLIC_API_BASE_URL =
   process.env['PUBLIC_API_URL'] ||
   process.env['API_BASE_URL'] ||
   ''
+
+const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
 
 /**
  * Saves generated coding questions to Supabase
@@ -212,7 +215,6 @@ export function renderAssessmentCodeQuestions(questions = []) {
   }).join('')
 
   const serviceHeadersScript = renderServiceHeadersScript()
-  const judge0BootstrapScript = renderJudge0Bootstrap(questions)
 
   return `
     <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
@@ -248,7 +250,6 @@ export function renderAssessmentCodeQuestions(questions = []) {
     </div>
     ${renderQuestionMetaScript(questions)}
     ${serviceHeadersScript}
-    ${judge0BootstrapScript}
     ${renderStepperBootstrap()}
   `
 }
@@ -267,558 +268,119 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
+function buildCodeMirrorTemplateForQuestion(question = {}) {
+  if (!baseCodeMirrorTemplate) {
+    return '<p>Unable to load code editor.</p>'
+  }
+
+  const normalizedTestCases = extractNormalizedTestCases(question)
+  if (!normalizedTestCases.length) {
+    return baseCodeMirrorTemplate
+  }
+
+  const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
+  return baseCodeMirrorTemplate.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
+}
+
+function extractNormalizedTestCases(question = {}) {
+  const configCases =
+    (question?.judge0?.testCases && Array.isArray(question.judge0.testCases) && question.judge0.testCases) ||
+    (question?.judge0?.test_cases && Array.isArray(question.judge0.test_cases) && question.judge0.test_cases)
+  const questionCases =
+    (Array.isArray(question.testCases) && question.testCases) ||
+    (Array.isArray(question.test_cases) && question.test_cases) ||
+    []
+
+  const rawCases = configCases || questionCases
+  if (!Array.isArray(rawCases)) {
+    return []
+  }
+
+  return rawCases
+    .map((testCase = {}) => {
+      const inputValue = getFirstDefinedField(testCase, ['input', 'testInput', 'test_input'])
+      const expectedValue = getFirstDefinedField(testCase, ['expected_output', 'expectedOutput', 'expected', 'output'])
+      return {
+        input: normalizeTestCaseValue(inputValue, ''),
+        expectedOutput: normalizeTestCaseValue(expectedValue, '')
+      }
+    })
+    .filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '')
+}
+
+function normalizeTestCaseValue(value, fallback) {
+  if (value === undefined || value === null) {
+    return fallback
+  }
+  return value
+}
+
+function getFirstDefinedField(obj, fields = []) {
+  if (!obj || typeof obj !== 'object') {
+    return undefined
+  }
+  for (const field of fields) {
+    if (Object.prototype.hasOwnProperty.call(obj, field)) {
+      return obj[field]
+    }
+  }
+  return undefined
+}
+
 function renderJudge0Section(question) {
   const config = question?.judge0
   if (!config || config.enabled === false) return ''
 
-  const testCaseCount =
-    Array.isArray(config.testCases) && config.testCases.length
-      ? config.testCases.length
-      : Array.isArray(question.testCases)
-        ? question.testCases.length
-        : 0
-
   const questionId = question.id || `question_${Date.now()}`
-  const configJson = serializeJsonForScript({
-    questionId,
-    ...config
-  })
-
-  const templateJson = serializeJsonForScript({
-    questionId,
-    template: getDefaultCodeTemplate(config.language || question.programming_language)
-  })
+  const language = (config.language || question.programming_language || 'javascript').toLowerCase()
+  const normalizedTestCases = extractNormalizedTestCases(question)
+  const testCaseCount = normalizedTestCases.length
+  const iframeContent = buildCodeMirrorTemplateForQuestion(question)
+  const iframeTitle = `Code editor for ${question.title || questionId}`
 
   return `
     <div class="judge0-panel" style="margin-top: 1.25rem;">
-      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml((config.language || question.programming_language || 'javascript').toLowerCase())}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <div class="judge0-sandbox-card" data-question-id="${escapeHtml(questionId)}" data-language="${escapeHtml(language)}" style="background: #F5F5F5; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1); color: #0f172a;">
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
             <div>
               <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
               <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
-                Powered by Judge0 • ${escapeHtml((config.language || question.programming_language || 'javascript').toUpperCase())}
+                Powered by Judge0 • ${escapeHtml(language.toUpperCase())}
               </p>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <button type="button" data-judge0-run-code style="border: none; border-radius: 9999px; background: #0F6B52; color: white; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 24px rgba(34, 197, 94, 0.3);">
-                Run Code
-              </button>
-              <button type="button" data-judge0-run-tests style="border: 1px solid #0F6B52; border-radius: 9999px; background: #F0FFF0; color: #0F6B52; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
-                Run All Tests (${testCaseCount})
-              </button>
-              <button type="button" data-judge0-reset aria-label="Reset Editor" style="border: 1px solid rgba(148, 163, 184, 0.5); border-radius: 9999px; background: white; color: #475569; padding: 0.6rem 1.4rem; font-weight: 600; cursor: pointer;">
-                ↺
-              </button>
-            </div>
-          </div>
-
-          <div style="border-radius: 1rem; border: 1px solid rgba(148, 163, 184, 0.45); overflow: hidden;">
-            <textarea class="judge0-code-input" spellcheck="false" style="width: 100%; min-height: 240px; border: none; background: #0f172a; color: #e2e8f0; padding: 1rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="// Write your solution here..."></textarea>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <div style="background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(96, 165, 250, 0.2);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                <span style="font-weight: 600;">Console Output</span>
-                <span data-judge0-status style="font-size: 0.8rem; color: #cbd5f5;">Idle</span>
-              </div>
-              <pre data-judge0-console style="margin: 0; white-space: pre-wrap; font-size: 0.8rem; max-height: 180px; overflow-y: auto;">
-// Use "Run Code" to execute your solution or "Run All Tests" for full validation.
-              </pre>
-            </div>
-            <div style="background: white; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <div>
-                  <div style="font-weight: 600; color: #0f172a;">Judge0 Test Results</div>
-                  <p data-judge0-summary style="margin: 0; font-size: 0.85rem; color: #475569;">Run all tests to see detailed feedback.</p>
-                </div>
-                <span style="font-size: 0.75rem; font-weight: 600; color: #1e293b; background: rgba(148, 163, 184, 0.2); padding: 0.2rem 0.75rem; border-radius: 9999px;">
-                  ${testCaseCount} tests
+            <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end;">
+              <span style="font-size: 0.8rem; color: #475569;">Loaded test cases: ${testCaseCount || 'N/A'}</span>
+              <span style="font-size: 0.75rem; color: #94a3b8;">
+                Use the embedded CodeMirror editor below to run code or execute test suites.
                 </span>
               </div>
-              <div data-judge0-results style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 220px; overflow-y: auto;"></div>
             </div>
+          <div class="codemirror-sandbox-frame" style="border-radius: 1.25rem; overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.45); background: #ffffff;">
+            <iframe
+              data-codemirror-editor
+              title="${escapeHtml(iframeTitle)}"
+              srcdoc="${escapeHtml(iframeContent)}"
+              style="width: 100%; min-height: 720px; border: none; background: #ffffff;"
+              sandbox="allow-scripts allow-same-origin"
+            ></iframe>
           </div>
+          <div style="font-size: 0.85rem; color: #475569; background: #ffffff; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(148, 163, 184, 0.3);">
+            <p style="margin: 0 0 0.5rem 0;">Tips:</p>
+            <ul style="margin: 0; padding-left: 1.25rem; color: #1e293b;">
+              <li>Switch languages or themes directly inside the CodeMirror toolbar.</li>
+              <li>Use "Run" for ad-hoc checks or "Run All Tests" to execute ${testCaseCount ? `${testCaseCount} provided test case${testCaseCount === 1 ? '' : 's'}` : 'the default sample tests'}.</li>
+              <li>Reset the editor to restore the default snippet.</li>
+            </ul>
         </div>
       </div>
-      <script type="application/json" data-judge0-config="${escapeHtml(questionId)}">
-${configJson}
-      </script>
-      <script type="application/json" data-judge0-template="${escapeHtml(questionId)}">
-${templateJson}
-      </script>
+      </div>
     </div>
   `
 }
 
 function serializeJsonForScript(value) {
   return JSON.stringify(value, null, 2).replace(/</g, '\\u003c')
-}
-
-function getDefaultCodeTemplate(language = 'javascript') {
-  const normalized = (language || '').toLowerCase()
-  switch (normalized) {
-    case 'python':
-      return [
-        'def solve(data):',
-        '    # TODO: implement your logic here',
-        '    return data',
-        '',
-        'if __name__ == "__main__":',
-        '    # Sample usage',
-        '    print(solve("sample input"))',
-        ''
-      ].join('\n')
-    case 'java':
-      return [
-        'import java.util.*;',
-        '',
-        'public class Solution {',
-        '    public static Object solve(Object input) {',
-        '        // TODO: implement your logic here',
-        '        return input;',
-        '    }',
-        '',
-        '    public static void main(String[] args) {',
-        '        System.out.println(solve("sample input"));',
-        '    }',
-        '}',
-        ''
-      ].join('\n')
-    case 'cpp':
-    case 'c++':
-      return [
-        '#include <bits/stdc++.h>',
-        'using namespace std;',
-        '',
-        'int main() {',
-        '    ios::sync_with_stdio(false);',
-        '    cin.tie(nullptr);',
-        '    // TODO: implement your logic here',
-        '    cout << "sample output" << endl;',
-        '    return 0;',
-        '}',
-        ''
-      ].join('\n')
-    default:
-      return [
-        'function solve(input) {',
-        '  // TODO: implement your logic here',
-        '  return input;',
-        '}',
-        '',
-        'console.log(solve("sample input"));',
-        ''
-      ].join('\n')
-  }
-}
-
-function renderJudge0Bootstrap(questions) {
-  const hasJudge0 = Array.isArray(questions) && questions.some((q) => q?.judge0 && q.judge0.enabled !== false)
-  if (!hasJudge0) return ''
-
-  const baseFromEnv = PUBLIC_API_BASE_URL ? PUBLIC_API_BASE_URL.replace(/"/g, '\\"') : ''
-
-  const scriptBody = `
-    (function () {
-      try {
-        const scriptEl = document.currentScript;
-        const providedBase = scriptEl ? scriptEl.getAttribute('data-api-base') : '';
-        const defaultBase = providedBase || window.__DEVLAB_API_BASE__ || '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
-        const attrServiceKey = scriptEl ? scriptEl.getAttribute('data-service-key') : '';
-        const attrServiceId = scriptEl ? scriptEl.getAttribute('data-service-id') : '';
-
-        const buildUrl = (path) => {
-          if (!path) return '';
-          if (/^https?:\\/\\//i.test(path)) return path;
-          const base = (defaultBase || '').replace(/\\/+$/, '');
-          const normalized = path.startsWith('/') ? path : '/' + path;
-          return base ? base + normalized : normalized;
-        };
-
-        const configMap = {};
-        document.querySelectorAll('script[data-judge0-config]').forEach((script) => {
-          const key = script.getAttribute('data-judge0-config');
-          if (!key) return;
-          try {
-            configMap[key] = JSON.parse(script.textContent || '{}');
-          } catch (err) {
-            console.error('Failed to parse judge0 config for', key, err);
-          }
-          script.remove();
-        });
-
-        const templates = {};
-        document.querySelectorAll('script[data-judge0-template]').forEach((script) => {
-          const key = script.getAttribute('data-judge0-template');
-          if (!key) return;
-          try {
-            const parsed = JSON.parse(script.textContent || '{}');
-            templates[key] = parsed.template || '';
-          } catch (err) {
-            console.error('Failed to parse judge0 template for', key, err);
-          }
-          script.remove();
-        });
-
-        const postJson = async (endpoint, payload) => {
-          const extraHeaders = (() => {
-            const globalHeaders = window.__DEVLAB_SERVICE_HEADERS;
-            if (globalHeaders && typeof globalHeaders === 'object') {
-              try {
-                return JSON.parse(JSON.stringify(globalHeaders));
-              } catch {
-                return { ...globalHeaders };
-              }
-            }
-            const headers = {};
-            if (attrServiceKey) {
-              headers['x-api-key'] = attrServiceKey;
-            }
-            if (attrServiceId) {
-              headers['x-service-id'] = attrServiceId;
-            }
-            return headers;
-          })();
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...extraHeaders
-            },
-            body: JSON.stringify(payload)
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            const message = data?.error || data?.message || response.statusText;
-            throw new Error(message);
-          }
-          return data;
-        };
-
-        const escapeHtml = (value) => {
-          if (value === null || value === undefined) return '';
-          return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-        };
-
-        const formatValue = (value) => {
-          if (value === null || value === undefined) return 'null';
-          if (typeof value === 'string') {
-            const trimmed = value.trim();
-            return trimmed === '' ? '""' : JSON.stringify(trimmed);
-          }
-          if (typeof value === 'number' || typeof value === 'boolean') {
-            return value.toString();
-          }
-          try {
-            return JSON.stringify(value);
-          } catch {
-            return String(value);
-          }
-        };
-
-        const getFieldValue = (obj, candidates = []) => {
-          if (!obj) return '';
-          for (const field of candidates) {
-            if (Object.prototype.hasOwnProperty.call(obj, field)) {
-              return obj[field];
-            }
-          }
-          return '';
-        };
-
-        document.querySelectorAll('.judge0-sandbox-card').forEach((sandbox) => {
-          const questionId = sandbox.getAttribute('data-question-id');
-          if (!questionId) return;
-          const config = configMap[questionId];
-          if (!config) return;
-
-          const textarea = sandbox.querySelector('.judge0-code-input');
-          const statusEl = sandbox.querySelector('[data-judge0-status]');
-          const consoleEl = sandbox.querySelector('[data-judge0-console]');
-          const resultsEl = sandbox.querySelector('[data-judge0-results]');
-          const summaryEl = sandbox.querySelector('[data-judge0-summary]');
-          const runCodeBtn = sandbox.querySelector('[data-judge0-run-code]');
-          const runTestsBtn = sandbox.querySelector('[data-judge0-run-tests]');
-          const resetBtn = sandbox.querySelector('[data-judge0-reset]');
-          const defaultTemplate = templates[questionId] || textarea?.value || '';
-
-          if (textarea && !textarea.value.trim()) {
-            textarea.value = defaultTemplate;
-          }
-
-          const setStatus = (message, color = '#475569') => {
-            if (statusEl) {
-              statusEl.textContent = message;
-              statusEl.style.color = color;
-            }
-          };
-
-          const updateConsole = (lines, append = false) => {
-            if (!consoleEl) return;
-            const text = Array.isArray(lines) ? lines.join('\\n') : String(lines);
-            if (append) {
-              consoleEl.textContent = (consoleEl.textContent || '') + '\\n' + text;
-            } else {
-              consoleEl.textContent = text;
-            }
-          };
-
-          const updateSummary = (message) => {
-            if (summaryEl) {
-              summaryEl.textContent = message;
-            }
-          };
-
-          const renderResults = (results) => {
-            if (!resultsEl) return;
-            if (!results || !results.length) {
-              resultsEl.innerHTML = '<div style="font-size:0.85rem; color:#94a3b8;">Run the full suite to see pass/fail details here.</div>';
-              return;
-            }
-
-            const cards = results.map((result, idx) => {
-              const status = result.passed ? 'PASS' : 'FAIL';
-              const statusColor = result.passed ? '#22c55e' : '#ef4444';
-              const badgeBg = result.passed ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
-
-              return '' +
-                '<div style="border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 0.85rem; padding: 0.85rem; background: white;">' +
-                  '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">' +
-                    '<span style="font-weight:600; color:#0f172a;">Test ' + (idx + 1) + '</span>' +
-                    '<span style="font-size:0.75rem; font-weight:600; color:' + statusColor + '; background:' + badgeBg + '; padding:0.2rem 0.75rem; border-radius:9999px;">' +
-                      escapeHtml(status) +
-                    '</span>' +
-                  '</div>' +
-                  '<div style="font-size:0.78rem; color:#475569; line-height:1.5;">' +
-                    '<div><strong>Input:</strong> ' + escapeHtml(formatValue(result.input)) + '</div>' +
-                    '<div><strong>Expected:</strong> ' + escapeHtml(formatValue(result.expected)) + '</div>' +
-                    '<div><strong>Received:</strong> ' + escapeHtml(formatValue(result.result)) + '</div>' +
-                    (result.stderr ? '<div><strong>Error:</strong> ' + escapeHtml(result.stderr) + '</div>' : '') +
-                    '<div style="margin-top:0.25rem; font-size:0.75rem; color:#94a3b8;">' +
-                      'Time: ' + escapeHtml(result.time || '0.000s') +
-                    '</div>' +
-                  '</div>' +
-                '</div>';
-            });
-
-            resultsEl.innerHTML = cards.join('');
-          };
-
-          const runCode = async () => {
-            if (!textarea) return;
-            const code = textarea.value;
-            if (!code.trim()) {
-              setStatus('Please write some code first.', '#ef4444');
-              return;
-            }
-
-            try {
-              setStatus('Running code through Judge0…', '#1d4ed8');
-              updateConsole('// Sending code to Judge0 execution service…', false);
-              const endpoint = buildUrl(config.endpoints?.execute || '/api/judge0/execute');
-              const payload = {
-                sourceCode: code,
-                language: config.language || 'javascript',
-                input: '',
-                expectedOutput: null
-              };
-              const result = await postJson(endpoint, payload);
-              setStatus('Execution complete.', '#22c55e');
-
-              const lines = [];
-              if (result?.result?.stdout) {
-                lines.push('📤 Output:', result.result.stdout.trim());
-              }
-              if (result?.result?.stderr) {
-                lines.push('⚠️ Errors:', result.result.stderr.trim());
-              }
-              if (result?.result?.compile_output) {
-                lines.push('🔨 Compilation:', result.result.compile_output.trim());
-              }
-              lines.push('📊 Status: ' + (result?.result?.status || 'Unknown'));
-              lines.push('⏱️ Time: ' + (result?.result?.time || 'N/A'));
-              lines.push('💾 Memory: ' + (result?.result?.memory || 'N/A'));
-              updateConsole(lines);
-            } catch (err) {
-              console.error('Judge0 execute error:', err);
-              setStatus('Execution failed.', '#ef4444');
-              updateConsole('❌ Error: ' + err.message);
-            }
-          };
-
-          const runAllTests = async () => {
-            if (!textarea) return;
-            const code = textarea.value;
-
-            if (!code.trim()) {
-              setStatus('Please write some code first.', '#ef4444');
-              return;
-            }
-
-            const allTestCases = config.testCases || config.test_cases || [];
-            if (!allTestCases.length) {
-              setStatus('No test cases available for this question.', '#f97316');
-              return;
-            }
-
-            try {
-              setStatus('Running Judge0 test suite…', '#1d4ed8');
-              updateConsole('// Executing official test suite via Judge0…', false);
-              renderResults([]);
-              updateSummary('Running tests…');
-
-              // Normalize test cases to ensure they have the correct structure for Judge0
-              const normalizedTestCases = allTestCases.map((testCase) => {
-                const normalized = {};
-                
-                // Get raw input value (handle multiple possible field names)
-                let rawInput = testCase.input;
-                if (rawInput === undefined) {
-                  rawInput = testCase.testInput;
-                }
-                if (rawInput === undefined) {
-                  rawInput = testCase.test_input;
-                }
-                if (rawInput === undefined) {
-                  rawInput = '';
-                }
-                
-                // Parse input if it's a JSON string, otherwise use as-is
-                // This ensures the backend receives proper arrays/objects, not JSON strings
-                if (typeof rawInput === 'string' && rawInput.trim()) {
-                  const trimmed = rawInput.trim();
-                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
-                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
-                    try {
-                      normalized.input = JSON.parse(trimmed);
-                    } catch {
-                      normalized.input = rawInput;
-                    }
-                  } else {
-                    normalized.input = rawInput;
-                  }
-                } else {
-                  normalized.input = rawInput;
-                }
-                
-                // Get raw expected output value (handle multiple possible field names)
-                let rawExpected = testCase.expected_output;
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.expectedOutput;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.expected;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = testCase.output;
-                }
-                if (rawExpected === undefined) {
-                  rawExpected = null;
-                }
-                
-                // Parse expected output if it's a JSON string, otherwise use as-is
-                if (rawExpected !== null && typeof rawExpected === 'string' && rawExpected.trim()) {
-                  const trimmed = rawExpected.trim();
-                  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) ||
-                      (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
-                    try {
-                      normalized.expected_output = JSON.parse(trimmed);
-                    } catch {
-                      normalized.expected_output = rawExpected;
-                    }
-                  } else {
-                    normalized.expected_output = rawExpected;
-                  }
-                } else {
-                  normalized.expected_output = rawExpected;
-                }
-                
-                return normalized;
-              });
-
-              console.log('🔧 Assessment: Sending test cases to Judge0', {
-                testCasesCount: normalizedTestCases.length,
-                language: config.language || 'javascript',
-                normalizedTestCases
-              });
-
-              const endpoint = buildUrl(config.endpoints?.runAllTestCases || '/api/judge0/test-cases');
-              const payload = {
-                sourceCode: code,
-                language: config.language || 'javascript',
-                testCases: normalizedTestCases
-              };
-              const result = await postJson(endpoint, payload);
-
-              const processed = (result?.results || []).map((testResult, index) => ({
-                input: getFieldValue(testResult, ['input', 'testInput', 'test_input']),
-                expected: getFieldValue(testResult, ['expected', 'expected_output', 'expectedOutput']),
-                result: getFieldValue(testResult, ['result', 'actual', 'output', 'actual_output']),
-                stderr: getFieldValue(testResult, ['stderr', 'error', 'errorMessage']),
-                passed: Boolean(getFieldValue(testResult, ['passed', 'success', 'isPassed'])),
-                time: getFieldValue(testResult, ['time', 'executionTime', 'execution_time'])
-              }));
-
-              const passed = processed.filter((p) => p.passed).length;
-              const total = processed.length;
-              setStatus('Tests completed.', '#22c55e');
-              updateSummary(total && passed === total ? 'All tests passed.' : 'Tests completed. Review detailed feedback below.');
-              renderResults(processed);
-
-              const lines = [
-                \`📊 Test Results: \\\${passed}/\\\${total} passed\`,
-                \`⏱️ Total tests: \\\${total}\`
-              ];
-              updateConsole(lines);
-            } catch (err) {
-              console.error('Judge0 run tests error:', err);
-              setStatus('Test run failed.', '#ef4444');
-              updateSummary('Unable to complete tests.');
-              updateConsole('❌ Error: ' + err.message);
-            }
-          };
-
-          if (runCodeBtn) {
-            runCodeBtn.addEventListener('click', runCode);
-          }
-          if (runTestsBtn) {
-            runTestsBtn.addEventListener('click', runAllTests);
-          }
-          if (resetBtn && textarea) {
-            resetBtn.addEventListener('click', () => {
-              textarea.value = defaultTemplate;
-              renderResults([]);
-              updateSummary('Editor reset. Run tests to see results here.');
-              setStatus('Template reset.', '#475569');
-              updateConsole('// Editor reset to default template.');
-            });
-          }
-        });
-      } catch (err) {
-        console.error('Judge0 sandbox bootstrap error:', err);
-      }
-    })();
-  `
-
-  const attrs = [
-    `data-api-base="${escapeHtml(baseFromEnv)}"`,
-    `data-service-key="${escapeHtml(getDefaultServiceApiKey())}"`,
-    `data-service-id="${escapeHtml(getDefaultServiceId())}"`
-  ].join(' ')
-
-  return `
-    <script ${attrs}>
-${scriptBody}
-    </script>
-  `
 }
 
 function getDefaultServiceApiKey() {
@@ -944,12 +506,29 @@ function renderStepperBootstrap() {
           return steps.map((step, idx) => {
             const sandbox = step.querySelector('.judge0-sandbox-card');
             const textarea = sandbox ? sandbox.querySelector('.judge0-code-input') : null;
+            const iframe = sandbox ? sandbox.querySelector('iframe[data-codemirror-editor]') : null;
             const questionId = sandbox?.getAttribute('data-question-id') || meta[idx]?.id || 'question_' + (idx + 1);
             const language = sandbox?.getAttribute('data-language') || meta[idx]?.language || 'javascript';
+
+            let solution = '';
+            if (textarea) {
+              solution = textarea.value;
+            } else if (iframe && iframe.contentWindow) {
+              try {
+                if (typeof iframe.contentWindow.getCode === 'function') {
+                  solution = iframe.contentWindow.getCode();
+                } else if (iframe.contentWindow.editor && iframe.contentWindow.editor.state) {
+                  solution = iframe.contentWindow.editor.state.doc?.toString() || '';
+                }
+              } catch (err) {
+                console.warn('Unable to read code from CodeMirror iframe:', err);
+              }
+            }
+
             return {
               id: questionId,
               language,
-              solution: textarea ? textarea.value : ''
+              solution
             };
           });
         };
