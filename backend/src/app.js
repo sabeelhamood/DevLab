@@ -62,11 +62,6 @@ import { postgres } from './config/database.js'
 
 const app = express()
 
-// Expose the local CodeMirror bundle so iframe templates can load it once.
-app.get('/codemirror-bundle.js', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/codemirror-bundle.js'))
-})
-
 const logDatabaseEnvStatus = () => {
   if (config.nodeEnv !== 'development') {
     return
@@ -149,6 +144,9 @@ const corsOptions = {
 // Register CORS globally before any other middleware/routes
 app.use(cors(corsOptions))
 app.options('*', cors(corsOptions))
+
+// Serve static assets (e.g., CodeMirror bundle) after CORS so headers apply
+app.use('/static', express.static(path.join(__dirname, '../public')))
 
 // ---------------------------------------------------------------------------
 // Request logging (runs after CORS so preflights also get headers applied)

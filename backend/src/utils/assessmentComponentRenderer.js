@@ -26,7 +26,7 @@ function getBackendBaseUrl() {
 const CODEMIRROR_BUNDLE_URL_PLACEHOLDER = '__CODEMIRROR_BUNDLE_URL__'
 
 function getCodeMirrorBundleUrl() {
-  return `${getBackendBaseUrl()}/codemirror-bundle.js`
+  return `${getBackendBaseUrl()}/static/codemirror-bundle.js`
 }
 
 const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
