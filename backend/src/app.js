@@ -62,26 +62,6 @@ import { postgres } from './config/database.js'
 
 const app = express()
 
-// Ultra-early request logger - catches ALL requests before any middleware
-app.use((req, res, next) => {
-  try {
-    console.log('🚨 [ULTRA-EARLY] Request received:', req.method, req.originalUrl)
-    console.log('🚨 [ULTRA-EARLY] Request path:', req.path)
-    console.log('🚨 [ULTRA-EARLY] Request IP:', req.ip)
-    console.log('🚨 [ULTRA-EARLY] Request headers:', JSON.stringify(req.headers, null, 2))
-    next()
-  } catch (err) {
-    console.error('❌ [ULTRA-EARLY] Error in ultra-early middleware:', err)
-    console.error('   Error message:', err.message)
-    console.error('   Error stack:', err.stack)
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error in request processing',
-      message: err.message
-    })
-  }
-})
-
 const logDatabaseEnvStatus = () => {
   if (config.nodeEnv !== 'development') {
     return
@@ -101,7 +81,9 @@ const logDatabaseEnvStatus = () => {
 
 logDatabaseEnvStatus()
 
-// CORS configuration - MUST be first middleware
+// ---------------------------------------------------------------------------
+// CORS CONFIGURATION (must be registered before any other middleware/routes)
+// ---------------------------------------------------------------------------
 const allowedOrigins = [
   'https://dev-lab-phi.vercel.app', // production frontend
   'https://dev-lab-nu.vercel.app',
@@ -159,58 +141,27 @@ const corsOptions = {
   preflightContinue: false
 };
 
-// CORS with error handling
+// Register CORS globally before any other middleware/routes
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
+
+// ---------------------------------------------------------------------------
+// Request logging (runs after CORS so preflights also get headers applied)
+// ---------------------------------------------------------------------------
 app.use((req, res, next) => {
-  console.log('🔍 [CORS-MIDDLEWARE] Before CORS check:', req.method, req.originalUrl)
-  cors(corsOptions)(req, res, (err) => {
-    if (err) {
-      console.error('❌ [CORS-MIDDLEWARE] CORS error:', err.message)
-      console.error('   Request origin:', req.header('Origin'))
-      console.error('   Request URL:', req.originalUrl)
-      return res.status(403).json({
-        success: false,
-        error: 'CORS not allowed',
-        message: err.message,
-        origin: req.header('Origin')
-      })
-    }
-    console.log('✅ [CORS-MIDDLEWARE] CORS check passed')
+  try {
+    console.log('🚨 [REQUEST] Method:', req.method, 'URL:', req.originalUrl, 'IP:', req.ip)
+    console.log('🚨 [REQUEST] Headers:', JSON.stringify(req.headers, null, 2))
     next()
-  })
-})
-
-// Additional CORS middleware for debugging
-app.use((req, res, next) => {
-  console.log('🔍 Request details:', {
-    method: req.method,
-    url: req.url,
-    origin: req.header('Origin'),
-    userAgent: req.header('User-Agent'),
-    headers: req.headers
-  });
-  next();
-});
-
-// Handle preflight requests explicitly for all routes
-app.options('*', (req, res) => {
-  console.log('🔄 CORS: Handling preflight request for:', req.url);
-  console.log('🌐 CORS: Preflight origin:', req.header('Origin'));
-  
-  const origin = req.header('Origin');
-  if (!origin || allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers, x-api-key, x-service-id, X-API-Key, X-Service-Id'
-    );
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.status(200).end();
-  } else {
-    res.status(403).json({ error: 'CORS not allowed' });
+  } catch (err) {
+    console.error('❌ [REQUEST] Logging error:', err)
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error in request processing',
+      message: err.message
+    })
   }
-});
-
+})
 
 // Trust proxy for Railway deployment (required for express-rate-limit)
 app.set('trust proxy', 1)
