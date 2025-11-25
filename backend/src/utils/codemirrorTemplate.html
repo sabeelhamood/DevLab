@@ -53,19 +53,16 @@ textarea#otherEditor {
 </style>
 
 <script type="module">
-import { EditorState } from "https://esm.sh/@codemirror/state@6.5.2?bundle";
-import { EditorView, basicSetup } from "https://esm.sh/@codemirror/basic-setup@0.20.0?bundle&deps=@codemirror/state@6.5.2";
-import { javascript } from "https://esm.sh/@codemirror/lang-javascript@6.2.1?bundle&deps=@codemirror/state@6.5.2";
-import { python } from "https://esm.sh/@codemirror/lang-python@6.2.1?bundle&deps=@codemirror/state@6.5.2";
-import { cpp } from "https://esm.sh/@codemirror/lang-cpp@6.0.3?bundle&deps=@codemirror/state@6.5.2";
-import { java } from "https://esm.sh/@codemirror/lang-java@6.0.2?bundle&deps=@codemirror/state@6.5.2";
-import { oneDark } from "https://esm.sh/@codemirror/theme-one-dark@6.1.3?bundle&deps=@codemirror/state@6.5.2";
+import {
+    EditorState,
+    EditorView,
+    basicSetup,
+    languageExtensions,
+    themeExtensions
+} from "/codemirror-bundle.js";
 
 let editor = null;
 let currentTheme = "light";
-
-const languageExtensions = { javascript, python, cpp, java };
-const themeExtensions = { "light": [], "dark": [oneDark] };
 
 function createEditor(language = "javascript", theme = "light") {
     const container = document.getElementById("editorContainer");
@@ -75,14 +72,17 @@ function createEditor(language = "javascript", theme = "light") {
         return;
     }
 
+    const languageFactory = languageExtensions[language];
+    const themeExtension = themeExtensions[theme] || [];
+
     editor = new EditorView({
         parent: container,
         state: EditorState.create({
             doc: "",
             extensions: [
                 basicSetup,
-                languageExtensions[language]? languageExtensions[language]() : [],
-                ...(themeExtensions[theme] || [])
+                ...(typeof languageFactory === "function" ? [].concat(languageFactory()) : []),
+                ...themeExtension
             ]
         })
     });
@@ -162,15 +162,30 @@ window.addEventListener("DOMContentLoaded", ()=>{
 <div class="controls">
 <select id="languageSelect">
     <option value="javascript">JavaScript</option>
+    <option value="typescript">TypeScript</option>
+    <option value="jsx">JSX</option>
+    <option value="tsx">TSX</option>
     <option value="python">Python</option>
-    <option value="cpp">C/C++</option>
+    <option value="cpp">C / C++</option>
     <option value="java">Java</option>
+    <option value="rust">Rust</option>
+    <option value="go">Go</option>
+    <option value="php">PHP</option>
+    <option value="dart">Dart</option>
+    <option value="swift">Swift</option>
+    <option value="sql">SQL</option>
+    <option value="html">HTML</option>
+    <option value="css">CSS</option>
+    <option value="json">JSON</option>
+    <option value="markdown">Markdown</option>
+    <option value="yaml">YAML</option>
+    <option value="xml">XML</option>
     <option value="other">Other</option>
 </select>
 
 <select id="themeSelect">
     <option value="light">Light</option>
-    <option value="dark">One Dark</option>
+    <option value="oneDark">One Dark</option>
 </select>
 
 <button id="runBtn">▶ Run</button>

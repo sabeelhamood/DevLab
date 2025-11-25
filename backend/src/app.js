@@ -62,6 +62,11 @@ import { postgres } from './config/database.js'
 
 const app = express()
 
+// Expose the local CodeMirror bundle so iframe templates can load it once.
+app.get('/codemirror-bundle.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/codemirror-bundle.js'))
+})
+
 const logDatabaseEnvStatus = () => {
   if (config.nodeEnv !== 'development') {
     return
