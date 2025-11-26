@@ -53,29 +53,34 @@ textarea#otherEditor {
 </style>
 
 <script type="module">
+/* ------------------ CORE ------------------ */
 import { EditorState } from "https://esm.sh/@codemirror/state@6.4.1";
 import { EditorView } from "https://esm.sh/@codemirror/view@6.23.0?deps=@codemirror/state@6.4.1";
-import { basicSetup } from "https://esm.sh/@codemirror/basic-setup@1.20.2?deps=@codemirror/state@6.4.1";
+import { basicSetup } from "https://esm.sh/@codemirror/basic-setup@0.20.0?deps=@codemirror/state@6.4.1";
 
-import { javascript } from "https://esm.sh/@codemirror/lang-javascript@6.2.4?deps=@codemirror/state@6.4.1";
-import { python } from "https://esm.sh/@codemirror/lang-python@6.2.1?deps=@codemirror/state@6.4.1";
-import { cpp } from "https://esm.sh/@codemirror/lang-cpp@6.0.3?deps=@codemirror/state@6.4.1";
-import { java } from "https://esm.sh/@codemirror/lang-java@6.0.2?deps=@codemirror/state@6.4.1";
-import { rust } from "https://esm.sh/@codemirror/lang-rust@6.0.2?deps=@codemirror/state@6.4.1";
-import { go } from "https://esm.sh/@codemirror/lang-go@6.0.1?deps=@codemirror/state@6.4.1";
-import { php } from "https://esm.sh/@codemirror/lang-php@6.0.2?deps=@codemirror/state@6.4.1";
-import { sql } from "https://esm.sh/@codemirror/lang-sql@6.10.0?deps=@codemirror/state@6.4.1";
-import { html } from "https://esm.sh/@codemirror/lang-html@6.4.11?deps=@codemirror/state@6.4.1";
-import { css } from "https://esm.sh/@codemirror/lang-css@6.3.1?deps=@codemirror/state@6.4.1";
-import { xml } from "https://esm.sh/@codemirror/lang-xml@6.1.0?deps=@codemirror/state@6.4.1";
-import { json } from "https://esm.sh/@codemirror/lang-json@6.0.2?deps=@codemirror/state@6.4.1";
-import { markdown } from "https://esm.sh/@codemirror/lang-markdown@6.5.0?deps=@codemirror/state@6.4.1";
-import { yaml } from "https://esm.sh/@codemirror/lang-yaml@6.1.2?deps=@codemirror/state@6.4.1";
-import { wast } from "https://esm.sh/@codemirror/lang-wast@6.0.2?deps=@codemirror/state@6.4.1";
-import { lezer } from "https://esm.sh/@codemirror/lang-lezer@6.0.2?deps=@codemirror/state@6.4.1";
+/* ------------------ LANGUAGES ------------------ */
+import { javascript } from "https://esm.sh/@codemirror/lang-javascript@6.2.1?deps=@codemirror/state@6.4.1";
+import { python } from "https://esm.sh/@codemirror/lang-python@6.1.3?deps=@codemirror/state@6.4.1";
+import { cpp } from "https://esm.sh/@codemirror/lang-cpp@6.0.1?deps=@codemirror/state@6.4.1";
+import { java } from "https://esm.sh/@codemirror/lang-java@6.0.1?deps=@codemirror/state@6.4.1";
+import { rust } from "https://esm.sh/@codemirror/lang-rust@6.0.1?deps=@codemirror/state@6.4.1";
+import { go } from "https://esm.sh/@codemirror/lang-go@6.0.0?deps=@codemirror/state@6.4.1";
+import { php } from "https://esm.sh/@codemirror/lang-php@6.0.1?deps=@codemirror/state@6.4.1";
+import { sql } from "https://esm.sh/@codemirror/lang-sql@6.6.0?deps=@codemirror/state@6.4.1";
+import { html } from "https://esm.sh/@codemirror/lang-html@6.4.4?deps=@codemirror/state@6.4.1";
+import { css } from "https://esm.sh/@codemirror/lang-css@6.3.0?deps=@codemirror/state@6.4.1";
+import { xml } from "https://esm.sh/@codemirror/lang-xml@6.0.2?deps=@codemirror/state@6.4.1";
+import { json } from "https://esm.sh/@codemirror/lang-json@6.0.1?deps=@codemirror/state@6.4.1";
+import { markdown } from "https://esm.sh/@codemirror/lang-markdown@6.0.6?deps=@codemirror/state@6.4.1";
+import { yaml } from "https://esm.sh/@codemirror/lang-yaml@6.1.1?deps=@codemirror/state@6.4.1";
+import { wast } from "https://esm.sh/@codemirror/lang-wast@6.0.1?deps=@codemirror/state@6.4.1";
+import { lezer } from "https://esm.sh/@codemirror/lang-lezer@6.0.1?deps=@codemirror/state@6.4.1";
 
-import { oneDark } from "https://esm.sh/@codemirror/theme-one-dark@6.1.3?deps=@codemirror/state@6.4.1";
+/* ------------------ THEMES ------------------ */
+import { oneDark } from "https://esm.sh/@codemirror/theme-one-dark@6.2.0?deps=@codemirror/state@6.4.1";
 
+
+/* ------------------ EXTENSION MAPS ------------------ */
 const languageExtensions = {
     javascript: () => javascript(),
     typescript: () => javascript({ typescript: true }),
@@ -107,17 +112,21 @@ const themeExtensions = {
 let editor = null;
 let currentTheme = "light";
 
+
+/* ------------------ EDITOR SETUP ------------------ */
+
 function createEditor(language = "javascript", theme = "light") {
     const container = document.getElementById("editorContainer");
-    container.innerHTML = ""; // reset
-    if(language === "other") {
+    container.innerHTML = ""; 
+
+    if (language === "other") {
         container.innerHTML = '<textarea id="otherEditor"></textarea>';
         return;
     }
 
-    const languageFactory = languageExtensions[language];
-    const themeExtension = themeExtensions[theme] || [];
-    const languageExtension = typeof languageFactory === "function" ? languageFactory() : [];
+    const langFactory = languageExtensions[language];
+    const themeExt = themeExtensions[theme] || [];
+    const langExt = typeof langFactory === "function" ? langFactory() : [];
 
     editor = new EditorView({
         parent: container,
@@ -125,8 +134,8 @@ function createEditor(language = "javascript", theme = "light") {
             doc: "",
             extensions: [
                 basicSetup,
-                ...(Array.isArray(languageExtension) ? languageExtension : [languageExtension]),
-                ...themeExtension
+                ...(Array.isArray(langExt) ? langExt : [langExt]),
+                ...themeExt
             ]
         })
     });
@@ -134,30 +143,30 @@ function createEditor(language = "javascript", theme = "light") {
 
 function getCode() {
     const lang = document.getElementById("languageSelect").value;
-    if(lang === "other") return document.getElementById("otherEditor").value;
+    if (lang === "other") return document.getElementById("otherEditor").value;
     return editor.state.doc.toString();
 }
 
 async function runCode() {
     const lang = document.getElementById("languageSelect").value;
     const code = getCode();
-    if(!code) return alert("No code to run!");
+    if (!code) return alert("No code to run!");
 
     try {
         const res = await fetch("/judge0/execute", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
             body: JSON.stringify({ sourceCode: code, language: lang, input:"" })
         });
         const result = await res.json();
         document.getElementById("output").innerText = JSON.stringify(result, null, 2);
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 async function runAllTests() {
     const lang = document.getElementById("languageSelect").value;
     const code = getCode();
-    if(!code) return alert("No code to run!");
+    if (!code) return alert("No code to run!");
 
     const tests = [
         { input: "1 2", expectedOutput: "3" },
@@ -172,7 +181,7 @@ async function runAllTests() {
         });
         const result = await res.json();
         document.getElementById("output").innerText = JSON.stringify(result, null, 2);
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 function resetEditor() {
