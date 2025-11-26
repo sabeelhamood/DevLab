@@ -232,7 +232,7 @@ const generateCodingQuestions = async ({
   skills,
   humanLanguage,
   seedQuestion
-  }) => {
+}) => {
   try {
     const generated = await openAIContentStudioService.generateCodingQuestion(
       topic_name,
