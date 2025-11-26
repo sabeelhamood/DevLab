@@ -31,6 +31,7 @@ function getCodeMirrorBundleUrl() {
 }
 
 const CODEMIRROR_BUNDLE_URL_PLACEHOLDER = '__CODEMIRROR_BUNDLE_URL__'
+const API_BASE_URL_PLACEHOLDER = '__API_BASE_URL__'
 const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
 
 function extractNormalizedTestCases(question = {}) {
@@ -84,6 +85,30 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
 
   const bundleUrl = getCodeMirrorBundleUrl()
   template = template.replace(new RegExp(CODEMIRROR_BUNDLE_URL_PLACEHOLDER, 'g'), bundleUrl)
+
+  // Inject API base URL directly into template (no parent access needed)
+  const apiBaseUrl = getBackendBaseUrl()
+  // Replace the getApiBaseUrl function to return the injected URL directly
+  // This avoids needing to access window.parent which may not be available
+  const apiBaseUrlReplacement = `function getApiBaseUrl() {
+      // API base URL injected directly into template
+      const injectedBaseUrl = ${serializeJsonForScript(apiBaseUrl)};
+      if (injectedBaseUrl) return injectedBaseUrl;
+      // Fallback to parent if available (for backwards compatibility)
+      try {
+        if (window.parent && window.parent.__DEVLAB_API_BASE__) {
+          return window.parent.__DEVLAB_API_BASE__;
+        }
+      } catch (e) {
+        // Cross-origin restriction
+      }
+      return '';
+    }`
+  // Match the entire getApiBaseUrl function (multiline match)
+  template = template.replace(
+    /function getApiBaseUrl\(\) \{[\s\S]*?\n\s*return '';\n\s*\}/m,
+    apiBaseUrlReplacement
+  )
 
   return template
 }
@@ -331,12 +356,35 @@ ${questionsJson}
           const codeMirrorIframe = container.querySelector('iframe[data-role="codemirror-editor"]');
           const resultEl = container.querySelector('[data-role="result"]');
           
-          // Helper function to get code from CodeMirror iframe
+          let iframeReady = false;
+          
+          // Wait for iframe to load before accessing contentWindow
+          if (codeMirrorIframe) {
+            codeMirrorIframe.addEventListener('load', () => {
+              // Give iframe scripts time to initialize
+              setTimeout(() => {
+                iframeReady = true;
+              }, 100);
+            });
+            
+            // Check if iframe is already loaded
+            if (codeMirrorIframe.contentDocument && codeMirrorIframe.contentDocument.readyState === 'complete') {
+              setTimeout(() => {
+                iframeReady = true;
+              }, 100);
+            }
+          }
+          
+          // Helper function to get code from CodeMirror iframe with existence checks
           const getCodeFromEditor = () => {
-            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
+            if (!codeMirrorIframe || !iframeReady) {
+              return '';
+            }
+            if (!codeMirrorIframe.contentWindow) {
               return '';
             }
             try {
+              // Check if getCode function exists before calling
               if (typeof codeMirrorIframe.contentWindow.getCode === 'function') {
                 return codeMirrorIframe.contentWindow.getCode();
               } else if (codeMirrorIframe.contentWindow.editor && codeMirrorIframe.contentWindow.editor.state) {
@@ -945,6 +993,13 @@ ${questionsJson}
             const topicName = metaEntry.topicName || '';
             const questionId = metaEntry.id || String(currentIndex || 0);
             const hintState = getHintStateForQuestion(questionId);
+              
+              // Wait for iframe to be ready if not already
+              if (!iframeReady) {
+                setResult('Please wait for the code editor to load...', '#f97316');
+                return;
+              }
+              
               const userAttempt = getCodeFromEditor();
               try {
                 hintBtn.disabled = true;
@@ -1078,6 +1133,13 @@ ${questionsJson}
 
           if (submitBtn && codeMirrorIframe) {
             submitBtn.addEventListener('click', async () => {
+              
+              // Wait for iframe to be ready if not already
+              if (!iframeReady) {
+                setResult('Please wait for the code editor to load...', '#f97316');
+                return;
+              }
+              
               const userSolution = getCodeFromEditor();
               if (!userSolution.trim()) {
                 setResult('Please write a solution before submitting.', '#f97316');
