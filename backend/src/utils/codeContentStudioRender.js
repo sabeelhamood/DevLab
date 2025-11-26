@@ -88,35 +88,6 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
   return template
 }
 
-function buildCodeMirrorContentForDirectInjection(question = {}) {
-  // Build CodeMirror content for direct DOM injection (no iframe)
-  const template = buildCodeMirrorTemplateForQuestion(question)
-  
-  // Extract styles from head
-  const styleMatch = template.match(/<style[^>]*>([\s\S]*?)<\/style>/i)
-  const styles = styleMatch ? styleMatch[1] : ''
-  
-  // Extract body content (everything inside body tag)
-  const bodyMatch = template.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-  const bodyContent = bodyMatch ? bodyMatch[1] : template
-  
-  // Extract script links from head (CodeMirror CDN links)
-  const scriptLinks = []
-  const linkMatches = template.matchAll(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi)
-  for (const match of linkMatches) {
-    scriptLinks.push(match[0])
-  }
-  const headScriptMatches = template.matchAll(/<script[^>]*src=["'][^"']+["'][^>]*><\/script>/gi)
-  for (const match of headScriptMatches) {
-    scriptLinks.push(match[0])
-  }
-  
-  // Combine: styles, script links, and body content
-  return scriptLinks.join('\n') + 
-         (styles ? `<style>${styles}</style>` : '') + 
-         bodyContent
-}
-
 function getDefaultServiceApiKey() {
   if (process.env['SERVICE_API_KEY']) {
     return process.env['SERVICE_API_KEY']
@@ -266,10 +237,14 @@ function renderSingleQuestion(question, index, topicName, language) {
             <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
           </div>
         </header>
-        <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;padding:16px;">
-          <div data-role="codemirror-editor" style="width:100%;min-height:500px;">
-            ${buildCodeMirrorContentForDirectInjection(question)}
-          </div>
+        <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;">
+          <iframe
+            data-role="codemirror-editor"
+            title="Code editor for ${escapeHtml(question.title || id)}"
+            srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
+            style="width:100%;min-height:500px;border:none;background:#ffffff;"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
         </div>
         <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
       </section>
@@ -353,33 +328,22 @@ ${questionsJson}
         }
 
         const baseLanguage = container.getAttribute('data-language') || 'javascript';
-          const codeMirrorContainer = container.querySelector('[data-role="codemirror-editor"]');
+          const codeMirrorIframe = container.querySelector('iframe[data-role="codemirror-editor"]');
           const resultEl = container.querySelector('[data-role="result"]');
           
-          // Helper function to get code from CodeMirror editor (direct DOM, not iframe)
+          // Helper function to get code from CodeMirror iframe
           const getCodeFromEditor = () => {
-            if (!codeMirrorContainer) {
+            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
               return '';
             }
             try {
-              // Try to access the editor from the global scope or the container
-              const editorElement = codeMirrorContainer.querySelector('#editor');
-              if (editorElement && window.editor) {
-                return window.editor.getValue();
-              }
-              // Fallback: try to find CodeMirror instance
-              if (codeMirrorContainer.CodeMirror) {
-                const editors = codeMirrorContainer.CodeMirror.instances || [];
-                if (editors.length > 0) {
-                  return editors[0].getValue();
-                }
-              }
-              // Last resort: try to access via the textarea
-              if (editorElement && editorElement.value !== undefined) {
-                return editorElement.value;
+              if (typeof codeMirrorIframe.contentWindow.getCode === 'function') {
+                return codeMirrorIframe.contentWindow.getCode();
+              } else if (codeMirrorIframe.contentWindow.editor && codeMirrorIframe.contentWindow.editor.state) {
+                return codeMirrorIframe.contentWindow.editor.state.doc?.toString() || '';
               }
             } catch (err) {
-              console.warn('Unable to read code from CodeMirror editor:', err);
+              console.warn('Unable to read code from CodeMirror iframe:', err);
             }
             return '';
           };
@@ -393,7 +357,7 @@ ${questionsJson}
         const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
         const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
 
-        if (!codeMirrorContainer || !resultEl) {
+        if (!codeMirrorIframe || !resultEl) {
           return;
         }
 
@@ -974,7 +938,7 @@ ${questionsJson}
           setResult('', '#e5e7eb');
         };
 
-          if (hintBtn && codeMirrorContainer) {
+          if (hintBtn && codeMirrorIframe) {
             hintBtn.addEventListener('click', async () => {
             const metaEntry = getCurrentMeta();
             const questionText = metaEntry.description || metaEntry.title || '';
@@ -1025,7 +989,7 @@ ${questionsJson}
             });
           }
 
-          if (showSolutionBtn && codeMirrorContainer) {
+          if (showSolutionBtn && codeMirrorIframe) {
             showSolutionBtn.addEventListener('click', () => {
               const metaEntry = getCurrentMeta();
               const questionText = metaEntry.description || metaEntry.title || '';
@@ -1112,7 +1076,7 @@ ${questionsJson}
             });
           }
 
-          if (submitBtn && codeMirrorContainer) {
+          if (submitBtn && codeMirrorIframe) {
             submitBtn.addEventListener('click', async () => {
               const userSolution = getCodeFromEditor();
               if (!userSolution.trim()) {
