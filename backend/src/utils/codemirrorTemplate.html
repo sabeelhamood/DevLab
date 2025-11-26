@@ -89,7 +89,9 @@ button:hover { opacity: 0.9; }
     color: #7cff7c;
 }
 
-textarea#otherEditor {
+textarea#otherEditor,
+textarea#fallbackEditor,
+textarea.plain-editor {
     width: 100%;
     height: 400px;
     font-family: monospace;
@@ -158,6 +160,7 @@ const themeExtensions = {
 
 let editor = null;
 let currentTheme = "light";
+let fallbackMode = false;
 
 function displayMessage(message) {
     const outputEl = document.getElementById("output");
@@ -180,14 +183,49 @@ function applyThemeClasses(theme) {
     });
 }
 
+function activateFallbackEditor(initialValue = "") {
+    const container = document.getElementById("editorContainer");
+    if (!container) return;
+    fallbackMode = true;
+    editor = null;
+    container.innerHTML = '<textarea id="fallbackEditor" class="plain-editor"></textarea>';
+    const fallbackEditor = document.getElementById("fallbackEditor");
+    if (fallbackEditor) fallbackEditor.value = initialValue;
+}
+
+function verifyEditorInteractivity() {
+    if (!editor || !editor.contentDOM) {
+        activateFallbackEditor("");
+        displayMessage("⚠ Editor is unavailable in this environment. Falling back to plain text mode.");
+        return;
+    }
+
+    editor.focus();
+    requestAnimationFrame(() => {
+        if (!editor || !editor.contentDOM || fallbackMode) return;
+        const active = document.activeElement;
+        const hasFocus = editor.contentDOM === active || editor.contentDOM.contains(active);
+        const isEditable = editor.contentDOM.getAttribute("contenteditable") !== "false";
+
+        if (!hasFocus || !isEditable) {
+            const currentValue = editor.state.doc.toString();
+            activateFallbackEditor(currentValue);
+            displayMessage("⚠ CodeMirror input is blocked by sandbox restrictions. Switched to plain textarea.");
+        }
+    });
+}
+
 /* ------------------ EDITOR SETUP ------------------ */
 function createEditor(language = "javascript", theme = "light") {
     const container = document.getElementById("editorContainer");
     container.innerHTML = ""; 
     if (language === "other") {
-        container.innerHTML = '<textarea id="otherEditor"></textarea>';
+        fallbackMode = false;
+        editor = null;
+        container.innerHTML = '<textarea id="otherEditor" class="plain-editor"></textarea>';
         return;
     }
+    fallbackMode = false;
     const langFactory = languageExtensions[language];
     const themeExt = themeExtensions[theme] || [];
     const langExt = typeof langFactory === "function" ? langFactory() : [];
@@ -202,12 +240,18 @@ function createEditor(language = "javascript", theme = "light") {
             ]
         })
     });
+
+    verifyEditorInteractivity();
 }
 
 function getCode() {
+    if (fallbackMode) {
+        const fallbackEditor = document.getElementById("fallbackEditor");
+        if (fallbackEditor) return fallbackEditor.value;
+    }
     const lang = document.getElementById("languageSelect").value;
     if (lang === "other") return document.getElementById("otherEditor").value;
-    return editor.state.doc.toString();
+    return editor?.state.doc.toString() ?? "";
 }
 
 async function runCode() {
