@@ -168,14 +168,19 @@
 
     <textarea id="editor">// Please select a programming language to begin</textarea>
 
+    <div id="languageWarning" class="language-warning" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; font-size: 14px;">
+      <strong>⚠️ Language Mismatch:</strong> <span id="languageWarningText"></span>
+    </div>
+
     <div id="resultContainer" class="result-container"></div>
 
     <div id="testResults" class="test-results"></div>
   </div>
 
   <script>
-    // Initialize test cases (will be injected by buildCodeMirrorTemplateForQuestion)
+    // Initialize test cases and expected language (will be injected by buildCodeMirrorTemplateForQuestion)
     const tests = [];
+    const expectedLanguage = null; // Will be set by buildCodeMirrorTemplateForQuestion if question has programming_language
 
     // Create editor in neutral state (no language selected yet)
     const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
@@ -198,6 +203,72 @@
       'xml': 'xml',
       'css': 'css'
     };
+    
+    // Reverse map: Judge0 language names to CodeMirror modes (for validation)
+    const judge0ToCodeMirrorMap = {
+      'javascript': 'javascript',
+      'typescript': 'javascript',
+      'python': 'python',
+      'java': 'text/x-java',
+      'c': 'text/x-csrc',
+      'cpp': 'text/x-c++src',
+      'c++': 'text/x-c++src',
+      'php': 'php',
+      'xml': 'xml',
+      'html': 'xml',
+      'css': 'css'
+    };
+    
+    // Show language warning
+    function showLanguageWarning(message) {
+      const warningEl = document.getElementById('languageWarning');
+      const warningText = document.getElementById('languageWarningText');
+      if (warningEl && warningText) {
+        warningText.textContent = message;
+        warningEl.style.display = 'block';
+      }
+    }
+    
+    // Hide language warning
+    function hideLanguageWarning() {
+      const warningEl = document.getElementById('languageWarning');
+      if (warningEl) {
+        warningEl.style.display = 'none';
+      }
+    }
+    
+    // Validate selected language against expected language
+    function validateLanguage(selectedMode) {
+      if (!expectedLanguage) {
+        // No expected language specified, no validation needed
+        hideLanguageWarning();
+        return true;
+      }
+      
+      const selectedJudge0Lang = languageMap[selectedMode] || '';
+      const normalizedSelected = selectedJudge0Lang.toLowerCase();
+      const normalizedExpected = expectedLanguage.toLowerCase();
+      
+      // Check if languages match
+      if (normalizedSelected === normalizedExpected) {
+        hideLanguageWarning();
+        return true;
+      }
+      
+      // Languages don't match - show warning
+      const expectedMode = judge0ToCodeMirrorMap[normalizedExpected];
+      let expectedDisplayName = expectedLanguage;
+      if (expectedMode) {
+        // Get display name from dropdown options
+        const expectedOption = document.querySelector(`#languageSelect option[value="${expectedMode}"]`);
+        if (expectedOption) {
+          expectedDisplayName = expectedOption.textContent.trim();
+        }
+      }
+      
+      showLanguageWarning(`This question requires ${expectedDisplayName}. Please select the correct language.`);
+      return false;
+    }
 
     // Get current Judge0 language from CodeMirror mode
     function getJudge0Language() {
@@ -574,6 +645,9 @@
       // A real language was selected
       isLanguageSelected = true;
       editor.setOption('mode', mode);
+      
+      // Validate language selection
+      validateLanguage(mode);
       
       // Set default code for the selected language
       const defaultCode = getDefaultCodeForMode(mode);
