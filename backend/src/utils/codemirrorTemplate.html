@@ -150,22 +150,23 @@
 <body>
   <div class="editor-container">
     <div class="toolbar">
-      <select id="languageSelect">
-        <option value="javascript">JavaScript</option>
-        <option value="python">Python</option>
-        <option value="text/x-csrc">C</option>
-        <option value="text/x-c++src">C++</option>
-        <option value="text/x-java">Java</option>
-        <option value="php">PHP</option>
-        <option value="xml">HTML / XML</option>
-        <option value="css">CSS</option>
-      </select>
+  <select id="languageSelect">
+        <option value="" selected disabled>Select Language</option>
+    <option value="javascript">JavaScript</option>
+    <option value="python">Python</option>
+    <option value="text/x-csrc">C</option>
+    <option value="text/x-c++src">C++</option>
+    <option value="text/x-java">Java</option>
+    <option value="php">PHP</option>
+    <option value="xml">HTML / XML</option>
+    <option value="css">CSS</option>
+  </select>
       <button id="runBtn" class="btn-run">▶ Run</button>
       <button id="runTestsBtn" class="btn-run-tests">🧪 Run All Tests</button>
       <button id="resetBtn" class="btn-reset">↻ Reset</button>
     </div>
 
-    <textarea id="editor">console.log("Hello!");</textarea>
+    <textarea id="editor">// Please select a programming language to begin</textarea>
 
     <div id="resultContainer" class="result-container"></div>
 
@@ -176,12 +177,15 @@
     // Initialize test cases (will be injected by buildCodeMirrorTemplateForQuestion)
     const tests = [];
 
-    // Create editor
+    // Create editor in neutral state (no language selected yet)
     const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
       lineNumbers: true,
-      mode: "javascript",
-      theme: "default"
+      mode: null, // No syntax highlighting until language is selected
+      theme: "default",
+      readOnly: false
     });
+    
+    let isLanguageSelected = false;
 
     // Map CodeMirror modes to Judge0 language names
     const languageMap = {
@@ -198,9 +202,27 @@
     // Get current Judge0 language from CodeMirror mode
     function getJudge0Language() {
       const mode = editor.getOption('mode');
+      if (!mode) {
+        throw new Error('Please select a programming language first');
+      }
       const judge0Lang = languageMap[mode] || 'javascript';
       console.log('CodeMirror mode:', mode, '-> Judge0 language:', judge0Lang);
       return judge0Lang;
+    }
+    
+    // Get default code for a specific CodeMirror mode
+    function getDefaultCodeForMode(mode) {
+      const defaultCodes = {
+        'javascript': 'console.log("Hello!");',
+        'python': 'print("Hello!")',
+        'text/x-csrc': '#include <stdio.h>\n\nint main() {\n    printf("Hello!\\n");\n    return 0;\n}',
+        'text/x-c++src': '#include <iostream>\n\nint main() {\n    std::cout << "Hello!" << std::endl;\n    return 0;\n}',
+        'text/x-java': 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello!");\n    }\n}',
+        'php': '<?php\necho "Hello!";\n?>',
+        'xml': '<html>\n  <body>Hello!</body>\n</html>',
+        'css': 'body { color: blue; }'
+      };
+      return defaultCodes[mode] || 'console.log("Hello!");';
     }
 
     // Expose getCode function to parent window
@@ -359,15 +381,26 @@
 
     // Run code (check compilation)
     async function runCode() {
+      if (!isLanguageSelected) {
+        showResult('Please select a programming language first.', 'error');
+        return;
+      }
+      
       const code = editor.getValue();
-      if (!code.trim()) {
+      if (!code.trim() || code.trim() === '// Please select a programming language to begin') {
         showResult('Please write some code before running.', 'error');
         return;
       }
 
       const runBtn = document.getElementById('runBtn');
-      const language = getJudge0Language();
-      console.log('[runCode] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
+      let language;
+      try {
+        language = getJudge0Language();
+        console.log('[runCode] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
+      } catch (error) {
+        showResult(error.message, 'error');
+        return;
+      }
 
       try {
         runBtn.disabled = true;
@@ -426,8 +459,13 @@
 
     // Run all test cases
     async function runAllTests() {
+      if (!isLanguageSelected) {
+        showResult('Please select a programming language first.', 'error');
+        return;
+      }
+      
       const code = editor.getValue();
-      if (!code.trim()) {
+      if (!code.trim() || code.trim() === '// Please select a programming language to begin') {
         showResult('Please write some code before running tests.', 'error');
         return;
       }
@@ -438,8 +476,14 @@
       }
 
       const runTestsBtn = document.getElementById('runTestsBtn');
-      const language = getJudge0Language();
-      console.log('[runAllTests] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
+      let language;
+      try {
+        language = getJudge0Language();
+        console.log('[runAllTests] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
+      } catch (error) {
+        showResult(error.message, 'error');
+        return;
+      }
 
       try {
         runTestsBtn.disabled = true;
@@ -497,25 +541,15 @@
       }
     }
 
-    // Get default code for current language
-    function getDefaultCodeForCurrentLanguage() {
-      const mode = editor.getOption('mode');
-      const defaultCodes = {
-        'javascript': 'console.log("Hello!");',
-        'python': 'print("Hello!")',
-        'text/x-csrc': '#include <stdio.h>\n\nint main() {\n    printf("Hello!\\n");\n    return 0;\n}',
-        'text/x-c++src': '#include <iostream>\n\nint main() {\n    std::cout << "Hello!" << std::endl;\n    return 0;\n}',
-        'text/x-java': 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello!");\n    }\n}',
-        'php': '<?php\necho "Hello!";\n?>',
-        'xml': '<html>\n  <body>Hello!</body>\n</html>',
-        'css': 'body { color: blue; }'
-      };
-      return defaultCodes[mode] || 'console.log("Hello!");';
-    }
-
     // Reset editor
     function resetEditor() {
-      const defaultCode = getDefaultCodeForCurrentLanguage();
+      if (!isLanguageSelected) {
+        showResult('Please select a programming language first.', 'error');
+        return;
+      }
+      
+      const mode = editor.getOption('mode');
+      const defaultCode = getDefaultCodeForMode(mode);
       editor.setValue(defaultCode);
       hideResult();
       document.getElementById('testResults').className = 'test-results';
@@ -526,8 +560,30 @@
     // Change mode based on <select>
     document.getElementById('languageSelect').addEventListener('change', function() {
       const mode = this.value;
+      
+      if (!mode || mode === '') {
+        // "Select Language" was selected - reset to neutral state
+        isLanguageSelected = false;
+        editor.setOption('mode', null);
+        editor.setValue('// Please select a programming language to begin');
+        hideResult();
+        document.getElementById('testResults').className = 'test-results';
+        return;
+      }
+      
+      // A real language was selected
+      isLanguageSelected = true;
       editor.setOption('mode', mode);
+      
+      // Set default code for the selected language
+      const defaultCode = getDefaultCodeForMode(mode);
+      editor.setValue(defaultCode);
+      
+      // Focus the editor so user can start typing
+      editor.focus();
+      
       console.log('Language changed to CodeMirror mode:', mode, 'Judge0 language:', getJudge0Language());
+      
       // Clear any previous results when language changes
       hideResult();
       document.getElementById('testResults').className = 'test-results';

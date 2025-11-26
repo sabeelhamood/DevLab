@@ -301,51 +301,17 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
-  // Get the initial language from question and set it in the template
-  const questionLanguage = (question?.judge0?.language || question?.programming_language || question?.language || 'javascript').toLowerCase()
-  const initialCodeMirrorMode = getCodeMirrorModeFromLanguage(questionLanguage)
-  const initialCode = getDefaultCodeForLanguage(questionLanguage)
-  
-  console.log('[buildCodeMirrorTemplateForQuestion] Setting initial language:', {
-    questionLanguage,
-    initialCodeMirrorMode,
-    initialCodePreview: initialCode.substring(0, 50)
-  })
-  
-  // Replace the initial mode in editor initialization (handle both single and double quotes)
-  template = template.replace(
-    /mode:\s*["']javascript["']/,
-    `mode: ${JSON.stringify(initialCodeMirrorMode)}`
-  )
-  
-  // Replace the initial code in textarea (escape HTML properly)
-  const escapedCode = initialCode
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-  
+  // Initialize editor in neutral state - no language pre-selected
+  // The learner must select a language from the dropdown
   template = template.replace(
     /<textarea id="editor">[\s\S]*?<\/textarea>/,
-    `<textarea id="editor">${escapedCode}</textarea>`
+    `<textarea id="editor">// Please select a programming language to begin</textarea>`
   )
   
-  // Set the initial language in the dropdown
+  // Set editor to null mode initially (no syntax highlighting until language is selected)
   template = template.replace(
-    /<select id="languageSelect">[\s\S]*?<\/select>/,
-    (match) => {
-      // Find the option that matches the initial mode and add selected attribute
-      // First, remove any existing selected attributes
-      let updated = match.replace(/\s+selected(?=\s|>)/gi, '')
-      // Then add selected to the matching option
-      const escapedMode = initialCodeMirrorMode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      updated = updated.replace(
-        new RegExp(`(<option value="${escapedMode}"[^>]*>)`, 'i'),
-        '$1 selected'
-      )
-      return updated
-    }
+    /mode:\s*["'][^"']*["']/,
+    `mode: null`
   )
 
   const bundleUrl = getCodeMirrorBundleUrl()
