@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
 function CodeContentStudioPreview() {
@@ -15,6 +15,7 @@ function CodeContentStudioPreview() {
   const [loading, setLoading] = useState(false)
   const [responseJson, setResponseJson] = useState('')
   const [html, setHtml] = useState('')
+  const previewRef = useRef(null)
 
   // Build a data-request style wrapper that matches the real microservice flow
   const requestBody = useMemo(() => {
@@ -102,6 +103,32 @@ function CodeContentStudioPreview() {
       setLoading(false)
     }
   }, [requestBody])
+
+  // Inject HTML directly into DOM and execute scripts (similar to AssessmentPreview)
+  useEffect(() => {
+    const container = previewRef.current
+    if (!container) return
+    container.innerHTML = ''
+    if (!html) return
+
+    const template = document.createElement('template')
+    template.innerHTML = html
+
+    const injectNode = (node) => {
+      if (node.nodeName === 'SCRIPT') {
+        const script = document.createElement('script')
+        Array.from(node.attributes || []).forEach((attr) => {
+          script.setAttribute(attr.name, attr.value)
+        })
+        script.textContent = node.textContent
+        container.appendChild(script)
+      } else {
+        container.appendChild(node.cloneNode(true))
+      }
+    }
+
+    Array.from(template.content.childNodes).forEach(injectNode)
+  }, [html])
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
@@ -305,15 +332,13 @@ function CodeContentStudioPreview() {
               </span>
             </div>
             {html ? (
-              <iframe
-                title="Code Content Studio Preview"
-                srcDoc={html}
-                className="preview-container rounded-xl border bg-white/95"
+              <div
+                ref={previewRef}
+                className="preview-container prose max-w-none rounded-xl border bg-white/95"
                 style={{
                   borderColor: 'rgba(148, 163, 184, 0.4)',
                   color: '#0f172a',
-                  width: '100%',
-                  minHeight: '480px'
+                  width: '100%'
                 }}
               />
             ) : (
