@@ -31,7 +31,6 @@ function getCodeMirrorBundleUrl() {
 }
 
 const CODEMIRROR_BUNDLE_URL_PLACEHOLDER = '__CODEMIRROR_BUNDLE_URL__'
-const API_BASE_URL_PLACEHOLDER = '__API_BASE_URL__'
 const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
 
 function extractNormalizedTestCases(question = {}) {
@@ -85,99 +84,6 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
 
   const bundleUrl = getCodeMirrorBundleUrl()
   template = template.replace(new RegExp(CODEMIRROR_BUNDLE_URL_PLACEHOLDER, 'g'), bundleUrl)
-
-  // Inject API base URL directly into template (no parent access needed)
-  const apiBaseUrl = getBackendBaseUrl()
-  // Replace the getApiBaseUrl function to return the injected URL directly
-  // This avoids needing to access window.parent which may not be available
-  const apiBaseUrlReplacement = `function getApiBaseUrl() {
-      // API base URL injected directly into template
-      const injectedBaseUrl = ${serializeJsonForScript(apiBaseUrl)};
-      if (injectedBaseUrl) return injectedBaseUrl;
-      // Fallback to parent if available (for backwards compatibility)
-      try {
-        if (window.parent && window.parent.__DEVLAB_API_BASE__) {
-          return window.parent.__DEVLAB_API_BASE__;
-        }
-      } catch (e) {
-        // Cross-origin restriction
-      }
-      return '';
-    }`
-  // Match the entire getApiBaseUrl function (multiline match)
-  template = template.replace(
-    /function getApiBaseUrl\(\) \{[\s\S]*?\n\s*return '';\n\s*\}/m,
-    apiBaseUrlReplacement
-  )
-
-  // Inject service headers directly into template (no parent access needed)
-  const serviceKey = getDefaultServiceApiKey()
-  const serviceId = getDefaultServiceId()
-  const serviceHeaders = {
-    ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
-    ...(serviceId ? { 'x-service-id': serviceId } : {})
-  }
-  
-  const serviceHeadersReplacement = `function getServiceHeaders() {
-      // Service headers injected directly into template
-      const injectedHeaders = ${serializeJsonForScript(serviceHeaders)};
-      if (injectedHeaders && Object.keys(injectedHeaders).length > 0) {
-        return { ...injectedHeaders };
-      }
-      // Fallback to parent if available (for backwards compatibility)
-      try {
-        if (window.parent && window.parent.__DEVLAB_SERVICE_HEADERS) {
-          const headers = window.parent.__DEVLAB_SERVICE_HEADERS;
-          if (typeof headers === 'object') {
-            return { ...headers };
-          }
-        }
-      } catch (e) {
-        // Cross-origin restriction
-      }
-      return {};
-    }`
-  
-  // Match the entire getServiceHeaders function (multiline match)
-  template = template.replace(
-    /function getServiceHeaders\(\) \{[\s\S]*?\n\s*return \{\};\n\s*\}/m,
-    serviceHeadersReplacement
-  )
-  
-  // Add postMessage to notify parent when CodeMirror is ready and handle test case updates
-  // Insert after window.getCode is defined and send notification after editor is ready
-  const readyNotification = `
-    // Notify parent window that CodeMirror is ready
-    setTimeout(function() {
-      try {
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({ type: 'codemirror-ready' }, '*');
-        }
-      } catch (e) {
-        // Cross-origin restriction, ignore
-      }
-    }, 100);
-    
-    // Listen for test case updates from parent
-    window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'update-test-cases' && Array.isArray(event.data.testCases)) {
-        // Update the tests array with new test cases
-        tests.length = 0;
-        event.data.testCases.forEach(function(tc) {
-          tests.push({
-            input: tc.input || '',
-            expectedOutput: tc.expectedOutput || ''
-          });
-        });
-        console.log('Test cases updated:', tests.length);
-      }
-    });
-  `
-  // Insert the notification right after window.getCode definition
-  template = template.replace(
-    /(window\.getCode = function\(\) \{[\s\S]*?return editor\.getValue\(\);\s*\};\s*)/,
-    `$1${readyNotification}`
-  )
 
   return template
 }
@@ -304,17 +210,17 @@ function renderSingleQuestion(question, index, topicName, language) {
       </section>
 
           <div data-role="test-cases-container">
-            <!-- Test cases will be dynamically rendered by renderTestCasesForCurrentQuestion() -->
+            ${testCasesHtml}
           </div>
         </div>
 
         <div data-role="editor-pane" style="display:grid;gap:16px;">
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;pointer-events:auto;position:relative;z-index:10;">
+          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;">
             💡 Get Hint
           </button>
-          <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;pointer-events:auto;position:relative;z-index:10;">
+          <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
             🔍 Show Solution
           </button>
           <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;">
@@ -425,108 +331,19 @@ ${questionsJson}
           const codeMirrorIframe = container.querySelector('iframe[data-role="codemirror-editor"]');
           const resultEl = container.querySelector('[data-role="result"]');
           
-          let iframeReady = false;
-          let getCodeFunctionAvailable = false;
-          
-          // Wait for iframe to load and getCode function to be available
-          if (codeMirrorIframe) {
-            // Listen for postMessage from iframe indicating it's ready
-            const messageHandler = (event) => {
-              // Accept messages from the iframe (about:srcdoc) or same origin
-              if (event.data && event.data.type === 'codemirror-ready') {
-                console.log('[CodeContentStudio] Received codemirror-ready message from iframe');
-                iframeReady = true;
-                getCodeFunctionAvailable = true;
-                window.removeEventListener('message', messageHandler);
-              }
-            };
-            window.addEventListener('message', messageHandler);
-            
-            codeMirrorIframe.addEventListener('load', () => {
-              // Give iframe scripts time to initialize
-              setTimeout(() => {
-                // Try to check if getCode is available
-                try {
-                  if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
-                    iframeReady = true;
-                    getCodeFunctionAvailable = true;
-                  } else {
-                    // Wait a bit more and check again
-                    setTimeout(() => {
-                      if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
-                        iframeReady = true;
-                        getCodeFunctionAvailable = true;
-                      }
-                    }, 200);
-                  }
-                } catch (err) {
-                  // Cross-origin or not ready yet
-                }
-              }, 100);
-            });
-            
-            // Check if iframe is already loaded
-            try {
-              if (codeMirrorIframe.contentDocument && codeMirrorIframe.contentDocument.readyState === 'complete') {
-                setTimeout(() => {
-                  try {
-                    if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
-                      iframeReady = true;
-                      getCodeFunctionAvailable = true;
-                    }
-                  } catch (err) {
-                    // Not ready yet
-                  }
-                }, 100);
-              }
-            } catch (err) {
-              // Can't access contentDocument yet
-            }
-          }
-          
-          // Helper function to get code from CodeMirror iframe with existence checks and retry
+          // Helper function to get code from CodeMirror iframe
           const getCodeFromEditor = () => {
-            if (!codeMirrorIframe) {
-              return '';
-            }
-            if (!codeMirrorIframe.contentWindow) {
+            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
               return '';
             }
             try {
-              // Try to access getCode function - don't wait for iframeReady flag
-              // The function might be available even if the flag isn't set yet
               if (typeof codeMirrorIframe.contentWindow.getCode === 'function') {
-                const code = codeMirrorIframe.contentWindow.getCode();
-                // If we successfully got code, mark as ready
-                if (code !== undefined) {
-                  if (!iframeReady) {
-                    console.log('[CodeContentStudio] CodeMirror iframe is ready (detected via getCode)');
-                  }
-                  iframeReady = true;
-                  getCodeFunctionAvailable = true;
-                }
-                return code || '';
+                return codeMirrorIframe.contentWindow.getCode();
               } else if (codeMirrorIframe.contentWindow.editor && codeMirrorIframe.contentWindow.editor.state) {
-                const code = codeMirrorIframe.contentWindow.editor.state.doc?.toString() || '';
-                if (code !== undefined) {
-                  if (!iframeReady) {
-                    console.log('[CodeContentStudio] CodeMirror iframe is ready (detected via editor)');
-                  }
-                  iframeReady = true;
-                  getCodeFunctionAvailable = true;
-                }
-                return code;
-              } else {
-                // getCode function doesn't exist yet
-                console.log('[CodeContentStudio] getCode function not available yet, iframeReady:', iframeReady);
+                return codeMirrorIframe.contentWindow.editor.state.doc?.toString() || '';
               }
             } catch (err) {
-              // Cross-origin or not accessible - try to check if it's a cross-origin issue
-              if (err.name === 'SecurityError' || err.message.includes('cross-origin')) {
-                console.warn('[CodeContentStudio] Cross-origin restriction accessing CodeMirror iframe:', err);
-              } else {
-                console.warn('[CodeContentStudio] Unable to read code from CodeMirror iframe:', err);
-              }
+              console.warn('Unable to read code from CodeMirror iframe:', err);
             }
             return '';
           };
@@ -534,27 +351,14 @@ ${questionsJson}
           const hintBtn = container.querySelector('[data-action="hint"]');
           const showSolutionBtn = container.querySelector('[data-action="show-solution"]');
           const submitBtn = container.querySelector('[data-action="submit"]');
-          
-          // Debug: Log if buttons are found
-          console.log('[CodeContentStudio] Buttons found:', {
-            hintBtn: !!hintBtn,
-            showSolutionBtn: !!showSolutionBtn,
-            submitBtn: !!submitBtn,
-            codeMirrorIframe: !!codeMirrorIframe
-          });
           const hintsSection = container.querySelector('[data-role="hints"]');
           const hintsList = container.querySelector('[data-role="hints-list"]');
         const questionTitleEl = container.querySelector('[data-role="question-title"]');
         const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
         const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
 
-        if (!resultEl) {
+        if (!codeMirrorIframe || !resultEl) {
           return;
-        }
-        
-        // If iframe doesn't exist, log a warning but continue (buttons should still work)
-        if (!codeMirrorIframe) {
-          console.warn('[CodeContentStudio] CodeMirror iframe not found, some features may not work');
         }
 
         const totalQuestions = meta.length;
@@ -1123,33 +927,6 @@ ${questionsJson}
           }
 
           renderTestCasesForCurrentQuestion();
-          
-          // Update CodeMirror iframe with current question's test cases via postMessage
-          if (codeMirrorIframe && iframeReady) {
-            try {
-              const currentTestCases = Array.isArray(m.testCases) ? m.testCases : [];
-              // Normalize test cases to match the format expected by the iframe
-              const normalizedTestCases = currentTestCases.map((tc = {}) => {
-                const inputValue = tc.input || tc.testInput || tc.test_input || '';
-                const expectedValue = tc.expected_output || tc.expectedOutput || tc.expected || tc.output || '';
-                return {
-                  input: inputValue,
-                  expectedOutput: expectedValue
-                };
-              }).filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '');
-              
-              // Send test cases to iframe via postMessage
-              if (codeMirrorIframe.contentWindow) {
-                codeMirrorIframe.contentWindow.postMessage({
-                  type: 'update-test-cases',
-                  testCases: normalizedTestCases
-                }, '*');
-              }
-            } catch (err) {
-              console.warn('Unable to update CodeMirror iframe test cases:', err);
-            }
-          }
-          
           restoreCodeForCurrentQuestion();
           syncHintsForCurrentQuestion();
 
@@ -1161,41 +938,14 @@ ${questionsJson}
           setResult('', '#e5e7eb');
         };
 
-          if (hintBtn) {
-            console.log('[CodeContentStudio] Attaching click handler to Get Hint button');
+          if (hintBtn && codeMirrorIframe) {
             hintBtn.addEventListener('click', async () => {
-              console.log('[CodeContentStudio] Get Hint button clicked');
-              if (!codeMirrorIframe) {
-                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
-                return;
-              }
             const metaEntry = getCurrentMeta();
             const questionText = metaEntry.description || metaEntry.title || '';
             const topicName = metaEntry.topicName || '';
             const questionId = metaEntry.id || String(currentIndex || 0);
             const hintState = getHintStateForQuestion(questionId);
-              
-              // Try to get code - function will handle readiness internally
-              let userAttempt = getCodeFromEditor();
-              
-              // If we couldn't get code, try a few more times with delays
-              if (!userAttempt) {
-                // Wait a bit and try again (iframe might still be loading)
-                await new Promise(resolve => setTimeout(resolve, 200));
-                userAttempt = getCodeFromEditor();
-                
-                if (!userAttempt) {
-                  // One more try
-                  await new Promise(resolve => setTimeout(resolve, 300));
-                  userAttempt = getCodeFromEditor();
-                }
-                
-                // If still no code and iframe not ready, show error
-                if (!userAttempt && !iframeReady) {
-                  setResult('Code editor is still loading. Please wait a moment and try again.', '#f97316');
-                  return;
-                }
-              }
+              const userAttempt = getCodeFromEditor();
               try {
                 hintBtn.disabled = true;
                 setResult('Generating hint...', '#000000');
@@ -1239,14 +989,8 @@ ${questionsJson}
             });
           }
 
-          if (showSolutionBtn) {
-            console.log('[CodeContentStudio] Attaching click handler to Show Solution button');
+          if (showSolutionBtn && codeMirrorIframe) {
             showSolutionBtn.addEventListener('click', () => {
-              console.log('[CodeContentStudio] Show Solution button clicked');
-              if (!codeMirrorIframe) {
-                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
-                return;
-              }
               const metaEntry = getCurrentMeta();
               const questionText = metaEntry.description || metaEntry.title || '';
               const topicName = metaEntry.topicName || '';
@@ -1332,34 +1076,9 @@ ${questionsJson}
             });
           }
 
-          if (submitBtn) {
+          if (submitBtn && codeMirrorIframe) {
             submitBtn.addEventListener('click', async () => {
-              if (!codeMirrorIframe) {
-                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
-                return;
-              }
-              
-              // Try to get code - function will handle readiness internally
-              let userSolution = getCodeFromEditor();
-              
-              // If we couldn't get code, try a few more times with delays
-              if (!userSolution) {
-                // Wait a bit and try again (iframe might still be loading)
-                await new Promise(resolve => setTimeout(resolve, 200));
-                userSolution = getCodeFromEditor();
-                
-                if (!userSolution) {
-                  // One more try
-                  await new Promise(resolve => setTimeout(resolve, 300));
-                  userSolution = getCodeFromEditor();
-                }
-                
-                // If still no code and iframe not ready, show error
-                if (!userSolution && !iframeReady) {
-                  setResult('Code editor is still loading. Please wait a moment and try again.', '#f97316');
-                  return;
-                }
-              }
+              const userSolution = getCodeFromEditor();
               if (!userSolution.trim()) {
                 setResult('Please write a solution before submitting.', '#f97316');
                 return;
@@ -1545,5 +1264,3 @@ export async function generateCodeContentStudioComponent({
     </div>
   `
 }
-
-
