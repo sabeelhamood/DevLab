@@ -6,7 +6,6 @@
 
   <!-- CodeMirror core -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/ambiance.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 
   <!-- Languages -->
@@ -18,53 +17,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 
   <style>
-    :root {
-      --editor-bg: #ffffff;
-      --editor-text: #1e293b;
-      --editor-border: #e5e7eb;
-      --toolbar-bg: #ffffff;
-      --toolbar-select-bg: #ffffff;
-      --toolbar-select-border: #e5e7eb;
-      --result-bg-success: #d1fae5;
-      --result-text-success: #065f46;
-      --result-bg-error: #fee2e2;
-      --result-text-error: #991b1b;
-      --result-bg-info: #dbeafe;
-      --result-text-info: #1e40af;
-      --test-result-bg: #ffffff;
-      --test-result-border: #e5e7eb;
-      --test-result-passed-bg: #d1fae5;
-      --test-result-failed-bg: #fee2e2;
-      --test-details-bg: #f3f4f6;
-    }
-    
-    body.dark-mode {
-      --editor-bg: #1e293b;
-      --editor-text: #e2e8f0;
-      --editor-border: rgba(226, 232, 240, 0.2);
-      --toolbar-bg: #1e293b;
-      --toolbar-select-bg: #0f172a;
-      --toolbar-select-border: rgba(226, 232, 240, 0.2);
-      --result-bg-success: #064e3b;
-      --result-text-success: #d1fae5;
-      --result-bg-error: #7f1d1d;
-      --result-text-error: #fee2e2;
-      --result-bg-info: #1e3a8a;
-      --result-text-info: #dbeafe;
-      --test-result-bg: #1e293b;
-      --test-result-border: rgba(226, 232, 240, 0.2);
-      --test-result-passed-bg: #064e3b;
-      --test-result-failed-bg: #7f1d1d;
-      --test-details-bg: #0f172a;
-    }
-    
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       margin: 0;
       padding: 16px;
-      background: var(--editor-bg);
-      color: var(--editor-text);
-      transition: background-color 0.3s ease, color 0.3s ease;
+      background: #ffffff;
     }
     .editor-container {
       display: flex;
@@ -79,13 +36,11 @@
     }
     .toolbar select {
       padding: 8px 12px;
-      border: 1px solid var(--toolbar-select-border);
+      border: 1px solid #e5e7eb;
       border-radius: 6px;
       font-size: 14px;
-      background: var(--toolbar-select-bg);
-      color: var(--editor-text);
+      background: white;
       cursor: pointer;
-      transition: all 0.3s ease;
     }
     .toolbar button {
       padding: 8px 16px;
@@ -122,33 +77,10 @@
       background: #4b5563;
     }
     .CodeMirror {
-      border: 1px solid var(--editor-border);
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
       height: 400px;
       font-size: 14px;
-      transition: border-color 0.3s ease;
-    }
-    
-    body.dark-mode .CodeMirror {
-      background: #0f172a !important;
-      color: #e2e8f0 !important;
-    }
-    
-    body.dark-mode .CodeMirror-cursor {
-      border-color: #e2e8f0 !important;
-    }
-    
-    body.dark-mode .CodeMirror-selected {
-      background: rgba(59, 130, 246, 0.3) !important;
-    }
-    
-    body.dark-mode .CodeMirror-gutters {
-      background: #0f172a !important;
-      border-right: 1px solid var(--editor-border) !important;
-    }
-    
-    body.dark-mode .CodeMirror-linenumber {
-      color: #94a3b8 !important;
     }
     .result-container {
       margin-top: 16px;
@@ -161,22 +93,19 @@
       display: block;
     }
     .result-success {
-      background: var(--result-bg-success);
-      color: var(--result-text-success);
+      background: #d1fae5;
+      color: #065f46;
       border: 1px solid #10b981;
-      transition: all 0.3s ease;
     }
     .result-error {
-      background: var(--result-bg-error);
-      color: var(--result-text-error);
+      background: #fee2e2;
+      color: #991b1b;
       border: 1px solid #ef4444;
-      transition: all 0.3s ease;
     }
     .result-info {
-      background: var(--result-bg-info);
-      color: var(--result-text-info);
+      background: #dbeafe;
+      color: #1e40af;
       border: 1px solid #3b82f6;
-      transition: all 0.3s ease;
     }
     .test-results {
       margin-top: 16px;
@@ -189,16 +118,14 @@
       padding: 12px;
       margin-bottom: 8px;
       border-radius: 6px;
-      border: 1px solid var(--test-result-border);
-      background: var(--test-result-bg);
-      transition: all 0.3s ease;
+      border: 1px solid #e5e7eb;
     }
     .test-result-passed {
-      background: var(--test-result-passed-bg);
+      background: #d1fae5;
       border-color: #10b981;
     }
     .test-result-failed {
-      background: var(--test-result-failed-bg);
+      background: #fee2e2;
       border-color: #ef4444;
     }
     .test-result-header {
@@ -212,20 +139,10 @@
     .test-result-details pre {
       margin: 4px 0;
       padding: 8px;
-      background: var(--test-details-bg);
+      background: #f3f4f6;
       border-radius: 4px;
       overflow-x: auto;
       font-size: 12px;
-      color: var(--editor-text);
-      transition: all 0.3s ease;
-    }
-    
-    body.dark-mode .test-result-header {
-      color: var(--editor-text);
-    }
-    
-    body.dark-mode .test-result-details {
-      color: var(--editor-text);
     }
   </style>
 </head>
@@ -244,10 +161,6 @@
     <option value="xml">HTML / XML</option>
     <option value="css">CSS</option>
   </select>
-      <select id="themeSelect">
-        <option value="light">☀️ Light</option>
-        <option value="dark">🌙 Dark</option>
-      </select>
       <button id="runBtn" class="btn-run">▶ Run</button>
       <button id="runTestsBtn" class="btn-run-tests">🧪 Run All Tests</button>
       <button id="resetBtn" class="btn-reset">↻ Reset</button>
@@ -264,30 +177,11 @@
     // Initialize test cases (will be injected by buildCodeMirrorTemplateForQuestion)
     const tests = [];
 
-    // Get saved theme or default to light
-    const savedTheme = localStorage.getItem('codemirror-theme') || 'light';
-    
-    // Apply theme to body
-    function applyTheme(theme) {
-      if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-      } else {
-        document.body.classList.remove('dark-mode');
-      }
-      localStorage.setItem('codemirror-theme', theme);
-    }
-    
-    // Initialize theme
-    applyTheme(savedTheme);
-    
-    // Set CodeMirror theme based on saved preference
-    const codemirrorTheme = savedTheme === 'dark' ? 'ambiance' : 'default';
-    
     // Create editor in neutral state (no language selected yet)
     const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
       lineNumbers: true,
       mode: null, // No syntax highlighting until language is selected
-      theme: codemirrorTheme,
+      theme: "default",
       readOnly: false
     });
     
@@ -694,22 +588,6 @@
       hideResult();
       document.getElementById('testResults').className = 'test-results';
     });
-
-    // Theme toggle handler
-    document.getElementById('themeSelect').addEventListener('change', function() {
-      const theme = this.value;
-      applyTheme(theme);
-      
-      // Update CodeMirror theme
-      const codemirrorTheme = theme === 'dark' ? 'ambiance' : 'default';
-      editor.setOption('theme', codemirrorTheme);
-      
-      // Set dropdown to match
-      document.getElementById('themeSelect').value = theme;
-    });
-    
-    // Set initial theme in dropdown
-    document.getElementById('themeSelect').value = savedTheme;
 
     // Button event listeners
     document.getElementById('runBtn').addEventListener('click', runCode);
