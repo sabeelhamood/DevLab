@@ -21,7 +21,6 @@ function App() {
           <Route path="/competitions/:competitionId/intro" element={<CompetitionIntro />} />
           <Route path="/competitions/:competitionId/play" element={<CompetitionPlay />} />
           <Route path="/assessment-preview" element={<AssessmentPreview />} />
-          <Route path="/content-studio-preview" element={<ContentStudioPreview />} />
           <Route
             path="/code-content-studio-preview"
             element={<CodeContentStudioPreview />}
