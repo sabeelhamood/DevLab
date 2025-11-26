@@ -429,14 +429,12 @@ function renderJudge0Section(question) {
             <div>
               <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
               <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
-                Powered by Judge0 • ${escapeHtml(language.toUpperCase())}
+                Powered by Judge0 
               </p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end;">
               <span style="font-size: 0.8rem; color: #475569;">Loaded test cases: ${testCaseCount || 'N/A'}</span>
-              <span style="font-size: 0.75rem; color: #94a3b8;">
-                Use the embedded CodeMirror editor below to run code or execute test suites.
-                </span>
+             
               </div>
             </div>
           <div class="codemirror-sandbox-frame" style="border-radius: 1.25rem; overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.45); background: #ffffff;">
