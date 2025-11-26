@@ -304,7 +304,7 @@ function renderSingleQuestion(question, index, topicName, language) {
       </section>
 
           <div data-role="test-cases-container">
-            ${testCasesHtml}
+            <!-- Test cases will be dynamically rendered by renderTestCasesForCurrentQuestion() -->
           </div>
         </div>
 

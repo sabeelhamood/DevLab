@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiClient } from '../services/api/client.js'
 
 function CodeContentStudioPreview() {
@@ -15,7 +15,40 @@ function CodeContentStudioPreview() {
   const [loading, setLoading] = useState(false)
   const [responseJson, setResponseJson] = useState('')
   const [html, setHtml] = useState('')
-  const previewRef = useRef(null)
+
+  // Set up API base URL and service headers for iframe access (similar to AssessmentPreview)
+  useEffect(() => {
+    const rawBase =
+      import.meta.env.VITE_API_URL ||
+      (import.meta.env.VERCEL_URL ? `https://${import.meta.env.VERCEL_URL}` : '') ||
+      window.__DEVLAB_API_BASE__ ||
+      window.location.origin
+
+    const normalizeBase = (value) => {
+      if (!value) return window.location.origin
+      try {
+        const parsed = new URL(value, window.location.origin)
+        let href = parsed.href.replace(/\/api\/?$/, '')
+        href = href.replace(/\/$/, '')
+        return href || window.location.origin
+      } catch {
+        const fallback = value.replace(/\/api\/?$/, '').replace(/\/$/, '')
+        return fallback || window.location.origin
+      }
+    }
+
+    const normalizedBase = normalizeBase(rawBase)
+    window.__DEVLAB_API_BASE__ = normalizedBase
+
+    const apiKey = import.meta.env.VITE_SERVICE_API_KEY
+    const serviceId = import.meta.env.VITE_SERVICE_ID || 'content-studio-preview'
+    if (apiKey || serviceId) {
+      window.__DEVLAB_SERVICE_HEADERS = {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(serviceId ? { 'x-service-id': serviceId } : {})
+      }
+    }
+  }, [])
 
   // Build a data-request style wrapper that matches the real microservice flow
   const requestBody = useMemo(() => {
@@ -104,31 +137,8 @@ function CodeContentStudioPreview() {
     }
   }, [requestBody])
 
-  // Inject HTML directly into DOM and execute scripts (similar to AssessmentPreview)
-  useEffect(() => {
-    const container = previewRef.current
-    if (!container) return
-    container.innerHTML = ''
-    if (!html) return
-
-    const template = document.createElement('template')
-    template.innerHTML = html
-
-    const injectNode = (node) => {
-      if (node.nodeName === 'SCRIPT') {
-        const script = document.createElement('script')
-        Array.from(node.attributes || []).forEach((attr) => {
-          script.setAttribute(attr.name, attr.value)
-        })
-        script.textContent = node.textContent
-        container.appendChild(script)
-      } else {
-        container.appendChild(node.cloneNode(true))
-      }
-    }
-
-    Array.from(template.content.childNodes).forEach(injectNode)
-  }, [html])
+  // Use iframe to create separate document context (like assessmentComponentRenderer.js)
+  // This ensures proper script execution and button functionality
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
@@ -332,14 +342,18 @@ function CodeContentStudioPreview() {
               </span>
             </div>
             {html ? (
-              <div
-                ref={previewRef}
-                className="preview-container prose max-w-none rounded-xl border bg-white/95"
+              <iframe
+                title="Code Content Studio Preview"
+                srcDoc={html}
+                className="preview-container rounded-xl border bg-white/95"
                 style={{
                   borderColor: 'rgba(148, 163, 184, 0.4)',
                   color: '#0f172a',
-                  width: '100%'
+                  width: '100%',
+                  minHeight: '600px',
+                  border: 'none'
                 }}
+                sandbox="allow-scripts allow-same-origin"
               />
             ) : (
               <div
