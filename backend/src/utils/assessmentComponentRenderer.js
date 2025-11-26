@@ -579,7 +579,7 @@ function renderJudge0Section(question) {
             <div>
               <div style="font-size: 1.1rem; font-weight: 700;">Judge0 Code Execution</div>
               <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #475569;">
-                Powered by Judge0 • ${escapeHtml(language.toUpperCase())}
+                Powered by Judge0 
               </p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end;">
