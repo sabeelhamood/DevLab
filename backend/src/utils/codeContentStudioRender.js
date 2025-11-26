@@ -945,9 +945,10 @@ ${questionsJson}
                 })
                 .filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '');
               
-              // Update the iframe's tests array
+              // Update the iframe's tests array by mutating it (can't reassign const)
+              // Clear the array and push new test cases
               const testsJson = JSON.stringify(normalizedTestCases);
-              codeMirrorIframe.contentWindow.eval('tests = ' + testsJson + ';');
+              codeMirrorIframe.contentWindow.eval('tests.length = 0; tests.push(...' + testsJson + ');');
             } catch (err) {
               console.warn('Failed to update iframe test cases:', err);
             }
