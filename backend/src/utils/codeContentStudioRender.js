@@ -230,43 +230,23 @@ function renderSingleQuestion(question, index, topicName, language) {
       </section>
 
           <section class="judge0-panel" style="background:#F5F5F5;border-radius:20px;padding:18px;color:#0f172a;display:grid;gap:14px;border:1px solid rgba(148,163,184,0.4);box-shadow:0 18px 40px rgba(15,23,42,0.12);">
-        <header style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:10px;">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#F0FFF0;color:#0F6B52;">{ }</span>
-            <div>
-                  <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Judge0 Code Execution</h2>
-                  <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
-            </div>
+        <header style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#F0FFF0;color:#0F6B52;">{ }</span>
+          <div>
+            <h2 style="margin:0;font-size:1rem;font-weight:600;color:#0f172a;">Judge0 Code Execution</h2>
+            <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
           </div>
-              <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;">
-                <button type="button" data-action="run-code" style="border:none;cursor:pointer;padding:8px 14px;border-radius:999px;background:#0F6B52;color:white;font-size:0.8rem;font-weight:600;">
-                  ▶ Run Code
-                </button>
-                <button type="button" data-action="run-tests" style="border:1px solid #0F6B52;cursor:pointer;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#000000;font-size:0.8rem;font-weight:600;">
-                  🧪 Run All Tests
-                </button>
-                <button type="button" data-action="reset-editor" style="border:1px solid rgba(148,163,184,0.6);cursor:pointer;padding:8px 14px;border-radius:999px;background:#ffffff;color:#475569;font-size:0.8rem;font-weight:500;">
-                  ⟲ Reset Editor
-                </button>
-              </div>
         </header>
-            <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;">
-              <iframe
-                data-role="codemirror-editor"
-                title="Code editor for ${escapeHtml(question.title || id)}"
-                srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
-                style="width:100%;min-height:500px;border:none;background:#ffffff;"
-                sandbox="allow-scripts allow-same-origin"
-              ></iframe>
-            </div>
-            <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
-            <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:14px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
-              <header style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:rgba(148,163,184,0.2);color:#1e293b;font-weight:600;font-size:0.8rem;">🧪</span>
-                <h2 style="margin:0;font-size:0.95rem;font-weight:600;color:#0f172a;">Judge0 Test Results</h2>
-              </header>
-              <div data-role="tests-result-body" style="display:grid;gap:8px;font-size:0.9rem;color:#475569;"></div>
-            </section>
+        <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;">
+          <iframe
+            data-role="codemirror-editor"
+            title="Code editor for ${escapeHtml(question.title || id)}"
+            srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
+            style="width:100%;min-height:500px;border:none;background:#ffffff;"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
+        </div>
+        <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
       </section>
 
       <section data-role="hints" style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;border:1px solid rgba(15,23,42,0.06);display:none;">
@@ -368,57 +348,11 @@ ${questionsJson}
             return '';
           };
           
-          // Helper function to get language from CodeMirror iframe
-          const getLanguageFromEditor = () => {
-            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
-              const metaEntry = getCurrentMeta();
-              return metaEntry.language || baseLanguage;
-            }
-            try {
-              // Try to use getJudge0Language if exposed
-              if (typeof codeMirrorIframe.contentWindow.getJudge0Language === 'function') {
-                return codeMirrorIframe.contentWindow.getJudge0Language();
-              }
-              // Otherwise, access editor mode directly and map it
-              if (codeMirrorIframe.contentWindow.editor) {
-                const mode = codeMirrorIframe.contentWindow.editor.getOption('mode');
-                if (!mode) {
-                  throw new Error('Please select a programming language first');
-                }
-                // Map CodeMirror modes to Judge0 language names (same as in codemirrorTemplate.html)
-                const languageMap = {
-                  'javascript': 'javascript',
-                  'python': 'python',
-                  'text/x-csrc': 'c',
-                  'text/x-c++src': 'cpp',
-                  'text/x-java': 'java',
-                  'php': 'php',
-                  'xml': 'xml',
-                  'css': 'css'
-                };
-                return languageMap[mode] || 'javascript';
-              }
-            } catch (err) {
-              // If error is about language not selected, re-throw it
-              if (err.message && err.message.includes('select a programming language')) {
-                throw err;
-              }
-              console.warn('Unable to read language from CodeMirror iframe:', err);
-            }
-            // Fallback to metaEntry language
-            const metaEntry = getCurrentMeta();
-            return metaEntry.language || baseLanguage;
-          };
           const hintBtn = container.querySelector('[data-action="hint"]');
           const showSolutionBtn = container.querySelector('[data-action="show-solution"]');
           const submitBtn = container.querySelector('[data-action="submit"]');
-        const runCodeBtn = container.querySelector('[data-action="run-code"]');
-          const runTestsBtn = container.querySelector('[data-action="run-tests"]');
-        const resetBtn = container.querySelector('[data-action="reset-editor"]');
           const hintsSection = container.querySelector('[data-role="hints"]');
           const hintsList = container.querySelector('[data-role="hints-list"]');
-          const testsResultSection = container.querySelector('[data-role="tests-result"]');
-          const testsResultBody = container.querySelector('[data-role="tests-result-body"]');
         const questionTitleEl = container.querySelector('[data-role="question-title"]');
         const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
         const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
@@ -803,45 +737,6 @@ ${questionsJson}
             hintsList.appendChild(li);
           };
 
-          const renderTestResults = (results) => {
-            if (!testsResultSection || !testsResultBody) return;
-            testsResultSection.style.display = 'block';
-            testsResultBody.innerHTML = '';
-
-            if (!results || !results.length) {
-              const p = document.createElement('p');
-              p.textContent = 'No test results available.';
-              testsResultBody.appendChild(p);
-              return;
-            }
-
-            results.forEach((res) => {
-              const card = document.createElement('div');
-              card.style.borderRadius = '12px';
-              card.style.padding = '10px 12px';
-              card.style.border = '1px solid rgba(148,163,184,0.5)';
-              card.style.background = res.passed ? 'rgba(22,163,74,0.06)' : 'rgba(248,113,113,0.06)';
-
-              const statusColor = res.passed ? '#16a34a' : '#b91c1c';
-              const statusLabel = res.passed ? 'PASS' : 'FAIL';
-
-              card.innerHTML =
-                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-                '<span style="font-weight:600;color:#0f172a;">Test ' + (res.testNumber || '') + '</span>' +
-                '<span style="font-size:0.75rem;font-weight:600;color:' + statusColor + ';">' + statusLabel + '</span>' +
-                '</div>' +
-                '<div style="font-size:0.8rem;color:#475569;display:grid;gap:2px;">' +
-                '<div><strong>Input:</strong> ' + (res.input != null ? String(res.input) : '—') + '</div>' +
-                '<div><strong>Expected:</strong> ' + (res.expected != null ? String(res.expected) : '—') + '</div>' +
-                '<div><strong>Received:</strong> ' + (res.result != null ? String(res.result) : '—') + '</div>' +
-                (res.stderr
-                  ? '<div><strong>Error:</strong> ' + String(res.stderr) + '</div>'
-                  : '') +
-                '</div>';
-
-              testsResultBody.appendChild(card);
-            });
-          };
 
         const renderTestCasesForCurrentQuestion = () => {
           if (!testCasesContainer) return;
@@ -1238,209 +1133,6 @@ ${questionsJson}
             });
           }
 
-        if (runCodeBtn && codeMirrorIframe) {
-          runCodeBtn.addEventListener('click', async () => {
-            const userSolution = getCodeFromEditor();
-            if (!userSolution.trim()) {
-              setResult('Please write a solution before running code.', '#f97316');
-              return;
-            }
-
-            const metaEntry = getCurrentMeta();
-            let language;
-            try {
-              language = getLanguageFromEditor();
-            } catch (err) {
-              setResult('Please select a programming language first.', '#f97316');
-              return;
-            }
-
-            try {
-              runCodeBtn.disabled = true;
-              setResult('Running code via Judge0...', '#38bdf8');
-
-              const endpoint = buildUrl('/api/judge0/execute');
-              const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...getServiceHeaders()
-                },
-                body: JSON.stringify({
-                  sourceCode: userSolution,
-                  language,
-                  input: '',
-                  expectedOutput: null
-                })
-              });
-
-              const data = await response.json().catch(() => ({}));
-              if (!response.ok || data.success === false) {
-                throw new Error(data.error || 'Failed to execute code via Judge0');
-              }
-
-              const stdout = data.result?.stdout || '';
-              const stderr = data.result?.stderr || data.result?.compile_output || '';
-
-              if (stdout || stderr) {
-                const parts = [];
-                if (stdout) parts.push('Output: ' + stdout.trim());
-                if (stderr) parts.push('Errors: ' + stderr.trim());
-                setResult(parts.join(' | '), '#000000');
-              } else {
-                setResult('Code executed successfully (no output).', '#22c55e');
-              }
-            } catch (error) {
-              console.error('Judge0 Run Code error:', error);
-              setResult(
-                'Failed to run code via Judge0: ' + (error.message || 'Unknown error'),
-                '#ef4444'
-              );
-            } finally {
-              runCodeBtn.disabled = false;
-            }
-          });
-        }
-
-        if (resetBtn && codeMirrorIframe) {
-          resetBtn.addEventListener('click', () => {
-            const metaEntry = getCurrentMeta();
-            const id = metaEntry.id || String(currentIndex || 0);
-
-            // Reset code in iframe
-            try {
-              if (codeMirrorIframe.contentWindow) {
-                // Try to reset via resetEditor function if available
-                if (typeof codeMirrorIframe.contentWindow.resetEditor === 'function') {
-                  codeMirrorIframe.contentWindow.resetEditor();
-                } else if (codeMirrorIframe.contentWindow.editor) {
-                  // Fallback: set editor value to default
-                  const editor = codeMirrorIframe.contentWindow.editor;
-                  editor.setValue('// Please select a programming language to begin');
-                  // Reset language selection
-                  const langSelect = codeMirrorIframe.contentDocument?.getElementById('languageSelect');
-                  if (langSelect) {
-                    langSelect.value = '';
-                    editor.setOption('mode', null);
-                  }
-                }
-              }
-            } catch (err) {
-              console.warn('Unable to reset CodeMirror editor:', err);
-            }
-            codeStateById[id] = '';
-
-            const hintState = getHintStateForQuestion(id);
-            hintState.hintsUsed = 0;
-            hintState.allHints = [];
-            hintState.solutionRevealed = false;
-
-            if (hintsList && hintsSection) {
-              hintsList.innerHTML = '';
-              hintsSection.style.display = 'none';
-            }
-
-            if (testsResultSection && testsResultBody) {
-              testsResultSection.style.display = 'none';
-              testsResultBody.innerHTML = '';
-            }
-
-            setResult('Editor reset. You can start fresh on this question.', '#64748b');
-            syncHintsForCurrentQuestion();
-          });
-        }
-
-          if (runTestsBtn && codeMirrorIframe) {
-            runTestsBtn.addEventListener('click', async () => {
-              const userSolution = getCodeFromEditor();
-              if (!userSolution.trim()) {
-                setResult('Please write a solution before running tests.', '#f97316');
-                return;
-              }
-
-            const metaEntry = getCurrentMeta();
-            const testCases = Array.isArray(metaEntry.testCases) ? metaEntry.testCases : [];
-            let language;
-            try {
-              language = getLanguageFromEditor();
-            } catch (err) {
-              setResult('Please select a programming language first.', '#f97316');
-              return;
-            }
-
-              if (!testCases.length) {
-                setResult('No test cases available for this question.', '#f97316');
-                return;
-              }
-
-              try {
-                runTestsBtn.disabled = true;
-                setResult('Running all tests via Judge0...', '#000000');
-                if (testsResultSection && testsResultBody) {
-                  testsResultSection.style.display = 'none';
-                  testsResultBody.innerHTML = '';
-                }
-
-                const endpoint = buildUrl('/api/judge0/test-cases');
-                const response = await fetch(endpoint, {
-                  method: 'POST',
-                  headers: {
-                  'Content-Type': 'application/json',
-                  ...getServiceHeaders()
-                  },
-                  body: JSON.stringify({
-                    sourceCode: userSolution,
-                    language,
-                    testCases
-                  })
-                });
-
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok || data.success === false) {
-                  throw new Error(data.error || 'Failed to run Judge0 test-cases');
-                }
-
-                const results = Array.isArray(data.results) ? data.results : [];
-                renderTestResults(results);
-
-                const total = data.totalTests || results.length;
-                const passed =
-                  typeof data.passedTests === 'number'
-                    ? data.passedTests
-                    : results.filter((r) => r.passed).length;
-
-                if (total > 0) {
-                  const allPassed = passed === total;
-                  const somePassed = passed > 0 && passed < total;
-                  const message = 'Judge0: ' + passed + '/' + total + ' tests passed.';
-
-                  if (!passed && total > 0 && resultEl) {
-                    resultEl.innerHTML = '<strong>' + message + '</strong>';
-                    resultEl.style.color = '#ef4444';
-                  } else {
-                    setResult(
-                      message,
-                      allPassed ? '#22c55e' : somePassed ? '#f97316' : '#ef4444'
-                    );
-                  }
-                } else {
-                  setResult('Judge0: No test results returned.', '#f97316');
-                }
-              } catch (error) {
-                console.error('Judge0 Run All Tests error:', error);
-                setResult(
-                  'Failed to run tests via Judge0: ' + (error.message || 'Unknown error'),
-                  '#ef4444'
-                );
-                if (testsResultSection && testsResultBody) {
-                  testsResultSection.style.display = 'none';
-                  testsResultBody.innerHTML = '';
-                }
-              } finally {
-                runTestsBtn.disabled = false;
-              }
-            });
-        }
 
         const navPrev = document.querySelector('[data-role="code-question-prev"]');
         const navNext = document.querySelector('[data-role="code-question-next"]');
