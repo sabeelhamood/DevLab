@@ -1,4 +1,5 @@
 import { openAIContentStudioService } from '../services/openAIContentStudioService.js'
+import { codeMirrorLoader } from './codeMirrorLoader.js'
 
 const PUBLIC_API_BASE_URL =
   process.env['PUBLIC_BACKEND_URL'] ||
@@ -18,6 +19,73 @@ const escapeHtml = (text) => {
 function buildBaseUrl() {
   if (PUBLIC_API_BASE_URL) return PUBLIC_API_BASE_URL
   return ''
+}
+
+function getBackendBaseUrl() {
+  const base = PUBLIC_API_BASE_URL || 'https://devlab-backend-production.up.railway.app'
+  return (base || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
+}
+
+function getCodeMirrorBundleUrl() {
+  return `${getBackendBaseUrl()}/static/codemirror-bundle.js`
+}
+
+const CODEMIRROR_BUNDLE_URL_PLACEHOLDER = '__CODEMIRROR_BUNDLE_URL__'
+const baseCodeMirrorTemplate = codeMirrorLoader.loadTemplate()
+
+function extractNormalizedTestCases(question = {}) {
+  const questionCases =
+    (Array.isArray(question.testCases) && question.testCases) ||
+    (Array.isArray(question.test_cases) && question.test_cases) ||
+    []
+
+  if (!Array.isArray(questionCases)) {
+    return []
+  }
+
+  return questionCases
+    .map((testCase = {}) => {
+      const inputValue = testCase.input || testCase.testInput || testCase.test_input || ''
+      const expectedValue = testCase.expected_output || testCase.expectedOutput || testCase.expected || testCase.output || ''
+      return {
+        input: inputValue,
+        expectedOutput: expectedValue
+      }
+    })
+    .filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '')
+}
+
+function buildCodeMirrorTemplateForQuestion(question = {}) {
+  if (!baseCodeMirrorTemplate) {
+    return '<p>Unable to load code editor.</p>'
+  }
+
+  let template = baseCodeMirrorTemplate
+
+  const normalizedTestCases = extractNormalizedTestCases(question)
+  if (normalizedTestCases.length) {
+    const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
+    // Replace existing tests array (handles both empty [] and non-empty arrays)
+    template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
+  }
+
+  // Initialize editor in neutral state - no language pre-selected
+  // The learner must select a language from the dropdown
+  template = template.replace(
+    /<textarea id="editor">[\s\S]*?<\/textarea>/,
+    `<textarea id="editor">// Please select a programming language to begin</textarea>`
+  )
+  
+  // Set editor to null mode initially (no syntax highlighting until language is selected)
+  template = template.replace(
+    /mode:\s*["'][^"']*["']/,
+    `mode: null`
+  )
+
+  const bundleUrl = getCodeMirrorBundleUrl()
+  template = template.replace(new RegExp(CODEMIRROR_BUNDLE_URL_PLACEHOLDER, 'g'), bundleUrl)
+
+  return template
 }
 
 function getDefaultServiceApiKey() {
@@ -182,7 +250,15 @@ function renderSingleQuestion(question, index, topicName, language) {
                 </button>
               </div>
         </header>
-            <textarea data-role="code-input" spellcheck="false" style="width:100%;min-height:220px;border-radius:14px;border:1px solid rgba(148,163,184,0.5);background:#020617;color:#e2e8f0;padding:12px;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.85rem;resize:vertical;" placeholder="// Write your solution here..."></textarea>
+            <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;">
+              <iframe
+                data-role="codemirror-editor"
+                title="Code editor for ${escapeHtml(question.title || id)}"
+                srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
+                style="width:100%;min-height:500px;border:none;background:#ffffff;"
+                sandbox="allow-scripts allow-same-origin"
+              ></iframe>
+            </div>
             <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
             <section data-role="tests-result" style="background:#ffffff;border-radius:16px;padding:14px;border:1px solid rgba(15,23,42,0.08);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.02);display:none;">
               <header style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -227,6 +303,13 @@ ${questionsJson}
     <script>
       (function () {
         const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
+        
+        // Set API base URL for iframe access
+        try {
+          window.__DEVLAB_API_BASE__ = DEFAULT_BASE;
+        } catch (err) {
+          console.error('Failed to initialize API base URL', err);
+        }
 
         const buildUrl = (path) => {
           if (!path) return '';
@@ -265,8 +348,67 @@ ${questionsJson}
         }
 
         const baseLanguage = container.getAttribute('data-language') || 'javascript';
-          const codeInput = container.querySelector('[data-role="code-input"]');
+          const codeMirrorIframe = container.querySelector('iframe[data-role="codemirror-editor"]');
           const resultEl = container.querySelector('[data-role="result"]');
+          
+          // Helper function to get code from CodeMirror iframe
+          const getCodeFromEditor = () => {
+            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
+              return '';
+            }
+            try {
+              if (typeof codeMirrorIframe.contentWindow.getCode === 'function') {
+                return codeMirrorIframe.contentWindow.getCode();
+              } else if (codeMirrorIframe.contentWindow.editor && codeMirrorIframe.contentWindow.editor.state) {
+                return codeMirrorIframe.contentWindow.editor.state.doc?.toString() || '';
+              }
+            } catch (err) {
+              console.warn('Unable to read code from CodeMirror iframe:', err);
+            }
+            return '';
+          };
+          
+          // Helper function to get language from CodeMirror iframe
+          const getLanguageFromEditor = () => {
+            if (!codeMirrorIframe || !codeMirrorIframe.contentWindow) {
+              const metaEntry = getCurrentMeta();
+              return metaEntry.language || baseLanguage;
+            }
+            try {
+              // Try to use getJudge0Language if exposed
+              if (typeof codeMirrorIframe.contentWindow.getJudge0Language === 'function') {
+                return codeMirrorIframe.contentWindow.getJudge0Language();
+              }
+              // Otherwise, access editor mode directly and map it
+              if (codeMirrorIframe.contentWindow.editor) {
+                const mode = codeMirrorIframe.contentWindow.editor.getOption('mode');
+                if (!mode) {
+                  throw new Error('Please select a programming language first');
+                }
+                // Map CodeMirror modes to Judge0 language names (same as in codemirrorTemplate.html)
+                const languageMap = {
+                  'javascript': 'javascript',
+                  'python': 'python',
+                  'text/x-csrc': 'c',
+                  'text/x-c++src': 'cpp',
+                  'text/x-java': 'java',
+                  'php': 'php',
+                  'xml': 'xml',
+                  'css': 'css'
+                };
+                return languageMap[mode] || 'javascript';
+              }
+            } catch (err) {
+              // If error is about language not selected, re-throw it
+              if (err.message && err.message.includes('select a programming language')) {
+                throw err;
+              }
+              console.warn('Unable to read language from CodeMirror iframe:', err);
+            }
+            // Fallback to metaEntry language
+            const metaEntry = getCurrentMeta();
+            return metaEntry.language || baseLanguage;
+          };
           const hintBtn = container.querySelector('[data-action="hint"]');
           const showSolutionBtn = container.querySelector('[data-action="show-solution"]');
           const submitBtn = container.querySelector('[data-action="submit"]');
@@ -281,7 +423,7 @@ ${questionsJson}
         const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
         const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
 
-        if (!codeInput || !resultEl) {
+        if (!codeMirrorIframe || !resultEl) {
           return;
         }
 
@@ -309,7 +451,7 @@ ${questionsJson}
           const m = getCurrentMeta();
           if (!m) return;
           const id = m.id || String(currentIndex || 0);
-          codeStateById[id] = codeInput.value || '';
+          codeStateById[id] = getCodeFromEditor();
         };
 
         const restoreCodeForCurrentQuestion = () => {
@@ -319,7 +461,8 @@ ${questionsJson}
           const stored = Object.prototype.hasOwnProperty.call(codeStateById, id)
             ? codeStateById[id]
             : '';
-          codeInput.value = stored;
+          // Code will be restored when iframe loads - we can't directly set it here
+          // The iframe maintains its own state
         };
 
           const openFeedbackModal = (cardHtml) => {
@@ -900,14 +1043,14 @@ ${questionsJson}
           setResult('', '#e5e7eb');
         };
 
-          if (hintBtn && codeInput) {
+          if (hintBtn && codeMirrorIframe) {
             hintBtn.addEventListener('click', async () => {
             const metaEntry = getCurrentMeta();
             const questionText = metaEntry.description || metaEntry.title || '';
             const topicName = metaEntry.topicName || '';
             const questionId = metaEntry.id || String(currentIndex || 0);
             const hintState = getHintStateForQuestion(questionId);
-              const userAttempt = codeInput.value || '';
+              const userAttempt = getCodeFromEditor();
               try {
                 hintBtn.disabled = true;
                 setResult('Generating hint...', '#000000');
@@ -951,7 +1094,7 @@ ${questionsJson}
             });
           }
 
-          if (showSolutionBtn && codeInput) {
+          if (showSolutionBtn && codeMirrorIframe) {
             showSolutionBtn.addEventListener('click', () => {
               const metaEntry = getCurrentMeta();
               const questionText = metaEntry.description || metaEntry.title || '';
@@ -1038,9 +1181,9 @@ ${questionsJson}
             });
           }
 
-          if (submitBtn && codeInput) {
+          if (submitBtn && codeMirrorIframe) {
             submitBtn.addEventListener('click', async () => {
-              const userSolution = codeInput.value || '';
+              const userSolution = getCodeFromEditor();
               if (!userSolution.trim()) {
                 setResult('Please write a solution before submitting.', '#f97316');
                 return;
@@ -1095,16 +1238,22 @@ ${questionsJson}
             });
           }
 
-        if (runCodeBtn && codeInput) {
+        if (runCodeBtn && codeMirrorIframe) {
           runCodeBtn.addEventListener('click', async () => {
-            const userSolution = codeInput.value || '';
+            const userSolution = getCodeFromEditor();
             if (!userSolution.trim()) {
               setResult('Please write a solution before running code.', '#f97316');
               return;
             }
 
             const metaEntry = getCurrentMeta();
-            const language = metaEntry.language || baseLanguage;
+            let language;
+            try {
+              language = getLanguageFromEditor();
+            } catch (err) {
+              setResult('Please select a programming language first.', '#f97316');
+              return;
+            }
 
             try {
               runCodeBtn.disabled = true;
@@ -1153,12 +1302,32 @@ ${questionsJson}
           });
         }
 
-        if (resetBtn && codeInput) {
+        if (resetBtn && codeMirrorIframe) {
           resetBtn.addEventListener('click', () => {
             const metaEntry = getCurrentMeta();
             const id = metaEntry.id || String(currentIndex || 0);
 
-            codeInput.value = '';
+            // Reset code in iframe
+            try {
+              if (codeMirrorIframe.contentWindow) {
+                // Try to reset via resetEditor function if available
+                if (typeof codeMirrorIframe.contentWindow.resetEditor === 'function') {
+                  codeMirrorIframe.contentWindow.resetEditor();
+                } else if (codeMirrorIframe.contentWindow.editor) {
+                  // Fallback: set editor value to default
+                  const editor = codeMirrorIframe.contentWindow.editor;
+                  editor.setValue('// Please select a programming language to begin');
+                  // Reset language selection
+                  const langSelect = codeMirrorIframe.contentDocument?.getElementById('languageSelect');
+                  if (langSelect) {
+                    langSelect.value = '';
+                    editor.setOption('mode', null);
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn('Unable to reset CodeMirror editor:', err);
+            }
             codeStateById[id] = '';
 
             const hintState = getHintStateForQuestion(id);
@@ -1181,9 +1350,9 @@ ${questionsJson}
           });
         }
 
-          if (runTestsBtn && codeInput) {
+          if (runTestsBtn && codeMirrorIframe) {
             runTestsBtn.addEventListener('click', async () => {
-              const userSolution = codeInput.value || '';
+              const userSolution = getCodeFromEditor();
               if (!userSolution.trim()) {
                 setResult('Please write a solution before running tests.', '#f97316');
                 return;
@@ -1191,7 +1360,13 @@ ${questionsJson}
 
             const metaEntry = getCurrentMeta();
             const testCases = Array.isArray(metaEntry.testCases) ? metaEntry.testCases : [];
-            const language = metaEntry.language || baseLanguage;
+            let language;
+            try {
+              language = getLanguageFromEditor();
+            } catch (err) {
+              setResult('Please select a programming language first.', '#f97316');
+              return;
+            }
 
               if (!testCases.length) {
                 setResult('No test cases available for this question.', '#f97316');
