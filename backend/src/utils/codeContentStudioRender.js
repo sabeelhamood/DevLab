@@ -930,11 +930,6 @@ ${questionsJson}
           restoreCodeForCurrentQuestion();
           syncHintsForCurrentQuestion();
 
-          if (testsResultSection && testsResultBody) {
-            testsResultSection.style.display = 'none';
-            testsResultBody.innerHTML = '';
-          }
-
           setResult('', '#e5e7eb');
         };
 
