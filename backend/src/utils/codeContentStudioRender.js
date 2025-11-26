@@ -930,6 +930,29 @@ ${questionsJson}
           restoreCodeForCurrentQuestion();
           syncHintsForCurrentQuestion();
 
+          // Update iframe's tests array with current question's test cases
+          if (codeMirrorIframe && codeMirrorIframe.contentWindow) {
+            try {
+              const testCases = Array.isArray(m.testCases) ? m.testCases : [];
+              const normalizedTestCases = testCases
+                .map((testCase = {}) => {
+                  const inputValue = testCase.input || testCase.testInput || testCase.test_input || '';
+                  const expectedValue = testCase.expected_output || testCase.expectedOutput || testCase.expected || testCase.output || '';
+                  return {
+                    input: inputValue,
+                    expectedOutput: expectedValue
+                  };
+                })
+                .filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '');
+              
+              // Update the iframe's tests array
+              const testsJson = JSON.stringify(normalizedTestCases);
+              codeMirrorIframe.contentWindow.eval('tests = ' + testsJson + ';');
+            } catch (err) {
+              console.warn('Failed to update iframe test cases:', err);
+            }
+          }
+
           setResult('', '#e5e7eb');
         };
 
