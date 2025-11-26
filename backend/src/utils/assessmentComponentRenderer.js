@@ -94,8 +94,9 @@ export async function saveAssessmentCodeQuestions(questions = [], assessmentId) 
 export function renderAssessmentCodeQuestions(questions = []) {
   if (!questions || questions.length === 0) {
     return `
-      <div class="assessment-questions-container" style="padding: 1.5rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; color: #6b7280;">
+      ${renderDarkModeStyles()}
+      <div class="assessment-questions-container" data-theme-container style="padding: 1.5rem; background: var(--bg-primary); border-radius: 0.5rem; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); transition: color 0.3s ease;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -104,6 +105,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
           <p>No coding questions available.</p>
         </div>
       </div>
+      ${renderDarkModeToggleScript()}
     `
   }
 
@@ -117,7 +119,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
     const skillsHtml = question.skills && question.skills.length > 0
       ? `
         <div style="margin-bottom: 1rem;">
-          <span style="font-size: 0.875rem; font-weight: 500; color: #374151; display: block; margin-bottom: 0.5rem;">Skills:</span>
+          <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.5rem; transition: color 0.3s ease;">Skills:</span>
           <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
             ${question.skills.map(skill => `
               <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #EEE8AA; color: #8B4513; border-radius: 9999px;">
@@ -133,27 +135,27 @@ export function renderAssessmentCodeQuestions(questions = []) {
       ? `
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #6b7280;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary); transition: color 0.3s ease;">
               <path d="M9 11l3 3L22 4"></path>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
-            <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">
+            <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); transition: color 0.3s ease;">
               Test Cases (${question.testCases.length})
             </span>
           </div>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${question.testCases.map((testCase, testIndex) => `
-              <div style="background: #FAFAFA; border-radius: 0.5rem; padding: 0.75rem; border: 1px solid #e5e7eb;">
+              <div style="background: var(--test-case-bg); border-radius: 0.5rem; padding: 0.75rem; border: 1px solid var(--border-color); transition: all 0.3s ease;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                   <div>
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Input:</span>
-                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
+                    <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.25rem; transition: color 0.3s ease;">Input:</span>
+                    <code style="font-size: 0.875rem; color: var(--test-case-code-text); background: var(--test-case-code-bg); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block; transition: all 0.3s ease;">
                       ${escapeHtml(testCase.input || 'N/A')}
                     </code>
                   </div>
                   <div>
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; margin-bottom: 0.25rem;">Expected Output:</span>
-                    <code style="font-size: 0.875rem; color: #1f2937; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block;">
+                    <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 0.25rem; transition: color 0.3s ease;">Expected Output:</span>
+                    <code style="font-size: 0.875rem; color: var(--test-case-code-text); background: var(--test-case-code-bg); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block; transition: all 0.3s ease;">
                       ${escapeHtml(testCase.expected_output || testCase.output || 'N/A')}
                     </code>
                   </div>
@@ -170,7 +172,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
     return `
       <div class="question-step" data-question-index="${index}" style="${index === 0 ? '' : 'display:none;'}">
         <div class="question-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; align-items: flex-start;">
-          <div class="question-card" style="background: linear-gradient(145deg, #ffffff, #f0fdfa); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 20px 60px rgba(6, 95, 70, 0.12); padding: 32px;">
+          <div class="question-card" style="background: var(--question-card-bg); border-radius: 16px; border: 1px solid var(--question-card-border); box-shadow: 0 20px 60px var(--question-card-shadow); padding: 32px; transition: all 0.3s ease;">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px;">
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="padding: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px;">
@@ -180,10 +182,10 @@ export function renderAssessmentCodeQuestions(questions = []) {
                   </svg>
                 </div>
                 <div>
-                  <h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: #0f172a; margin: 0;">
+                  <h3 style="font-size: 24px; line-height: 32px; font-weight: 700; color: var(--text-primary); margin: 0; transition: color 0.3s ease;">
                     ${escapeHtml(question.title || `Question ${index + 1}`)}
                   </h3>
-                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: #475569;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 16px; color: var(--text-secondary); transition: color 0.3s ease;">
                     <span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                       ${escapeHtml(question.programming_language || 'N/A')}
                     </span>
@@ -207,17 +209,17 @@ export function renderAssessmentCodeQuestions(questions = []) {
 
             <div style="margin-bottom: 24px;">
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #475569;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary); transition: color 0.3s ease;">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                   <line x1="16" y1="13" x2="8" y2="13"></line>
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                <span style="font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: 0.01em;">Description</span>
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em; transition: color 0.3s ease;">Description</span>
               </div>
-              <div style="background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid rgba(15, 23, 42, 0.05);">
-                <p style="color: #1f2937; white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px;">${escapeHtml(question.description || 'No description provided.')}
+              <div style="background: var(--description-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color); transition: all 0.3s ease;">
+                <p style="color: var(--text-primary); white-space: pre-wrap; margin: 0; line-height: 1.7; font-size: 16px; transition: color 0.3s ease;">${escapeHtml(question.description || 'No description provided.')}
                 </p>
               </div>
             </div>
@@ -235,12 +237,17 @@ export function renderAssessmentCodeQuestions(questions = []) {
   const apiBaseUrlScript = renderApiBaseUrlScript()
 
   return `
-    <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
-      <div style="margin-bottom: 32px;">
-        <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
+    ${renderDarkModeStyles()}
+    <div class="assessment-questions-container" data-theme-container style="padding: 32px; background: var(--bg-primary); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease;">
+      <div style="margin-bottom: 32px; position: relative;">
+        <button type="button" id="theme-toggle" style="position: absolute; top: 0; right: 0; padding: 0.5rem 1rem; border-radius: 9999px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;" title="Toggle dark/light mode">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-text">Dark</span>
+        </button>
+        <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: var(--text-primary); margin: 0 0 12px 0;">
           Coding Assessment Questions
         </h2>
-        <p style="color: #475569; margin: 0; font-size: 16px;">
+        <p style="color: var(--text-secondary); margin: 0; font-size: 16px;">
           ${questions.length} question${questions.length !== 1 ? 's' : ''} generated
         </p>
       </div>
@@ -248,27 +255,28 @@ export function renderAssessmentCodeQuestions(questions = []) {
         ${questionsHtml}
       </div>
       <div class="assessment-navigation" style="margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">
-        <button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid rgba(15, 23, 42, 0.12); background: white; color: #0f172a; font-weight: 600; cursor: pointer;">
+        <button type="button" data-nav-prev style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
           ← Previous Question
         </button>
-        <div data-step-indicator style="font-weight: 600; color: #0f172a;">Question 1 of ${questions.length}</div>
-        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: #000000; color: white; font-weight: 600; cursor: pointer;">
+        <div data-step-indicator style="font-weight: 600; color: var(--text-primary);">Question 1 of ${questions.length}</div>
+        <button type="button" data-nav-next style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.8rem 1.4rem; border-radius: 9999px; border: none; background: var(--accent-primary); color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
           Next Question →
         </button>
       </div>
       <div style="margin-top: 1.5rem; text-align: center;">
-        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer;">
+        <button type="button" data-submit-all-answers style="display: none; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.95rem 3rem; border-radius: 9999px; border: none; font-size: 1rem; font-weight: 700; background: #FF8C00; color: white; box-shadow: 0 18px 35px rgba(37, 99, 235, 0.35); cursor: pointer; transition: all 0.3s ease;">
           Submit All Solutions 🚀
         </button>
       </div>
       <div style="margin-top: 1rem;">
         <div data-grading-results style="display: none;"></div>
-        <pre data-submit-output style="display: none; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto;"></pre>
+        <pre data-submit-output style="display: none; background: var(--bg-code); color: var(--text-code); padding: 1rem; border-radius: 0.75rem; font-size: 0.8rem; overflow-x: auto; transition: all 0.3s ease;"></pre>
       </div>
     </div>
     ${renderQuestionMetaScript(questions)}
     ${apiBaseUrlScript}
     ${serviceHeadersScript}
+    ${renderDarkModeToggleScript()}
     ${renderStepperBootstrap()}
   `
 }
@@ -285,6 +293,148 @@ function escapeHtml(text) {
     "'": '&#039;'
   }
   return text.replace(/[&<>"']/g, m => map[m])
+}
+
+function renderDarkModeStyles() {
+  return `
+    <style>
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-code: #0f172a;
+        --text-primary: #1e293b;
+        --text-secondary: #475569;
+        --text-code: #e2e8f0;
+        --border-color: rgba(15, 23, 42, 0.12);
+        --accent-primary: #000000;
+        --question-card-bg: linear-gradient(145deg, #ffffff, #f0fdfa);
+        --question-card-border: #e2e8f0;
+        --question-card-shadow: rgba(6, 95, 70, 0.12);
+        --description-bg: #f8fafc;
+        --test-case-bg: #FAFAFA;
+        --test-case-code-bg: #f3f4f6;
+        --test-case-code-text: #1f2937;
+      }
+      
+      [data-theme-container].dark-mode {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-code: #1e293b;
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-code: #e2e8f0;
+        --border-color: rgba(226, 232, 240, 0.2);
+        --accent-primary: #3b82f6;
+        --question-card-bg: linear-gradient(145deg, #1e293b, #0f172a);
+        --question-card-border: rgba(226, 232, 240, 0.1);
+        --question-card-shadow: rgba(0, 0, 0, 0.3);
+        --description-bg: #1e293b;
+        --test-case-bg: #1e293b;
+        --test-case-code-bg: #0f172a;
+        --test-case-code-text: #e2e8f0;
+      }
+      
+      [data-theme-container].dark-mode .question-card {
+        background: var(--question-card-bg) !important;
+        border-color: var(--question-card-border) !important;
+        box-shadow: 0 20px 60px var(--question-card-shadow) !important;
+      }
+      
+      [data-theme-container].dark-mode .question-card h3 {
+        color: var(--text-primary) !important;
+      }
+      
+      [data-theme-container].dark-mode .question-card p {
+        color: var(--text-secondary) !important;
+      }
+      
+      [data-theme-container].dark-mode .question-card span {
+        color: var(--text-secondary) !important;
+      }
+      
+      [data-theme-container].dark-mode .question-card code {
+        background: var(--test-case-code-bg) !important;
+        color: var(--test-case-code-text) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="background: #f8fafc"] {
+        background: var(--description-bg) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="background: #FAFAFA"] {
+        background: var(--test-case-bg) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="background: #f3f4f6"] {
+        background: var(--test-case-code-bg) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="color: #1f2937"] {
+        color: var(--test-case-code-text) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="color: #374151"] {
+        color: var(--text-secondary) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="color: #6b7280"] {
+        color: var(--text-secondary) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="color: #0f172a"] {
+        color: var(--text-primary) !important;
+      }
+      
+      [data-theme-container].dark-mode [style*="color: #475569"] {
+        color: var(--text-secondary) !important;
+      }
+      
+      [data-theme-container].dark-mode iframe {
+        filter: brightness(0.9);
+      }
+    </style>
+  `
+}
+
+function renderDarkModeToggleScript() {
+  return `
+    <script>
+      (function() {
+        const themeContainer = document.querySelector('[data-theme-container]');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        if (!themeContainer || !themeToggle) return;
+        
+        // Get saved theme or default to light
+        const savedTheme = localStorage.getItem('assessment-theme') || 'light';
+        
+        // Apply saved theme
+        function applyTheme(theme) {
+          if (theme === 'dark') {
+            themeContainer.classList.add('dark-mode');
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Light';
+          } else {
+            themeContainer.classList.remove('dark-mode');
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Dark';
+          }
+          localStorage.setItem('assessment-theme', theme);
+        }
+        
+        // Initialize theme
+        applyTheme(savedTheme);
+        
+        // Toggle theme on button click
+        themeToggle.addEventListener('click', function() {
+          const isDark = themeContainer.classList.contains('dark-mode');
+          applyTheme(isDark ? 'light' : 'dark');
+        });
+      })();
+    </script>
+  `
 }
 
 function buildCodeMirrorTemplateForQuestion(question = {}) {
