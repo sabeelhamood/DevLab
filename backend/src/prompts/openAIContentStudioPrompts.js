@@ -16,7 +16,7 @@ export function buildGenerateCodingQuestionsPrompt({
   return `
 You are an expert programming instructor. Generate CODING questions ONLY.
 
-🚫 CRITICAL REQUIREMENT: Generate ONLY CODING questions where users WRITE CODE.
+🚫 CRITICAL REQUIREMENT: Generate ONLY CODING questions where users WRITE CODE, provide 3 test cases for each question.
 🚫 FORBIDDEN: DO NOT generate theoretical questions, multiple-choice questions, or questions with options/correctAnswer fields.
 🚫 DO NOT include: "options", "correctAnswer", "summary", or any theoretical explanation outside of testCase explanations.
 
