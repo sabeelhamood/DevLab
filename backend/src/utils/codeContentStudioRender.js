@@ -536,21 +536,29 @@ ${questionsJson}
 
           const renderEvaluationCard = (evaluation) => {
             if (!resultEl) return;
+            // Extract only score, feedback, and suggestions - ignore other fields
             const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
             const safeScore = Math.max(0, Math.min(100, Math.round(score)));
-            const feedback =
-              typeof evaluation.feedback === 'string'
-                ? evaluation.feedback
-                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
-                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
-                  : '';
-            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+            
+            // Extract feedback as string only - avoid JSON display
+            let feedback = '';
+            if (typeof evaluation.feedback === 'string') {
+              feedback = evaluation.feedback;
+            } else if (typeof evaluation.feedback === 'object' && evaluation.feedback !== null) {
+              feedback = evaluation.feedback.message || evaluation.feedback.text || evaluation.feedback.summary || '';
+            }
+            
+            // Extract suggestions as array of strings only
+            const suggestions = Array.isArray(evaluation.suggestions) 
+              ? evaluation.suggestions.map(s => typeof s === 'string' ? s : String(s))
+              : [];
 
             let suggestionsHtml = '';
             if (suggestions.length) {
               let items = '';
               suggestions.slice(0, 3).forEach((s, idx) => {
-                const text = typeof s === 'string' ? s : JSON.stringify(s);
+                // Ensure suggestion is always a string, never JSON
+                const text = typeof s === 'string' ? s : String(s);
                 items +=
                   '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.4);">' +
                   '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
@@ -615,21 +623,29 @@ ${questionsJson}
 
           const renderFailureCard = (evaluation) => {
             if (!resultEl) return;
+            // Extract only score, feedback, and suggestions - ignore other fields
             const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
             const safeScore = Math.max(0, Math.min(100, Math.round(score)));
-            const feedback =
-              typeof evaluation.feedback === 'string'
-                ? evaluation.feedback
-                : typeof evaluation.feedback === 'object' && evaluation.feedback !== null
-                  ? evaluation.feedback.message || evaluation.feedback.text || JSON.stringify(evaluation.feedback, null, 2)
-                  : '';
-            const suggestions = Array.isArray(evaluation.suggestions) ? evaluation.suggestions : [];
+            
+            // Extract feedback as string only - avoid JSON display
+            let feedback = '';
+            if (typeof evaluation.feedback === 'string') {
+              feedback = evaluation.feedback;
+            } else if (typeof evaluation.feedback === 'object' && evaluation.feedback !== null) {
+              feedback = evaluation.feedback.message || evaluation.feedback.text || evaluation.feedback.summary || '';
+            }
+            
+            // Extract suggestions as array of strings only
+            const suggestions = Array.isArray(evaluation.suggestions) 
+              ? evaluation.suggestions.map(s => typeof s === 'string' ? s : String(s))
+              : [];
 
             let suggestionsHtml = '';
             if (suggestions.length) {
               let items = '';
               suggestions.slice(0, 3).forEach((s, idx) => {
-                const text = typeof s === 'string' ? s : JSON.stringify(s);
+                // Ensure suggestion is always a string, never JSON
+                const text = typeof s === 'string' ? s : String(s);
                 items +=
                   '<div style="display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:10px 12px;background:rgba(254,243,199,0.4);border:1px solid rgba(245,158,11,0.6);">' +
                   '<div style="width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#92400e;background:linear-gradient(135deg,#fed7aa,#fbbf24);">' +
