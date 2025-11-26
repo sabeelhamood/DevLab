@@ -301,10 +301,102 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
+  // Get the initial language from question and set it in the template
+  const questionLanguage = (question?.judge0?.language || question?.programming_language || question?.language || 'javascript').toLowerCase()
+  const initialCodeMirrorMode = getCodeMirrorModeFromLanguage(questionLanguage)
+  const initialCode = getDefaultCodeForLanguage(questionLanguage)
+  
+  console.log('[buildCodeMirrorTemplateForQuestion] Setting initial language:', {
+    questionLanguage,
+    initialCodeMirrorMode,
+    initialCodePreview: initialCode.substring(0, 50)
+  })
+  
+  // Replace the initial mode in editor initialization (handle both single and double quotes)
+  template = template.replace(
+    /mode:\s*["']javascript["']/,
+    `mode: ${JSON.stringify(initialCodeMirrorMode)}`
+  )
+  
+  // Replace the initial code in textarea (escape HTML properly)
+  const escapedCode = initialCode
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+  
+  template = template.replace(
+    /<textarea id="editor">[\s\S]*?<\/textarea>/,
+    `<textarea id="editor">${escapedCode}</textarea>`
+  )
+  
+  // Set the initial language in the dropdown
+  template = template.replace(
+    /<select id="languageSelect">[\s\S]*?<\/select>/,
+    (match) => {
+      // Find the option that matches the initial mode and add selected attribute
+      // First, remove any existing selected attributes
+      let updated = match.replace(/\s+selected(?=\s|>)/gi, '')
+      // Then add selected to the matching option
+      const escapedMode = initialCodeMirrorMode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      updated = updated.replace(
+        new RegExp(`(<option value="${escapedMode}"[^>]*>)`, 'i'),
+        '$1 selected'
+      )
+      return updated
+    }
+  )
+
   const bundleUrl = getCodeMirrorBundleUrl()
   template = template.replace(new RegExp(CODEMIRROR_BUNDLE_URL_PLACEHOLDER, 'g'), bundleUrl)
 
   return template
+}
+
+// Map Judge0 language names to CodeMirror modes
+function getCodeMirrorModeFromLanguage(language) {
+  const lang = (language || 'javascript').toLowerCase()
+  const modeMap = {
+    'javascript': 'javascript',
+    'typescript': 'javascript', // TypeScript uses JavaScript mode
+    'python': 'python',
+    'java': 'text/x-java',
+    'c': 'text/x-csrc',
+    'cpp': 'text/x-c++src',
+    'c++': 'text/x-c++src',
+    'csharp': 'text/x-csrc', // C# uses C-like mode
+    'c#': 'text/x-csrc',
+    'php': 'php',
+    'ruby': 'python', // Ruby uses Python-like mode
+    'go': 'text/x-csrc', // Go uses C-like mode
+    'rust': 'text/x-csrc', // Rust uses C-like mode
+    'xml': 'xml',
+    'html': 'xml',
+    'css': 'css'
+  }
+  return modeMap[lang] || 'javascript'
+}
+
+// Get default code snippet for a language
+function getDefaultCodeForLanguage(language) {
+  const lang = (language || 'javascript').toLowerCase()
+  const defaultCodes = {
+    'javascript': 'console.log("Hello!");',
+    'typescript': 'console.log("Hello!");',
+    'python': 'print("Hello!")',
+    'java': 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello!");\n    }\n}',
+    'c': '#include <stdio.h>\n\nint main() {\n    printf("Hello!\\n");\n    return 0;\n}',
+    'cpp': '#include <iostream>\n\nint main() {\n    std::cout << "Hello!" << std::endl;\n    return 0;\n}',
+    'c++': '#include <iostream>\n\nint main() {\n    std::cout << "Hello!" << std::endl;\n    return 0;\n}',
+    'csharp': 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello!");\n    }\n}',
+    'c#': 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello!");\n    }\n}',
+    'php': '<?php\necho "Hello!";\n?>',
+    'ruby': 'puts "Hello!"',
+    'go': 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello!")\n}',
+    'rust': 'fn main() {\n    println!("Hello!");\n}'
+  }
+  return defaultCodes[lang] || 'console.log("Hello!");'
 }
 
 function extractNormalizedTestCases(question = {}) {

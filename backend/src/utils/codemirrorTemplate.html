@@ -198,7 +198,9 @@
     // Get current Judge0 language from CodeMirror mode
     function getJudge0Language() {
       const mode = editor.getOption('mode');
-      return languageMap[mode] || 'javascript';
+      const judge0Lang = languageMap[mode] || 'javascript';
+      console.log('CodeMirror mode:', mode, '-> Judge0 language:', judge0Lang);
+      return judge0Lang;
     }
 
     // Expose getCode function to parent window
@@ -365,6 +367,7 @@
 
       const runBtn = document.getElementById('runBtn');
       const language = getJudge0Language();
+      console.log('[runCode] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
 
       try {
         runBtn.disabled = true;
@@ -436,6 +439,7 @@
 
       const runTestsBtn = document.getElementById('runTestsBtn');
       const language = getJudge0Language();
+      console.log('[runAllTests] Executing with language:', language, 'CodeMirror mode:', editor.getOption('mode'));
 
       try {
         runTestsBtn.disabled = true;
@@ -493,9 +497,26 @@
       }
     }
 
+    // Get default code for current language
+    function getDefaultCodeForCurrentLanguage() {
+      const mode = editor.getOption('mode');
+      const defaultCodes = {
+        'javascript': 'console.log("Hello!");',
+        'python': 'print("Hello!")',
+        'text/x-csrc': '#include <stdio.h>\n\nint main() {\n    printf("Hello!\\n");\n    return 0;\n}',
+        'text/x-c++src': '#include <iostream>\n\nint main() {\n    std::cout << "Hello!" << std::endl;\n    return 0;\n}',
+        'text/x-java': 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello!");\n    }\n}',
+        'php': '<?php\necho "Hello!";\n?>',
+        'xml': '<html>\n  <body>Hello!</body>\n</html>',
+        'css': 'body { color: blue; }'
+      };
+      return defaultCodes[mode] || 'console.log("Hello!");';
+    }
+
     // Reset editor
     function resetEditor() {
-      editor.setValue('console.log("Hello!");');
+      const defaultCode = getDefaultCodeForCurrentLanguage();
+      editor.setValue(defaultCode);
       hideResult();
       document.getElementById('testResults').className = 'test-results';
       showResult('Editor reset. You can start fresh.', 'info');
@@ -506,6 +527,10 @@
     document.getElementById('languageSelect').addEventListener('change', function() {
       const mode = this.value;
       editor.setOption('mode', mode);
+      console.log('Language changed to CodeMirror mode:', mode, 'Judge0 language:', getJudge0Language());
+      // Clear any previous results when language changes
+      hideResult();
+      document.getElementById('testResults').className = 'test-results';
     });
 
     // Button event listeners
