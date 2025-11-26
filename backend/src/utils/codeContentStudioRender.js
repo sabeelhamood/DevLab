@@ -110,6 +110,60 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
     apiBaseUrlReplacement
   )
 
+  // Inject service headers directly into template (no parent access needed)
+  const serviceKey = getDefaultServiceApiKey()
+  const serviceId = getDefaultServiceId()
+  const serviceHeaders = {
+    ...(serviceKey ? { 'x-api-key': serviceKey } : {}),
+    ...(serviceId ? { 'x-service-id': serviceId } : {})
+  }
+  
+  const serviceHeadersReplacement = `function getServiceHeaders() {
+      // Service headers injected directly into template
+      const injectedHeaders = ${serializeJsonForScript(serviceHeaders)};
+      if (injectedHeaders && Object.keys(injectedHeaders).length > 0) {
+        return { ...injectedHeaders };
+      }
+      // Fallback to parent if available (for backwards compatibility)
+      try {
+        if (window.parent && window.parent.__DEVLAB_SERVICE_HEADERS) {
+          const headers = window.parent.__DEVLAB_SERVICE_HEADERS;
+          if (typeof headers === 'object') {
+            return { ...headers };
+          }
+        }
+      } catch (e) {
+        // Cross-origin restriction
+      }
+      return {};
+    }`
+  
+  // Match the entire getServiceHeaders function (multiline match)
+  template = template.replace(
+    /function getServiceHeaders\(\) \{[\s\S]*?\n\s*return \{\};\n\s*\}/m,
+    serviceHeadersReplacement
+  )
+  
+  // Add postMessage to notify parent when CodeMirror is ready
+  // Insert after window.getCode is defined and send notification after editor is ready
+  const readyNotification = `
+    // Notify parent window that CodeMirror is ready
+    setTimeout(function() {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'codemirror-ready' }, '*');
+        }
+      } catch (e) {
+        // Cross-origin restriction, ignore
+      }
+    }, 100);
+  `
+  // Insert the notification right after window.getCode definition
+  template = template.replace(
+    /(window\.getCode = function\(\) \{[\s\S]*?return editor\.getValue\(\);\s*\};\s*)/,
+    `$1${readyNotification}`
+  )
+
   return template
 }
 
@@ -357,27 +411,69 @@ ${questionsJson}
           const resultEl = container.querySelector('[data-role="result"]');
           
           let iframeReady = false;
+          let getCodeFunctionAvailable = false;
           
-          // Wait for iframe to load before accessing contentWindow
+          // Wait for iframe to load and getCode function to be available
           if (codeMirrorIframe) {
+            // Listen for postMessage from iframe indicating it's ready
+            const messageHandler = (event) => {
+              if (event.data && event.data.type === 'codemirror-ready') {
+                iframeReady = true;
+                getCodeFunctionAvailable = true;
+                window.removeEventListener('message', messageHandler);
+              }
+            };
+            window.addEventListener('message', messageHandler);
+            
             codeMirrorIframe.addEventListener('load', () => {
               // Give iframe scripts time to initialize
               setTimeout(() => {
-                iframeReady = true;
+                // Try to check if getCode is available
+                try {
+                  if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
+                    iframeReady = true;
+                    getCodeFunctionAvailable = true;
+                  } else {
+                    // Wait a bit more and check again
+                    setTimeout(() => {
+                      if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
+                        iframeReady = true;
+                        getCodeFunctionAvailable = true;
+                      }
+                    }, 200);
+                  }
+                } catch (err) {
+                  // Cross-origin or not ready yet
+                }
               }, 100);
             });
             
             // Check if iframe is already loaded
-            if (codeMirrorIframe.contentDocument && codeMirrorIframe.contentDocument.readyState === 'complete') {
-              setTimeout(() => {
-                iframeReady = true;
-              }, 100);
+            try {
+              if (codeMirrorIframe.contentDocument && codeMirrorIframe.contentDocument.readyState === 'complete') {
+                setTimeout(() => {
+                  try {
+                    if (codeMirrorIframe.contentWindow && typeof codeMirrorIframe.contentWindow.getCode === 'function') {
+                      iframeReady = true;
+                      getCodeFunctionAvailable = true;
+                    }
+                  } catch (err) {
+                    // Not ready yet
+                  }
+                }, 100);
+              }
+            } catch (err) {
+              // Can't access contentDocument yet
             }
           }
           
-          // Helper function to get code from CodeMirror iframe with existence checks
-          const getCodeFromEditor = () => {
-            if (!codeMirrorIframe || !iframeReady) {
+          // Helper function to get code from CodeMirror iframe with existence checks and retry
+          const getCodeFromEditor = (retries = 3) => {
+            if (!codeMirrorIframe) {
+              return '';
+            }
+            if (!iframeReady && retries > 0) {
+              // Wait a bit and retry
               return '';
             }
             if (!codeMirrorIframe.contentWindow) {
@@ -995,9 +1091,13 @@ ${questionsJson}
             const hintState = getHintStateForQuestion(questionId);
               
               // Wait for iframe to be ready if not already
-              if (!iframeReady) {
-                setResult('Please wait for the code editor to load...', '#f97316');
-                return;
+              if (!iframeReady || !getCodeFunctionAvailable) {
+                // Try to get code anyway (might be ready now)
+                const code = getCodeFromEditor();
+                if (!code && !iframeReady) {
+                  setResult('Please wait for the code editor to load...', '#f97316');
+                  return;
+                }
               }
               
               const userAttempt = getCodeFromEditor();
@@ -1135,9 +1235,13 @@ ${questionsJson}
             submitBtn.addEventListener('click', async () => {
               
               // Wait for iframe to be ready if not already
-              if (!iframeReady) {
-                setResult('Please wait for the code editor to load...', '#f97316');
-                return;
+              if (!iframeReady || !getCodeFunctionAvailable) {
+                // Try to get code anyway (might be ready now)
+                const code = getCodeFromEditor();
+                if (!code && !iframeReady) {
+                  setResult('Please wait for the code editor to load...', '#f97316');
+                  return;
+                }
               }
               
               const userSolution = getCodeFromEditor();
