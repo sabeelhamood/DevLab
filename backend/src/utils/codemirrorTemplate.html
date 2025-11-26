@@ -1,363 +1,518 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>CodeMirror Editor</title>
+  <meta charset="UTF-8">
+  <title>CodeMirror Editor with Judge0</title>
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    margin: 0;
-    transition: background 0.3s ease, color 0.3s ease;
-}
+  <!-- CodeMirror core -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 
-body.light-mode {
-    background: #f5f5f5;
-    color: #000;
-}
+  <!-- Languages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script> <!-- Java, C, CPP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 
-body.dark-mode {
-    background: #1e1e1e;
-    color: #ddd;
-}
-
-#editorContainer {
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 5px;
-    margin-bottom: 10px;
-    min-height: 400px;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-#editorContainer.light-mode {
-    background: #fff;
-    color: #000;
-}
-
-#editorContainer.dark-mode {
-    background: #282c34;
-    color: #abb2bf;
-}
-
-.controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-}
-
-button {
-    padding: 10px 15px;
-    font-size: 14px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-body.light-mode button {
-    background: #e0e0e0;
-    color: #000;
-}
-
-body.dark-mode button {
-    background: #3a3f4b;
-    color: #fff;
-}
-
-button:hover { opacity: 0.9; }
-
-#output {
-    white-space: pre-wrap;
-    background: #222;
-    color: #0f0;
-    padding: 15px;
-    border-radius: 10px;
-    min-height: 120px;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-#output.light-mode {
-    background: #222;
-    color: #0f0;
-}
-
-#output.dark-mode {
-    background: #000;
-    color: #7cff7c;
-}
-
-textarea#otherEditor,
-textarea#fallbackEditor,
-textarea.plain-editor {
-    width: 100%;
-    height: 400px;
-    font-family: monospace;
-    font-size: 16px;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-}
-</style>
-
-<script type="module">
-/* ------------------ CORE ------------------ */
-import { EditorState } from "https://esm.sh/@codemirror/state@6.4.1";
-import { EditorView } from "https://esm.sh/@codemirror/view@6.23.0?deps=@codemirror/state@6.4.1";
-import { basicSetup } from "https://esm.sh/@codemirror/basic-setup@0.20.0?deps=@codemirror/state@6.4.1";
-
-/* ------------------ LANGUAGES ------------------ */
-import { javascript } from "https://esm.sh/@codemirror/lang-javascript@6.2.1?deps=@codemirror/state@6.4.1";
-import { python } from "https://esm.sh/@codemirror/lang-python@6.1.3?deps=@codemirror/state@6.4.1";
-import { cpp } from "https://esm.sh/@codemirror/lang-cpp@6.0.1?deps=@codemirror/state@6.4.1";
-import { java } from "https://esm.sh/@codemirror/lang-java@6.0.1?deps=@codemirror/state@6.4.1";
-import { rust } from "https://esm.sh/@codemirror/lang-rust@6.0.1?deps=@codemirror/state@6.4.1";
-import { go } from "https://esm.sh/@codemirror/lang-go@6.0.0?deps=@codemirror/state@6.4.1";
-import { php } from "https://esm.sh/@codemirror/lang-php@6.0.1?deps=@codemirror/state@6.4.1";
-import { sql } from "https://esm.sh/@codemirror/lang-sql@6.6.0?deps=@codemirror/state@6.4.1";
-import { html } from "https://esm.sh/@codemirror/lang-html@6.4.4?deps=@codemirror/state@6.4.1";
-import { css } from "https://esm.sh/@codemirror/lang-css@6.3.0?deps=@codemirror/state@6.4.1";
-import { xml } from "https://esm.sh/@codemirror/lang-xml@6.0.2?deps=@codemirror/state@6.4.1";
-import { json } from "https://esm.sh/@codemirror/lang-json@6.0.1?deps=@codemirror/state@6.4.1";
-import { markdown } from "https://esm.sh/@codemirror/lang-markdown@6.0.4?deps=@codemirror/state@6.4.1";
-import { yaml } from "https://esm.sh/@codemirror/lang-yaml@6.1.1?deps=@codemirror/state@6.4.1";
-import { wast } from "https://esm.sh/@codemirror/lang-wast@6.0.1?deps=@codemirror/state@6.4.1";
-import { lezer } from "https://esm.sh/@codemirror/lang-lezer@6.0.1?deps=@codemirror/state@6.4.1";
-
-/* ------------------ THEMES ------------------ */
-import { oneDark } from "https://esm.sh/@codemirror/theme-one-dark@6.1.3?deps=@codemirror/state@6.4.1";
-
-/* ------------------ EXTENSION MAPS ------------------ */
-const languageExtensions = {
-    javascript: () => javascript(),
-    typescript: () => javascript({ typescript: true }),
-    jsx: () => javascript({ jsx: true }),
-    tsx: () => javascript({ jsx: true, typescript: true }),
-    python: () => python(),
-    cpp: () => cpp(),
-    c: () => cpp(),
-    java: () => java(),
-    rust: () => rust(),
-    go: () => go(),
-    php: () => php(),
-    sql: () => sql(),
-    html: () => html(),
-    css: () => css(),
-    xml: () => xml(),
-    json: () => json(),
-    markdown: () => markdown(),
-    yaml: () => yaml(),
-    wast: () => wast(),
-    lezer: () => lezer()
-};
-
-const themeExtensions = {
-    light: [],
-    oneDark: [oneDark]
-};
-
-let editor = null;
-let currentTheme = "light";
-let fallbackMode = false;
-
-function displayMessage(message) {
-    const outputEl = document.getElementById("output");
-    if (outputEl) outputEl.innerText = message;
-}
-
-function applyThemeClasses(theme) {
-    const body = document.body;
-    const container = document.getElementById("editorContainer");
-    const output = document.getElementById("output");
-    const isDark = theme === "oneDark";
-
-    body.classList.toggle("dark-mode", isDark);
-    body.classList.toggle("light-mode", !isDark);
-
-    [container, output].forEach(el => {
-        if (!el) return;
-        el.classList.toggle("dark-mode", isDark);
-        el.classList.toggle("light-mode", !isDark);
-    });
-}
-
-function activateFallbackEditor(initialValue = "") {
-    const container = document.getElementById("editorContainer");
-    if (!container) return;
-    fallbackMode = true;
-    editor = null;
-    container.innerHTML = '<textarea id="fallbackEditor" class="plain-editor"></textarea>';
-    const fallbackEditor = document.getElementById("fallbackEditor");
-    if (fallbackEditor) fallbackEditor.value = initialValue;
-}
-
-function verifyEditorInteractivity() {
-    if (!editor || !editor.contentDOM) {
-        activateFallbackEditor("");
-        displayMessage("⚠ Editor is unavailable in this environment. Falling back to plain text mode.");
-        return;
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #ffffff;
     }
-
-    editor.focus();
-    requestAnimationFrame(() => {
-        if (!editor || !editor.contentDOM || fallbackMode) return;
-        const active = document.activeElement;
-        const hasFocus = editor.contentDOM === active || editor.contentDOM.contains(active);
-        const isEditable = editor.contentDOM.getAttribute("contenteditable") !== "false";
-
-        if (!hasFocus || !isEditable) {
-            const currentValue = editor.state.doc.toString();
-            activateFallbackEditor(currentValue);
-            displayMessage("⚠ CodeMirror input is blocked by sandbox restrictions. Switched to plain textarea.");
-        }
-    });
-}
-
-/* ------------------ EDITOR SETUP ------------------ */
-function createEditor(language = "javascript", theme = "light") {
-    const container = document.getElementById("editorContainer");
-    container.innerHTML = ""; 
-    if (language === "other") {
-        fallbackMode = false;
-        editor = null;
-        container.innerHTML = '<textarea id="otherEditor" class="plain-editor"></textarea>';
-        return;
+    .editor-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    fallbackMode = false;
-    const langFactory = languageExtensions[language];
-    const themeExt = themeExtensions[theme] || [];
-    const langExt = typeof langFactory === "function" ? langFactory() : [];
-    editor = new EditorView({
-        parent: container,
-        state: EditorState.create({
-            doc: "",
-            extensions: [
-                basicSetup,
-                ...(Array.isArray(langExt) ? langExt : [langExt]),
-                ...themeExt
-            ]
-        })
-    });
-
-    verifyEditorInteractivity();
-}
-
-function getCode() {
-    if (fallbackMode) {
-        const fallbackEditor = document.getElementById("fallbackEditor");
-        if (fallbackEditor) return fallbackEditor.value;
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
-    const lang = document.getElementById("languageSelect").value;
-    if (lang === "other") return document.getElementById("otherEditor").value;
-    return editor?.state.doc.toString() ?? "";
-}
-
-async function runCode() {
-    const lang = document.getElementById("languageSelect").value;
-    const code = getCode();
-    if (!code) {
-        displayMessage("⚠ No code to run!");
-        return;
+    .toolbar select {
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
     }
-    try {
-        const res = await fetch("/judge0/execute", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ sourceCode: code, language: lang, input:"" })
-        });
-        const result = await res.json();
-        document.getElementById("output").innerText = JSON.stringify(result, null, 2);
-    } catch (e) { console.error(e); }
-}
-
-async function runAllTests() {
-    const lang = document.getElementById("languageSelect").value;
-    const code = getCode();
-    if (!code) {
-        displayMessage("⚠ No code to run!");
-        return;
+    .toolbar button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-    const tests = [
-        { input: "1 2", expectedOutput: "3" },
-        { input: "5 7", expectedOutput: "12" }
-    ];
-    try {
-        const res = await fetch("/judge0/test-cases", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({ sourceCode: code, language: lang, testCases: tests })
-        });
-        const result = await res.json();
-        document.getElementById("output").innerText = JSON.stringify(result, null, 2);
-    } catch(e) { console.error(e); }
-}
-
-function resetEditor() {
-    const lang = document.getElementById("languageSelect").value;
-    createEditor(lang, currentTheme);
-}
-
-window.addEventListener("DOMContentLoaded", ()=>{
-    createEditor("javascript", currentTheme);
-    applyThemeClasses(currentTheme);
-    document.getElementById("languageSelect").addEventListener("change", e=>{
-        createEditor(e.target.value, currentTheme);
-    });
-    document.getElementById("themeSelect").addEventListener("change", e=>{
-        currentTheme = e.target.value;
-        applyThemeClasses(currentTheme);
-        createEditor(document.getElementById("languageSelect").value, currentTheme);
-    });
-    document.getElementById("runBtn").onclick = runCode;
-    document.getElementById("runAllBtn").onclick = runAllTests;
-    document.getElementById("resetBtn").onclick = resetEditor;
-});
-</script>
+    .toolbar button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-run {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-run:hover:not(:disabled) {
+      background: #2563eb;
+    }
+    .btn-run-tests {
+      background: #10b981;
+      color: white;
+    }
+    .btn-run-tests:hover:not(:disabled) {
+      background: #059669;
+    }
+    .btn-reset {
+      background: #6b7280;
+      color: white;
+    }
+    .btn-reset:hover:not(:disabled) {
+      background: #4b5563;
+    }
+    .CodeMirror {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      height: 400px;
+      font-size: 14px;
+    }
+    .result-container {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    .result-container.show {
+      display: block;
+    }
+    .result-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .result-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+    .result-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #3b82f6;
+    }
+    .test-results {
+      margin-top: 16px;
+      display: none;
+    }
+    .test-results.show {
+      display: block;
+    }
+    .test-result-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    .test-result-passed {
+      background: #d1fae5;
+      border-color: #10b981;
+    }
+    .test-result-failed {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+    .test-result-header {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .test-result-details {
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .test-result-details pre {
+      margin: 4px 0;
+      padding: 8px;
+      background: #f3f4f6;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
 </head>
 
-<body class="light-mode">
-<h2>Code Editor</h2>
+<body>
+  <div class="editor-container">
+    <div class="toolbar">
+      <select id="languageSelect">
+        <option value="javascript">JavaScript</option>
+        <option value="python">Python</option>
+        <option value="text/x-csrc">C</option>
+        <option value="text/x-c++src">C++</option>
+        <option value="text/x-java">Java</option>
+        <option value="php">PHP</option>
+        <option value="xml">HTML / XML</option>
+        <option value="css">CSS</option>
+      </select>
+      <button id="runBtn" class="btn-run">▶ Run</button>
+      <button id="runTestsBtn" class="btn-run-tests">🧪 Run All Tests</button>
+      <button id="resetBtn" class="btn-reset">↻ Reset</button>
+    </div>
 
-<div class="controls">
-<select id="languageSelect">
-    <option value="javascript">JavaScript</option>
-    <option value="typescript">TypeScript</option>
-    <option value="jsx">JSX</option>
-    <option value="tsx">TSX</option>
-    <option value="python">Python</option>
-    <option value="cpp">C / C++</option>
-    <option value="java">Java</option>
-    <option value="rust">Rust</option>
-    <option value="go">Go</option>
-    <option value="php">PHP</option>
-    <option value="dart">Dart</option>
-    <option value="swift">Swift</option>
-    <option value="sql">SQL</option>
-    <option value="html">HTML</option>
-    <option value="css">CSS</option>
-    <option value="json">JSON</option>
-    <option value="markdown">Markdown</option>
-    <option value="yaml">YAML</option>
-    <option value="xml">XML</option>
-    <option value="other">Other</option>
-</select>
+    <textarea id="editor">console.log("Hello!");</textarea>
 
-<select id="themeSelect">
-    <option value="light">Light</option>
-    <option value="oneDark">One Dark</option>
-</select>
+    <div id="resultContainer" class="result-container"></div>
 
-<button id="runBtn">▶ Run</button>
-<button id="runAllBtn">🧪 Run All Tests</button>
-<button id="resetBtn">🔹 Reset</button>
-</div>
+    <div id="testResults" class="test-results"></div>
+  </div>
 
-<div id="editorContainer"></div>
+  <script>
+    // Initialize test cases (will be injected by buildCodeMirrorTemplateForQuestion)
+    const tests = [];
 
-<h3>Output:</h3>
-<pre id="output"></pre>
+    // Create editor
+    const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+      lineNumbers: true,
+      mode: "javascript",
+      theme: "default"
+    });
+
+    // Map CodeMirror modes to Judge0 language names
+    const languageMap = {
+      'javascript': 'javascript',
+      'python': 'python',
+      'text/x-csrc': 'c',
+      'text/x-c++src': 'cpp',
+      'text/x-java': 'java',
+      'php': 'php',
+      'xml': 'xml',
+      'css': 'css'
+    };
+
+    // Get current Judge0 language from CodeMirror mode
+    function getJudge0Language() {
+      const mode = editor.getOption('mode');
+      return languageMap[mode] || 'javascript';
+    }
+
+    // Expose getCode function to parent window
+    window.getCode = function() {
+      return editor.getValue();
+    };
+
+    // Get API base URL from parent window or construct from location
+    function getApiBaseUrl() {
+      try {
+        if (window.parent && window.parent.__DEVLAB_API_BASE__) {
+          return window.parent.__DEVLAB_API_BASE__;
+        }
+      } catch (e) {
+        // Cross-origin restriction, fall through
+      }
+      
+      // Fallback: construct from current location
+      const currentUrl = window.location.href;
+      if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+        return 'http://localhost:3000';
+      }
+      // Try to extract base from parent if accessible
+      try {
+        if (window.parent && window.parent.location) {
+          const parentOrigin = window.parent.location.origin;
+          return parentOrigin;
+        }
+      } catch (e) {
+        // Cross-origin restriction
+      }
+      return '';
+    }
+
+    // Build API URL
+    function buildUrl(path) {
+      const base = getApiBaseUrl();
+      if (!path) return '';
+      if (/^https?:\/\//i.test(path)) return path;
+      const normalized = path.startsWith('/') ? path : '/' + path;
+      return base ? (base.replace(/\/+$/, '') + normalized) : normalized;
+    }
+
+    // Get service headers from parent window
+    function getServiceHeaders() {
+      try {
+        if (window.parent && window.parent.__DEVLAB_SERVICE_HEADERS) {
+          const headers = window.parent.__DEVLAB_SERVICE_HEADERS;
+          if (typeof headers === 'object') {
+            return { ...headers };
+          }
+        }
+      } catch (e) {
+        // Cross-origin restriction
+      }
+      return {};
+    }
+
+    // Display result message
+    function showResult(message, type = 'info') {
+      const container = document.getElementById('resultContainer');
+      container.textContent = message;
+      container.className = 'result-container show result-' + type;
+    }
+
+    // Hide result
+    function hideResult() {
+      const container = document.getElementById('resultContainer');
+      container.className = 'result-container';
+    }
+
+    // Render test results
+    function renderTestResults(results) {
+      const container = document.getElementById('testResults');
+      container.innerHTML = '';
+      
+      if (!results || results.length === 0) {
+        container.className = 'test-results';
+        return;
+      }
+
+      container.className = 'test-results show';
+
+      const total = results.length;
+      const passed = results.filter(r => r.passed).length;
+
+      const summary = document.createElement('div');
+      summary.style.cssText = 'font-weight: 600; font-size: 16px; margin-bottom: 12px; padding: 12px; background: #f3f4f6; border-radius: 6px;';
+      summary.textContent = `Test Results: ${passed}/${total} tests passed`;
+      container.appendChild(summary);
+
+      results.forEach((result, index) => {
+        const item = document.createElement('div');
+        item.className = 'test-result-item ' + (result.passed ? 'test-result-passed' : 'test-result-failed');
+        
+        const header = document.createElement('div');
+        header.className = 'test-result-header';
+        header.textContent = `Test ${result.testNumber || (index + 1)}: ${result.passed ? '✅ PASSED' : '❌ FAILED'}`;
+        item.appendChild(header);
+
+        const details = document.createElement('div');
+        details.className = 'test-result-details';
+        
+        if (result.input !== undefined) {
+          const inputLabel = document.createElement('div');
+          inputLabel.textContent = 'Input:';
+          inputLabel.style.cssText = 'font-weight: 600; margin-top: 8px;';
+          details.appendChild(inputLabel);
+          const inputPre = document.createElement('pre');
+          inputPre.textContent = typeof result.input === 'object' ? JSON.stringify(result.input, null, 2) : String(result.input);
+          details.appendChild(inputPre);
+        }
+
+        if (result.expected !== undefined) {
+          const expectedLabel = document.createElement('div');
+          expectedLabel.textContent = 'Expected:';
+          expectedLabel.style.cssText = 'font-weight: 600; margin-top: 8px;';
+          details.appendChild(expectedLabel);
+          const expectedPre = document.createElement('pre');
+          expectedPre.textContent = typeof result.expected === 'object' ? JSON.stringify(result.expected, null, 2) : String(result.expected);
+          details.appendChild(expectedPre);
+        }
+
+        if (result.result !== undefined) {
+          const resultLabel = document.createElement('div');
+          resultLabel.textContent = 'Got:';
+          resultLabel.style.cssText = 'font-weight: 600; margin-top: 8px;';
+          details.appendChild(resultLabel);
+          const resultPre = document.createElement('pre');
+          resultPre.textContent = typeof result.result === 'object' ? JSON.stringify(result.result, null, 2) : String(result.result);
+          details.appendChild(resultPre);
+        }
+
+        if (result.stderr) {
+          const errorLabel = document.createElement('div');
+          errorLabel.textContent = 'Error:';
+          errorLabel.style.cssText = 'font-weight: 600; margin-top: 8px; color: #dc2626;';
+          details.appendChild(errorLabel);
+          const errorPre = document.createElement('pre');
+          errorPre.textContent = result.stderr;
+          errorPre.style.cssText = 'color: #dc2626;';
+          details.appendChild(errorPre);
+        }
+
+        if (result.status) {
+          const statusLabel = document.createElement('div');
+          statusLabel.textContent = 'Status: ' + result.status;
+          statusLabel.style.cssText = 'margin-top: 8px; font-size: 12px; color: #6b7280;';
+          details.appendChild(statusLabel);
+        }
+
+        item.appendChild(details);
+        container.appendChild(item);
+      });
+    }
+
+    // Run code (check compilation)
+    async function runCode() {
+      const code = editor.getValue();
+      if (!code.trim()) {
+        showResult('Please write some code before running.', 'error');
+        return;
+      }
+
+      const runBtn = document.getElementById('runBtn');
+      const language = getJudge0Language();
+
+      try {
+        runBtn.disabled = true;
+        hideResult();
+        document.getElementById('testResults').className = 'test-results';
+        showResult('Running code via Judge0...', 'info');
+
+        const endpoint = buildUrl('/api/judge0/execute');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...getServiceHeaders()
+        };
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceCode: code,
+            language: language,
+            input: '',
+            expectedOutput: null
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Failed to execute code via Judge0');
+        }
+
+        const result = data.result || data;
+        const stdout = result.stdout || '';
+        const stderr = result.stderr || result.compile_output || '';
+
+        if (result.statusId === 3 || result.status === 'Accepted') {
+          // Success
+          if (stdout) {
+            showResult('Output: ' + stdout.trim(), 'success');
+          } else if (stderr) {
+            showResult('Compiled successfully. Warnings: ' + stderr.trim(), 'info');
+          } else {
+            showResult('Code executed successfully (no output).', 'success');
+          }
+        } else {
+          // Error
+          const errorMsg = stderr || result.status || 'Execution failed';
+          showResult('Error: ' + errorMsg, 'error');
+        }
+      } catch (error) {
+        console.error('Judge0 Run Code error:', error);
+        showResult('Failed to run code via Judge0: ' + (error.message || 'Unknown error'), 'error');
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    // Run all test cases
+    async function runAllTests() {
+      const code = editor.getValue();
+      if (!code.trim()) {
+        showResult('Please write some code before running tests.', 'error');
+        return;
+      }
+
+      if (!tests || tests.length === 0) {
+        showResult('No test cases available for this question.', 'error');
+        return;
+      }
+
+      const runTestsBtn = document.getElementById('runTestsBtn');
+      const language = getJudge0Language();
+
+      try {
+        runTestsBtn.disabled = true;
+        hideResult();
+        document.getElementById('testResults').className = 'test-results';
+        showResult('Running all tests via Judge0...', 'info');
+
+        // Convert test cases to the format expected by the API
+        const testCases = tests.map(tc => ({
+          input: tc.input !== undefined ? tc.input : (tc.testInput !== undefined ? tc.testInput : ''),
+          expected_output: tc.expectedOutput !== undefined ? tc.expectedOutput : (tc.expected_output !== undefined ? tc.expected_output : (tc.output !== undefined ? tc.output : ''))
+        }));
+
+        const endpoint = buildUrl('/api/judge0/test-cases');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...getServiceHeaders()
+        };
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceCode: code,
+            language: language,
+            testCases: testCases
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Failed to run Judge0 test-cases');
+        }
+
+        const results = Array.isArray(data.results) ? data.results : [];
+        renderTestResults(results);
+
+        const total = data.totalTests || results.length;
+        const passed = typeof data.passedTests === 'number' ? data.passedTests : results.filter(r => r.passed).length;
+
+        if (total > 0) {
+          const allPassed = passed === total;
+          const message = 'Judge0: ' + passed + '/' + total + ' tests passed.';
+          showResult(message, allPassed ? 'success' : 'error');
+        } else {
+          showResult('Judge0: No test results returned.', 'error');
+        }
+      } catch (error) {
+        console.error('Judge0 Run All Tests error:', error);
+        showResult('Failed to run tests via Judge0: ' + (error.message || 'Unknown error'), 'error');
+        document.getElementById('testResults').className = 'test-results';
+      } finally {
+        runTestsBtn.disabled = false;
+      }
+    }
+
+    // Reset editor
+    function resetEditor() {
+      editor.setValue('console.log("Hello!");');
+      hideResult();
+      document.getElementById('testResults').className = 'test-results';
+      showResult('Editor reset. You can start fresh.', 'info');
+      setTimeout(hideResult, 2000);
+    }
+
+    // Change mode based on <select>
+    document.getElementById('languageSelect').addEventListener('change', function() {
+      const mode = this.value;
+      editor.setOption('mode', mode);
+    });
+
+    // Button event listeners
+    document.getElementById('runBtn').addEventListener('click', runCode);
+    document.getElementById('runTestsBtn').addEventListener('click', runAllTests);
+    document.getElementById('resetBtn').addEventListener('click', resetEditor);
+  </script>
 
 </body>
 </html>

@@ -232,6 +232,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
   }).join('')
 
   const serviceHeadersScript = renderServiceHeadersScript()
+  const apiBaseUrlScript = renderApiBaseUrlScript()
 
   return `
     <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
@@ -266,6 +267,7 @@ export function renderAssessmentCodeQuestions(questions = []) {
       </div>
     </div>
     ${renderQuestionMetaScript(questions)}
+    ${apiBaseUrlScript}
     ${serviceHeadersScript}
     ${renderStepperBootstrap()}
   `
@@ -295,6 +297,7 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
   const normalizedTestCases = extractNormalizedTestCases(question)
   if (normalizedTestCases.length) {
     const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
+    // Replace existing tests array (handles both empty [] and non-empty arrays)
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
@@ -443,6 +446,25 @@ function renderServiceHeadersScript() {
         } catch (err) {
           console.error('Failed to initialize service headers', err);
           window.__DEVLAB_SERVICE_HEADERS = ${payload};
+        }
+      })();
+    </script>
+  `
+}
+
+function renderApiBaseUrlScript() {
+  const baseUrl = getBackendBaseUrl()
+  if (!baseUrl) {
+    return ''
+  }
+
+  return `
+    <script>
+      (function () {
+        try {
+          window.__DEVLAB_API_BASE__ = ${serializeJsonForScript(baseUrl)};
+        } catch (err) {
+          console.error('Failed to initialize API base URL', err);
         }
       })();
     </script>
