@@ -311,10 +311,10 @@ function renderSingleQuestion(question, index, topicName, language) {
         <div data-role="editor-pane" style="display:grid;gap:16px;">
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;">
+          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;pointer-events:auto;position:relative;z-index:10;">
             💡 Get Hint
           </button>
-          <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
+          <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;pointer-events:auto;position:relative;z-index:10;">
             🔍 Show Solution
           </button>
           <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;">
@@ -534,14 +534,27 @@ ${questionsJson}
           const hintBtn = container.querySelector('[data-action="hint"]');
           const showSolutionBtn = container.querySelector('[data-action="show-solution"]');
           const submitBtn = container.querySelector('[data-action="submit"]');
+          
+          // Debug: Log if buttons are found
+          console.log('[CodeContentStudio] Buttons found:', {
+            hintBtn: !!hintBtn,
+            showSolutionBtn: !!showSolutionBtn,
+            submitBtn: !!submitBtn,
+            codeMirrorIframe: !!codeMirrorIframe
+          });
           const hintsSection = container.querySelector('[data-role="hints"]');
           const hintsList = container.querySelector('[data-role="hints-list"]');
         const questionTitleEl = container.querySelector('[data-role="question-title"]');
         const questionDescriptionEl = container.querySelector('[data-role="question-description"]');
         const testCasesContainer = container.querySelector('[data-role="test-cases-container"]');
 
-        if (!codeMirrorIframe || !resultEl) {
+        if (!resultEl) {
           return;
+        }
+        
+        // If iframe doesn't exist, log a warning but continue (buttons should still work)
+        if (!codeMirrorIframe) {
+          console.warn('[CodeContentStudio] CodeMirror iframe not found, some features may not work');
         }
 
         const totalQuestions = meta.length;
@@ -1148,8 +1161,14 @@ ${questionsJson}
           setResult('', '#e5e7eb');
         };
 
-          if (hintBtn && codeMirrorIframe) {
+          if (hintBtn) {
+            console.log('[CodeContentStudio] Attaching click handler to Get Hint button');
             hintBtn.addEventListener('click', async () => {
+              console.log('[CodeContentStudio] Get Hint button clicked');
+              if (!codeMirrorIframe) {
+                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
+                return;
+              }
             const metaEntry = getCurrentMeta();
             const questionText = metaEntry.description || metaEntry.title || '';
             const topicName = metaEntry.topicName || '';
@@ -1220,8 +1239,14 @@ ${questionsJson}
             });
           }
 
-          if (showSolutionBtn && codeMirrorIframe) {
+          if (showSolutionBtn) {
+            console.log('[CodeContentStudio] Attaching click handler to Show Solution button');
             showSolutionBtn.addEventListener('click', () => {
+              console.log('[CodeContentStudio] Show Solution button clicked');
+              if (!codeMirrorIframe) {
+                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
+                return;
+              }
               const metaEntry = getCurrentMeta();
               const questionText = metaEntry.description || metaEntry.title || '';
               const topicName = metaEntry.topicName || '';
@@ -1307,8 +1332,12 @@ ${questionsJson}
             });
           }
 
-          if (submitBtn && codeMirrorIframe) {
+          if (submitBtn) {
             submitBtn.addEventListener('click', async () => {
+              if (!codeMirrorIframe) {
+                setResult('Code editor is not available. Please refresh the page.', '#ef4444');
+                return;
+              }
               
               // Try to get code - function will handle readiness internally
               let userSolution = getCodeFromEditor();
