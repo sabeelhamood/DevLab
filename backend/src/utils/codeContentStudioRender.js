@@ -542,10 +542,23 @@ ${questionsJson}
             
             // Extract feedback as string only - avoid JSON display
             let feedback = '';
-            if (typeof evaluation.feedback === 'string') {
-              feedback = evaluation.feedback;
+            if (typeof evaluation.feedback === 'string' && evaluation.feedback.trim() !== '') {
+              feedback = evaluation.feedback.trim();
             } else if (typeof evaluation.feedback === 'object' && evaluation.feedback !== null) {
               feedback = evaluation.feedback.message || evaluation.feedback.text || evaluation.feedback.summary || '';
+              if (typeof feedback !== 'string') {
+                feedback = '';
+              }
+            }
+            // Never display JSON - detect and reject JSON-like strings
+            if (!feedback) {
+              feedback = '';
+            } else {
+              // Check if feedback looks like JSON (starts with { or [ and contains quotes)
+              const trimmed = feedback.trim();
+              if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.includes('"') || trimmed.includes("'"))) {
+                feedback = '';
+              }
             }
             
             // Extract suggestions as array of strings only
@@ -636,10 +649,23 @@ ${questionsJson}
             
             // Extract feedback as string only - avoid JSON display
             let feedback = '';
-            if (typeof evaluation.feedback === 'string') {
-              feedback = evaluation.feedback;
+            if (typeof evaluation.feedback === 'string' && evaluation.feedback.trim() !== '') {
+              feedback = evaluation.feedback.trim();
             } else if (typeof evaluation.feedback === 'object' && evaluation.feedback !== null) {
               feedback = evaluation.feedback.message || evaluation.feedback.text || evaluation.feedback.summary || '';
+              if (typeof feedback !== 'string') {
+                feedback = '';
+              }
+            }
+            // Never display JSON - detect and reject JSON-like strings
+            if (!feedback) {
+              feedback = '';
+            } else {
+              // Check if feedback looks like JSON (starts with { or [ and contains quotes)
+              const trimmed = feedback.trim();
+              if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.includes('"') || trimmed.includes("'"))) {
+                feedback = '';
+              }
             }
             
             // Extract suggestions as array of strings only
@@ -1159,7 +1185,22 @@ ${questionsJson}
                   throw new Error(data.error || 'Failed to check solution');
                 }
 
-                const evaluation = data.evaluation || data.data || data || {};
+                // Extract evaluation object with better validation
+                let evaluation = {};
+                if (data.evaluation && typeof data.evaluation === 'object') {
+                  evaluation = data.evaluation;
+                } else if (data.data && typeof data.data === 'object') {
+                  evaluation = data.data;
+                } else if (data && typeof data === 'object' && !data.error && (data.score !== undefined || data.feedback !== undefined)) {
+                  // If data itself looks like an evaluation object, use it
+                  evaluation = data;
+                }
+                
+                // Ensure evaluation is a valid object
+                if (!evaluation || typeof evaluation !== 'object') {
+                  evaluation = {};
+                }
+                
                 const score = typeof evaluation.score === 'number' ? evaluation.score : 0;
                 const isAiGenerated =
                   evaluation.isAiGenerated ||
