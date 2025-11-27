@@ -87,7 +87,10 @@ Provide a comprehensive evaluation that:
 1. Tests the code against the provided test cases
 2. Evaluates code quality, readability, and efficiency
 3. Checks for best practices and potential improvements
-4. Syntax and semantic correctness: Do NOT execute the code. Perform strict static analysis for syntax errors and semantic logic according to the programming language of the submitted code. Highlight any syntax or semantic issues with line numbers. Treat the code as if parsed by a strict compiler/interpreter for that programming language.
+4. Syntax and semantic correctness: Do NOT execute the code. Perform strict static analysis for syntax errors and semantic logic according to the programming language of the submitted code. 
+   - Treat the code as if parsed by a strict compiler/interpreter.
+   - Check for ALL syntax issues including missing or extra: semicolons (;), braces ({ }), parentheses (), colons (:), commas (,), and other punctuation relevant to the language.
+   - Highlight line numbers and specific issues.
 5. Logical correctness: Verify the solution fully satisfies all requirements specified in the question.
 6. Code quality: Assess readability, maintainability, efficiency, and adherence to best practices.
 7. Constructive feedback: Provide actionable suggestions for improvements, optimizations, or better coding style.
