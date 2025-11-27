@@ -1031,7 +1031,7 @@ int main() {
       
       if (expectsReturn) {
         // Only apply harness if we have test case input provided
-        // "Run" button without input should use standard wrapping
+        // "Run" button without input should send raw code (no wrapping, no function calls)
         // "Run All Tests" with test cases should use harness
         const hasInput = input && input.trim() !== '';
         if (hasInput) {
@@ -1041,10 +1041,11 @@ int main() {
           shouldUseHarness = true;
           console.log('🔧 Judge0: Using harness template (expectsReturn=true, has input)');
         } else {
-          // No input provided (e.g., "Run" button without test cases) - use standard wrapping
-          wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
+          // No input provided (e.g., "Run" button without test cases) - send raw code without wrapping
+          // This prevents automatic function calls that would cause errors
+          wrappedCode = sourceCode;
           shouldUseHarness = false;
-          console.log('🔧 Judge0: Using standard wrapping (expectsReturn=true but no input provided)');
+          console.log('🔧 Judge0: Sending raw code (expectsReturn=true but no input provided - no wrapping)');
         }
       } else {
         // Use existing wrapping logic for print-based exercises
