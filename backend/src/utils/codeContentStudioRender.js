@@ -566,11 +566,11 @@ ${questionsJson}
               ? evaluation.suggestions.map(s => typeof s === 'string' ? s : String(s))
               : [];
             
-            // Extract codeQuality and efficiency
-            const codeQuality = evaluation.codeQuality && typeof evaluation.codeQuality === 'object' 
-              ? evaluation.codeQuality 
-              : {};
-            const efficiency = codeQuality.efficiency || '';
+            const specificErrors = Array.isArray(evaluation.specificErrors)
+              ? evaluation.specificErrors
+                  .map(err => typeof err === 'string' ? err : String(err))
+                  .filter(Boolean)
+              : [];
 
             let suggestionsHtml = '';
             if (suggestions.length) {
@@ -597,6 +597,29 @@ ${questionsJson}
                 '<div style="display:grid;gap:8px;">' +
                 items +
                 '</div>' +
+                '</div>';
+            }
+
+            let specificErrorsHtml = '';
+            if (specificErrors.length) {
+              const items = specificErrors.slice(0, 3).map(err => {
+                const text = typeof err === 'string' ? err : String(err);
+                return (
+                  '<li style="font-size:13px;line-height:1.5;color:#7f1d1d;">' +
+                  text +
+                  '</li>'
+                );
+              }).join('');
+
+              specificErrorsHtml =
+                '<div style="margin-bottom:14px;">' +
+                '<div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                '<span style="width:6px;height:6px;border-radius:999px;background:#ef4444;"></span>' +
+                'Specific Errors' +
+                '</div>' +
+                '<ul style="margin:0;padding-left:18px;display:grid;gap:6px;">' +
+                items +
+                '</ul>' +
                 '</div>';
             }
 
@@ -633,7 +656,7 @@ ${questionsJson}
               (feedback || 'Great job! Your solution passes the automated checks.') +
               '</div>' +
               '</div>' +
-              (efficiency ? '<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:600;color:#047857;display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="width:6px;height:6px;border-radius:999px;background:#22c55e;"></span>Efficiency</div><div style="border-radius:12px;padding:12px 14px;background:#ffffff;border:1px solid rgba(148,163,184,0.4);font-size:13px;line-height:1.6;color:#111827;">' + String(efficiency) + '</div></div>' : '') +
+              specificErrorsHtml +
               suggestionsHtml +
               '</div>' +
               '</div>';
@@ -673,11 +696,11 @@ ${questionsJson}
               ? evaluation.suggestions.map(s => typeof s === 'string' ? s : String(s))
               : [];
             
-            // Extract codeQuality and efficiency
-            const codeQuality = evaluation.codeQuality && typeof evaluation.codeQuality === 'object' 
-              ? evaluation.codeQuality 
-              : {};
-            const efficiency = codeQuality.efficiency || '';
+            const specificErrors = Array.isArray(evaluation.specificErrors)
+              ? evaluation.specificErrors
+                  .map(err => typeof err === 'string' ? err : String(err))
+                  .filter(Boolean)
+              : [];
 
             let suggestionsHtml = '';
             if (suggestions.length) {
@@ -704,6 +727,29 @@ ${questionsJson}
                 '<div style="display:grid;gap:8px;">' +
                 items +
                 '</div>' +
+                '</div>';
+            }
+
+            let specificErrorsHtml = '';
+            if (specificErrors.length) {
+              const items = specificErrors.slice(0, 3).map(err => {
+                const text = typeof err === 'string' ? err : String(err);
+                return (
+                  '<li style="font-size:13px;line-height:1.5;color:#7f1d1d;">' +
+                  text +
+                  '</li>'
+                );
+              }).join('');
+
+              specificErrorsHtml =
+                '<div style="margin-bottom:14px;">' +
+                '<div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                '<span style="width:6px;height:6px;border-radius:999px;background:#ef4444;"></span>' +
+                'Specific Errors' +
+                '</div>' +
+                '<ul style="margin:0;padding-left:18px;display:grid;gap:6px;">' +
+                items +
+                '</ul>' +
                 '</div>';
             }
 
@@ -740,7 +786,7 @@ ${questionsJson}
               (feedback || 'There are a few issues with your solution. Review the details and try again.') +
               '</div>' +
               '</div>' +
-              (efficiency ? '<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:600;color:#b91c1c;display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="width:6px;height:6px;border-radius:999px;background:#f97316;"></span>Efficiency</div><div style="border-radius:12px;padding:12px 14px;background:rgba(254,242,242,0.85);border:1px solid rgba(248,113,113,0.6);font-size:13px;line-height:1.6;color:#7f1d1d;">' + String(efficiency) + '</div></div>' : '') +
+              specificErrorsHtml +
               suggestionsHtml +
               '</div>' +
               '</div>';
