@@ -7,6 +7,7 @@ import CompetitionPlay from './pages/competitions/CompetitionPlay.jsx'
 import AssessmentPreview from './pages/AssessmentPreview.jsx'
 import ContentStudioPreview from './pages/ContentStudioPreview.jsx'
 import CodeContentStudioPreview from './pages/CodeContentStudioPreview.jsx'
+import ValidateQuestionPreview from './pages/ValidateQuestionPreview.jsx'
 import './styles/theme-transitions.css'
 
 function App() {
@@ -24,6 +25,10 @@ function App() {
           <Route
             path="/code-content-studio-preview"
             element={<CodeContentStudioPreview />}
+          />
+          <Route
+            path="/validate-question-preview"
+            element={<ValidateQuestionPreview />}
           />
         </Routes>
       </Layout>
