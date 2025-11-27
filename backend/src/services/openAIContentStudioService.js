@@ -10,7 +10,7 @@ import {
 } from '../prompts/openAIContentStudioPrompts.js'
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo'
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
 const parseJsonResponse = (raw) => {
   if (typeof raw === 'string') {
