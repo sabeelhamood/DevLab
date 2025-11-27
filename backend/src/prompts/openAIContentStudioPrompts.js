@@ -87,7 +87,7 @@ Provide a comprehensive evaluation that:
 1. Tests the code against the provided test cases
 2. Evaluates code quality, readability, and efficiency
 3. Checks for best practices and potential improvements
-4. Syntax correctness: Ensure the code runs without errors. Highlight any syntax issues with line numbers.
+4. Syntax correctness: Ensure the code runs without errors. Highlight any syntax issues with line numbers, and apply strict, language-specific syntax validation according to the exact rules of the programming language used in the question.
 5. Logical correctness: Verify the solution fully satisfies all requirements specified in the question.
 6. Code quality: Assess readability, maintainability, efficiency, and adherence to best practices.
 7. Constructive feedback: Provide actionable suggestions for improvements, optimizations, or better coding style.
