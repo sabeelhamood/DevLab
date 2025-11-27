@@ -8,6 +8,7 @@ import {
 import { fetchAssessmentTheoreticalQuestions } from '../../services/assessmentClient.js'
 import { addPresentationToQuestion } from '../../utils/questionPresentation.js'
 import { saveQuestionsToSupabase } from '../../services/questionStorageService.js'
+import { generateValidatedCodeContentStudioComponent } from '../../utils/codeValidatedContentStudioRender.js'
 
 const router = express.Router()
 
@@ -672,6 +673,15 @@ export const validateQuestionHandler = async (req, res) => {
       })
     }
 
+    const componentHtml = await generateValidatedCodeContentStudioComponent({
+      topicName: topic_name,
+      topic_id,
+      programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
+      skills: normalizedSkills,
+      humanLanguage,
+      questions: transformedQuestions
+    })
+
     return res.json({
       success: true,
       data: {
@@ -679,7 +689,8 @@ export const validateQuestionHandler = async (req, res) => {
         message: 'Exercises validated and transformed successfully.',
         validation: validationResult,
         questions: transformedQuestions
-      }
+      },
+      componentHtml
     })
   } catch (error) {
     console.error('Error validating trainer question:', error)

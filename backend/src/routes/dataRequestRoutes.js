@@ -196,6 +196,12 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
         }
       }
       parsed.response.answer = JSON.stringify(wrappedAnswer)
+    } else if (requester_service === 'content-studio' && payload?.action === 'validate-question') {
+      if (typeof responsePayload?.componentHtml === 'string' && responsePayload.componentHtml.trim()) {
+        parsed.response.answer = responsePayload.componentHtml
+      } else {
+        parsed.response.answer = JSON.stringify(responsePayload)
+      }
     } else if (requester_service === 'course-builder') {
       // For Course Builder, do not populate response.answer; return wrapper as-is
       parsed.response.answer = typeof parsed.response.answer === 'string' ? parsed.response.answer : ''
