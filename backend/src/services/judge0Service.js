@@ -1236,6 +1236,9 @@ int main() {
     // Judge0 returns stdout - since we set base64_encoded: false, we get plain text
     let actualOutput = result.stdout || '';
     
+    // PRESERVE ORIGINAL STDOUT before any modifications (needed for batch parsing)
+    const rawStdout = actualOutput;
+    
     console.log('🔍 Judge0: Raw stdout:', actualOutput, 'Length:', actualOutput.length);
     
     // Since we're using base64_encoded: false, we should get plain text output
@@ -1267,6 +1270,9 @@ int main() {
         console.log('🔍 Judge0: Output appears to be plain text, using as-is');
       }
     }
+    
+    // Store the processed output (after Base64 decoding) for harness parsing
+    const processedStdout = actualOutput;
     
     // If in harness mode, extract RESULT: values (after Base64 decoding)
     if (isHarnessMode && actualOutput) {
@@ -1329,6 +1335,8 @@ int main() {
       status: statusMap[result.status?.id] || 'Unknown',
       statusId: result.status?.id,
       stdout: actualOutput,
+      rawStdout: rawStdout, // Original stdout before any processing
+      processedStdout: processedStdout, // After Base64 decoding, before harness extraction (for batch parsing)
       stderr: result.stderr || '',
       compile_output: result.compile_output || '',
       time: result.time || '0.000',
@@ -1504,8 +1512,11 @@ int main() {
           const executionResult = await this.pollSubmission(token, null, 30, 1000, true);
           console.log(`✅ Judge0: Harness submission result:`, executionResult);
           
-          // Parse all RESULT lines from the output
-          const harnessResults = this.parseHarnessResults(executionResult.stdout || '');
+          // Parse all RESULT lines from the processed stdout (after Base64 decoding, before harness extraction)
+          // Use processedStdout which contains all RESULT lines, not the modified stdout
+          const stdoutForParsing = executionResult.processedStdout || executionResult.rawStdout || executionResult.stdout || '';
+          console.log(`🔍 Judge0: Parsing harness output (length: ${stdoutForParsing.length}):`, stdoutForParsing.substring(0, 200));
+          const harnessResults = this.parseHarnessResults(stdoutForParsing);
           console.log(`📊 Judge0: Parsed ${harnessResults.length} RESULT lines from harness output`);
           
           // Map each RESULT to its corresponding test case
