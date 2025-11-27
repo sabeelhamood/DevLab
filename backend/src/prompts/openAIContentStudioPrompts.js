@@ -95,7 +95,13 @@ Provide a comprehensive evaluation that:
 9. Suggests specific improvements
 
 EVALUATION REQUIREMENTS:
-- If code is WRONG: Highlight the SPECIFIC mistake line or logic error
+- isCorrect" may ONLY be true if ALL of the following are true:
+   a) All test cases pass
+   b) No syntax errors
+   c) No runtime errors
+   d) Requirements are fully satisfied
+   e) No major best-practice violations
+- If code is WRONG: Highlight the SPECIFIC mistake line or logic error 
 - If code is CORRECT: Analyze efficiency and provide improvement tips
 - For correct code: Optionally suggest a more optimized version
 - Be specific about what's wrong and how to fix it
