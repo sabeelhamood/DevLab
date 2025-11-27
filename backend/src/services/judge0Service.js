@@ -1027,16 +1027,29 @@ int main() {
       // Check if expectsReturn is true - use harness template instead of regular wrapping
       const expectsReturn = questionMetadata?.expectsReturn === true;
       let wrappedCode;
+      let shouldUseHarness = false;
       
       if (expectsReturn) {
-        // Use harness template for return-value exercises
-        // For single execution, create a single test case from input
-        const testCases = input ? [{ input, expectedOutput }] : [];
-        wrappedCode = generateHarnessWrappedCode(sourceCode, language, testCases);
-        console.log('🔧 Judge0: Using harness template (expectsReturn=true)');
+        // Only apply harness if we have test case input provided
+        // "Run" button without input should use standard wrapping
+        // "Run All Tests" with test cases should use harness
+        const hasInput = input && input.trim() !== '';
+        if (hasInput) {
+          // Use harness template for return-value exercises with test cases
+          const testCases = [{ input, expectedOutput }];
+          wrappedCode = generateHarnessWrappedCode(sourceCode, language, testCases);
+          shouldUseHarness = true;
+          console.log('🔧 Judge0: Using harness template (expectsReturn=true, has input)');
+        } else {
+          // No input provided (e.g., "Run" button without test cases) - use standard wrapping
+          wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
+          shouldUseHarness = false;
+          console.log('🔧 Judge0: Using standard wrapping (expectsReturn=true but no input provided)');
+        }
       } else {
         // Use existing wrapping logic for print-based exercises
         wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
+        shouldUseHarness = false;
         console.log('🔧 Judge0: Using standard wrapping (expectsReturn=false)');
       }
       
@@ -1084,8 +1097,8 @@ int main() {
       const token = result.token;
       this.isAvailable = true;
 
-      // Poll for result
-      return await this.pollSubmission(token, expectedOutput, 30, 1000, expectsReturn);
+      // Poll for result - use shouldUseHarness flag (only true if harness was actually applied)
+      return await this.pollSubmission(token, expectedOutput, 30, 1000, shouldUseHarness);
     } catch (error) {
       console.error('Judge0 execution error:', error);
       throw error;
