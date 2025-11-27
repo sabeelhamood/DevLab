@@ -172,7 +172,8 @@ class OpenAIContentStudioService {
             difficulty: q.difficulty || 'intermediate',
             language: q.language || language,
             testCases: normalizedTestCases,
-            hints: normalizedHints
+            hints: normalizedHints,
+            expectsReturn: typeof q.expectsReturn === 'boolean' ? q.expectsReturn : true
           }
         })
     } catch (error) {
@@ -185,7 +186,8 @@ class OpenAIContentStudioService {
           difficulty: 'intermediate',
           language,
           testCases: ensureTestCases([]),
-          hints: ensureThreeHints([])
+          hints: ensureThreeHints([]),
+          expectsReturn: true
         }
       ]
     }

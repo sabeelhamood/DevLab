@@ -1,5 +1,6 @@
 // backend/src/services/judge0Service.js
 import fetch from 'node-fetch';
+import { generateHarnessWrappedCode } from '../utils/codeHarnessTemplates.js';
 
 /**
  * Judge0 Service for code execution
@@ -1017,14 +1018,27 @@ int main() {
   /**
    * Execute code with Judge0
    */
-  async executeCode(sourceCode, language, input = '', expectedOutput = null) {
+  async executeCode(sourceCode, language, input = '', expectedOutput = null, questionMetadata = {}) {
     await this.ensureAvailabilityBeforeExecution();
 
     try {
       const languageId = this.getLanguageId(language);
       
-      // Wrap the code to capture function output for all languages
-      const wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
+      // Check if expectsReturn is true - use harness template instead of regular wrapping
+      const expectsReturn = questionMetadata?.expectsReturn === true;
+      let wrappedCode;
+      
+      if (expectsReturn) {
+        // Use harness template for return-value exercises
+        // For single execution, create a single test case from input
+        const testCases = input ? [{ input, expectedOutput }] : [];
+        wrappedCode = generateHarnessWrappedCode(sourceCode, language, testCases);
+        console.log('🔧 Judge0: Using harness template (expectsReturn=true)');
+      } else {
+        // Use existing wrapping logic for print-based exercises
+        wrappedCode = this.wrapCodeForLanguage(sourceCode, language, input);
+        console.log('🔧 Judge0: Using standard wrapping (expectsReturn=false)');
+      }
       
       // Create submission
       // IMPORTANT:
@@ -1071,7 +1085,7 @@ int main() {
       this.isAvailable = true;
 
       // Poll for result
-      return await this.pollSubmission(token, expectedOutput);
+      return await this.pollSubmission(token, expectedOutput, 30, 1000, expectsReturn);
     } catch (error) {
       console.error('Judge0 execution error:', error);
       throw error;
@@ -1081,7 +1095,7 @@ int main() {
   /**
    * Poll submission result
    */
-  async pollSubmission(token, expectedOutput = null, maxAttempts = 30, delay = 1000) {
+  async pollSubmission(token, expectedOutput = null, maxAttempts = 30, delay = 1000, isHarnessMode = false) {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const response = await fetch(`${this.baseUrl}/submissions/${token}`, {
@@ -1101,7 +1115,7 @@ int main() {
         
         // Check if processing is complete
         if (result.status && result.status.id !== 1 && result.status.id !== 2) {
-          return this.formatResult(result, expectedOutput);
+          return this.formatResult(result, expectedOutput, isHarnessMode);
         }
 
         // Wait before next poll
@@ -1119,9 +1133,48 @@ int main() {
   }
 
   /**
+   * Parse RESULT: lines from harness output
+   * Returns array of parsed values, one per RESULT line
+   */
+  parseHarnessResults(stdout) {
+    if (!stdout || typeof stdout !== 'string') {
+      return [];
+    }
+    
+    const results = [];
+    const lines = stdout.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('RESULT: ')) {
+        const valueStr = trimmed.substring(8); // Remove "RESULT: " prefix
+        try {
+          // Try to parse as JSON first
+          const parsed = JSON.parse(valueStr);
+          results.push(parsed);
+        } catch (e) {
+          // If not JSON, use as string (remove quotes if present)
+          let value = valueStr;
+          if ((value.startsWith('"') && value.endsWith('"')) || 
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+          }
+          results.push(value);
+        }
+      } else if (trimmed.startsWith('RESULT: ERROR - ')) {
+        // Handle error case
+        const errorMsg = trimmed.substring(16);
+        results.push({ error: errorMsg });
+      }
+    }
+    
+    return results;
+  }
+
+  /**
    * Format Judge0 result for our application
    */
-  formatResult(result, expectedOutput = null) {
+  formatResult(result, expectedOutput = null, isHarnessMode = false) {
     const normalizeValue = (value) => {
       const helper = (val) => {
         if (typeof val === 'string') {
@@ -1215,6 +1268,24 @@ int main() {
       }
     }
     
+    // If in harness mode, extract RESULT: values (after Base64 decoding)
+    if (isHarnessMode && actualOutput) {
+      const harnessResults = this.parseHarnessResults(actualOutput);
+      if (harnessResults.length > 0) {
+        // Use the first RESULT value (for single execution)
+        const firstResult = harnessResults[0];
+        if (firstResult && firstResult.error) {
+          actualOutput = `ERROR: ${firstResult.error}`;
+        } else {
+          // Convert result to string for comparison
+          actualOutput = typeof firstResult === 'object' ? JSON.stringify(firstResult) : String(firstResult);
+        }
+        console.log('🔍 Judge0: Extracted harness result:', actualOutput, 'from', harnessResults.length, 'results');
+      } else {
+        console.log('⚠️ Judge0: No RESULT: lines found in harness output');
+      }
+    }
+    
     const trimmedOutput = actualOutput.trim();
     const normalizedDisplayOutput = normalizeValue(trimmedOutput);
     
@@ -1272,7 +1343,7 @@ int main() {
   /**
    * Execute multiple test cases
    */
-  async executeTestCases(sourceCode, language, testCases) {
+  async executeTestCases(sourceCode, language, testCases, questionMetadata = {}) {
     await this.ensureAvailabilityBeforeExecution();
 
     const results = [];
@@ -1291,7 +1362,7 @@ int main() {
               ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
               : null);
 
-        const result = await this.executeCode(sourceCode, language, input, expectedOutput);
+        const result = await this.executeCode(sourceCode, language, input, expectedOutput, questionMetadata);
         
         results.push({
           testNumber: i + 1,
@@ -1325,55 +1396,78 @@ int main() {
   /**
    * Batch execute multiple submissions (more efficient for multiple test cases)
    */
-  async batchExecute(sourceCode, language, testCases) {
+  async batchExecute(sourceCode, language, testCases, questionMetadata = {}) {
     await this.ensureAvailabilityBeforeExecution();
 
     try {
       const languageId = this.getLanguageId(language);
+      const expectsReturn = questionMetadata?.expectsReturn === true;
       
       console.log('🔧 Judge0: Starting batch execution');
       console.log('📝 Judge0: Source code:', sourceCode);
       console.log('🌐 Judge0: Language:', language, '(ID:', languageId, ')');
       console.log('🧪 Judge0: Test cases:', testCases);
+      console.log('🎯 Judge0: expectsReturn:', expectsReturn);
       
-      // Prepare batch submissions
-      const submissions = testCases.map((testCase, index) => {
-        const input = typeof testCase.input === 'object' 
-          ? JSON.stringify(testCase.input) 
-          : testCase.input;
+      let submissions;
+      
+      if (expectsReturn) {
+        // When expectsReturn=true, use harness template which runs all test cases in one submission
+        const wrappedSourceCode = generateHarnessWrappedCode(sourceCode, language, testCases);
+        console.log('🔧 Judge0: Using harness template for batch (expectsReturn=true) - single submission');
         
-        // Handle both camelCase and snake_case field names
-        const expectedOutput = testCase.expected_output !== undefined 
-          ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
-          : (testCase.expectedOutput !== undefined 
-              ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
-              : null);
-
-        console.log(`📋 Judge0: Test case ${index + 1}:`, {
-          input,
-          expectedOutput,
-          inputType: typeof testCase.input,
-          expectedType: typeof testCase.expected_output
-        });
-
-        // Wrap code for each test case for all languages
-        const wrappedSourceCode = this.wrapCodeForLanguage(sourceCode, language, input);
-
-        // IMPORTANT:
-        // Do NOT send expected_output to Judge0 for comparison.
-        // We want Judge0 to only check compilation/runtime, and we perform
-        // our own flexible comparison in compareOutputs.
-        return {
+        // Create single submission that runs all test cases via harness
+        submissions = [{
           source_code: wrappedSourceCode,
           language_id: languageId,
-          stdin: '', // Input is handled in the wrapped code for all languages
+          stdin: '',
           expected_output: null,
           cpu_time_limit: '2.0',
           memory_limit: '128000',
           wall_time_limit: '5.0',
-          base64_encoded: false  // Get plain text output instead of Base64
-        };
-      });
+          base64_encoded: false
+        }];
+      } else {
+        // When expectsReturn=false, use existing logic - one submission per test case
+        submissions = testCases.map((testCase, index) => {
+          const input = typeof testCase.input === 'object' 
+            ? JSON.stringify(testCase.input) 
+            : testCase.input;
+          
+          // Handle both camelCase and snake_case field names
+          const expectedOutput = testCase.expected_output !== undefined 
+            ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+            : (testCase.expectedOutput !== undefined 
+                ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+                : null);
+
+          console.log(`📋 Judge0: Test case ${index + 1}:`, {
+            input,
+            expectedOutput,
+            inputType: typeof testCase.input,
+            expectedType: typeof testCase.expected_output
+          });
+
+          // Use existing wrapping logic for print-based exercises
+          const wrappedSourceCode = this.wrapCodeForLanguage(sourceCode, language, input);
+          console.log('🔧 Judge0: Using standard wrapping for batch (expectsReturn=false)');
+
+          // IMPORTANT:
+          // Do NOT send expected_output to Judge0 for comparison.
+          // We want Judge0 to only check compilation/runtime, and we perform
+          // our own flexible comparison in compareOutputs.
+          return {
+            source_code: wrappedSourceCode,
+            language_id: languageId,
+            stdin: '', // Input is handled in the wrapped code for all languages
+            expected_output: null,
+            cpu_time_limit: '2.0',
+            memory_limit: '128000',
+            wall_time_limit: '5.0',
+            base64_encoded: false  // Get plain text output instead of Base64
+          };
+        });
+      }
 
       console.log('📤 Judge0: Submitting batch:', submissions);
 
@@ -1400,47 +1494,128 @@ int main() {
 
       // Poll all submissions
       const results = [];
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        const testCase = testCases[i];
-        
-        // Process expected output for this test case
-        const expectedOutput = testCase.expected_output !== undefined 
-          ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
-          : (testCase.expectedOutput !== undefined 
-              ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
-              : null);
-        
-        console.log(`🔄 Judge0: Polling submission ${i + 1}/${tokens.length} (token: ${token})`);
+      
+      if (expectsReturn && tokens.length === 1) {
+        // Harness mode: single submission with multiple RESULT lines
+        const token = tokens[0];
+        console.log(`🔄 Judge0: Polling harness submission (token: ${token})`);
         
         try {
-          const executionResult = await this.pollSubmission(token, expectedOutput);
-          console.log(`✅ Judge0: Submission ${i + 1} result:`, executionResult);
+          const executionResult = await this.pollSubmission(token, null, 30, 1000, true);
+          console.log(`✅ Judge0: Harness submission result:`, executionResult);
           
-          results.push({
-            testNumber: i + 1,
-            input: testCase.input,
-            expected: expectedOutput,
-            result: executionResult.actualOutput,
-            passed: executionResult.passed,
-            status: executionResult.status,
-            error: executionResult.error,
-            stderr: executionResult.stderr,
-            time: executionResult.time
-          });
+          // Parse all RESULT lines from the output
+          const harnessResults = this.parseHarnessResults(executionResult.stdout || '');
+          console.log(`📊 Judge0: Parsed ${harnessResults.length} RESULT lines from harness output`);
+          
+          // Map each RESULT to its corresponding test case
+          for (let i = 0; i < testCases.length; i++) {
+            const testCase = testCases[i];
+            const expectedOutput = testCase.expected_output !== undefined 
+              ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+              : (testCase.expectedOutput !== undefined 
+                  ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+                  : null);
+            
+            const harnessResult = harnessResults[i];
+            let actualOutput = '';
+            let passed = false;
+            
+            if (harnessResult) {
+              if (harnessResult.error) {
+                actualOutput = `ERROR: ${harnessResult.error}`;
+                passed = false;
+              } else {
+                // Convert result to string for comparison
+                actualOutput = typeof harnessResult === 'object' ? JSON.stringify(harnessResult) : String(harnessResult);
+                // Compare with expected output
+                passed = this.compareOutputs(actualOutput, expectedOutput);
+              }
+            } else {
+              actualOutput = 'No result found';
+              passed = false;
+            }
+            
+            results.push({
+              testNumber: i + 1,
+              input: testCase.input,
+              expected: expectedOutput,
+              result: actualOutput,
+              passed: passed,
+              status: executionResult.status,
+              error: harnessResult?.error ? true : false,
+              stderr: executionResult.stderr,
+              time: executionResult.time
+            });
+          }
         } catch (error) {
-          console.error(`❌ Judge0: Submission ${i + 1} failed:`, error);
-          results.push({
-            testNumber: i + 1,
-            input: testCase.input,
-            expected: expectedOutput,
-            result: error.message,
-            passed: false,
-            status: 'Error',
-            error: true,
-            stderr: error.message,
-            time: '0.000'
-          });
+          console.error(`❌ Judge0: Harness submission failed:`, error);
+          // Create error results for all test cases
+          for (let i = 0; i < testCases.length; i++) {
+            const testCase = testCases[i];
+            const expectedOutput = testCase.expected_output !== undefined 
+              ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+              : (testCase.expectedOutput !== undefined 
+                  ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+                  : null);
+            
+            results.push({
+              testNumber: i + 1,
+              input: testCase.input,
+              expected: expectedOutput,
+              result: error.message,
+              passed: false,
+              status: 'Error',
+              error: true,
+              stderr: error.message,
+              time: '0.000'
+            });
+          }
+        }
+      } else {
+        // Standard mode: one submission per test case
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i];
+          const testCase = testCases[i];
+          
+          // Process expected output for this test case
+          const expectedOutput = testCase.expected_output !== undefined 
+            ? (typeof testCase.expected_output === 'object' ? JSON.stringify(testCase.expected_output) : testCase.expected_output)
+            : (testCase.expectedOutput !== undefined 
+                ? (typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : testCase.expectedOutput)
+                : null);
+          
+          console.log(`🔄 Judge0: Polling submission ${i + 1}/${tokens.length} (token: ${token})`);
+          
+          try {
+            const executionResult = await this.pollSubmission(token, expectedOutput);
+            console.log(`✅ Judge0: Submission ${i + 1} result:`, executionResult);
+            
+            results.push({
+              testNumber: i + 1,
+              input: testCase.input,
+              expected: expectedOutput,
+              result: executionResult.actualOutput,
+              passed: executionResult.passed,
+              status: executionResult.status,
+              error: executionResult.error,
+              stderr: executionResult.stderr,
+              time: executionResult.time
+            });
+          } catch (error) {
+            console.error(`❌ Judge0: Submission ${i + 1} failed:`, error);
+            results.push({
+              testNumber: i + 1,
+              input: testCase.input,
+              expected: expectedOutput,
+              result: error.message,
+              passed: false,
+              status: 'Error',
+              error: true,
+              stderr: error.message,
+              time: '0.000'
+            });
+          }
         }
       }
 

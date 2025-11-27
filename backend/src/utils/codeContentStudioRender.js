@@ -69,6 +69,13 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
+  // Inject expectsReturn flag from question metadata
+  const expectsReturn = question.expectsReturn === true
+  template = template.replace(
+    /const expectsReturn = [\s\S]*?;/,
+    `const expectsReturn = ${expectsReturn};`
+  )
+
   // Initialize editor in neutral state - no language pre-selected
   // The learner must select a language from the dropdown
   template = template.replace(

@@ -49,7 +49,7 @@ router.get('/languages', (req, res) => {
  */
 router.post('/execute', async (req, res) => {
   try {
-    const { sourceCode, language, input, expectedOutput } = req.body;
+    const { sourceCode, language, input, expectedOutput, expectsReturn } = req.body;
 
     if (!sourceCode || !language) {
       return res.status(400).json({
@@ -57,11 +57,16 @@ router.post('/execute', async (req, res) => {
       });
     }
 
+    const questionMetadata = {
+      expectsReturn: expectsReturn === true
+    };
+
     const result = await judge0Service.executeCode(
       sourceCode, 
       language, 
       input || '', 
-      expectedOutput || null
+      expectedOutput || null,
+      questionMetadata
     );
 
     res.json({
@@ -84,7 +89,7 @@ router.post('/execute', async (req, res) => {
  */
 router.post('/test-cases', async (req, res) => {
   try {
-    const { sourceCode, language, testCases } = req.body;
+    const { sourceCode, language, testCases, expectsReturn } = req.body;
 
     if (!sourceCode || !language || !testCases || !Array.isArray(testCases)) {
       return res.status(400).json({
@@ -92,8 +97,12 @@ router.post('/test-cases', async (req, res) => {
       });
     }
 
+    const questionMetadata = {
+      expectsReturn: expectsReturn === true
+    };
+
     // Use batch execution for better performance
-    const results = await judge0Service.batchExecute(sourceCode, language, testCases);
+    const results = await judge0Service.batchExecute(sourceCode, language, testCases, questionMetadata);
 
     res.json({
       success: true,
@@ -117,7 +126,7 @@ router.post('/test-cases', async (req, res) => {
  */
 router.post('/test-cases-sequential', async (req, res) => {
   try {
-    const { sourceCode, language, testCases } = req.body;
+    const { sourceCode, language, testCases, expectsReturn } = req.body;
 
     if (!sourceCode || !language || !testCases || !Array.isArray(testCases)) {
       return res.status(400).json({
@@ -125,8 +134,12 @@ router.post('/test-cases-sequential', async (req, res) => {
       });
     }
 
+    const questionMetadata = {
+      expectsReturn: expectsReturn === true
+    };
+
     // Use sequential execution as fallback
-    const results = await judge0Service.executeTestCases(sourceCode, language, testCases);
+    const results = await judge0Service.executeTestCases(sourceCode, language, testCases, questionMetadata);
 
     res.json({
       success: true,

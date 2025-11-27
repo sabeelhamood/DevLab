@@ -37,8 +37,14 @@ REQUIRED FORMAT - Each question MUST have:
   ],
   "hints": ["hint 1", "hint 2", "hint 3"],
   "language": "${language}",
-  "question_type": "code"
+  "question_type": "code",
+  "expectsReturn": true
 }
+
+IMPORTANT - expectsReturn field:
+- Set "expectsReturn": true if the solution should RETURN a value (function-based exercises where the function returns the result)
+- Set "expectsReturn": false if the solution should PRINT output (exercises where printing is the required behavior)
+- Default to true for most function-based coding exercises
 
 FORBIDDEN FIELDS (DO NOT INCLUDE):
 - "options" (multiple choice options) ❌
@@ -58,7 +64,8 @@ EXAMPLE CORRECT CODING QUESTION:
     ],
     "hints": ["Use the + operator", "Return the result directly", "Test with different numbers"],
     "language": "${language}",
-    "question_type": "code"
+    "question_type": "code",
+    "expectsReturn": true
   }
 ]
 \`\`\`

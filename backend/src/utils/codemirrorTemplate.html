@@ -176,6 +176,9 @@
   <script>
     // Initialize test cases (will be injected by buildCodeMirrorTemplateForQuestion)
     const tests = [];
+    
+    // Initialize expectsReturn flag (will be injected by buildCodeMirrorTemplateForQuestion)
+    const expectsReturn = false;
 
     // Create editor in neutral state (no language selected yet)
     const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
@@ -509,7 +512,8 @@
           body: JSON.stringify({
             sourceCode: code,
             language: language,
-            testCases: testCases
+            testCases: testCases,
+            expectsReturn: expectsReturn
           })
         });
 
