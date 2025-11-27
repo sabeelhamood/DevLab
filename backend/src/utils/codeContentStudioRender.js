@@ -192,9 +192,7 @@ function renderSingleQuestion(question, index, topicName, language) {
           </h1>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:#2F4F4F;color:white;font-size:0.78rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">
-            ${escapeHtml(question.difficulty || 'intermediate')}
-          </span>
+         
           <span style="display:inline-flex;align-items:center;justify-content:center;min-width:90px;padding:8px 14px;border-radius:999px;background:#F0FFF0;color:#0f172a;font-size:0.78rem;font-weight:600;">
             ${escapeHtml(language || 'javascript')}
           </span>
