@@ -588,11 +588,17 @@ export const validateQuestionHandler = async (req, res) => {
     } = req.body || {}
 
     const trainerQuestion = question || question_content
+    const exercises = Array.isArray(req.body?.exercises) && req.body.exercises.length
+      ? req.body.exercises
+      : trainerQuestion
+        ? [trainerQuestion]
+        : []
 
-    if (!trainerQuestion || !question_type || !topic_id || !topic_name) {
+    if (!exercises.length || !question_type || !topic_id || !topic_name) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: question (or question_content), question_type, topic_id, topic_name'
+        error:
+          'Missing required fields: exercises (or question/question_content), question_type, topic_id, topic_name'
       })
     }
 
@@ -628,40 +634,41 @@ export const validateQuestionHandler = async (req, res) => {
       })
     }
 
-    const validation = await validateCodingQuestionWithGemini({
-      question: trainerQuestion,
+    const validationResult = await openAIContentStudioService.validateCodingQuestionOpenAI({
       topic_name,
+      question_type,
+      programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
       skills: normalizedSkills,
-      humanLanguage
+      humanLanguage,
+      exercises
     })
 
-    if (!validation?.isRelevant) {
+    const isApproval = typeof validationResult === 'string' && validationResult.trim().toUpperCase() === 'TRUE'
+
+    if (!isApproval) {
+      const message = validationResult || 'Exercises failed validation. Please revise the content.'
       return res.json({
         success: true,
         data: {
           status: 'needs_revision',
-          message:
-            validation?.message ||
-            'Question is not relevant to the provided topic or skills. Please revise the question.',
-          validation
+          message
         }
       })
     }
 
-    const generated = await generateCodingQuestions({
+    const transformedQuestions = await openAIContentStudioService.transformTrainerExercisesOpenAI({
       topic_name,
       topic_id,
-      amount: 1,
       programming_language: programming_language || DEFAULT_PROGRAMMING_LANGUAGE,
       skills: normalizedSkills,
       humanLanguage,
-      seedQuestion: trainerQuestion
+      exercises
     })
 
-    if (!generated.length) {
+    if (!Array.isArray(transformedQuestions) || !transformedQuestions.length) {
       return res.status(500).json({
         success: false,
-        error: 'Unable to transform trainer question into coding package'
+        error: 'OpenAI returned an empty transformation result'
       })
     }
 
@@ -669,9 +676,9 @@ export const validateQuestionHandler = async (req, res) => {
       success: true,
       data: {
         status: 'approved',
-        message: 'Question is relevant. Generated coding package attached.',
-        validation,
-        questions: generated
+        message: 'Exercises validated and transformed successfully.',
+        validation: validationResult,
+        questions: transformedQuestions
       }
     })
   } catch (error) {

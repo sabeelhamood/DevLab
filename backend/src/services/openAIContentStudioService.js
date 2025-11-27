@@ -8,6 +8,10 @@ import {
   buildLearningRecommendationsPrompt,
   buildRevealSolutionPrompt
 } from '../prompts/openAIContentStudioPrompts.js'
+import {
+  buildCodingExerciseValidationPrompt,
+  buildTrainerExerciseTransformationPrompt
+} from '../prompts/openAIContentStudioValidationPrompts.js'
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
@@ -473,6 +477,62 @@ class OpenAIContentStudioService {
       console.error('[OpenAIContentStudio] generateLearningRecommendations error:', error)
       throw new Error(`Failed to generate learning recommendations: ${error.message}`)
     }
+  }
+
+  async validateCodingQuestionOpenAI({
+    topic_name,
+    question_type,
+    programming_language,
+    skills = [],
+    humanLanguage = 'en',
+    exercises = []
+  }) {
+    const prompt = buildCodingExerciseValidationPrompt({
+      topicName: topic_name,
+      questionType: question_type,
+      programmingLanguage: programming_language,
+      skills,
+      humanLanguage,
+      exercises
+    })
+
+    const raw = await this.#callOpenAI(prompt, {
+      systemMessage:
+        'You are a strict validator for coding exercises. Respond only with TRUE or FALSE: <reason>.'
+    })
+
+    return typeof raw === 'string' ? raw.trim() : String(raw ?? '').trim()
+  }
+
+  async transformTrainerExercisesOpenAI({
+    topic_name,
+    topic_id,
+    programming_language,
+    skills = [],
+    humanLanguage = 'en',
+    exercises = []
+  }) {
+    const prompt = buildTrainerExerciseTransformationPrompt({
+      topicName: topic_name,
+      topicId: topic_id,
+      programmingLanguage: programming_language,
+      skills,
+      humanLanguage,
+      exercises
+    })
+
+    const raw = await this.#callOpenAI(prompt, {
+      systemMessage:
+        'You convert trainer exercises into structured coding questions. Output a pure JSON array.'
+    })
+
+    const parsed = parseJsonResponse(raw)
+
+    if (!Array.isArray(parsed)) {
+      throw new Error('OpenAI did not return a JSON array for transformed exercises')
+    }
+
+    return parsed
   }
 }
 
