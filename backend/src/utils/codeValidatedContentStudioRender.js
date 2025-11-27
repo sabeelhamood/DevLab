@@ -1,5 +1,6 @@
 import { generateCodeContentStudioComponent } from './codeContentStudioRender.js'
 import { openAIContentStudioService } from '../services/openAIContentStudioService.js'
+import { saveTempQuestions, createRequestId } from '../services/tempQuestionStore.js'
 
 /**
  * Render already-validated coding questions (from transformTrainerExercisesOpenAI)
@@ -39,7 +40,7 @@ export async function generateValidatedCodeContentStudioComponent({
   }
 
   try {
-    return await generateCodeContentStudioComponent({
+    const html = await generateCodeContentStudioComponent({
       topicName,
       topic_id,
       amount: preparedQuestions.length,
@@ -47,6 +48,30 @@ export async function generateValidatedCodeContentStudioComponent({
       skills,
       humanLanguage
     })
+
+    // Save validated questions to temp_questions table (non-blocking)
+    const requestId = createRequestId()
+    saveTempQuestions({
+      requestId,
+      requesterService: 'content-studio',
+      action: 'validate-question',
+      questions: preparedQuestions,
+      metadata: {
+        topic_id,
+        topic_name: topicName,
+        question_type: 'code',
+        programming_language,
+        skills: Array.isArray(skills) ? skills : [],
+        humanLanguage,
+        generated_at: new Date().toISOString(),
+        source: 'content-studio-validated'
+      }
+    }).catch((error) => {
+      console.error('[codeValidatedContentStudioRender] Failed to save temp questions:', error)
+      // Don't throw - this is a background operation
+    })
+
+    return html
   } finally {
     openAIContentStudioService.generateContentStudioCodingQuestions = originalGenerator
   }
