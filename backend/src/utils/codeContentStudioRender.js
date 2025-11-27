@@ -361,6 +361,70 @@ ${questionsJson}
           return;
         }
 
+        const addInteractiveStatesToButton = (btn, options = {}) => {
+          if (!btn) return;
+          const {
+            baseBg = btn.style.background || '#0f172a',
+            hoverBg = baseBg,
+            activeBg = baseBg,
+            baseShadow = 'none',
+            hoverShadow = baseShadow
+          } = options;
+
+          const applyBase = () => {
+            btn.style.background = baseBg;
+            btn.style.boxShadow = baseShadow;
+            btn.style.transform = 'translateY(0)';
+          };
+
+          btn.style.transition = 'transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease';
+          btn.style.willChange = 'transform, box-shadow, background';
+
+          btn.addEventListener('mouseenter', () => {
+            btn.style.background = hoverBg;
+            btn.style.boxShadow = hoverShadow;
+          });
+
+          btn.addEventListener('mouseleave', () => {
+            applyBase();
+          });
+
+          const handlePress = () => {
+            btn.style.background = activeBg;
+            btn.style.transform = 'translateY(1px) scale(0.99)';
+          };
+
+          const handleRelease = () => {
+            btn.style.transform = 'translateY(0)';
+            btn.style.background = hoverBg;
+            btn.style.boxShadow = hoverShadow;
+          };
+
+          btn.addEventListener('mousedown', handlePress);
+          btn.addEventListener('touchstart', handlePress);
+          btn.addEventListener('mouseup', handleRelease);
+          btn.addEventListener('touchend', handleRelease);
+          btn.addEventListener('blur', applyBase);
+
+          applyBase();
+        };
+
+        addInteractiveStatesToButton(hintBtn, {
+          baseBg: '#FFA500',
+          hoverBg: '#FFB84D',
+          activeBg: '#E68A00',
+          baseShadow: '0 12px 24px rgba(245,158,11,0.35)',
+          hoverShadow: '0 16px 30px rgba(245,158,11,0.45)'
+        });
+
+        addInteractiveStatesToButton(submitBtn, {
+          baseBg: '#0F6B52',
+          hoverBg: '#158863',
+          activeBg: '#0B4D3A',
+          baseShadow: '0 14px 28px rgba(15,107,82,0.35)',
+          hoverShadow: '0 18px 34px rgba(15,107,82,0.45)'
+        });
+
         const totalQuestions = meta.length;
         const MAX_HINTS_PER_QUESTION = 3;
         let currentIndex = 0;
