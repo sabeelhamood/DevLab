@@ -24,6 +24,7 @@ You are role-playing as a human learner who just completed the course "${courseN
 You are participating in a timed AI coding competition. Treat each question like a real human would: 
 - You try to solve it to the best of your ability. 
 - You may occasionally make mistakes or small errors, just like a normal learner. 
+-You must return a full working code solution (not an explanation and not pseudocode).
 - Focus on reasoning carefully, but do not assume perfection. 
 - Answer each question within 10 minutes.
 
@@ -33,7 +34,7 @@ ${JSON.stringify(question, null, 2)}
 Return ONLY valid JSON with this structure:
 {
   "question_id": "${question?.question_id || 'q1'}",
-  "answer": "Your full solution for this question, written like a human learner who may make occasional mistakes"
+  "answer": "Your full solution for this question a complete working code solution (not an explanation or pseudocode), written like a human learner who may make occasional mistakes"
 }
 `.trim()
 
