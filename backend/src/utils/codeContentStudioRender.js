@@ -223,7 +223,7 @@ function renderSingleQuestion(question, index, topicName, language) {
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
           <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;">
-            💡 Get Hint
+            💡 Get Hint!
           </button>
           <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
             🔍 Show Solution
