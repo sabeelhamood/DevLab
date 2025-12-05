@@ -97,6 +97,17 @@ async function registerWithCoordinator() {
     return { success: false, error };
   }
 
+  // Create JSON-safe payload (removes functions, undefined values, circular refs)
+  let safePayload;
+  try {
+    safePayload = JSON.parse(JSON.stringify(registrationPayload));
+    console.log('📤 Sending registration payload:', safePayload);
+  } catch (payloadError) {
+    const error = `Failed to create JSON-safe payload: ${payloadError.message}`;
+    console.error(`❌ Registration failed: ${error}`);
+    return { success: false, error };
+  }
+
   // Retry logic with exponential backoff (up to 5 attempts)
   const maxAttempts = 5;
   let lastError = null;
@@ -104,18 +115,12 @@ async function registerWithCoordinator() {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       // Set headers in both uppercase and lowercase to ensure Coordinator receives them
-      // Some HTTP proxies/load balancers may normalize headers, so we send both
       const requestHeaders = {
         'Content-Type': 'application/json',
-        // Uppercase versions
         'X-Service-Name': SERVICE_NAME,
-        'X-Signature': signature,
-        // Lowercase versions (some systems expect lowercase)
         'x-service-name': SERVICE_NAME,
-        'x-signature': signature,
-        // Alternative formats (in case Coordinator expects different casing)
-        'Service-Name': SERVICE_NAME,
-        'Service-Signature': signature
+        'X-Signature': signature,
+        'x-signature': signature
       };
 
       // Debug log BEFORE sending request
@@ -127,14 +132,9 @@ async function registerWithCoordinator() {
         'x-signature': requestHeaders['x-signature'] ? `${requestHeaders['x-signature'].substring(0, 20)}...` : 'missing'
       });
 
-      const response = await axios.post(registrationUrl, registrationPayload, {
+      const response = await axios.post(registrationUrl, safePayload, {
         headers: requestHeaders,
-        timeout: 10000, // 10 seconds timeout
-        // Ensure axios doesn't transform headers
-        transformRequest: [(data, headers) => {
-          // Preserve all custom headers as-is
-          return data;
-        }]
+        timeout: 10000 // 10 seconds timeout
       });
 
       // Check if registration was successful
@@ -159,6 +159,21 @@ async function registerWithCoordinator() {
     } catch (error) {
       lastError = error;
 
+      // Clear error logging with all available information
+      console.error(`❌ Registration attempt ${attempt + 1} error:`, {
+        message: error.message,
+        code: error.code,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        } : null,
+        request: error.request ? {
+          headers: error.request.headers || 'Not available'
+        } : null
+      });
+
       // Log detailed error information for debugging
       if (error.response) {
         const status = error.response.status;
@@ -175,7 +190,7 @@ async function registerWithCoordinator() {
             'x-service-signature': headers['x-service-signature'] ? 'present' : 'missing'
           },
           requestUrl: registrationUrl,
-          requestPayload: registrationPayload,
+          requestPayload: safePayload,
           requestHeaders: {
             'Content-Type': 'application/json',
             'X-Service-Name': SERVICE_NAME,
