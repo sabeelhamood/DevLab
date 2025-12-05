@@ -65,46 +65,49 @@ async function registerWithCoordinator() {
     description: SERVICE_DESCRIPTION,
     metadata: METADATA
   };
-  
+
+  // Create JSON-safe payload FIRST (removes functions, undefined values, circular refs)
+  // This ensures signature is generated from the EXACT payload we send
+  let safePayload;
+  try {
+    safePayload = JSON.parse(JSON.stringify(registrationPayload));
+    console.log('📤 Registration payload (JSON-safe):', safePayload);
+  } catch (payloadError) {
+    const error = `Failed to create JSON-safe payload: ${payloadError.message}`;
+    console.error(`❌ Registration failed: ${error}`);
+    return { success: false, error };
+  }
+
   console.log('📝 Using FULL format for registration:', {
-    serviceName: registrationPayload.serviceName,
-    version: registrationPayload.version,
-    endpoint: registrationPayload.endpoint
+    serviceName: safePayload.serviceName,
+    version: safePayload.version,
+    endpoint: safePayload.endpoint
   });
 
   // Log registration attempt (without sensitive data)
   console.log('📝 Attempting to register with Coordinator...', {
     coordinatorUrl: cleanCoordinatorUrl,
     serviceName: SERVICE_NAME,
-    endpoint: cleanServiceEndpoint,
-    payload: registrationPayload
+    endpoint: cleanServiceEndpoint
   });
 
-  // Generate ECDSA signature for authentication
+  // Generate ECDSA signature using the SAFE payload (must match what we send)
   let signature;
   try {
     const { generateSignature } = await import('../utils/signature.js');
+    // CRITICAL: Sign the safePayload, not registrationPayload
+    // The signature must match the exact payload we send to Coordinator
     signature = generateSignature(
       SERVICE_NAME, 
       privateKey,
-      registrationPayload
+      safePayload
     );
     console.log('✓ ECDSA signature generated successfully');
+    console.log('   Signature preview:', signature.substring(0, 20) + '...');
   } catch (signatureError) {
     const error = `Failed to generate ECDSA signature: ${signatureError.message}`;
     console.error(`❌ Registration failed: ${error}`);
     console.error('   Signature error details:', signatureError);
-    return { success: false, error };
-  }
-
-  // Create JSON-safe payload (removes functions, undefined values, circular refs)
-  let safePayload;
-  try {
-    safePayload = JSON.parse(JSON.stringify(registrationPayload));
-    console.log('📤 Sending registration payload:', safePayload);
-  } catch (payloadError) {
-    const error = `Failed to create JSON-safe payload: ${payloadError.message}`;
-    console.error(`❌ Registration failed: ${error}`);
     return { success: false, error };
   }
 
