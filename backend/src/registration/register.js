@@ -66,6 +66,14 @@ async function registerWithCoordinator() {
     metadata: METADATA,
   };
 
+  // Log registration attempt (without sensitive data)
+  console.log('📝 Attempting to register with Coordinator...', {
+    coordinatorUrl: cleanCoordinatorUrl,
+    serviceName: SERVICE_NAME,
+    endpoint: cleanServiceEndpoint,
+    payload: registrationPayload
+  });
+
   // Generate ECDSA signature for authentication
   let signature;
   try {
@@ -75,9 +83,11 @@ async function registerWithCoordinator() {
       privateKey,
       registrationPayload
     );
+    console.log('✓ ECDSA signature generated successfully');
   } catch (signatureError) {
     const error = `Failed to generate ECDSA signature: ${signatureError.message}`;
     console.error(`❌ Registration failed: ${error}`);
+    console.error('   Signature error details:', signatureError);
     return { success: false, error };
   }
 
@@ -120,6 +130,42 @@ async function registerWithCoordinator() {
     } catch (error) {
       lastError = error;
 
+      // Log detailed error information for debugging
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        const headers = error.response.headers;
+
+        console.error(`❌ Coordinator registration error (attempt ${attempt + 1}):`, {
+          status,
+          statusText: error.response.statusText,
+          data: data || 'No response data',
+          headers: {
+            'content-type': headers['content-type'],
+            'x-service-name': headers['x-service-name'],
+            'x-service-signature': headers['x-service-signature'] ? 'present' : 'missing'
+          },
+          requestUrl: registrationUrl,
+          requestPayload: registrationPayload,
+          requestHeaders: {
+            'Content-Type': 'application/json',
+            'X-Service-Name': SERVICE_NAME,
+            'X-Signature': signature ? `${signature.substring(0, 20)}...` : 'missing'
+          }
+        });
+      } else if (error.request) {
+        console.error('❌ Coordinator registration - no response received:', {
+          message: error.message,
+          code: error.code,
+          requestUrl: registrationUrl
+        });
+      } else {
+        console.error('❌ Coordinator registration - request setup error:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
+
       // Determine error type and create friendly message
       let errorMessage = 'Unknown error';
       if (error.response) {
@@ -130,8 +176,12 @@ async function registerWithCoordinator() {
           errorMessage = `Unauthorized: Authentication failed. Please verify PRIVATE_KEY is correct.`;
         } else if (status === 404) {
           errorMessage = `Not found: Registration endpoint not available.`;
+        } else if (status === 500) {
+          // Extract more details from 500 errors
+          const errorDetails = data ? (typeof data === 'string' ? data : JSON.stringify(data)) : 'No error details provided';
+          errorMessage = `HTTP 500: Coordinator internal error. Details: ${errorDetails}`;
         } else {
-          errorMessage = `HTTP ${status}: ${data?.message || error.response.statusText}`;
+          errorMessage = `HTTP ${status}: ${data?.message || data?.error || error.response.statusText}`;
         }
       } else if (error.request) {
         errorMessage = 'No response from Coordinator service';
