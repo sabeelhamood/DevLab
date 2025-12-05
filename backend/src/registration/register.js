@@ -103,15 +103,38 @@ async function registerWithCoordinator() {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
+      // Set headers in both uppercase and lowercase to ensure Coordinator receives them
+      // Some HTTP proxies/load balancers may normalize headers, so we send both
       const requestHeaders = {
         'Content-Type': 'application/json',
-        'X-Service-Name': SERVICE_NAME, 
+        // Uppercase versions
+        'X-Service-Name': SERVICE_NAME,
         'X-Signature': signature,
+        // Lowercase versions (some systems expect lowercase)
+        'x-service-name': SERVICE_NAME,
+        'x-signature': signature,
+        // Alternative formats (in case Coordinator expects different casing)
+        'Service-Name': SERVICE_NAME,
+        'Service-Signature': signature
       };
+
+      // Debug log BEFORE sending request
+      console.log('📤 Outgoing headers:', {
+        'Content-Type': requestHeaders['Content-Type'],
+        'X-Service-Name': requestHeaders['X-Service-Name'],
+        'x-service-name': requestHeaders['x-service-name'],
+        'X-Signature': requestHeaders['X-Signature'] ? `${requestHeaders['X-Signature'].substring(0, 20)}...` : 'missing',
+        'x-signature': requestHeaders['x-signature'] ? `${requestHeaders['x-signature'].substring(0, 20)}...` : 'missing'
+      });
 
       const response = await axios.post(registrationUrl, registrationPayload, {
         headers: requestHeaders,
         timeout: 10000, // 10 seconds timeout
+        // Ensure axios doesn't transform headers
+        transformRequest: [(data, headers) => {
+          // Preserve all custom headers as-is
+          return data;
+        }]
       });
 
       // Check if registration was successful
