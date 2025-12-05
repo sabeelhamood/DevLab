@@ -58,12 +58,10 @@ async function registerWithCoordinator() {
   
   // Use SHORT format (recommended by Coordinator docs)
   // Short format: { name, url, grpc }
-  // Extract hostname from endpoint (remove protocol)
-  const serviceHostname = cleanServiceEndpoint.replace(/^https?:\/\//, '');
-  
+  // URL must be a valid URL with protocol (Coordinator validates this)
   const registrationPayload = {
     name: SERVICE_NAME,
-    url: serviceHostname,
+    url: cleanServiceEndpoint, // Keep full URL with https:// protocol
     grpc: false // No gRPC support
   };
   
