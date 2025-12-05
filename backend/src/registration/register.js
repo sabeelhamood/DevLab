@@ -56,15 +56,22 @@ async function registerWithCoordinator() {
 
   const registrationUrl = `${cleanCoordinatorUrl}/register`;
   
-  // Build registration payload (using full format)
+  // Use SHORT format (recommended by Coordinator docs)
+  // Short format: { name, url, grpc }
+  // Extract hostname from endpoint (remove protocol)
+  const serviceHostname = cleanServiceEndpoint.replace(/^https?:\/\//, '');
+  
   const registrationPayload = {
-    serviceName: SERVICE_NAME, 
-    version: SERVICE_VERSION,
-    endpoint: cleanServiceEndpoint,
-    healthCheck: '/health',
-    description: SERVICE_DESCRIPTION,
-    metadata: METADATA,
+    name: SERVICE_NAME,
+    url: serviceHostname,
+    grpc: false // No gRPC support
   };
+  
+  console.log('📝 Using SHORT format for registration:', {
+    name: registrationPayload.name,
+    url: registrationPayload.url,
+    grpc: registrationPayload.grpc
+  });
 
   // Log registration attempt (without sensitive data)
   console.log('📝 Attempting to register with Coordinator...', {
