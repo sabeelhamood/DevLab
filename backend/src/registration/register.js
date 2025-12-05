@@ -56,20 +56,20 @@ async function registerWithCoordinator() {
 
   const registrationUrl = `${cleanCoordinatorUrl}/register`;
   
-  // Use SHORT format (recommended by Coordinator docs)
-  // Short format: { name, url, grpc }
-  // URL must be a valid URL with protocol (Coordinator validates this)
-  // Omit grpc field if not supported (Coordinator rejects false, expects port number or omitted)
+  // Use FULL format (Coordinator requires serviceName, version, endpoint)
   const registrationPayload = {
-    name: SERVICE_NAME,
-    url: cleanServiceEndpoint // Keep full URL with https:// protocol
-    // grpc field omitted - we don't support gRPC
+    serviceName: SERVICE_NAME,
+    version: SERVICE_VERSION,
+    endpoint: cleanServiceEndpoint, // Full URL with https:// protocol
+    healthCheck: '/health',
+    description: SERVICE_DESCRIPTION,
+    metadata: METADATA
   };
   
-  console.log('📝 Using SHORT format for registration:', {
-    name: registrationPayload.name,
-    url: registrationPayload.url
-    // grpc field omitted - not supported
+  console.log('📝 Using FULL format for registration:', {
+    serviceName: registrationPayload.serviceName,
+    version: registrationPayload.version,
+    endpoint: registrationPayload.endpoint
   });
 
   // Log registration attempt (without sensitive data)
