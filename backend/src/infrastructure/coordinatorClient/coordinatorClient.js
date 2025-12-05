@@ -15,7 +15,7 @@ const SERVICE_NAME = process.env.SERVICE_NAME || 'devlab-service';
  */
 export async function postToCoordinator(envelope, options = {}) {
   const coordinatorUrl = process.env.COORDINATOR_URL;
-  const privateKey = process.env.COORDINATOR_PRIVATE_KEY;
+  const privateKey = process.env.PRIVATE_KEY;
   const coordinatorPublicKey = process.env.COORDINATOR_PUBLIC_KEY || null; // Optional, for response verification 
 
   // Validate required environment variables
@@ -24,7 +24,7 @@ export async function postToCoordinator(envelope, options = {}) {
   }
 
   if (!privateKey) {
-    throw new Error('COORDINATOR_PRIVATE_KEY environment variable is required for signing requests');
+    throw new Error('PRIVATE_KEY environment variable is required for signing requests');
   }
 
   // Clean URL (remove trailing slash)

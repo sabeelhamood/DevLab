@@ -27,7 +27,7 @@ function getBackoffDelay(attempt) {
 async function registerWithCoordinator() {
   const coordinatorUrl = process.env.COORDINATOR_URL; 
   const serviceEndpoint = process.env.SERVICE_ENDPOINT || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://devlab-backend-production.up.railway.app'; 
-  const privateKey = process.env.COORDINATOR_PRIVATE_KEY;
+  const privateKey = process.env.PRIVATE_KEY;
 
   // Validate required environment variables
   if (!coordinatorUrl) {
@@ -43,7 +43,7 @@ async function registerWithCoordinator() {
   }
 
   if (!privateKey) {
-    const error = 'COORDINATOR_PRIVATE_KEY environment variable is required for ECDSA signing';
+    const error = 'PRIVATE_KEY environment variable is required for ECDSA signing';
     console.error(`❌ Registration failed: ${error}`);
     return { success: false, error };
   }
@@ -127,7 +127,7 @@ async function registerWithCoordinator() {
         const data = error.response.data;
 
         if (status === 401) {
-          errorMessage = `Unauthorized: Authentication failed. Please verify COORDINATOR_PRIVATE_KEY is correct.`;
+          errorMessage = `Unauthorized: Authentication failed. Please verify PRIVATE_KEY is correct.`;
         } else if (status === 404) {
           errorMessage = `Not found: Registration endpoint not available.`;
         } else {
