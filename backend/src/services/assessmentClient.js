@@ -1,11 +1,7 @@
-import fetch from 'node-fetch'
-
-import { config } from '../config/environment.js'
+import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
 import { mockMicroservices } from './mockMicroservices.js'
 
-const normalizeBaseUrl = (url = '') => url.replace(/\/+$/, '')
-
-const assessmentBaseUrl = normalizeBaseUrl(config.externalServices.assessment || '')
+const SERVICE_NAME = process.env.SERVICE_NAME || 'devlab-service'
 
 const buildAssessmentPayload = ({
   topic_id,
@@ -57,13 +53,15 @@ export const fetchAssessmentTheoreticalQuestions = async ({
   const fallback = () =>
     mockMicroservices.assessmentService.generateQuestions(topic_id, amount, difficulty) || []
 
-  if (!assessmentBaseUrl) {
-    return fallback()
+  // Check if Coordinator is configured
+  if (!process.env.COORDINATOR_URL) {
+    console.warn('COORDINATOR_URL not configured, using fallback for Assessment theoretical questions');
+    return fallback();
   }
 
-  // Build the generic gateway request body (must be stringified as a single value)
-  const gatewayBodyObject = {
-    requester_service: 'devlab',
+  // Build the envelope for Coordinator
+  const envelope = {
+    requester_service: SERVICE_NAME,
     payload: {
       action: 'theoretical',
       topic_id,
@@ -73,61 +71,49 @@ export const fetchAssessmentTheoreticalQuestions = async ({
       humanLanguage,
       skills: Array.isArray(skills) ? skills : []
     },
-    response: { answer: '' }
+    response: {}
   }
 
-  const rawBody = JSON.stringify(gatewayBodyObject)
-
   try {
-    const headers = {
-      'Content-Type': 'text/plain'
+    // Call Assessment service via Coordinator
+    const result = await postToCoordinator(envelope, {
+      endpoint: '/api/fill-content-metrics/',
+      timeout: 30000
+    });
+
+    // Extract the response from Coordinator
+    // Coordinator fills the response field with the target service's response
+    let answer;
+    if (result?.response?.answer) {
+      // If answer is a string, parse it
+      if (typeof result.response.answer === 'string') {
+        try {
+          answer = JSON.parse(result.response.answer);
+        } catch (parseError) {
+          // If parsing fails, use the string as-is
+          answer = result.response.answer;
+        }
+      } else {
+        // If answer is already an object, use it directly
+        answer = result.response.answer;
+      }
+    } else if (result?.response) {
+      // If response is directly an object (not nested in answer)
+      answer = result.response;
+    } else {
+      // Fallback to the entire result
+      answer = result;
     }
 
-    // Optional service auth headers if present in environment
-    const serviceApiKey = process.env['SERVICE_API_KEY'] || ''
-    const serviceId = process.env['SERVICE_ID'] || 'assessment-service'
-    if (serviceApiKey) {
-      headers['x-api-key'] = serviceApiKey
-      headers['x-service-id'] = serviceId
-    }
-
-    // Use the Assessment microservice's generic endpoint for theoretical questions
-    const response = await fetch(`${assessmentBaseUrl}/api/fill-content-metrics`, {
-      method: 'POST',
-      headers,
-      body: rawBody
-    })
-
-    // Parse outer wrapper (full object with response.answer)
-    const result = await response.json().catch(async () => {
-      const text = await response.text().catch(() => '')
-      throw new Error(`Invalid JSON from gateway: ${text || response.statusText}`)
-    })
-
-    // Extract and parse the inner answer (string)
-    let answer
-    try {
-      answer = result?.response?.answer ? JSON.parse(result.response.answer) : null
-    } catch (err) {
-      throw new Error(`Invalid inner answer JSON from gateway: ${err.message}`)
-    }
-
-    if (!response.ok) {
-      const errMsg = typeof answer === 'object' && answer && (answer.error || answer.message)
-        ? `${response.status}: ${answer.error || answer.message}`
-        : `${response.status}: ${response.statusText}`
-      throw new Error(`Gateway error: ${errMsg}`)
-    }
-
-    const questions = extractQuestions(answer)
+    const questions = extractQuestions(answer);
     if (!Array.isArray(questions) || !questions.length) {
-      throw new Error('Gateway returned empty questions from assessment')
+      throw new Error('Coordinator returned empty questions from assessment');
     }
 
-    return questions
+    return questions;
   } catch (error) {
-    console.error('Assessment theoretical fetch via gateway failed:', error.message)
-    return fallback()
+    console.error('Assessment theoretical fetch via Coordinator failed:', error.message);
+    return fallback();
   }
 }
 

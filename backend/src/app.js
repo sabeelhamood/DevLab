@@ -59,6 +59,7 @@ import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.j
 import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
 import { initializeDatabases } from './config/initDatabase.js'
 import { postgres } from './config/database.js'
+import { registerService } from './registration/register.js'
 
 const app = express()
 
@@ -687,6 +688,11 @@ const startServer = async () => {
   } catch (error) {
     console.error('❌ Database initialization failed during startup:', error)
   }
+
+  // Register with Coordinator on startup (non-blocking)
+  registerService().catch(error => {
+    console.error('Registration error (non-blocking):', error.message);
+  });
 
   server = app.listen(PORT, HOST, () => {
     console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
