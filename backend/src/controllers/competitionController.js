@@ -3,6 +3,7 @@ import { postgres, getSupabaseTables } from '../config/database.js'
 import { CompetitionAIModel } from '../models/CompetitionAI.js'
 import { competitionAIService } from '../services/competitionAIService.js'
 import { getFetch } from '../utils/http.js'
+import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
 
 const tables = getSupabaseTables()
 const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions || 'course_completions')
@@ -115,6 +116,52 @@ const evaluateCompetitionOutcome = async (competition) => {
   }
 }
 
+const sendCompetitionSummaryToCoordinator = async (competition) => {
+  if (!competition || competition.status !== 'completed') {
+    return
+  }
+
+  try {
+    const envelope = {
+      requester_service: 'devlab',
+      payload: {
+        action: 'competition_summary',
+        competition_id: competition.competition_id,
+        learner_id: competition.learner_id,
+        course_id: competition.course_id,
+        winner: competition.winner || null,
+        score: competition.score || null,
+        created_at: competition.created_at || null,
+        updated_at: competition.updated_at || null,
+        status: competition.status,
+        timer_seconds: competition.timer_seconds || null,
+        started_at: competition.started_at || null,
+        completed_at: competition.completed_at || null
+      },
+      response: {
+        acknowledged: false
+      }
+    }
+
+    await postToCoordinator(envelope, {
+      endpoint: '/api/fill-content-metrics/'
+    })
+
+    console.log('✅ [competitions] Competition summary sent to Coordinator successfully', {
+      competition_id: competition.competition_id,
+      learner_id: competition.learner_id
+    })
+  } catch (error) {
+    // Log error but don't break the competition completion flow
+    console.error('❌ [competitions] Failed to send competition summary to Coordinator:', {
+      competition_id: competition?.competition_id,
+      error: error.message,
+      status: error.response?.status,
+      responseData: error.response?.data
+    })
+  }
+}
+
 const finalizeCompetitionAndEvaluate = async (competition) => {
   if (!competition) {
     return null
@@ -128,7 +175,12 @@ const finalizeCompetitionAndEvaluate = async (competition) => {
     aiAnswers
   })
 
-  return evaluateCompetitionOutcome(finalized)
+  const evaluated = await evaluateCompetitionOutcome(finalized)
+
+  // Send competition summary to Coordinator via Learning Analytics microservice
+  await sendCompetitionSummaryToCoordinator(evaluated)
+
+  return evaluated
 }
 
 const startQuestion = async (competition, questionIndex) => {

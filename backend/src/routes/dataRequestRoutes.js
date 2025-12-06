@@ -9,6 +9,7 @@ import {
   createRequestId,
   saveTempQuestions
 } from '../services/tempQuestionStore.js'
+import { generateCodeContentStudioComponent } from '../utils/codeContentStudioRender.js'
 
 const router = express.Router()
 
@@ -35,6 +36,68 @@ const contentStudioHandler = async (payload) => {
   const action = payload?.action
   if (!action) {
     throw new Error('Missing action for content-studio payload')
+  }
+
+  // Route code question generation to preview component generator
+  if (action === 'generate-questions' && payload?.question_type === 'code') {
+    try {
+      const {
+        topic_id,
+        topic_name,
+        topicName,
+        programming_language,
+        programmingLanguage,
+        amount = 3,
+        skills = [],
+        humanLanguage = 'en'
+      } = payload || {}
+
+      const resolvedTopicId = typeof topic_id === 'number' || typeof topic_id === 'string'
+        ? topic_id
+        : null
+
+      const resolvedTopicName = topic_name || topicName || null
+
+      if (!resolvedTopicId || !resolvedTopicName) {
+        return {
+          statusCode: 400,
+          payload: {
+            success: false,
+            error: 'Missing required fields: topic_id, topic_name'
+          }
+        }
+      }
+
+      const safeAmount = Number(amount) > 0 ? Number(amount) : 3
+      const normalizedSkills = Array.isArray(skills) ? skills : []
+
+      const html = await generateCodeContentStudioComponent({
+        topicName: resolvedTopicName,
+        topic_id: resolvedTopicId,
+        amount: safeAmount,
+        programming_language: programming_language || programmingLanguage || 'javascript',
+        skills: normalizedSkills,
+        humanLanguage
+      })
+
+      return {
+        statusCode: 200,
+        payload: {
+          success: true,
+          html
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating Content Studio code component via data-request:', error)
+      return {
+        statusCode: 500,
+        payload: {
+          success: false,
+          error: 'Failed to generate Content Studio code component',
+          message: error?.message
+        }
+      }
+    }
   }
 
   switch (action) {
@@ -149,8 +212,12 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
     const { statusCode, payload: responsePayload } = await handler(payload)
     parsed.response = responseObject
     
-    // If assessment coding questions were requested, wrap component HTML in response.answer
-    if (requester_service === 'assessment' && payload?.action === 'coding') {
+    // If content-studio code question generation was requested, place HTML component in response.answer
+    if (requester_service === 'content-studio' && payload?.action === 'generate-questions' && payload?.question_type === 'code') {
+      const componentHtml = responsePayload?.html || ''
+      // The response.answer should contain the component HTML that will be sent back to content-studio
+      parsed.response.answer = componentHtml
+    } else if (requester_service === 'assessment' && payload?.action === 'coding') {
       const componentHtml = responsePayload?.componentHtml || ''
       // The response.answer should contain the component HTML that will be sent back to assessment
       parsed.response.answer = componentHtml
