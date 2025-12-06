@@ -690,9 +690,17 @@ const startServer = async () => {
   }
 
   // Register with Coordinator on startup (non-blocking)
-  registerService().catch(error => {
-    console.error('Registration error (non-blocking):', error.message);
-  });
+  // DISABLED: Registration already completed successfully. Service has a valid serviceId.
+  // To re-enable automatic registration, set ENABLE_AUTO_REGISTRATION=true in environment variables.
+  // The registration code remains available in ./registration/register.js
+  if (process.env.ENABLE_AUTO_REGISTRATION === 'true') {
+    console.log('🔄 Auto-registration enabled via ENABLE_AUTO_REGISTRATION flag');
+    registerService().catch(error => {
+      console.error('Registration error (non-blocking):', error.message);
+    });
+  } else {
+    console.log('⏭️  Auto-registration skipped (already registered). Set ENABLE_AUTO_REGISTRATION=true to enable.');
+  }
 
   server = app.listen(PORT, HOST, () => {
     console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
