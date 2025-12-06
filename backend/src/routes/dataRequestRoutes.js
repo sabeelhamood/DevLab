@@ -10,6 +10,7 @@ import {
   saveTempQuestions
 } from '../services/tempQuestionStore.js'
 import { generateCodeContentStudioComponent } from '../utils/codeContentStudioRender.js'
+import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
 
 const router = express.Router()
 
@@ -197,6 +198,35 @@ router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => 
               'Missing required fields: requester_service (string), payload (object), response (object with "answer")'
           })
         )
+    }
+
+    // Early interception: Forward theoretical question requests from Content Studio to Coordinator
+    if (
+      requester_service === 'content-studio' &&
+      payload?.action === 'generate-questions' &&
+      payload?.question_type === 'theoretical'
+    ) {
+      try {
+        console.log('📤 [data-request] Forwarding theoretical question request to Coordinator')
+        const coordinatorResponse = await postToCoordinator(parsed, {
+          endpoint: '/api/fill-content-metrics/'
+        })
+        return res.status(200).type('application/json').send(JSON.stringify(coordinatorResponse))
+      } catch (error) {
+        console.error('❌ [data-request] Failed to forward theoretical question request to Coordinator:', {
+          error: error.message,
+          status: error.response?.status,
+          responseData: error.response?.data
+        })
+        // Return error in the expected format
+        parsed.response = responseObject
+        parsed.response.answer = JSON.stringify({
+          success: false,
+          error: 'Failed to forward request to Coordinator',
+          details: error.message
+        })
+        return res.status(500).type('application/json').send(JSON.stringify(parsed))
+      }
     }
 
     const handler = handlersByService[requester_service]
