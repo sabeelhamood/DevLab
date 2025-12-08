@@ -57,6 +57,8 @@ import contentStudioRoutes from './routes/external/contentStudioRoutes.js'
 import contentStudioPreviewRoutes from './routes/contentStudio/contentStudioPreviewRoutes.js'
 import learningAnalyticsRoutes from './routes/external/learningAnalyticsRoutes.js'
 import courseBuilderRoutes from './routes/external/courseBuilderRoutes.js'
+import competitionExternalRoutes from './routes/external/competitionRoutes.js'
+import competitionQueryRoutes from './routes/external/competitionQueryRoutes.js'
 import { initializeDatabases } from './config/initDatabase.js'
 import { postgres } from './config/database.js'
 import { registerService } from './registration/register.js'
@@ -89,6 +91,7 @@ const allowedOrigins = [
   'https://dev-lab-phi.vercel.app', // production frontend
   'https://dev-lab-nu.vercel.app',
   'https://dev-lab-three.vercel.app',
+  'https://dev-lab-frontend.vercel.app',
   'https://dev-lab-git-main-sabeels-projects-5df24825.vercel.app',
   'https://dev-jsj0ymr4z-sabeels-projects-5df24825.vercel.app',
   'https://dev-fm3lkx884-sabeels-projects-5df24825.vercel.app',
@@ -641,6 +644,8 @@ app.use('/api/external/assessment', assessmentRoutes)
 app.use('/api/external/content-studio', contentStudioRoutes)
 app.use('/api/external/analytics', learningAnalyticsRoutes)
 app.use('/api/external/course-builder', courseBuilderRoutes)
+app.use('/api/external/competition', competitionExternalRoutes)
+app.use('/api/external/competition', competitionQueryRoutes)
 
 // Global error handler - catches ALL unhandled errors
 app.use((err, req, res, next) => {

@@ -4,6 +4,7 @@ import { CompetitionAIModel } from '../models/CompetitionAI.js'
 import { competitionAIService } from '../services/competitionAIService.js'
 import { getFetch } from '../utils/http.js'
 import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
+import { generateQueryFromRequest } from '../services/analyticsQueryService.js'
 
 const tables = getSupabaseTables()
 const courseCompletionsTable = postgres.quoteIdentifier(tables.courseCompletions || 'course_completions')
@@ -177,8 +178,8 @@ const finalizeCompetitionAndEvaluate = async (competition) => {
 
   const evaluated = await evaluateCompetitionOutcome(finalized)
 
-  // Send competition summary to Coordinator via Learning Analytics microservice
-  await sendCompetitionSummaryToCoordinator(evaluated)
+  // Note: Competition summary is no longer automatically sent to Coordinator.
+  // It must be requested via POST /api/external/competition/send-summary endpoint.
 
   return evaluated
 }
@@ -769,6 +770,265 @@ export const competitionController = {
       return res.status(500).json({
         success: false,
         error: 'Failed to finalize competition',
+        message: error.message
+      })
+    }
+  },
+
+  /**
+   * Handle Coordinator request to send competition summary
+   * This endpoint is called by the Coordinator (pull model) instead of automatically pushing
+   */
+  async sendCompetitionSummary(req, res) {
+    try {
+      const { competition_id } = req.body || {}
+
+      if (!competition_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'competition_id is required'
+        })
+      }
+
+      // Fetch the competition from database
+      const competition = await CompetitionAIModel.findById(competition_id)
+
+      if (!competition) {
+        return res.status(404).json({
+          success: false,
+          error: 'Competition not found'
+        })
+      }
+
+      if (competition.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          error: 'Competition must be completed before summary can be sent'
+        })
+      }
+
+      // Send the summary using the existing function
+      await sendCompetitionSummaryToCoordinator(competition)
+
+      return res.status(202).json({
+        success: true,
+        message: 'Competition summary sent to Coordinator',
+        metadata: {
+          competition_id: competition.competition_id
+        }
+      })
+    } catch (error) {
+      console.error('❌ [competitions] Failed to send competition summary:', {
+        error: error.message,
+        stack: error.stack
+      })
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to send competition summary',
+        message: error.message
+      })
+    }
+  },
+
+  /**
+   * Handle Coordinator request to query analytics data (Pull Model)
+   * Learning Analytics → Coordinator → Our backend
+   * Uses OpenAI to generate structured queries from natural language requests
+   */
+  async queryAnalyticsData(req, res) {
+    try {
+      const payload = req.body || {}
+
+      if (!payload || typeof payload !== 'object') {
+        return res.status(400).json({
+          success: false,
+          error: 'Request body is required'
+        })
+      }
+
+      // Step 1: Generate structured query using OpenAI
+      let structuredQuery
+      try {
+        structuredQuery = await generateQueryFromRequest(payload)
+      } catch (openAIError) {
+        console.error('❌ [analytics-query] OpenAI query generation failed:', {
+          error: openAIError.message
+        })
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate query from request',
+          message: openAIError.message
+        })
+      }
+
+      // Step 2: Validate the query
+      if (!structuredQuery || typeof structuredQuery !== 'object') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid query structure generated'
+        })
+      }
+
+      if (structuredQuery.collection !== 'competitions') {
+        return res.status(400).json({
+          success: false,
+          error: 'Only "competitions" collection is allowed'
+        })
+      }
+
+      // Validate allowed fields
+      const allowedFields = [
+        'learner_id',
+        'course_id',
+        'status',
+        'competition_id',
+        'created_at',
+        'updated_at',
+        'started_at',
+        'completed_at'
+      ]
+
+      const filter = structuredQuery.filter || {}
+      const filterFields = Object.keys(filter)
+      const invalidFields = filterFields.filter((field) => {
+        // Allow operators like $gte, $lte, etc. in nested objects
+        if (field.startsWith('$')) {
+          return false
+        }
+        // Check if it's a nested comparison operator object
+        if (typeof filter[field] === 'object' && filter[field] !== null && !Array.isArray(filter[field])) {
+          return false // It's a comparison operator like { $gte: ... }
+        }
+        return !allowedFields.includes(field)
+      })
+
+      if (invalidFields.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid filter fields: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}`
+        })
+      }
+
+      // Step 3: Convert JSON query to PostgreSQL query
+      const competitionsVsAiTable = postgres.quoteIdentifier('competitions_vs_ai')
+      const conditions = []
+      const values = []
+      let paramIndex = 1
+
+      // Build WHERE conditions
+      for (const [field, value] of Object.entries(filter)) {
+        if (field.startsWith('$')) {
+          continue // Skip operators at top level
+        }
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Handle comparison operators: $gte, $lte, $gt, $lt, $eq, $ne, $in
+          for (const [op, opValue] of Object.entries(value)) {
+            if (op === '$gte') {
+              conditions.push(`"${field}" >= $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$lte') {
+              conditions.push(`"${field}" <= $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$gt') {
+              conditions.push(`"${field}" > $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$lt') {
+              conditions.push(`"${field}" < $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$eq') {
+              conditions.push(`"${field}" = $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$ne') {
+              conditions.push(`"${field}" != $${paramIndex}`)
+              values.push(opValue)
+              paramIndex++
+            } else if (op === '$in') {
+              if (Array.isArray(opValue) && opValue.length > 0) {
+                const placeholders = opValue.map(() => `$${paramIndex++}`).join(', ')
+                conditions.push(`"${field}" = ANY(ARRAY[${placeholders}])`)
+                values.push(...opValue)
+              }
+            }
+          }
+        } else if (Array.isArray(value)) {
+          // Handle $in operator (array value)
+          if (value.length > 0) {
+            const placeholders = value.map(() => `$${paramIndex++}`).join(', ')
+            conditions.push(`"${field}" = ANY(ARRAY[${placeholders}])`)
+            values.push(...value)
+          }
+        } else {
+          // Direct equality match
+          if (field === 'learner_id' || field === 'competition_id') {
+            conditions.push(`"${field}" = $${paramIndex}::uuid`)
+          } else {
+            conditions.push(`"${field}" = $${paramIndex}`)
+          }
+          values.push(value)
+          paramIndex++
+        }
+      }
+
+      // Build SELECT clause (projection)
+      let selectClause = '*'
+      if (structuredQuery.projection && typeof structuredQuery.projection === 'object') {
+        const projectionFields = Object.entries(structuredQuery.projection)
+          .filter(([_, include]) => include === 1 || include === true)
+          .map(([field, _]) => `"${field}"`)
+        if (projectionFields.length > 0) {
+          selectClause = projectionFields.join(', ')
+        }
+      }
+
+      // Build the query
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+      const query = `
+        SELECT ${selectClause}
+        FROM ${competitionsVsAiTable}
+        ${whereClause}
+        ORDER BY "created_at" DESC
+      `
+
+      // Step 4: Execute the query
+      const { rows } = await postgres.query(query, values)
+
+      // Step 5: Parse JSON fields (same as CompetitionAIModel does)
+      const parseJsonField = (value) => {
+        if (!value) return []
+        if (Array.isArray(value)) return value
+        try {
+          return JSON.parse(value)
+        } catch {
+          return []
+        }
+      }
+
+      const results = rows.map((row) => ({
+        ...row,
+        questions: parseJsonField(row.questions),
+        ai_answers: parseJsonField(row.ai_answers),
+        learner_answers: parseJsonField(row.learner_answers),
+        in_progress_answers: parseJsonField(row.in_progress_answers)
+      }))
+
+      // Step 6: Return response in the required format
+      return res.status(202).json({
+        answer: results
+      })
+    } catch (error) {
+      console.error('❌ [analytics-query] Query execution failed:', {
+        error: error.message,
+        stack: error.stack
+      })
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to execute analytics query',
         message: error.message
       })
     }
