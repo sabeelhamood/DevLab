@@ -26,7 +26,7 @@ function getBackoffDelay(attempt) {
  */
 async function registerWithCoordinator() {
   const coordinatorUrl = process.env.COORDINATOR_URL; 
-  const serviceEndpoint = process.env.SERVICE_ENDPOINT || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://devlab-backend-production.up.railway.app'; 
+  const serviceEndpoint = process.env.SERVICE_ENDPOINT || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'; 
   const privateKey = process.env.PRIVATE_KEY;
 
   // Validate required environment variables

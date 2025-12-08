@@ -18,6 +18,7 @@ function getBackendBaseUrl() {
     process.env['PUBLIC_BACKEND_URL'] ||
     process.env['PUBLIC_API_URL'] ||
     process.env['API_BASE_URL'] ||
+    'https://devlab-backend-production-59bb.up.railway.app' ||
     'https://devlab-backend-production.up.railway.app'
 
   return (base || '').replace(/\/api\/?$/, '').replace(/\/$/, '')

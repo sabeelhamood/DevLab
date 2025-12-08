@@ -22,7 +22,7 @@ function buildBaseUrl() {
 }
 
 function getBackendBaseUrl() {
-  const base = PUBLIC_API_BASE_URL || 'https://devlab-backend-production.up.railway.app'
+  const base = PUBLIC_API_BASE_URL || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'
   return (base || '').replace(/\/api\/?$/, '').replace(/\/$/, '')
 }
 
@@ -287,7 +287,7 @@ ${questionsJson}
     </script>
     <script>
       (function () {
-        const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production.up.railway.app'}';
+        const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
         
         // Set API base URL for iframe access
         try {
