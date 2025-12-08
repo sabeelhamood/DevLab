@@ -164,7 +164,7 @@ const handlersByService = {
 }
 
 // Accept raw text body specifically for this endpoint to comply with external microservices contract
-router.post('/data-request', express.text({ type: '*/*' }), async (req, res) => {
+router.post('/fill-content-metrics', express.text({ type: '*/*' }), async (req, res) => {
   try {
     // Step 1: Parse entire body as stringified JSON
     let parsed
