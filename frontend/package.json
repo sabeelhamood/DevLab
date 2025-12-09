@@ -4,6 +4,7 @@
   "description": "DEVLAB Frontend - React application for AI-powered learning",
   "type": "module",
   "scripts": {
+    "start": "vite --host --port 80",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

@@ -9,12 +9,13 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# ---------- Production Stage (NGINX) ----------
-FROM nginx:alpine
+# ---------- Production Stage (Node) ----------
+FROM node:20-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
+COPY --from=builder /app /app
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]
 
