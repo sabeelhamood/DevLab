@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  backend:
+    image: devlab-backend        # השתמש ב־image שכבר בנית
+    container_name: devlab-backend
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
+    networks:
+      - devlab-network
+    restart: unless-stopped
+
+  frontend:
+    image: devlab-frontend       # השתמש ב־image שכבר בנית
+    container_name: devlab-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - devlab-network
+    restart: unless-stopped
+
+networks:
+  devlab-network:
+    driver: bridge
