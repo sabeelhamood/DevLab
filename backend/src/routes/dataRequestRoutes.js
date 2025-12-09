@@ -148,7 +148,9 @@ const assessmentHandler = async (payload) => {
 }
 
 const analyticsHandler = async (payload) => {
-  return executeHandler(learningAnalyticsController.sendCompetitionSummary, { body: payload })
+  // Pull model: Learning Analytics requests competition data
+  // Query competitions_vs_ai table based on filters in payload
+  return executeHandler(learningAnalyticsController.queryCompetitions, { body: payload })
 }
 
 const courseBuilderHandler = async (payload) => {
