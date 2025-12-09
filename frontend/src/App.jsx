@@ -16,8 +16,7 @@ function App() {
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout>
         <Routes>
-          <Route path="/" element={<SimpleQuestionPage />} />
-          <Route path="/question" element={<SimpleQuestionPage />} />
+          <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/competitions/:competitionId/intro" element={<CompetitionIntro />} />
           <Route path="/competitions/:competitionId/play" element={<CompetitionPlay />} />
