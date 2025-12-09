@@ -7,6 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '../.env.local') })
 
+console.log('🚀 Backend server initializing - Railway deployment trigger', new Date().toISOString())
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
