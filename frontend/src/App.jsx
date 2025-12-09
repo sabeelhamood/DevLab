@@ -12,6 +12,7 @@ import './styles/theme-transitions.css'
 
 function App() {
   console.log('VITE_API_URL =', import.meta.env.VITE_API_URL)
+  console.log('🚀 Frontend app initializing - Vercel deployment trigger', new Date().toISOString())
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout>
