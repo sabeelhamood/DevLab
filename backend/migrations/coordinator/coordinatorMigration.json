@@ -1,5 +1,12 @@
 {
   "version": "1.0.0",
+  "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
+  "dependencies": [
+    "content-studio",
+    "assessment",
+    "learning-analytics",
+    "course-builder"
+  ],
   "api": {
     "endpoints": [
       {
@@ -51,7 +58,7 @@
         }
       },
       {
-        "path": "/api/data-request",
+        "path": "/api/fill-content-metrics",
         "method": "POST",
         "description": "Main gateway endpoint for microservice data requests. Routes requests based on requester_service field.",
         "authentication": "Service authentication required (X-API-Key, X-Service-Id)",
@@ -725,7 +732,7 @@
       {
         "name": "course.completion",
         "description": "Subscribes to course completion events from Course Builder to trigger competition invitations",
-        "handler": "course-builder data-request handler"
+        "handler": "course-builder fill-content-metrics handler"
       }
     ]
   }
