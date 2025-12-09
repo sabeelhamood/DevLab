@@ -714,6 +714,7 @@ const startServer = async () => {
     console.log(`🏥 Health Check: http://${HOST}:${PORT}/health`)
     console.log(`🔧 Process.env.PORT: ${process.env.PORT}`)
     console.log(`🔧 Config.port: ${config.port}`)
+    console.log(`🚂 Railway deployment triggered - ${new Date().toISOString()}`)
   })
 
   server.on('error', (error) => {
