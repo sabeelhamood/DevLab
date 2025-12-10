@@ -74,9 +74,9 @@ export async function postToCoordinator(envelope, options = {}) {
       try {
         const isValid = verifySignature(
           'coordinator',
+          responseSignature,
           coordinatorPublicKey,
-          response.data,
-          responseSignature
+          response.data
         );
         if (!isValid) {
           console.warn('[CoordinatorClient] Response signature verification failed');

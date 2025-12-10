@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticateService } from '../middleware/auth.js'
+import { authenticateSignature } from '../middleware/signatureAuth.js'
 import { contentStudioHandlers } from './contentStudio/contentStudioRoutes.js'
 import { assessmentController } from '../controllers/external/assessmentController.js'
 import { learningAnalyticsController } from '../controllers/external/learningAnalyticsController.js'
@@ -14,7 +14,8 @@ import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinat
 
 const router = express.Router()
 
-router.use(authenticateService)
+// Use signature-based authentication instead of API key
+router.use(authenticateSignature)
 
 const executeHandler = (handler, { body = {}, params = {}, query = {} } = {}) =>
   new Promise((resolve, reject) => {
