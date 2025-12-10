@@ -1,741 +1,138 @@
 {
-  "version": "1.0.0",
-  "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
-  "dependencies": [
-    "content-studio",
-    "assessment",
-    "learning-analytics",
-    "course-builder"
-  ],
-  "api": {
-    "endpoints": [
-      {
-        "path": "/api/fill-content-metrics/",
-        "method": "POST",
-        "description": "Coordinator proxy endpoint for filling content metrics. Accepts data requests from Coordinator and routes them to appropriate handlers.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "requester_service": {
-              "type": "string",
-              "description": "Service identifier (e.g., 'content-studio', 'assessment', 'analytics', 'course-builder')"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Request payload containing action and relevant parameters"
-            },
-            "response": {
-              "type": "object",
-              "properties": {
-                "answer": {
-                  "type": "string",
-                  "description": "Response answer field to be populated"
-                }
-              }
-            }
-          },
-          "required": ["requester_service", "payload", "response"]
-        },
-        "responseSchema": {
-          "type": "object",
-          "properties": {
-            "requester_service": {
-              "type": "string"
-            },
-            "payload": {
-              "type": "object"
-            },
-            "response": {
-              "type": "object",
-              "properties": {
-                "answer": {
-                  "type": "string",
-                  "description": "Contains HTML component for code questions or JSON for other responses"
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "path": "/api/fill-content-metrics",
-        "method": "POST",
-        "description": "Main gateway endpoint for microservice data requests. Routes requests based on requester_service field.",
-        "authentication": "Service authentication required (X-API-Key, X-Service-Id)",
-        "requestSchema": {
-          "type": "string",
-          "description": "Stringified JSON object with requester_service, payload, and response fields"
-        }
-      },
-      {
-        "path": "/api/content-studio/code-preview",
-        "method": "POST",
-        "description": "Preview endpoint for Content Studio code components. Generates HTML with CodeMirror editor, hints, solution checking, and AI fraud detection.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "requester_service": {
-              "type": "string",
-              "enum": ["content-studio"]
-            },
-            "payload": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string",
-                  "enum": ["generate-questions"]
-                },
-                "topic_id": {
-                  "type": ["string", "number"]
-                },
-                "topic_name": {
-                  "type": "string"
-                },
-                "question_type": {
-                  "type": "string",
-                  "enum": ["code"]
-                },
-                "programming_language": {
-                  "type": "string",
-                  "default": "javascript"
-                },
-                "amount": {
-                  "type": "number",
-                  "default": 3
-                },
-                "skills": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "humanLanguage": {
-                  "type": "string",
-                  "default": "en"
-                }
-              },
-              "required": ["topic_id", "topic_name", "question_type"]
-            }
-          }
-        },
-        "responseSchema": {
-          "type": "object",
-          "properties": {
-            "success": {
-              "type": "boolean"
-            },
-            "html": {
-              "type": "string",
-              "description": "Full HTML component with embedded CodeMirror editor, question UI, and interactive features"
-            }
-          }
-        }
-      },
-      {
-        "path": "/api/content-studio/generate-hint",
-        "method": "POST",
-        "description": "Generate AI-powered hints for coding questions using OpenAI Content Studio service.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "question": {
-              "type": "string"
-            },
-            "userAttempt": {
-              "type": "string"
-            },
-            "hintsUsed": {
-              "type": "number",
-              "default": 0
-            },
-            "allHints": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "topicName": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      {
-        "path": "/api/content-studio/check-solution",
-        "method": "POST",
-        "description": "Check learner's code solution with AI evaluation and fraud detection.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "question": {
-              "type": "string"
-            },
-            "userSolution": {
-              "type": "string",
-              "required": true
-            },
-            "language": {
-              "type": "string",
-              "default": "javascript"
-            },
-            "topicName": {
-              "type": "string"
-            }
-          },
-          "required": ["userSolution"]
-        }
-      },
-      {
-        "path": "/api/content-studio/show-solution",
-        "method": "POST",
-        "description": "Reveal ideal reference solution for coding questions.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "language": {
-              "type": "string",
-              "default": "javascript"
-            },
-            "skills": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "humanLanguage": {
-              "type": "string",
-              "default": "en"
-            },
-            "question": {
-              "type": "string",
-              "required": true
-            }
-          },
-          "required": ["question"]
-        }
-      },
-      {
-        "path": "/api/external/analytics/competition-summary",
-        "method": "POST",
-        "description": "Endpoint for receiving anonymized competition results for learning analytics.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "learner1_id": {
-              "type": "string"
-            },
-            "learner2_id": {
-              "type": "string"
-            },
-            "course_id": {
-              "type": "string"
-            },
-            "timer": {
-              "type": "number"
-            },
-            "performance_learner1": {
-              "type": "object"
-            },
-            "performance_learner2": {
-              "type": "object"
-            },
-            "score": {
-              "type": "object"
-            },
-            "questions_answered": {
-              "type": "number"
-            },
-            "competition_id": {
-              "type": "string"
-            },
-            "created_at": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        }
-      },
-      {
-        "path": "/api/judge0",
-        "method": "POST",
-        "description": "Code execution endpoint using Judge0 sandbox service.",
-        "requestSchema": {
-          "type": "object",
-          "properties": {
-            "source_code": {
-              "type": "string"
-            },
-            "language_id": {
-              "type": "number"
-            },
-            "stdin": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    ]
-  },
-  "capabilities": [
-    "generate coding exercises",
-    "generate theoretical questions",
-    "produce test cases",
-    "evaluate coding submissions",
-    "create AI-vs-learner competitions",
-    "validate trainer-authored questions",
-    "provide AI-powered hints for coding questions",
-    "detect AI-generated code solutions (fraud detection)",
-    "execute code in secure sandbox environment",
-    "generate HTML components for interactive coding questions",
-    "transform trainer exercises into validated question format",
-    "generate question feedback and solutions",
-    "store and retrieve temporary questions",
-    "save questions to persistent database"
-  ],
-  "database": {
-    "tables": [
-      {
-        "name": "userProfiles",
-        "description": "Stores learner user profile information",
-        "fields": [
-          {
-            "name": "learner_id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the learner"
-          },
-          {
-            "name": "learner_name",
-            "type": "text",
-            "description": "Name of the learner"
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when profile was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when profile was last updated"
-          }
-        ],
-        "indexes": ["learner_name"]
-      },
-      {
-        "name": "course_completions",
-        "description": "Tracks course completion records for learners",
-        "fields": [
-          {
-            "name": "learner_id",
-            "type": "uuid",
-            "foreignKey": "userProfiles.learner_id",
-            "description": "Reference to learner profile"
-          },
-          {
-            "name": "course_id",
-            "type": "bigint",
-            "description": "Identifier for the completed course"
-          },
-          {
-            "name": "course_name",
-            "type": "text",
-            "description": "Name of the completed course"
-          },
-          {
-            "name": "completed_at",
-            "type": "timestamptz",
-            "description": "Timestamp when course was completed"
-          }
-        ],
-        "primaryKey": ["learner_id", "course_id", "completed_at"],
-        "indexes": ["course_id", "completed_at"]
-      },
-      {
-        "name": "topics",
-        "description": "Stores course topics and associated skills",
-        "fields": [
-          {
-            "name": "topic_id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the topic"
-          },
-          {
-            "name": "course_id",
-            "type": "uuid",
-            "description": "Reference to the course this topic belongs to"
-          },
-          {
-            "name": "topic_name",
-            "type": "text",
-            "description": "Name of the topic"
-          },
-          {
-            "name": "skills",
-            "type": "jsonb",
-            "description": "Array of skills associated with this topic"
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when topic was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when topic was last updated"
-          }
-        ],
-        "indexes": ["course_id", "topic_name"]
-      },
-      {
-        "name": "questions",
-        "description": "Stores questions (both coding and theoretical) for courses and practices",
-        "fields": [
-          {
-            "name": "question_id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the question"
-          },
-          {
-            "name": "topic_id",
-            "type": "uuid",
-            "foreignKey": "topics.topic_id",
-            "description": "Reference to the topic this question belongs to"
-          },
-          {
-            "name": "course_id",
-            "type": "uuid",
-            "description": "Reference to the course (optional)"
-          },
-          {
-            "name": "practice_id",
-            "type": "uuid",
-            "description": "Reference to practice session (optional)"
-          },
-          {
-            "name": "title",
-            "type": "text",
-            "description": "Title of the question"
-          },
-          {
-            "name": "question_type",
-            "type": "text",
-            "description": "Type of question: 'code' or 'theoretical'"
-          },
-          {
-            "name": "question_content",
-            "type": "text",
-            "description": "Content/description of the question"
-          },
-          {
-            "name": "difficulty",
-            "type": "text",
-            "description": "Difficulty level: 'basic', 'intermediate', 'advanced', etc."
-          },
-          {
-            "name": "language",
-            "type": "text",
-            "description": "Programming language (for code questions)"
-          },
-          {
-            "name": "tags",
-            "type": "jsonb",
-            "description": "Array of tags for categorization"
-          },
-          {
-            "name": "metadata",
-            "type": "jsonb",
-            "description": "Additional metadata about the question"
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when question was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when question was last updated"
-          }
-        ],
-        "indexes": ["topic_id", "course_id", "practice_id", "question_type", "difficulty"]
-      },
-      {
-        "name": "testCases",
-        "description": "Stores test cases for coding questions",
-        "fields": [
-          {
-            "name": "testCase_id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the test case"
-          },
-          {
-            "name": "question_id",
-            "type": "uuid",
-            "foreignKey": "questions.question_id",
-            "description": "Reference to the question this test case belongs to"
-          },
-          {
-            "name": "input",
-            "type": "text",
-            "description": "Input data for the test case"
-          },
-          {
-            "name": "expected_output",
-            "type": "text",
-            "description": "Expected output for the test case"
-          },
-          {
-            "name": "explanation",
-            "type": "text",
-            "description": "Explanation of what this test case validates"
-          },
-          {
-            "name": "metadata",
-            "type": "jsonb",
-            "description": "Additional metadata about the test case"
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when test case was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when test case was last updated"
-          }
-        ],
-        "indexes": ["question_id"]
-      },
-      {
-        "name": "temp_questions",
-        "description": "Temporary storage for questions pending confirmation from requesting services",
-        "fields": [
-          {
-            "name": "id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the temporary question record"
-          },
-          {
-            "name": "request_id",
-            "type": "text",
-            "unique": true,
-            "description": "Unique request identifier from the requesting service"
-          },
-          {
-            "name": "question",
-            "type": "jsonb",
-            "description": "Question data in JSON format"
-          },
-          {
-            "name": "hints",
-            "type": "jsonb",
-            "description": "Array of hints for the question"
-          },
-          {
-            "name": "test_cases",
-            "type": "jsonb",
-            "description": "Array of test cases for the question"
-          },
-          {
-            "name": "status",
-            "type": "text",
-            "description": "Status: 'pending', 'confirmed', etc."
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when temporary question was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when temporary question was last updated"
-          }
-        ],
-        "indexes": ["request_id"]
-      },
-      {
-        "name": "competitions_vs_ai",
-        "description": "Stores AI-vs-learner competition records",
-        "fields": [
-          {
-            "name": "competition_id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the competition"
-          },
-          {
-            "name": "learner_id",
-            "type": "uuid",
-            "foreignKey": "userProfiles.learner_id",
-            "description": "Reference to the learner participating"
-          },
-          {
-            "name": "learner_name",
-            "type": "text",
-            "description": "Name of the learner"
-          },
-          {
-            "name": "course_id",
-            "type": "text",
-            "description": "Identifier for the course"
-          },
-          {
-            "name": "course_name",
-            "type": "text",
-            "description": "Name of the course"
-          },
-          {
-            "name": "learner_answers",
-            "type": "jsonb",
-            "description": "Array of learner's answers"
-          },
-          {
-            "name": "ai_answers",
-            "type": "jsonb",
-            "description": "Array of AI's answers"
-          },
-          {
-            "name": "questions",
-            "type": "jsonb",
-            "description": "Array of questions in the competition"
-          },
-          {
-            "name": "in_progress_answers",
-            "type": "jsonb",
-            "description": "Array of in-progress answers"
-          },
-          {
-            "name": "status",
-            "type": "text",
-            "description": "Competition status: 'pending', 'active', 'completed', etc."
-          },
-          {
-            "name": "timer_seconds",
-            "type": "integer",
-            "description": "Time limit for the competition in seconds"
-          },
-          {
-            "name": "started_at",
-            "type": "timestamptz",
-            "description": "Timestamp when competition started"
-          },
-          {
-            "name": "completed_at",
-            "type": "timestamptz",
-            "description": "Timestamp when competition completed"
-          },
-          {
-            "name": "current_question_index",
-            "type": "integer",
-            "description": "Index of current question being answered"
-          },
-          {
-            "name": "winner",
-            "type": "text",
-            "description": "Winner of the competition: 'learner', 'ai', or 'tie'"
-          },
-          {
-            "name": "score",
-            "type": "integer",
-            "description": "Learner's final score"
-          },
-          {
-            "name": "created_at",
-            "type": "timestamptz",
-            "description": "Timestamp when competition was created"
-          },
-          {
-            "name": "updated_at",
-            "type": "timestamptz",
-            "description": "Timestamp when competition was last updated"
-          }
-        ],
-        "indexes": ["learner_id", "course_id", "created_at"]
-      },
-      {
-        "name": "assessment_codeQuestions",
-        "description": "Stores coding questions generated for assessments",
-        "fields": [
-          {
-            "name": "id",
-            "type": "uuid",
-            "primaryKey": true,
-            "description": "Unique identifier for the assessment question"
-          },
-          {
-            "name": "assessment_id",
-            "type": "text",
-            "description": "Identifier for the assessment"
-          },
-          {
-            "name": "question",
-            "type": "text",
-            "description": "Question content"
-          },
-          {
-            "name": "testCases",
-            "type": "jsonb",
-            "description": "Array of test cases for the question"
-          },
-          {
-            "name": "skills",
-            "type": "jsonb",
-            "description": "Array of skills tested by this question"
-          },
-          {
-            "name": "createdAt",
-            "type": "timestamptz",
-            "description": "Timestamp when question was created"
-          }
-        ],
-        "indexes": ["assessment_id", "createdAt"]
-      }
-    ]
-  },
-  "events": {
-    "publishes": [
-      {
-        "name": "devlab.question.generated",
-        "description": "Published when a new question is successfully generated and saved",
-        "payload": {
-          "question_id": "uuid",
-          "topic_id": "uuid",
-          "question_type": "string",
-          "source": "string"
-        }
-      },
-      {
-        "name": "devlab.competition.completed",
-        "description": "Published when an AI-vs-learner competition is completed",
-        "payload": {
-          "competition_id": "uuid",
-          "learner_id": "uuid",
-          "winner": "string",
-          "score": "number"
-        }
-      }
+  "migrationFile": {
+    "version": "1.0.0",
+    "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
+    "dependencies": [
+      "content-studio",
+      "assessment",
+      "learning-analytics",
+      "course-builder"
     ],
-    "subscribes": [
-      {
-        "name": "content.topic.created",
-        "description": "Subscribes to topic creation events to prepare question generation context",
-        "handler": "Internal topic sync handler"
-      },
-      {
-        "name": "course.completion",
-        "description": "Subscribes to course completion events from Course Builder to trigger competition invitations",
-        "handler": "course-builder fill-content-metrics handler"
-      }
-    ]
+    "api": {
+      "endpoints": [
+        {
+          "path": "/api/fill-content-metrics/",
+          "method": "POST",
+          "description": "Coordinator proxy endpoint for filling content metrics. Accepts data requests from Coordinator and routes them to appropriate handlers.",
+          "requestSchema": {
+            "type": "object",
+            "properties": {
+              "requester_service": {
+                "type": "string",
+                "description": "Service identifier (e.g., 'content-studio', 'assessment', 'analytics', 'course-builder')"
+              },
+              "payload": {
+                "type": "object",
+                "description": "Request payload containing action and relevant parameters"
+              },
+              "response": {
+                "type": "object",
+                "properties": {
+                  "answer": {
+                    "type": "string",
+                    "description": "Response answer field to be populated"
+                  }
+                }
+              }
+            },
+            "required": ["requester_service", "payload", "response"]
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "requester_service": {
+                "type": "string"
+              },
+              "payload": {
+                "type": "object"
+              },
+              "response": {
+                "type": "object",
+                "properties": {
+                  "answer": {
+                    "type": "string",
+                    "description": "Contains HTML component for code questions or JSON for other responses"
+                  }
+                }
+              }
+            }
+          }
+        },
+
+
+        {
+          "path": "/api/judge0",
+          "method": "POST",
+          "description": "Code execution endpoint using Judge0 sandbox service.",
+          "requestSchema": {
+            "type": "object",
+            "properties": {
+              "source_code": { "type": "string" },
+              "language_id": { "type": "number" },
+              "stdin": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+
+    "capabilities": [
+      "generate coding exercises",
+      "generate theoretical questions",
+      "produce test cases",
+      "evaluate coding submissions",
+      "create AI-vs-learner competitions",
+      "validate trainer-authored questions",
+      "provide AI-powered hints for coding questions",
+      "detect AI-generated code solutions (fraud detection)",
+      "execute code in secure sandbox environment",
+      "generate HTML components for interactive coding questions",
+      "transform trainer exercises into validated question format",
+      "generate question feedback and solutions",
+      "store and retrieve temporary questions",
+      "save questions to persistent database"
+    ],
+
+    "database": {
+      "tables": [
+      ]
+    },
+
+    "events": {
+      "publishes": [
+        {
+          "name": "devlab.question.generated",
+          "description": "Published when a new question is successfully generated and saved",
+          "payload": {
+            "question_id": "uuid",
+            "topic_id": "uuid",
+            "question_type": "string",
+            "source": "string"
+          }
+        },
+        {
+          "name": "devlab.competition.completed",
+          "description": "Published when an AI-vs-learner competition is completed",
+          "payload": {
+            "competition_id": "uuid",
+            "learner_id": "uuid",
+            "winner": "string",
+            "score": "number"
+          }
+        }
+      ],
+      "subscribes": [
+        {
+          "name": "content.topic.created",
+          "description": "Subscribes to topic creation events to prepare question generation context",
+          "handler": "Internal topic sync handler"
+        },
+        {
+          "name": "course.completion",
+          "description": "Subscribes to course completion events from Course Builder to trigger competition invitations",
+          "handler": "course-builder fill-content-metrics handler"
+        }
+      ]
+    }
   }
 }
-
-
