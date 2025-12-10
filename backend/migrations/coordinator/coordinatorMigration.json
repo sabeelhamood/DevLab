@@ -13,25 +13,16 @@
         {
           "path": "/api/fill-content-metrics/",
           "method": "POST",
-          "description": "Coordinator proxy endpoint for filling content metrics. Accepts data requests from Coordinator and routes them to appropriate handlers.",
+          "description": "Main data-request gateway. Coordinator sends all DevLab-bound requests through this entry point.",
           "requestSchema": {
             "type": "object",
             "properties": {
-              "requester_service": {
-                "type": "string",
-                "description": "Service identifier (e.g., 'content-studio', 'assessment', 'analytics', 'course-builder')"
-              },
-              "payload": {
-                "type": "object",
-                "description": "Request payload containing action and relevant parameters"
-              },
+              "requester_service": { "type": "string" },
+              "payload": { "type": "object" },
               "response": {
                 "type": "object",
                 "properties": {
-                  "answer": {
-                    "type": "string",
-                    "description": "Response answer field to be populated"
-                  }
+                  "answer": { "type": "string" }
                 }
               }
             },
@@ -40,36 +31,14 @@
           "responseSchema": {
             "type": "object",
             "properties": {
-              "requester_service": {
-                "type": "string"
-              },
-              "payload": {
-                "type": "object"
-              },
+              "requester_service": { "type": "string" },
+              "payload": { "type": "object" },
               "response": {
                 "type": "object",
                 "properties": {
-                  "answer": {
-                    "type": "string",
-                    "description": "Contains HTML component for code questions or JSON for other responses"
-                  }
+                  "answer": { "type": "string" }
                 }
               }
-            }
-          }
-        },
-
-
-        {
-          "path": "/api/judge0",
-          "method": "POST",
-          "description": "Code execution endpoint using Judge0 sandbox service.",
-          "requestSchema": {
-            "type": "object",
-            "properties": {
-              "source_code": { "type": "string" },
-              "language_id": { "type": "number" },
-              "stdin": { "type": "string" }
             }
           }
         }
@@ -94,43 +63,28 @@
     ],
 
     "database": {
-      "tables": [
-      ]
+      "tables": []
     },
 
     "events": {
       "publishes": [
         {
           "name": "devlab.question.generated",
-          "description": "Published when a new question is successfully generated and saved",
-          "payload": {
-            "question_id": "uuid",
-            "topic_id": "uuid",
-            "question_type": "string",
-            "source": "string"
-          }
+          "description": "Published when a new question is successfully generated and saved"
         },
         {
           "name": "devlab.competition.completed",
-          "description": "Published when an AI-vs-learner competition is completed",
-          "payload": {
-            "competition_id": "uuid",
-            "learner_id": "uuid",
-            "winner": "string",
-            "score": "number"
-          }
+          "description": "Published when an AI-vs-learner competition is completed"
         }
       ],
       "subscribes": [
         {
           "name": "content.topic.created",
-          "description": "Subscribes to topic creation events to prepare question generation context",
-          "handler": "Internal topic sync handler"
+          "description": "Subscribes to topic creation events to prepare question generation context"
         },
         {
           "name": "course.completion",
-          "description": "Subscribes to course completion events from Course Builder to trigger competition invitations",
-          "handler": "course-builder fill-content-metrics handler"
+          "description": "Subscribes to course completion events from Course Builder"
         }
       ]
     }
