@@ -11,6 +11,7 @@ import {
 } from '../services/tempQuestionStore.js'
 import { generateCodeContentStudioComponent } from '../utils/codeContentStudioRender.js'
 import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
+import { openAIContentStudioService } from '../services/openAIContentStudioService.js'
 
 const router = express.Router()
 
@@ -72,21 +73,66 @@ const contentStudioHandler = async (payload) => {
 
       const safeAmount = Number(amount) > 0 ? Number(amount) : 3
       const normalizedSkills = Array.isArray(skills) ? skills : []
+      const resolvedProgrammingLanguage = programming_language || programmingLanguage || 'javascript'
 
+      // Step 1: Generate questions array first (needed for temp_questions saving)
+      const questions = await openAIContentStudioService.generateContentStudioCodingQuestions(
+        resolvedTopicName,
+        normalizedSkills,
+        safeAmount,
+        resolvedProgrammingLanguage,
+        {
+          humanLanguage,
+          topic_id: resolvedTopicId
+        }
+      )
+
+      // Step 2: Generate HTML component (existing behavior)
       const html = await generateCodeContentStudioComponent({
         topicName: resolvedTopicName,
         topic_id: resolvedTopicId,
         amount: safeAmount,
-        programming_language: programming_language || programmingLanguage || 'javascript',
+        programming_language: resolvedProgrammingLanguage,
         skills: normalizedSkills,
         humanLanguage
       })
 
+      // Step 3: Create requestId and save to temp_questions (matching theoretical questions flow)
+      const requestId = createRequestId()
+      const metadata = {
+        generated_at: new Date().toISOString(),
+        topic_id: resolvedTopicId,
+        topic_name: resolvedTopicName,
+        amount: safeAmount,
+        humanLanguage,
+        skills: normalizedSkills,
+        programming_language: resolvedProgrammingLanguage,
+        question_type: 'code',
+        source: 'content-studio'
+      }
+
+      try {
+        await saveTempQuestions({
+          requestId,
+          requesterService: 'content-studio',
+          action: 'generate-questions',
+          questions,
+          metadata
+        })
+      } catch (e) {
+        console.error('❌ Error saving code questions to temp_questions:', e)
+        metadata.warning = `Temporary save failed: ${e?.message || 'unknown error'}`
+      }
+
+      // Step 4: Return wrapped response (matching theoretical questions structure)
       return {
         statusCode: 200,
         payload: {
           success: true,
-          html
+          html,  // Keep for backward compatibility
+          request_id: requestId,
+          questions,
+          metadata
         }
       }
     } catch (error) {
@@ -245,11 +291,25 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
     const { statusCode, payload: responsePayload } = await handler(payload)
     parsed.response = responseObject
     
-    // If content-studio code question generation was requested, place HTML component in response.answer
+    // If content-studio code question generation was requested, wrap response like theoretical questions
     if (requester_service === 'content-studio' && payload?.action === 'generate-questions' && payload?.question_type === 'code') {
-      const componentHtml = responsePayload?.html || ''
-      // The response.answer should contain the component HTML that will be sent back to content-studio
-      parsed.response.answer = componentHtml
+      // If responsePayload has the wrapped structure (with request_id), use it (new behavior)
+      if (responsePayload?.request_id && responsePayload?.questions) {
+        const wrappedAnswer = {
+          success: true,
+          request_id: responsePayload.request_id,
+          data: {
+            questions: responsePayload.questions,
+            metadata: responsePayload.metadata || {},
+            html: responsePayload.html || ''
+          }
+        }
+        parsed.response.answer = JSON.stringify(wrappedAnswer)
+      } else {
+        // Fallback: just HTML (backward compatibility for old responses)
+        const componentHtml = responsePayload?.html || ''
+        parsed.response.answer = componentHtml
+      }
     } else if (requester_service === 'assessment' && payload?.action === 'coding') {
       const componentHtml = responsePayload?.componentHtml || ''
       // The response.answer should contain the component HTML that will be sent back to assessment
