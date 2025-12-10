@@ -49,7 +49,9 @@ export function generateSignature(serviceName, privateKeyPem, payload = null) {
     sign.end();
     
     // Sign with private key and return Base64-encoded signature
-    return sign.sign(privateKeyPem, 'base64');
+    const signature = sign.sign(privateKeyPem, 'base64');
+    // Ensure no trailing whitespace/newlines
+    return typeof signature === 'string' ? signature.trim() : signature;
   } catch (error) {
     throw new Error(`Signature generation failed: ${error.message}`);
   }

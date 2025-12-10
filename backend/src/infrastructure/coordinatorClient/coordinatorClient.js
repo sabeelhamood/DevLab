@@ -56,7 +56,8 @@ export async function postToCoordinator(envelope, options = {}) {
 
   try {
     // Generate ECDSA signature for the entire envelope
-    const signature = generateSignature(SERVICE_NAME, privateKey, envelope);
+    const rawSignature = generateSignature(SERVICE_NAME, privateKey, envelope);
+    const signature = typeof rawSignature === 'string' ? rawSignature.trim() : rawSignature;
 
     // Send POST request with signature headers
     const response = await axios.post(url, envelope, {
