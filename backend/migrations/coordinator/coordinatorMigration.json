@@ -1,92 +1,92 @@
 {
   "migrationFile": {
-    "version": "1.0.0",
-    "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
-    "dependencies": [
-      "content-studio",
-      "assessment",
-      "learning-analytics",
-      "course-builder"
-    ],
-    "api": {
-      "endpoints": [
-        {
-          "path": "/api/fill-content-metrics/",
-          "method": "POST",
+  "version": "1.0.0",
+  "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
+  "dependencies": [
+    "content-studio",
+    "assessment",
+    "learning-analytics",
+    "course-builder"
+  ],
+  "api": {
+    "endpoints": [
+      {
+        "path": "/api/fill-content-metrics/",
+        "method": "POST",
           "description": "Main data-request gateway. Coordinator sends all DevLab-bound requests through this entry point.",
-          "requestSchema": {
-            "type": "object",
-            "properties": {
+        "requestSchema": {
+          "type": "object",
+          "properties": {
               "requester_service": { "type": "string" },
               "payload": { "type": "object" },
-              "response": {
-                "type": "object",
-                "properties": {
+            "response": {
+              "type": "object",
+              "properties": {
                   "answer": { "type": "string" }
-                }
               }
-            },
-            "required": ["requester_service", "payload", "response"]
+            }
           },
-          "responseSchema": {
-            "type": "object",
-            "properties": {
+          "required": ["requester_service", "payload", "response"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": {
               "requester_service": { "type": "string" },
               "payload": { "type": "object" },
-              "response": {
-                "type": "object",
-                "properties": {
+            "response": {
+              "type": "object",
+              "properties": {
                   "answer": { "type": "string" }
                 }
-              }
             }
           }
         }
-      ]
-    },
+      }
+    ]
+  },
 
-    "capabilities": [
-      "generate coding exercises",
-      "generate theoretical questions",
-      "produce test cases",
-      "evaluate coding submissions",
-      "create AI-vs-learner competitions",
-      "validate trainer-authored questions",
-      "provide AI-powered hints for coding questions",
-      "detect AI-generated code solutions (fraud detection)",
-      "execute code in secure sandbox environment",
-      "generate HTML components for interactive coding questions",
-      "transform trainer exercises into validated question format",
-      "generate question feedback and solutions",
-      "store and retrieve temporary questions",
-      "save questions to persistent database"
-    ],
+  "capabilities": [
+    "generate coding exercises",
+    "generate theoretical questions",
+    "produce test cases",
+    "evaluate coding submissions",
+    "create AI-vs-learner competitions",
+    "validate trainer-authored questions",
+    "provide AI-powered hints for coding questions",
+    "detect AI-generated code solutions (fraud detection)",
+    "execute code in secure sandbox environment",
+    "generate HTML components for interactive coding questions",
+    "transform trainer exercises into validated question format",
+    "generate question feedback and solutions",
+    "store and retrieve temporary questions",
+    "save questions to persistent database"
+  ],
 
-    "database": {
+  "database": {
       "tables": []
     },
 
-    "events": {
-      "publishes": [
-        {
-          "name": "devlab.question.generated",
+  "events": {
+    "publishes": [
+      {
+        "name": "devlab.question.generated",
           "description": "Published when a new question is successfully generated and saved"
-        },
-        {
-          "name": "devlab.competition.completed",
+      },
+      {
+        "name": "devlab.competition.completed",
           "description": "Published when an AI-vs-learner competition is completed"
-        }
-      ],
-      "subscribes": [
-        {
-          "name": "content.topic.created",
+      }
+    ],
+    "subscribes": [
+      {
+        "name": "content.topic.created",
           "description": "Subscribes to topic creation events to prepare question generation context"
-        },
-        {
-          "name": "course.completion",
+      },
+      {
+        "name": "course.completion",
           "description": "Subscribes to course completion events from Course Builder"
-        }
-      ]
-    }
+      }
+    ]
   }
+}
 }

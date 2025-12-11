@@ -356,10 +356,12 @@ const buildSessionPayload = (competition) => {
 
 export const competitionController = {
   async recordCourseCompletion(req, res) {
+    console.log('[recordCourseCompletion] START:', req.body)
     try {
       const { learner_id, learner_name, course_id, course_name } = req.body || {}
       const learnerId = String(learner_id || '').trim()
 
+      console.log('[recordCourseCompletion] Validation step reached: checking required fields')
       if (!learnerId || !course_id) {
         return res.status(400).json({
           success: false,
@@ -367,6 +369,7 @@ export const competitionController = {
         })
       }
 
+      console.log('[recordCourseCompletion] Validation step reached: checking UUID format')
       if (!isValidUuid(learnerId)) {
         return res.status(400).json({
           success: false,
@@ -432,8 +435,11 @@ export const competitionController = {
         }
       }
 
+      console.log('[recordCourseCompletion] Running DB operation: ensureUserProfile')
       await ensureUserProfile(learnerId, learner_name || course_name)
+      console.log('[recordCourseCompletion] DB result: ensureUserProfile completed')
 
+      console.log('[recordCourseCompletion] Running DB operation: SELECT course_completions')
       const { rows } = await postgres.query(
         `
         SELECT 1
@@ -443,9 +449,11 @@ export const competitionController = {
         `,
         [learnerId, course_id]
       )
+      console.log('[recordCourseCompletion] DB result: SELECT course_completions', { rowCount: rows.length })
 
       let alreadyRecorded = Boolean(rows.length)
       if (!alreadyRecorded) {
+        console.log('[recordCourseCompletion] Running DB operation: INSERT course_completions')
         await postgres.query(
           `
           INSERT INTO ${courseCompletionsTable} (
@@ -458,25 +466,31 @@ export const competitionController = {
           `,
           [learnerId, course_id, course_name || null]
         )
+        console.log('[recordCourseCompletion] DB result: INSERT course_completions completed')
       }
 
       let competition = null
 
       try {
+        console.log('[recordCourseCompletion] Running DB operation: CompetitionAIModel.findByLearnerAndCourse')
         competition = await CompetitionAIModel.findByLearnerAndCourse(
           learnerId,
           String(course_id)
         )
+        console.log('[recordCourseCompletion] DB result: CompetitionAIModel.findByLearnerAndCourse', { competition: competition ? 'found' : 'not found' })
     } catch (error) {
         console.error('❌ [competitions] Failed to query existing competition:', error)
       }
 
       if (!competition) {
         try {
+          console.log('[recordCourseCompletion] Running DB operation: competitionAIService.generateCompetitionSetup')
           const { questions } = await competitionAIService.generateCompetitionSetup({
             courseName: course_name
           })
+          console.log('[recordCourseCompletion] DB result: competitionAIService.generateCompetitionSetup', { questionsCount: questions?.length || 0 })
 
+          console.log('[recordCourseCompletion] Running DB operation: CompetitionAIModel.create')
           competition = await CompetitionAIModel.create({
             learnerId,
             learnerName: learner_name || null,
@@ -484,13 +498,14 @@ export const competitionController = {
             courseName: course_name,
             questions
           })
+          console.log('[recordCourseCompletion] DB result: CompetitionAIModel.create', { competitionId: competition?._id || competition?.id || 'unknown' })
         } catch (creationError) {
           console.error('❌ [competitions] Failed to create competition during course completion:', creationError)
           throw new Error('Unable to generate competition for this course completion')
         }
       }
 
-      return res.status(202).json({
+      const responseBody = {
         success: true,
         learner_id: learnerId,
         course_id,
@@ -499,8 +514,11 @@ export const competitionController = {
         upstreamStatus,
         upstreamBody,
         competition
-      })
+      }
+      console.log('[recordCourseCompletion] SUCCESS:', responseBody)
+      return res.status(202).json(responseBody)
     } catch (error) {
+      console.error('[recordCourseCompletion] ERROR:', error)
       console.error('❌ [competitions] Course completion handling failed:', error)
       return res.status(500).json({
         success: false,
