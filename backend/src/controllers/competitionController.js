@@ -371,37 +371,44 @@ export const competitionController = {
 
       console.log('[recordCourseCompletion] Validation step reached: checking UUID format')
       if (!isValidUuid(learnerId)) {
+        console.log('[recordCourseCompletion] UUID validation FAILED for learnerId:', learnerId)
         return res.status(400).json({
           success: false,
           error: 'learner_id must be a valid UUID'
         })
       }
 
+      console.log('[recordCourseCompletion] UUID validation PASSED')
+      console.log('[recordCourseCompletion] Validation passed, proceeding to business logic')
+      console.log('[recordCourseCompletion] Payload values:', { learnerId, course_id, course_name, learner_name })
       const payload = req.body
 
-      const serviceApiKeys = (process.env.SERVICE_API_KEYS || '')
-        .split(',')
-        .map((key) => key.trim())
-        .filter(Boolean)
-
-      if (!serviceApiKeys.length) {
-        console.error('❌ [competitions] SERVICE_API_KEYS missing in environment variables')
-        return res.status(500).json({
-          success: false,
-          error: 'Service authentication misconfigured'
-        })
-      }
-
-      const selectedKey = serviceApiKeys[Math.floor(Math.random() * serviceApiKeys.length)]
-      const serviceId = process.env.SERVICE_API_ID || 'devlab-competitions'
       const competitionsApiUrl = process.env.COMPETITIONS_API_URL
-
       let upstreamStatus = null
       let upstreamBody = null
 
+      // Only check SERVICE_API_KEYS if upstream forwarding is configured
       if (!competitionsApiUrl) {
-        console.warn('⚠️ [competitions] COMPETITIONS_API_URL not set; skipping forward call')
+        console.log('[recordCourseCompletion] COMPETITIONS_API_URL not set; skipping upstream forwarding')
       } else {
+        console.log('[recordCourseCompletion] COMPETITIONS_API_URL configured; checking SERVICE_API_KEYS for upstream forwarding')
+        const serviceApiKeys = (process.env.SERVICE_API_KEYS || '')
+          .split(',')
+          .map((key) => key.trim())
+          .filter(Boolean)
+
+        if (!serviceApiKeys.length) {
+          console.error('❌ [competitions] SERVICE_API_KEYS missing but COMPETITIONS_API_URL is set')
+          return res.status(500).json({
+            success: false,
+            error: 'Service authentication misconfigured: SERVICE_API_KEYS required when COMPETITIONS_API_URL is set'
+          })
+        }
+
+        const selectedKey = serviceApiKeys[Math.floor(Math.random() * serviceApiKeys.length)]
+        const serviceId = process.env.SERVICE_API_ID || 'devlab-competitions'
+
+        console.log('[recordCourseCompletion] Forwarding to upstream competitions API')
         try {
           const fetchFn = await getFetch()
           const forwardResponse = await fetchFn(competitionsApiUrl, {
@@ -430,10 +437,12 @@ export const competitionController = {
               )
             }
           }
-    } catch (error) {
+        } catch (error) {
           console.error('❌ [competitions] Failed to forward course completion:', error.message)
         }
       }
+
+      console.log('[recordCourseCompletion] Upstream forwarding completed (or skipped)')
 
       console.log('[recordCourseCompletion] Running DB operation: ensureUserProfile')
       await ensureUserProfile(learnerId, learner_name || course_name)

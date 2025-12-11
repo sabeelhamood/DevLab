@@ -289,7 +289,24 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
     }
 
     // Step 3: Execute handler and place result into response.answer
-    const { statusCode, payload: responsePayload } = await handler(payload)
+    let statusCode, responsePayload
+    try {
+      const result = await handler(payload)
+      statusCode = result.statusCode
+      responsePayload = result.payload
+      console.log(`[data-request] Handler returned: statusCode=${statusCode}, payload keys:`, Object.keys(responsePayload || {}))
+    } catch (handlerError) {
+      console.error('[data-request] Handler execution failed:', handlerError)
+      console.error('[data-request] Handler error stack:', handlerError.stack)
+      // If handler throws, return 500 error
+      parsed.response = responseObject
+      parsed.response.answer = JSON.stringify({
+        success: false,
+        error: 'Handler execution failed',
+        details: handlerError.message
+      })
+      return res.status(500).type('application/json').send(JSON.stringify(parsed))
+    }
     parsed.response = responseObject
     
     // If content-studio code question generation was requested, wrap response like theoretical questions
@@ -373,7 +390,10 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
 
     // Step 4: Sign the response envelope before sending back to Coordinator
     try {
+      console.log('[data-request] Signing response envelope before sending')
       const signatureHeaders = generateSignatureHeaders(parsed)
+      console.log('[data-request] Signature headers generated successfully')
+      console.log('[data-request] Sending response with statusCode:', statusCode)
       return res
         .status(statusCode)
         .type('application/json')
@@ -381,6 +401,7 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
         .send(JSON.stringify(parsed))
     } catch (signError) {
       console.error('[data-request] Failed to sign response envelope:', signError.message)
+      console.error('[data-request] Sign error stack:', signError.stack)
       // If signing fails, still return the response but log the error
       return res.status(statusCode).type('application/json').send(JSON.stringify(parsed))
     }
