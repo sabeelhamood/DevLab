@@ -209,7 +209,7 @@ const handlersByService = {
   'content-studio': contentStudioHandler,
   assessment: assessmentHandler,
   analytics: analyticsHandler,
-  'course-builder': courseBuilderHandler
+  'course_builder': courseBuilderHandler
 }
 
 // Accept raw text body specifically for this endpoint to comply with external microservices contract
@@ -362,7 +362,7 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
       } else {
         parsed.response.answer = JSON.stringify(responsePayload)
       }
-    } else if (requester_service === 'course-builder') {
+    } else if (requester_service === 'course_builder') {
       // For Course Builder, do not populate response.answer; return wrapper as-is
       parsed.response.answer = typeof parsed.response.answer === 'string' ? parsed.response.answer : ''
     } else {
