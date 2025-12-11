@@ -381,6 +381,26 @@ export const competitionController = {
       console.log('[recordCourseCompletion] UUID validation PASSED')
       console.log('[recordCourseCompletion] Validation passed, proceeding to business logic')
       console.log('[recordCourseCompletion] Payload values:', { learnerId, course_id, course_name, learner_name })
+      
+      // Convert course_id to bigint if it's a UUID string
+      // Extract numeric value from UUID (use first 8 hex digits as base-10 number)
+      let courseIdNumeric = course_id
+      if (typeof course_id === 'string' && course_id.includes('-')) {
+        // It's a UUID, convert to numeric
+        const hexPart = course_id.replace(/-/g, '').substring(0, 15) // Take first 15 hex chars to fit in bigint
+        courseIdNumeric = parseInt(hexPart, 16)
+        console.log('[recordCourseCompletion] Converted course_id from UUID to numeric:', { original: course_id, numeric: courseIdNumeric })
+      } else {
+        // Try to parse as number
+        courseIdNumeric = Number(course_id)
+        if (isNaN(courseIdNumeric)) {
+          return res.status(400).json({
+            success: false,
+            error: 'course_id must be a valid number or UUID'
+          })
+        }
+      }
+      
       const payload = req.body
 
       const competitionsApiUrl = process.env.COMPETITIONS_API_URL
@@ -456,7 +476,7 @@ export const competitionController = {
         WHERE "learner_id" = $1 AND "course_id" = $2
         LIMIT 1
         `,
-        [learnerId, course_id]
+        [learnerId, courseIdNumeric]
       )
       console.log('[recordCourseCompletion] DB result: SELECT course_completions', { rowCount: rows.length })
 
@@ -473,7 +493,7 @@ export const competitionController = {
           )
           VALUES ($1, $2, $3, now())
           `,
-          [learnerId, course_id, course_name || null]
+          [learnerId, courseIdNumeric, course_name || null]
         )
         console.log('[recordCourseCompletion] DB result: INSERT course_completions completed')
       }
