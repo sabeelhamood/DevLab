@@ -1392,6 +1392,15 @@ ${questionsJson}
 /**
  * Generate coding questions using OpenAI and return HTML for Content Studio style
  * rendering, including hint generation, solution checking, and AI-fraud detection.
+ * 
+ * @param {Object} options
+ * @param {string} options.topicName
+ * @param {number|string} options.topic_id
+ * @param {number} [options.amount=3]
+ * @param {string} [options.programming_language='javascript']
+ * @param {Array<string>} [options.skills=[]]
+ * @param {string} [options.humanLanguage='en']
+ * @param {Array<Object>} [options.questions] - Optional: pre-generated questions to use instead of generating new ones
  */
 export async function generateCodeContentStudioComponent({
   topicName,
@@ -1399,18 +1408,22 @@ export async function generateCodeContentStudioComponent({
   amount = 3,
   programming_language = 'javascript',
   skills = [],
-  humanLanguage = 'en'
+  humanLanguage = 'en',
+  questions: providedQuestions = null
 }) {
-  const questions = await openAIContentStudioService.generateContentStudioCodingQuestions(
-    topicName,
-    Array.isArray(skills) ? skills : [],
-    amount,
-    programming_language,
-    {
-      humanLanguage,
-      topic_id
-    }
-  )
+  // Use provided questions if available, otherwise generate new ones
+  const questions = providedQuestions && Array.isArray(providedQuestions) && providedQuestions.length > 0
+    ? providedQuestions
+    : await openAIContentStudioService.generateContentStudioCodingQuestions(
+        topicName,
+        Array.isArray(skills) ? skills : [],
+        amount,
+        programming_language,
+        {
+          humanLanguage,
+          topic_id
+        }
+      )
 
   const questionsHtml =
     questions.length > 0

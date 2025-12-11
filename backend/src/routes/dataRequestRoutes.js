@@ -87,14 +87,15 @@ const contentStudioHandler = async (payload) => {
         }
       )
 
-      // Step 2: Generate HTML component (existing behavior)
+      // Step 2: Generate HTML component using already-generated questions (avoid duplicate OpenAI call)
       const html = await generateCodeContentStudioComponent({
         topicName: resolvedTopicName,
         topic_id: resolvedTopicId,
         amount: safeAmount,
         programming_language: resolvedProgrammingLanguage,
         skills: normalizedSkills,
-        humanLanguage
+        humanLanguage,
+        questions // Pass already-generated questions to avoid duplicate OpenAI API call
       })
 
       // Step 3: Create requestId and save to temp_questions (matching theoretical questions flow)
