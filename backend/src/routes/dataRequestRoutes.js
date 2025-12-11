@@ -10,7 +10,7 @@ import {
   saveTempQuestions
 } from '../services/tempQuestionStore.js'
 import { generateCodeContentStudioComponent } from '../utils/codeContentStudioRender.js'
-import { postToCoordinator } from '../infrastructure/coordinatorClient/coordinatorClient.js'
+import { postToCoordinator, generateSignatureHeaders } from '../infrastructure/coordinatorClient/coordinatorClient.js'
 import { openAIContentStudioService } from '../services/openAIContentStudioService.js'
 
 const router = express.Router()
@@ -371,8 +371,19 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
       parsed.response.answer = JSON.stringify(responsePayload)
     }
 
-    // Step 4: Return the full object as stringified JSON
-    return res.status(statusCode).type('application/json').send(JSON.stringify(parsed))
+    // Step 4: Sign the response envelope before sending back to Coordinator
+    try {
+      const signatureHeaders = generateSignatureHeaders(parsed)
+      return res
+        .status(statusCode)
+        .type('application/json')
+        .set(signatureHeaders)
+        .send(JSON.stringify(parsed))
+    } catch (signError) {
+      console.error('[data-request] Failed to sign response envelope:', signError.message)
+      // If signing fails, still return the response but log the error
+      return res.status(statusCode).type('application/json').send(JSON.stringify(parsed))
+    }
   } catch (error) {
     console.error('Data request gateway error:', error)
     // Best-effort: return structured error while preserving top-level shape when possible
@@ -382,7 +393,18 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
         payload: undefined,
         response: { answer: JSON.stringify({ success: false, error: 'Failed to process data request', details: error.message }) }
       }
-      return res.status(500).type('application/json').send(JSON.stringify(fallback))
+      // Sign error response if possible
+      try {
+        const signatureHeaders = generateSignatureHeaders(fallback)
+        return res
+          .status(500)
+          .type('application/json')
+          .set(signatureHeaders)
+          .send(JSON.stringify(fallback))
+      } catch (signError) {
+        console.error('[data-request] Failed to sign error response:', signError.message)
+        return res.status(500).type('application/json').send(JSON.stringify(fallback))
+      }
     } catch {
       return res.status(500).type('application/json').send(JSON.stringify({ error: 'Internal Server Error' }))
     }

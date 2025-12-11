@@ -1,7 +1,31 @@
 import axios from 'axios';
 import { generateSignature, verifySignature } from '../../utils/signature.js';
 
-const SERVICE_NAME = process.env.SERVICE_NAME || 'devlab-service'; 
+const SERVICE_NAME = process.env.SERVICE_NAME || 'devlab-service';
+
+/**
+ * Generate signature headers for an envelope
+ * Reusable helper for signing both outbound requests and responses
+ * @param {Object} envelope - Envelope to sign (with requester_service, payload, response)
+ * @returns {Object} Headers object with X-Service-Name and X-Signature
+ * @throws {Error} If PRIVATE_KEY is not set or signature generation fails
+ */
+export function generateSignatureHeaders(envelope) {
+  const privateKey = process.env.PRIVATE_KEY;
+  
+  if (!privateKey) {
+    throw new Error('PRIVATE_KEY environment variable is required for signing');
+  }
+
+  // Generate ECDSA signature for the entire envelope
+  const rawSignature = generateSignature(SERVICE_NAME, privateKey, envelope);
+  const signature = typeof rawSignature === 'string' ? rawSignature.trim() : rawSignature;
+
+  return {
+    'X-Service-Name': SERVICE_NAME,
+    'X-Signature': signature
+  };
+} 
 
 /**
  * Post request to Coordinator with ECDSA signature
@@ -55,16 +79,14 @@ export async function postToCoordinator(envelope, options = {}) {
   const timeout = options.timeout || 30000;
 
   try {
-    // Generate ECDSA signature for the entire envelope
-    const rawSignature = generateSignature(SERVICE_NAME, privateKey, envelope);
-    const signature = typeof rawSignature === 'string' ? rawSignature.trim() : rawSignature;
+    // Generate signature headers using reusable helper
+    const signatureHeaders = generateSignatureHeaders(envelope);
 
     // Send POST request with signature headers
     const response = await axios.post(url, envelope, {
       headers: {
         'Content-Type': 'application/json',
-        'X-Service-Name': SERVICE_NAME,
-        'X-Signature': signature,
+        ...signatureHeaders,
       },
       timeout,
     });
