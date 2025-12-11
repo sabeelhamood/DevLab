@@ -34,7 +34,7 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=$PORT
+
 
 # Create user for running app
 RUN addgroup --system --gid 1001 nodejs \
