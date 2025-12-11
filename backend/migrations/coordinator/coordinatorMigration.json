@@ -1,50 +1,83 @@
 {
-  "migrationFile": {
-  "version": "1.0.0",
-  "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror.",
-  "dependencies": [
-    "content-studio",
-    "assessment",
-    "learning-analytics",
-    "course-builder"
-  ],
   "api": {
     "endpoints": [
       {
         "path": "/api/fill-content-metrics/",
         "method": "POST",
-          "description": "Main data-request gateway. Coordinator sends all DevLab-bound requests through this entry point.",
+        "description": "Main fill-content-metrics gateway. Coordinator sends all DevLab-bound requests through this entry point.",
         "requestSchema": {
           "type": "object",
+          "required": [
+            "requester_service",
+            "payload",
+            "response"
+          ],
           "properties": {
-              "requester_service": { "type": "string" },
-              "payload": { "type": "object" },
+            "payload": {
+              "type": "object"
+            },
             "response": {
               "type": "object",
               "properties": {
-                  "answer": { "type": "string" }
+                "answer": {
+                  "type": "string"
+                }
               }
+            },
+            "requester_service": {
+              "type": "string"
             }
-          },
-          "required": ["requester_service", "payload", "response"]
+          }
         },
         "responseSchema": {
           "type": "object",
           "properties": {
-              "requester_service": { "type": "string" },
-              "payload": { "type": "object" },
+            "payload": {
+              "type": "object"
+            },
             "response": {
               "type": "object",
               "properties": {
-                  "answer": { "type": "string" }
+                "answer": {
+                  "type": "string"
                 }
+              }
+            },
+            "requester_service": {
+              "type": "string"
             }
           }
         }
       }
     ]
   },
-
+  "events": {
+    "publishes": [
+      {
+        "name": "devlab.question.generated",
+        "description": "Published when a new question is successfully generated and saved"
+      },
+      {
+        "name": "devlab.competition.completed",
+        "description": "Published when an AI-vs-learner competition is completed"
+      }
+    ],
+    "subscribes": [
+      {
+        "name": "content.topic.created",
+        "description": "Subscribes to topic creation events to prepare question generation context"
+      },
+      {
+        "name": "course.completion",
+        "description": "Subscribes to course completion events from Course Builder"
+      }
+    ]
+  },
+  "version": "1.0.0",
+  "database": {
+    "tables": []
+  },
+  "description": "DevLab is an AI-powered coding practice, assessment, and competition microservice. It generates coding questions, evaluates code solutions, produces test cases, detects AI-generated code (fraud detection), creates AI-vs-learner competitions, and generates interactive HTML components with CodeMirror. DevLab receives and processes requests from multiple microservices through the Coordinator gateway: (1) Content Studio – receives requests to generate coding questions, validate trainer-authored questions, and transform exercises into validated question formats; when Content Studio requests theoretical question generation, the request is forwarded by DevLab to the Assessment Service; (2) Assessment Service – receives forwarded requests for theoretical question generation from DevLab, and sends coding questions to DevLab when requested. ;(3) Learning Analytics - receives pull-based queries for competition performance data and learner analytics; (4) Course Builder Service - receives course completion notifications when a learner completes a specific course, which triggers user profile creation, course completion recording, and automatic AI competition question generation for that learner.",
   "capabilities": [
     "generate coding exercises",
     "generate theoretical questions",
@@ -59,34 +92,19 @@
     "transform trainer exercises into validated question format",
     "generate question feedback and solutions",
     "store and retrieve temporary questions",
-    "save questions to persistent database"
+    "save questions to persistent database",
+    "process course completion notifications from Course Builder",
+    "create and update user profiles on course completion",
+    "record course completions in database",
+    "auto-generate AI competition questions for completed courses",
+    "provide competition performance data queries for Learning Analytics",
+    "filter competition records by learner_id, course_id, competition_id, or status",
+    "return analytics data from competitions_vs_ai table"
   ],
-
-  "database": {
-      "tables": []
-    },
-
-  "events": {
-    "publishes": [
-      {
-        "name": "devlab.question.generated",
-          "description": "Published when a new question is successfully generated and saved"
-      },
-      {
-        "name": "devlab.competition.completed",
-          "description": "Published when an AI-vs-learner competition is completed"
-      }
-    ],
-    "subscribes": [
-      {
-        "name": "content.topic.created",
-          "description": "Subscribes to topic creation events to prepare question generation context"
-      },
-      {
-        "name": "course.completion",
-          "description": "Subscribes to course completion events from Course Builder"
-      }
-    ]
-  }
-}
+  "dependencies": [
+    "content-studio",
+    "assessment-service",
+    "LearningAnalytics",
+    "course-builder-service"
+  ]
 }
