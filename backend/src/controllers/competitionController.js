@@ -12,7 +12,7 @@ const QUESTION_DURATION_SECONDS = 10 * 60
 
 const isValidUuid = (value) =>
   typeof value === 'string' &&
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
     value
   )
 
