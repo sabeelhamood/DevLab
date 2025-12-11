@@ -201,6 +201,7 @@ const analyticsHandler = async (payload) => {
 }
 
 const courseBuilderHandler = async (payload) => {
+  console.log('📦 [course-builder] Handler called with payload:', JSON.stringify(payload, null, 2))
   // Forward EXACTLY to the existing competitions course-completion handler
   return executeHandler(competitionController.recordCourseCompletion, { body: payload })
 }
