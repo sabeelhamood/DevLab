@@ -395,6 +395,22 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
       const signatureHeaders = generateSignatureHeaders(parsed)
       console.log('[data-request] Signature headers generated successfully')
       console.log('[data-request] Sending response with statusCode:', statusCode)
+      
+      // Log final response before sending to Coordinator
+      const answerPreview = typeof parsed.response?.answer === 'string' 
+        ? (parsed.response.answer.length > 500 
+            ? parsed.response.answer.substring(0, 500) + '... (truncated)' 
+            : parsed.response.answer)
+        : parsed.response?.answer
+      console.log('[DEVLAB][OUTGOING-RESPONSE] Final response to Coordinator:', {
+        statusCode,
+        requester_service: parsed.requester_service,
+        payload_action: parsed.payload?.action,
+        response_answer_preview: answerPreview,
+        response_answer_length: typeof parsed.response?.answer === 'string' ? parsed.response.answer.length : 'N/A',
+        full_envelope: parsed
+      })
+      
       return res
         .status(statusCode)
         .type('application/json')
