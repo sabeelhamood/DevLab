@@ -18,6 +18,39 @@ const router = express.Router()
 // Use signature-based authentication instead of API key
 router.use(authenticateSignature)
 
+/**
+ * Maps database competition records to LearningAnalytics format
+ * @param {Array} dbResults - Array of competition records from competitions_vs_ai table
+ * @returns {Array} Array of competitions in LearningAnalytics format
+ */
+const mapCompetitionsToLearningAnalyticsFormat = (dbResults) => {
+  if (!Array.isArray(dbResults)) {
+    return []
+  }
+
+  return dbResults.map((comp) => {
+    // Calculate amount from questions array length
+    const questions = Array.isArray(comp.questions) ? comp.questions : []
+    const amount = questions.length
+
+    // Map database fields to LearningAnalytics format
+    return {
+      competition_id: comp.competition_id || comp.id || null,
+      learner_id: comp.learner_id || null,
+      course_id: comp.course_id || null,
+      amount: amount,
+      winner: comp.winner || null,
+      score: comp.score !== null && comp.score !== undefined ? comp.score : null,
+      created_at: comp.created_at || null,
+      updated_at: comp.updated_at || null,
+      status: comp.status || null,
+      timer_seconds: comp.timer_seconds !== null && comp.timer_seconds !== undefined ? comp.timer_seconds : null,
+      started_at: comp.started_at || comp.created_at || null,
+      completed_at: comp.completed_at || null
+    }
+  })
+}
+
 const executeHandler = (handler, { body = {}, params = {}, query = {} } = {}) =>
   new Promise((resolve, reject) => {
     let statusCode = 200
@@ -211,6 +244,8 @@ const handlersByService = {
   'content-studio': contentStudioHandler,
   assessment: assessmentHandler,
   analytics: analyticsHandler,
+  'LearningAnalytics': analyticsHandler, // Alias for LearningAnalytics
+  'learning-analytics': analyticsHandler, // Alias for learning-analytics
   'course_builder': courseBuilderHandler
 }
 
@@ -233,12 +268,17 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
     // Step 2: Validate required structure
     const { requester_service, payload, response } = parsed || {}
     const responseObject = typeof response === 'object' && response !== null ? response : { answer: '' }
+    
+    // LearningAnalytics uses a different response structure (no "answer" field)
+    const isLearningAnalytics = requester_service === 'LearningAnalytics' || requester_service === 'learning-analytics' || requester_service === 'analytics'
+    const requiresAnswer = !isLearningAnalytics
+    
     if (
       typeof requester_service !== 'string' ||
       typeof payload !== 'object' ||
       payload === null ||
       typeof responseObject !== 'object' ||
-      !Object.prototype.hasOwnProperty.call(responseObject, 'answer')
+      (requiresAnswer && !Object.prototype.hasOwnProperty.call(responseObject, 'answer'))
     ) {
       return res
         .status(400)
@@ -246,7 +286,9 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
         .send(
           JSON.stringify({
             error:
-              'Missing required fields: requester_service (string), payload (object), response (object with "answer")'
+              requiresAnswer
+                ? 'Missing required fields: requester_service (string), payload (object), response (object with "answer")'
+                : 'Missing required fields: requester_service (string), payload (object), response (object)'
           })
         )
     }
@@ -259,10 +301,16 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
     ) {
       try {
         console.log('📤 [data-request] Forwarding theoretical question request to Coordinator')
-        const coordinatorResponse = await postToCoordinator(parsed, {
+        // Change requester_service to devlab-service before forwarding to Coordinator
+        const forwardedEnvelope = {
+          ...parsed,
+          requester_service: 'devlab-service'
+        }
+        console.log('[data-request] Changed requester_service from content-studio to devlab-service for Coordinator forwarding')
+        const coordinatorResponse = await postToCoordinator(forwardedEnvelope, {
           endpoint: '/api/fill-content-metrics/'
         })
-        return res.status(200).type('application/json').send(JSON.stringify(coordinatorResponse))
+        return res.status(200).json(coordinatorResponse)
       } catch (error) {
         console.error('❌ [data-request] Failed to forward theoretical question request to Coordinator:', {
           error: error.message,
@@ -276,7 +324,7 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
           error: 'Failed to forward request to Coordinator',
           details: error.message
         })
-        return res.status(500).type('application/json').send(JSON.stringify(parsed))
+        return res.status(500).json(parsed)
       }
     }
 
@@ -301,17 +349,63 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
       console.error('[data-request] Handler error stack:', handlerError.stack)
       // If handler throws, return 500 error
       parsed.response = responseObject
-      parsed.response.answer = JSON.stringify({
-        success: false,
-        error: 'Handler execution failed',
-        details: handlerError.message
-      })
+      
+      // For LearningAnalytics, return error in response structure (not answer field)
+      if (isLearningAnalytics) {
+        parsed.response = {
+          version: responseObject.version || '',
+          fetched_at: new Date().toISOString(),
+          competitions: [],
+          error: 'Handler execution failed',
+          error_details: handlerError.message
+        }
+      } else {
+        parsed.response.answer = JSON.stringify({
+          success: false,
+          error: 'Handler execution failed',
+          details: handlerError.message
+        })
+      }
       return res.status(500).type('application/json').send(JSON.stringify(parsed))
     }
     parsed.response = responseObject
     
+    // Special handling for LearningAnalytics: populate response object directly (not response.answer)
+    if (isLearningAnalytics) {
+      // Check if handler returned an error
+      if (statusCode >= 400 || !responsePayload?.success) {
+        // Error case: return error in response structure
+        parsed.response = {
+          version: responseObject.version || '',
+          fetched_at: new Date().toISOString(),
+          competitions: [],
+          error: responsePayload?.error || 'Failed to query competition data',
+          error_details: responsePayload?.message || 'Unknown error'
+        }
+        console.log('[data-request] LearningAnalytics error response:', {
+          statusCode,
+          error: parsed.response.error
+        })
+      } else {
+        // Success case: responsePayload from analyticsHandler has structure: { success: true, data: [...], count: N }
+        const competitions = mapCompetitionsToLearningAnalyticsFormat(responsePayload?.data || [])
+        
+        // Mirror the incoming response structure, populating competitions array
+        parsed.response = {
+          version: responseObject.version || '',
+          fetched_at: new Date().toISOString(),
+          competitions: competitions
+        }
+        
+        console.log('[data-request] LearningAnalytics response populated:', {
+          competitionsCount: competitions.length,
+          version: parsed.response.version,
+          fetched_at: parsed.response.fetched_at
+        })
+      }
+    }
     // If content-studio code question generation was requested, wrap response like theoretical questions
-    if (requester_service === 'content-studio' && payload?.action === 'generate-questions' && payload?.question_type === 'code') {
+    else if (requester_service === 'content-studio' && payload?.action === 'generate-questions' && payload?.question_type === 'code') {
       // If responsePayload has the wrapped structure (with request_id), use it (new behavior)
       if (responsePayload?.request_id && responsePayload?.questions) {
         const wrappedAnswer = {
