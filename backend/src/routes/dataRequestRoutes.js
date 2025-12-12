@@ -243,6 +243,7 @@ const courseBuilderHandler = async (payload) => {
 const handlersByService = {
   'content-studio': contentStudioHandler,
   assessment: assessmentHandler,
+  'assessment-service': assessmentHandler, // Alias for assessment-service
   analytics: analyticsHandler,
   'LearningAnalytics': analyticsHandler, // Alias for LearningAnalytics
   'learning-analytics': analyticsHandler, // Alias for learning-analytics
