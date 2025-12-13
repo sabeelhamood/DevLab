@@ -37,7 +37,7 @@ class OpenAIContentStudioService {
     this.isAvailable = true
   }
 
-  async #callOpenAI(prompt, { systemMessage } = {}) {
+  async #callOpenAI(prompt, { systemMessage, temperature } = {}) {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY environment variable is not configured')
@@ -65,7 +65,7 @@ class OpenAIContentStudioService {
             content: prompt
           }
         ],
-        temperature: 0.5
+        temperature: temperature !== undefined ? temperature : 0.5
       })
     })
 
@@ -202,7 +202,7 @@ class OpenAIContentStudioService {
     const prompt = buildEvaluationPrompt({ question, code, language, testCases })
 
     try {
-      const raw = await this.#callOpenAI(prompt)
+      const raw = await this.#callOpenAI(prompt, { temperature: 0 })
       const parsed = parseJsonResponse(raw)
       if (typeof parsed === 'object') {
         return parsed
@@ -331,7 +331,7 @@ class OpenAIContentStudioService {
     const prompt = buildFraudDetectionPrompt({ code, question })
 
     try {
-      const raw = await this.#callOpenAI(prompt)
+      const raw = await this.#callOpenAI(prompt, { temperature: 0 })
       const parsed = parseJsonResponse(raw)
       if (parsed && typeof parsed === 'object') {
         return parsed
@@ -362,7 +362,7 @@ class OpenAIContentStudioService {
     const prompt = buildEnhancedFraudPatternPrompt({ code, question, language })
 
     try {
-      const raw = await this.#callOpenAI(prompt)
+      const raw = await this.#callOpenAI(prompt, { temperature: 0 })
       const parsed = parseJsonResponse(raw)
       if (parsed && typeof parsed === 'object') {
         return parsed
