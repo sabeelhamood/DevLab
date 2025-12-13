@@ -23,17 +23,32 @@ export const authenticateSignature = (req, res, next) => {
   const signature = req.headers['x-signature']
   
   // Check required headers
+  // If signature headers are missing, fall back to API key authentication
   if (!serviceName || !signature) {
+    // Check if this is a request with API key authentication instead
+    const apiKey = req.headers['x-api-key']
+    const serviceId = req.headers['x-service-id']
+    
+    if (apiKey && serviceId) {
+      // This is an API key authenticated request (DevLab internal), not a signature request
+      // Allow it to proceed - API key auth will be handled by authenticateService middleware
+      console.log('🔑 [signature-auth] Signature headers missing, but API key headers present - allowing to proceed to API key auth')
+      return next()
+    }
+    
+    // No signature headers and no API key headers - reject
     console.error('❌ [signature-auth] Missing required headers')
-    console.error('   Required headers: x-service-name, x-signature')
+    console.error('   Required headers: x-service-name, x-signature (for coordinator) OR x-api-key, x-service-id (for DevLab)')
     console.error('   Received headers:', {
       'x-service-name': serviceName ? 'present' : 'missing',
-      'x-signature': signature ? 'present' : 'missing'
+      'x-signature': signature ? 'present' : 'missing',
+      'x-api-key': apiKey ? 'present' : 'missing',
+      'x-service-id': serviceId ? 'present' : 'missing'
     })
     return res.status(401).json({
       success: false,
       error: 'Authentication required',
-      message: 'Missing required headers: x-service-name, x-signature'
+      message: 'Missing required headers: x-service-name, x-signature (for coordinator) OR x-api-key, x-service-id (for DevLab)'
     })
   }
   
