@@ -293,11 +293,11 @@ ${questionsJson}
     <script>
       (function () {
         // API base URL is already set by earlier script, just ensure it exists
+        const DEFAULT_BASE_FALLBACK = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
         if (!window.__DEVLAB_API_BASE__) {
-          const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
           try {
-            window.__DEVLAB_API_BASE__ = DEFAULT_BASE;
-            console.log('[DevLab] API base URL set in bootstrap:', DEFAULT_BASE);
+            window.__DEVLAB_API_BASE__ = DEFAULT_BASE_FALLBACK;
+            console.log('[DevLab] API base URL set in bootstrap:', DEFAULT_BASE_FALLBACK);
           } catch (err) {
             console.error('[DevLab] Failed to initialize API base URL in bootstrap', err);
           }
@@ -306,7 +306,7 @@ ${questionsJson}
         const buildUrl = (path) => {
           if (!path) return '';
           if (/^https?:\\/\\//i.test(path)) return path;
-          const base = (DEFAULT_BASE || window.__DEVLAB_API_BASE__ || '').replace(/\\/+$/, '');
+          const base = (window.__DEVLAB_API_BASE__ || DEFAULT_BASE_FALLBACK || '').replace(/\\/+$/, '');
           const normalized = path.startsWith('/') ? path : '/' + path;
           return base ? base + normalized : normalized;
         };
