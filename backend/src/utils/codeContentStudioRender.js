@@ -211,7 +211,7 @@ function renderSingleQuestion(question, index, topicName, language) {
         </div>
       </header>
 
-      <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);gap:20px;align-items:flex-start;">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:20px;align-items:flex-start;">
         <div data-role="question-pane" style="display:grid;gap:16px;">
       <section style="background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;border:1px solid rgba(15,23,42,0.06);">
             <p data-role="question-description" style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(
