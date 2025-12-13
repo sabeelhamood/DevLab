@@ -17,131 +17,93 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 
   <style>
-    :root {
-      --bg-page: #f8fafc;
-      --bg-card: #ffffff;
-      --bg-soft: #f1f5f9;
-
-      --primary: #0F6B52;
-      --primary-hover: #158863;
-      --secondary: #2563eb;
-
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-
-      --radius-lg: 18px;
-      --radius-md: 12px;
-
-      --shadow-soft: 0 8px 24px rgba(15,23,42,0.08);
-      --shadow-card: 0 16px 40px rgba(15,23,42,0.12);
-    }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       margin: 0;
       padding: 16px;
-      background: linear-gradient(180deg, #f8fafc, #eef2f7);
+      background: #ffffff;
     }
     .editor-container {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      box-shadow: var(--shadow-card);
-      animation: fadeUp 0.4s ease both;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     .toolbar {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
-      background: var(--bg-soft);
-      padding: 14px 16px;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(148,163,184,0.35);
     }
     .toolbar select {
-      padding: 8px 14px;
+      padding: 8px 12px;
       border: 1px solid #e5e7eb;
-      border-radius: 999px;
+      border-radius: 6px;
       font-size: 14px;
-      font-weight: 500;
       background: white;
       cursor: pointer;
     }
     .toolbar button {
       padding: 8px 16px;
       border: none;
-      border-radius: 999px;
+      border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 6px 14px rgba(15,23,42,0.15);
     }
     .toolbar button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
     .btn-run {
-      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      background: #3b82f6;
       color: white;
     }
     .btn-run:hover:not(:disabled) {
-      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      background: #2563eb;
     }
     .btn-run-tests {
-      background: linear-gradient(135deg, #0F6B52, #22c55e);
+      background: #10b981;
       color: white;
     }
     .btn-run-tests:hover:not(:disabled) {
-      background: linear-gradient(135deg, #0a5540, #16a34a);
+      background: #059669;
     }
     .btn-reset {
-      background: #475569;
+      background: #6b7280;
       color: white;
     }
     .btn-reset:hover:not(:disabled) {
-      background: #334155;
+      background: #4b5563;
     }
     .CodeMirror {
-      border: 1px solid rgba(148,163,184,0.4);
-      border-radius: var(--radius-lg);
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
       height: 400px;
       font-size: 14px;
-      font-family: 'JetBrains Mono','Fira Code',monospace;
-      box-shadow: var(--shadow-soft);
     }
     .result-container {
       margin-top: 16px;
       padding: 12px;
-      border-radius: var(--radius-md);
+      border-radius: 8px;
       font-size: 14px;
       display: none;
-      box-shadow: var(--shadow-soft);
     }
     .result-container.show {
       display: block;
     }
     .result-success {
-      background: linear-gradient(135deg,#ecfdf5,#d1fae5);
+      background: #d1fae5;
       color: #065f46;
       border: 1px solid #10b981;
     }
     .result-error {
-      background: linear-gradient(135deg,#fef2f2,#fee2e2);
+      background: #fee2e2;
       color: #991b1b;
       border: 1px solid #ef4444;
     }
     .result-info {
-      background: linear-gradient(135deg,#eff6ff,#dbeafe);
+      background: #dbeafe;
       color: #1e40af;
       border: 1px solid #3b82f6;
     }
@@ -155,9 +117,8 @@
     .test-result-item {
       padding: 12px;
       margin-bottom: 8px;
-      border-radius: var(--radius-md);
+      border-radius: 6px;
       border: 1px solid #e5e7eb;
-      box-shadow: var(--shadow-soft);
     }
     .test-result-passed {
       background: #d1fae5;
@@ -274,80 +235,38 @@
 
     // Get API base URL from parent window or construct from location
     function getApiBaseUrl() {
-      let apiBase = null;
-      
-      // Try to get from parent window global variable
       try {
         if (window.parent && window.parent.__DEVLAB_API_BASE__) {
-          apiBase = window.parent.__DEVLAB_API_BASE__;
-          if (apiBase && typeof apiBase === 'string' && apiBase.trim()) {
-            console.log('[getApiBaseUrl] Using parent __DEVLAB_API_BASE__:', apiBase);
-            return apiBase.trim();
-          }
+          return window.parent.__DEVLAB_API_BASE__;
         }
       } catch (e) {
-        console.warn('[getApiBaseUrl] Cross-origin restriction accessing parent __DEVLAB_API_BASE__:', e.message);
-      }
-      
-      // Try to get from parent window location
-      try {
-        if (window.parent && window.parent.location) {
-          const parentOrigin = window.parent.location.origin;
-          if (parentOrigin) {
-            console.log('[getApiBaseUrl] Using parent location.origin:', parentOrigin);
-            return parentOrigin;
-          }
-        }
-      } catch (e) {
-        console.warn('[getApiBaseUrl] Cross-origin restriction accessing parent location:', e.message);
+        // Cross-origin restriction, fall through
       }
       
       // Fallback: construct from current location
       const currentUrl = window.location.href;
       if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
-        const fallback = 'http://localhost:3000';
-        console.log('[getApiBaseUrl] Using localhost fallback:', fallback);
-        return fallback;
+        return 'http://localhost:3000';
       }
-      
-      // Try to extract origin from current location
+      // Try to extract base from parent if accessible
       try {
-        const currentOrigin = window.location.origin;
-        if (currentOrigin) {
-          console.log('[getApiBaseUrl] Using current location.origin:', currentOrigin);
-          return currentOrigin;
+        if (window.parent && window.parent.location) {
+          const parentOrigin = window.parent.location.origin;
+          return parentOrigin;
         }
       } catch (e) {
-        console.warn('[getApiBaseUrl] Error getting current origin:', e.message);
+        // Cross-origin restriction
       }
-      
-      console.error('[getApiBaseUrl] Could not determine API base URL');
       return '';
     }
 
     // Build API URL
     function buildUrl(path) {
-      if (!path || typeof path !== 'string') {
-        console.error('[buildUrl] Invalid path:', path);
-        return '';
-      }
-      
-      // If path is already a full URL, return it
-      if (/^https?:\/\//i.test(path)) {
-        console.log('[buildUrl] Path is already full URL:', path);
-        return path;
-      }
-      
       const base = getApiBaseUrl();
-      if (!base || base.trim() === '') {
-        console.error('[buildUrl] No API base URL available. Cannot build URL for path:', path);
-        throw new Error('API base URL is not configured. Please check your backend connection.');
-      }
-      
+      if (!path) return '';
+      if (/^https?:\/\//i.test(path)) return path;
       const normalized = path.startsWith('/') ? path : '/' + path;
-      const fullUrl = base.replace(/\/+$/, '') + normalized;
-      console.log('[buildUrl] Built URL:', fullUrl);
-      return fullUrl;
+      return base ? (base.replace(/\/+$/, '') + normalized) : normalized;
     }
 
     // Get service headers from parent window
@@ -355,16 +274,13 @@
       try {
         if (window.parent && window.parent.__DEVLAB_SERVICE_HEADERS) {
           const headers = window.parent.__DEVLAB_SERVICE_HEADERS;
-          if (typeof headers === 'object' && headers !== null) {
-            const serviceHeaders = { ...headers };
-            console.log('[getServiceHeaders] Retrieved service headers:', Object.keys(serviceHeaders));
-            return serviceHeaders;
+          if (typeof headers === 'object') {
+            return { ...headers };
           }
         }
       } catch (e) {
-        console.warn('[getServiceHeaders] Cross-origin restriction accessing parent headers:', e.message);
+        // Cross-origin restriction
       }
-      console.log('[getServiceHeaders] No service headers available, using empty object');
       return {};
     }
 
@@ -495,81 +411,28 @@
         document.getElementById('testResults').className = 'test-results';
         showResult('Running code via Judge0...', 'info');
 
-        // Validate API base URL before making request
-        const apiBase = getApiBaseUrl();
-        if (!apiBase || apiBase.trim() === '') {
-          throw new Error('API base URL is not configured. Cannot connect to backend.');
-        }
-
-        let endpoint;
-        try {
-          endpoint = buildUrl('/api/judge0/execute');
-        } catch (urlError) {
-          throw new Error('Failed to build API URL: ' + urlError.message);
-        }
-
-        if (!endpoint || endpoint.trim() === '') {
-          throw new Error('Invalid API endpoint URL');
-        }
-
+        const endpoint = buildUrl('/api/judge0/execute');
         const headers = {
           'Content-Type': 'application/json',
           ...getServiceHeaders()
         };
 
-        console.log('[runCode] Making request to:', endpoint);
-        console.log('[runCode] Request payload:', { language, codeLength: code.length, expectsReturn });
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceCode: code,
+            language: language,
+            input: '',
+            expectedOutput: null,
+            expectsReturn: expectsReturn
+          })
+        });
 
-        let response;
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              sourceCode: code,
-              language: language,
-              input: '',
-              expectedOutput: null,
-              expectsReturn: expectsReturn
-            })
-          });
-        } catch (fetchError) {
-          console.error('[runCode] Fetch error:', fetchError);
-          if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
-            throw new Error('Network error: Cannot connect to backend. Please check if the backend server is running and accessible.');
-          }
-          if (fetchError.name === 'TypeError' && fetchError.message.includes('CORS')) {
-            throw new Error('CORS error: Backend server may not be configured to allow requests from this origin.');
-          }
-          throw new Error('Network request failed: ' + fetchError.message);
-        }
+        const data = await response.json().catch(() => ({}));
 
-        if (!response) {
-          throw new Error('No response received from server');
-        }
-
-        let data;
-        try {
-          const responseText = await response.text();
-          if (!responseText) {
-            throw new Error('Empty response from server');
-          }
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('[runCode] Response parse error:', parseError);
-          throw new Error('Invalid response from server. Server may be down or returning an error page.');
-        }
-
-        if (!response.ok) {
-          const errorMsg = data.error || data.message || `Server returned ${response.status} ${response.statusText}`;
-          console.error('[runCode] Server error response:', { status: response.status, data });
-          throw new Error(errorMsg);
-        }
-
-        if (data.success === false) {
-          const errorMsg = data.error || 'Failed to execute code via Judge0';
-          console.error('[runCode] API returned success=false:', data);
-          throw new Error(errorMsg);
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Failed to execute code via Judge0');
         }
 
         const result = data.result || data;
@@ -591,9 +454,8 @@
           showResult('Error: ' + errorMsg, 'error');
         }
       } catch (error) {
-        console.error('[runCode] Judge0 Run Code error:', error);
-        const errorMessage = error.message || 'Unknown error';
-        showResult('Failed to run code: ' + errorMessage, 'error');
+        console.error('Judge0 Run Code error:', error);
+        showResult('Failed to run code via Judge0: ' + (error.message || 'Unknown error'), 'error');
       } finally {
         runBtn.disabled = false;
       }
@@ -633,86 +495,33 @@
         document.getElementById('testResults').className = 'test-results';
         showResult('Running all tests via Judge0...', 'info');
 
-        // Validate API base URL before making request
-        const apiBase = getApiBaseUrl();
-        if (!apiBase || apiBase.trim() === '') {
-          throw new Error('API base URL is not configured. Cannot connect to backend.');
-        }
-
         // Convert test cases to the format expected by the API
         const testCases = tests.map(tc => ({
           input: tc.input !== undefined ? tc.input : (tc.testInput !== undefined ? tc.testInput : ''),
           expected_output: tc.expectedOutput !== undefined ? tc.expectedOutput : (tc.expected_output !== undefined ? tc.expected_output : (tc.output !== undefined ? tc.output : ''))
         }));
 
-        let endpoint;
-        try {
-          endpoint = buildUrl('/api/judge0/test-cases');
-        } catch (urlError) {
-          throw new Error('Failed to build API URL: ' + urlError.message);
-        }
-
-        if (!endpoint || endpoint.trim() === '') {
-          throw new Error('Invalid API endpoint URL');
-        }
-
+        const endpoint = buildUrl('/api/judge0/test-cases');
         const headers = {
           'Content-Type': 'application/json',
           ...getServiceHeaders()
         };
 
-        console.log('[runAllTests] Making request to:', endpoint);
-        console.log('[runAllTests] Request payload:', { language, codeLength: code.length, testCasesCount: testCases.length, expectsReturn });
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceCode: code,
+            language: language,
+            testCases: testCases,
+            expectsReturn: expectsReturn
+          })
+        });
 
-        let response;
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              sourceCode: code,
-              language: language,
-              testCases: testCases,
-              expectsReturn: expectsReturn
-            })
-          });
-        } catch (fetchError) {
-          console.error('[runAllTests] Fetch error:', fetchError);
-          if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
-            throw new Error('Network error: Cannot connect to backend. Please check if the backend server is running and accessible.');
-          }
-          if (fetchError.name === 'TypeError' && fetchError.message.includes('CORS')) {
-            throw new Error('CORS error: Backend server may not be configured to allow requests from this origin.');
-          }
-          throw new Error('Network request failed: ' + fetchError.message);
-        }
+        const data = await response.json().catch(() => ({}));
 
-        if (!response) {
-          throw new Error('No response received from server');
-        }
-
-        let data;
-        try {
-          const responseText = await response.text();
-          if (!responseText) {
-            throw new Error('Empty response from server');
-          }
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('[runAllTests] Response parse error:', parseError);
-          throw new Error('Invalid response from server. Server may be down or returning an error page.');
-        }
-
-        if (!response.ok) {
-          const errorMsg = data.error || data.message || `Server returned ${response.status} ${response.statusText}`;
-          console.error('[runAllTests] Server error response:', { status: response.status, data });
-          throw new Error(errorMsg);
-        }
-
-        if (data.success === false) {
-          const errorMsg = data.error || 'Failed to run Judge0 test-cases';
-          console.error('[runAllTests] API returned success=false:', data);
-          throw new Error(errorMsg);
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Failed to run Judge0 test-cases');
         }
 
         const results = Array.isArray(data.results) ? data.results : [];
@@ -729,9 +538,8 @@
           showResult('Judge0: No test results returned.', 'error');
         }
       } catch (error) {
-        console.error('[runAllTests] Judge0 Run All Tests error:', error);
-        const errorMessage = error.message || 'Unknown error';
-        showResult('Failed to run tests: ' + errorMessage, 'error');
+        console.error('Judge0 Run All Tests error:', error);
+        showResult('Failed to run tests via Judge0: ' + (error.message || 'Unknown error'), 'error');
         document.getElementById('testResults').className = 'test-results';
       } finally {
         runTestsBtn.disabled = false;
