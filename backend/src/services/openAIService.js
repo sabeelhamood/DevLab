@@ -21,7 +21,7 @@ const parseJsonResponse = (raw) => {
 }
 
 class OpenAIService {
-  async #callOpenAI(prompt) {
+  async #callOpenAI(prompt, { temperature } = {}) {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY environment variable is not configured')
@@ -47,7 +47,7 @@ class OpenAIService {
             content: prompt
           }
         ],
-        temperature: 0.7
+        temperature: temperature !== undefined ? temperature : 0.7
       })
     })
 
@@ -189,15 +189,24 @@ ${solution}
     const prompt = `You are an expert coding assessment evaluator. Your task is to evaluate student solutions for coding assessment questions.
 
 EVALUATION CRITERIA:
-1. Correctness (40 points): Does the solution produce the correct output for all test cases?
-2. Skill Application (30 points): Does the solution demonstrate proper use of the skills the question was designed to assess?
-3. Requirement Compliance (30 points): Does the solution fully meet all requirements described in the question description?
+For each solution, evaluate using these three dimensions:
+1. Correctness (40% weight): Does the solution produce the correct output for all test cases?
+2. Skill Application (30% weight): Does the solution demonstrate proper use of the skills the question was designed to assess?
+3. Requirement Compliance (30% weight): Does the solution fully meet all requirements described in the question description?
 
-For each question, provide:
-- A score from 0 to 100 (weighted: Correctness 40%, Skill Application 30%, Requirement Compliance 30%)
-- A detailed explanation of your evaluation
-- Specific feedback on what was done well and what needs improvement
-- Skill-specific feedback indicating mastery level for each skill tested
+SKILL-LEVEL EVALUATION REQUIREMENTS:
+For EACH skill listed in "Skills Being Assessed", you MUST:
+1. Assign a numeric score from 0 to 100 based on the learner's demonstrated mastery across all solutions
+   - Evaluate the skill using the three dimensions above (Correctness 40%, Skill Application 30%, Requirement Compliance 30%)
+   - Consider how well the learner applied this specific skill in their solutions
+2. Provide a concise feedback description explaining:
+   - The learner's strengths and weaknesses for this skill
+   - Mastery level classification: "Excellent", "Good", "Partial", or "Weak"
+   - Specific examples from the solutions that demonstrate the skill level
+
+FINAL SCORE CALCULATION:
+Compute the final overall score (0-100) as the average of all individual skill scores.
+If multiple skills are assessed, weight them equally unless one skill is clearly more critical to the assessment.
 
 ASSESSMENT DETAILS:
 Total Questions: ${questions.length}
@@ -206,17 +215,39 @@ Skills Being Assessed: ${allSkills}
 QUESTIONS AND SOLUTIONS:
 ${questionsText}
 
-Using the criteria above and the provided skills, evaluate ALL questions and solutions and compute ONE final overall score from 0 to 100 for the entire assessment.
+EVALUATION INSTRUCTIONS:
+1. Analyze each solution using the three evaluation dimensions (Correctness, Skill Application, Requirement Compliance)
+2. For each skill in "Skills Being Assessed", determine:
+   - A numeric score (0-100) reflecting mastery across all solutions
+   - Clear feedback describing strengths, weaknesses, and mastery level
+3. Calculate the final overall score as the average of all skill scores
+4. Ensure each skill score reflects how well the learner demonstrated that skill across all questions
 
 Return your evaluation as a JSON object with this exact structure:
 {
-  "score": <number 0-100>
+  "score": <number 0-100, calculated as average of all skill scores>,
+  "skills": {
+    "<skill_name_1>": {
+      "score": <number 0-100>,
+      "feedback": "<concise description of mastery level, strengths, and weaknesses>"
+    },
+    "<skill_name_2>": {
+      "score": <number 0-100>,
+      "feedback": "<concise description of mastery level, strengths, and weaknesses>"
+    }
+  }
 }
+
+IMPORTANT:
+- Include ALL skills from "Skills Being Assessed" in the skills object
+- Each skill must have both a numeric score and feedback
+- The final "score" must be the average of all skill scores
+- Use skill names exactly as they appear in "Skills Being Assessed"
 
 Return only this JSON object, with no additional text or markdown formatting.`
 
     try {
-      const rawResponse = await this.#callOpenAI(prompt)
+      const rawResponse = await this.#callOpenAI(prompt, { temperature: 0 })
       const parsed = parseJsonResponse(rawResponse)
 
       if (parsed === null || parsed === undefined) {
@@ -237,9 +268,19 @@ Return only this JSON object, with no additional text or markdown formatting.`
 
       const normalizedScore = Math.max(0, Math.min(100, Number(rawScore) || 0))
 
-      return {
+      // Extract skill-level scores and feedback if present
+      const skills = parsed?.skills && typeof parsed.skills === 'object' ? parsed.skills : null
+
+      const result = {
         score: normalizedScore
       }
+
+      // Include skills breakdown if available
+      if (skills) {
+        result.skills = skills
+      }
+
+      return result
     } catch (error) {
       console.error('OpenAI gradeAssessmentSolutions error:', error)
       throw new Error(`Failed to grade assessment solutions: ${error.message}`)
