@@ -287,13 +287,15 @@ ${questionsJson}
     </script>
     <script>
       (function () {
-        const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
-        
-        // Set API base URL for iframe access
-        try {
-          window.__DEVLAB_API_BASE__ = DEFAULT_BASE;
-        } catch (err) {
-          console.error('Failed to initialize API base URL', err);
+        // API base URL is already set by earlier script, just ensure it exists
+        if (!window.__DEVLAB_API_BASE__) {
+          const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
+          try {
+            window.__DEVLAB_API_BASE__ = DEFAULT_BASE;
+            console.log('[DevLab] API base URL set in bootstrap:', DEFAULT_BASE);
+          } catch (err) {
+            console.error('[DevLab] Failed to initialize API base URL in bootstrap', err);
+          }
         }
 
         const buildUrl = (path) => {
@@ -1450,9 +1452,54 @@ export async function generateCodeContentStudioComponent({
   const serviceHeadersScript = renderContentStudioServiceHeadersScript()
 
   const totalQuestions = questions.length
+  const baseFromEnv = buildBaseUrl().replace(/"/g, '\\"')
+  const apiBaseScript = `
+    <script>
+      (function () {
+        const DEFAULT_BASE = '${baseFromEnv || 'https://devlab-backend-production-59bb.up.railway.app' || 'https://devlab-backend-production.up.railway.app'}';
+        try {
+          window.__DEVLAB_API_BASE__ = DEFAULT_BASE;
+          console.log('[DevLab] API base URL set:', DEFAULT_BASE);
+        } catch (err) {
+          console.error('[DevLab] Failed to initialize API base URL', err);
+        }
+      })();
+    </script>
+  `
 
   return `
     <div class="content-studio-code-container" style="padding:32px;background:#f8fafc;color:#1e293b;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <style>
+:root {
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-soft: #f1f5f9;
+
+  --primary: #0F6B52;
+  --primary-hover: #158863;
+  --accent: #6366f1;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  --radius-lg: 20px;
+  --radius-md: 14px;
+
+  --shadow-soft: 0 10px 30px rgba(15,23,42,0.08);
+  --shadow-card: 0 20px 50px rgba(15,23,42,0.12);
+}
+
+[data-code-question] {
+  animation: fadeUp 0.4s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+      </style>
+      ${apiBaseScript}
+      ${serviceHeadersScript}
       <div style="max-width:960px;margin:0 auto;display:grid;gap:16px;">
         ${
           totalQuestions > 1
@@ -1477,7 +1524,6 @@ export async function generateCodeContentStudioComponent({
         ${questionsHtml}
       </div>
       </div>
-      ${serviceHeadersScript}
       ${bootstrapScript}
     </div>
   `

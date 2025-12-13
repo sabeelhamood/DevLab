@@ -269,18 +269,46 @@
       return base ? (base.replace(/\/+$/, '') + normalized) : normalized;
     }
 
-    // Get service headers from parent window
-    function getServiceHeaders() {
+    // Safely read service headers from parent window (no retry)
+    function safeReadParentHeaders() {
       try {
         if (window.parent && window.parent.__DEVLAB_SERVICE_HEADERS) {
           const headers = window.parent.__DEVLAB_SERVICE_HEADERS;
-          if (typeof headers === 'object') {
+          if (typeof headers === 'object' && headers !== null) {
             return { ...headers };
           }
         }
       } catch (e) {
-        // Cross-origin restriction
+        // Cross-origin restriction - return null to indicate unavailable
+        return null;
       }
+      return null;
+    }
+
+    // Wait for service headers to become available with retry logic
+    async function waitForServiceHeaders(timeoutMs = 1000) {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const h = safeReadParentHeaders();
+        if (h && (h['x-api-key'] || h['x-service-id'])) {
+          console.log('[waitForServiceHeaders] Headers available:', Object.keys(h));
+          return h;
+        }
+        await new Promise(r => setTimeout(r, 50));
+      }
+      const finalHeaders = safeReadParentHeaders() || {};
+      console.warn('[waitForServiceHeaders] Timeout reached, returning:', Object.keys(finalHeaders));
+      return finalHeaders;
+    }
+
+    // Get service headers from parent window (legacy sync version, kept for compatibility)
+    function getServiceHeaders() {
+      const h = safeReadParentHeaders();
+      if (h) {
+        console.log('[getServiceHeaders] Retrieved service headers:', Object.keys(h));
+        return h;
+      }
+      console.log('[getServiceHeaders] No service headers available, using empty object');
       return {};
     }
 
@@ -412,10 +440,13 @@
         showResult('Running code via Judge0...', 'info');
 
         const endpoint = buildUrl('/api/judge0/execute');
+        const serviceHeaders = await waitForServiceHeaders();
         const headers = {
           'Content-Type': 'application/json',
-          ...getServiceHeaders()
+          ...serviceHeaders
         };
+
+        console.log('[judge0] headers present:', Object.keys(headers));
 
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -502,10 +533,13 @@
         }));
 
         const endpoint = buildUrl('/api/judge0/test-cases');
+        const serviceHeaders = await waitForServiceHeaders();
         const headers = {
           'Content-Type': 'application/json',
-          ...getServiceHeaders()
+          ...serviceHeaders
         };
+
+        console.log('[judge0] headers present:', Object.keys(headers));
 
         const response = await fetch(endpoint, {
           method: 'POST',
