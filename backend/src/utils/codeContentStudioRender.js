@@ -164,13 +164,13 @@ function renderSingleQuestion(question, index, topicName, language) {
               <div style="display:grid;gap:8px;">
                 <div>
                   <span style="display:inline-block;font-size:0.75rem;font-weight:600;margin-bottom:4px;color:rgba(15,23,42,0.55);">Input</span>
-                  <pre style="margin:0;padding:10px;border-radius:12px;background:#020617;border:1px solid rgba(148,163,184,0.3);color:#e5e7eb;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.8rem;white-space:pre-wrap;word-break:break-word;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);">${escapeHtml(
+                  <pre style="margin:0;padding:10px;border-radius:10px;background:#0f172a;color:#e0f2fe;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.8rem;white-space:pre-wrap;word-break:break-word;">${escapeHtml(
                     tc.input ?? ''
                   )}</pre>
                 </div>
                 <div>
                   <span style="display:inline-block;font-size:0.75rem;font-weight:600;margin-bottom:4px;color:rgba(15,23,42,0.55);">Expected Output</span>
-                  <pre style="margin:0;padding:10px;border-radius:12px;background:#020617;border:1px solid rgba(148,163,184,0.3);color:#e5e7eb;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.8rem;white-space:pre-wrap;word-break:break-word;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);">${escapeHtml(
+                  <pre style="margin:0;padding:10px;border-radius:10px;background:#0f172a;color:#e0f2fe;font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.8rem;white-space:pre-wrap;word-break:break-word;">${escapeHtml(
                     tc.expected_output ?? tc.expectedOutput ?? tc.output ?? ''
                   )}</pre>
                 </div>
@@ -188,13 +188,13 @@ function renderSingleQuestion(question, index, topicName, language) {
       id
     )}" data-language="${escapeHtml(
       (language || 'javascript').toLowerCase()
-    )}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(148,163,184,0.25); box-shadow: var(--shadow-card);">
+    )}" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #ffffff; padding: 24px; border-radius: 20px; border: 1px solid rgba(15,23,42,0.06); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);">
       <header style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px;">
         <div style="display:grid;gap:10px;">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(15,23,42,0.55);">
             ${escapeHtml(topicName || 'Coding Challenge')}
           </span>
-          <h1 data-role="question-title" style="margin:0;font-size:1.75rem;font-weight:700;letter-spacing:-0.015em;line-height:1.2;color:var(--text-main);">
+          <h1 data-role="question-title" style="margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-0.01em;">
             ${escapeHtml(question.title || `Coding Question ${index + 1}`)}
           </h1>
         </div>
@@ -209,7 +209,7 @@ function renderSingleQuestion(question, index, topicName, language) {
       <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);gap:20px;align-items:flex-start;">
         <div data-role="question-pane" style="display:grid;gap:16px;">
       <section style="background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;border:1px solid rgba(15,23,42,0.06);">
-            <p data-role="question-description" style="margin:0;font-size:0.95rem;line-height:1.75;color:var(--text-muted);">${escapeHtml(
+            <p data-role="question-description" style="margin:0;font-size:1rem;line-height:1.7;">${escapeHtml(
               description
             )}</p>
       </section>
@@ -222,13 +222,13 @@ function renderSingleQuestion(question, index, topicName, language) {
         <div data-role="editor-pane" style="display:grid;gap:16px;">
       <section style="display:grid;gap:16px;">
         <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          <button type="button" data-action="hint" style="border:1px solid rgba(148,163,184,0.4);cursor:pointer;padding:12px 18px;border-radius:14px;background:var(--bg-soft);color:var(--text-main);font-weight:600;box-shadow:none;">
+          <button type="button" data-action="hint" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#FFA500;color:white;font-weight:600;">
             💡 Get Hint
           </button>
           <button type="button" data-action="show-solution" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#4b5563;color:white;font-weight:600;box-shadow:0 14px 28px rgba(15,23,42,0.35);display:none;">
             🔍 Show Solution
           </button>
-          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:999px;background:linear-gradient(135deg, #0F6B52, #22c55e);color:white;font-weight:600;box-shadow:0 12px 24px rgba(15,107,82,0.35);">
+          <button type="button" data-action="submit" style="border:none;cursor:pointer;padding:12px 18px;border-radius:14px;background:#0F6B52;color:white;font-weight:600;">
             🚀 Submit Solution
           </button>
         </div>
@@ -242,7 +242,7 @@ function renderSingleQuestion(question, index, topicName, language) {
             <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">Write your solution, run it instantly, or execute all test cases via Judge0.</p>
           </div>
         </header>
-        <div data-role="codemirror-container" style="border-radius:18px;overflow:hidden;border:1px solid rgba(148,163,184,0.4);background:#020617;box-shadow:var(--shadow-soft);">
+        <div data-role="codemirror-container" style="border-radius:14px;overflow:hidden;border:1px solid rgba(148,163,184,0.5);background:#ffffff;">
           <iframe
             data-role="codemirror-editor"
             title="Code editor for ${escapeHtml(question.title || id)}"
@@ -694,7 +694,7 @@ ${questionsJson}
 
             resultEl.style.color = '#0f172a';
             const cardHtml =
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:18px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 20px 45px rgba(15,23,42,0.45);background:linear-gradient(135deg,#ffffff,#f8fafc);">' +
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(22,163,74,0.25);box-shadow:0 18px 40px rgba(22,163,74,0.35);background:linear-gradient(135deg,#dcfce7,#bbf7d0);">' +
             '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">' +
               '✕' +
               '</button>' +
@@ -824,7 +824,7 @@ ${questionsJson}
 
             resultEl.style.color = '#0f172a';
             const cardHtml =
-              '<div style="position:relative;width:100%;max-width:640px;border-radius:18px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 20px 45px rgba(15,23,42,0.45);background:linear-gradient(135deg,#ffffff,#f8fafc);">' +
+              '<div style="position:relative;width:100%;max-width:640px;border-radius:12px;overflow:hidden;border:1px solid rgba(245,158,11,0.35);box-shadow:0 18px 40px rgba(245,158,11,0.45);background:linear-gradient(135deg,#fff7ed,#fffbeb);">' +
             '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(248,181,85,0.9);background:rgba(255,253,250,0.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:#92400e;cursor:pointer;">' +
               '✕' +
               '</button>' +
@@ -868,7 +868,7 @@ ${questionsJson}
             resultEl.style.color = '#f97316';
 
             const cardHtml =
-              '<div style="position:relative;width:100%;max-width:620px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#ffffff,#f8fafc);box-shadow:0 20px 45px rgba(15,23,42,0.45);border:1px solid rgba(148,163,184,0.5);font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;">' +
+              '<div style="position:relative;width:100%;max-width:620px;border-radius:16px;overflow:hidden;background:#ffffff;box-shadow:0 18px 40px rgba(15,23,42,0.45);border:1px solid rgba(148,163,184,0.5);font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;">' +
               '<div style="width:100%;background:#FFF4E0;padding:12px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(248,181,85,0.7);">' +
               '<div style="width:28px;height:28px;border-radius:999px;background:#FFEDD5;color:#F97316;display:flex;align-items:center;justify-content:center;font-size:16px;">📚</div>' +
               '<div style="display:flex;align-items:center;gap:6px;font-size:0.9rem;font-weight:600;color:#92400E;">' +
@@ -1001,15 +1001,13 @@ ${questionsJson}
             const inputPre = document.createElement('pre');
             inputPre.style.margin = '0';
             inputPre.style.padding = '10px';
-            inputPre.style.borderRadius = '12px';
-            inputPre.style.background = '#020617';
-            inputPre.style.border = '1px solid rgba(148,163,184,0.3)';
-            inputPre.style.color = '#e5e7eb';
+            inputPre.style.borderRadius = '10px';
+            inputPre.style.background = '#0f172a';
+            inputPre.style.color = '#e0f2fe';
             inputPre.style.fontFamily = "'JetBrains Mono','Fira Code',monospace";
             inputPre.style.fontSize = '0.8rem';
             inputPre.style.whiteSpace = 'pre-wrap';
             inputPre.style.wordBreak = 'break-word';
-            inputPre.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.03)';
             inputPre.textContent = tc && tc.input != null ? String(tc.input) : '';
 
             inputBlock.appendChild(inputLabel);
@@ -1027,15 +1025,13 @@ ${questionsJson}
             const expectedPre = document.createElement('pre');
             expectedPre.style.margin = '0';
             expectedPre.style.padding = '10px';
-            expectedPre.style.borderRadius = '12px';
-            expectedPre.style.background = '#020617';
-            expectedPre.style.border = '1px solid rgba(148,163,184,0.3)';
-            expectedPre.style.color = '#e5e7eb';
+            expectedPre.style.borderRadius = '10px';
+            expectedPre.style.background = '#0f172a';
+            expectedPre.style.color = '#e0f2fe';
             expectedPre.style.fontFamily = "'JetBrains Mono','Fira Code',monospace";
             expectedPre.style.fontSize = '0.8rem';
             expectedPre.style.whiteSpace = 'pre-wrap';
             expectedPre.style.wordBreak = 'break-word';
-            expectedPre.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.03)';
             const expectedValue =
               (tc && tc.expected_output != null && tc.expected_output) ||
               (tc && tc.expectedOutput != null && tc.expectedOutput) ||
@@ -1239,7 +1235,7 @@ ${questionsJson}
                     }
 
                     const solutionCard =
-                      '<div style="position:relative;width:100%;max-width:720px;border-radius:18px;overflow:hidden;border:1px solid rgba(15,107,82,0.45);box-shadow:0 20px 45px rgba(15,23,42,0.45);background:linear-gradient(135deg,#ffffff,#f8fafc);">' +
+                      '<div style="position:relative;width:100%;max-width:720px;border-radius:16px;overflow:hidden;border:1px solid rgba(15,107,82,0.45);box-shadow:none;background:linear-gradient(135deg,#ecfdf5,#d1fae5);">' +
                       '<button type="button" onclick="var m=this.closest(&quot;[data-devlab-modal-root]&quot;);if(m){m.remove();}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:999px;border:1px solid rgba(148,163,184,0.6);background:rgba(15,23,42,0.02);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0f172a;cursor:pointer;">✕</button>' +
                       '<div style="padding:18px 22px 10px 22px;border-bottom:1px solid rgba(15,107,82,0.4);display:flex;align-items:center;gap:10px;">' +
                       '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:rgba(15,107,82,0.14);color:#0F6B52;font-size:18px;">💡</span>' +
@@ -1457,35 +1453,6 @@ export async function generateCodeContentStudioComponent({
 
   return `
     <div class="content-studio-code-container" style="padding:32px;background:#f8fafc;color:#1e293b;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <style>
-:root {
-  --bg-page: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-soft: #f1f5f9;
-
-  --primary: #0F6B52;
-  --primary-hover: #158863;
-  --accent: #6366f1;
-
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-
-  --radius-lg: 20px;
-  --radius-md: 14px;
-
-  --shadow-soft: 0 10px 30px rgba(15,23,42,0.08);
-  --shadow-card: 0 20px 50px rgba(15,23,42,0.12);
-}
-
-[data-code-question] {
-  animation: fadeUp 0.4s ease both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-      </style>
       <div style="max-width:960px;margin:0 auto;display:grid;gap:16px;">
         ${
           totalQuestions > 1
