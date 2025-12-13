@@ -290,14 +290,32 @@
       const start = Date.now();
       while (Date.now() - start < timeoutMs) {
         const h = safeReadParentHeaders();
-        if (h && (h['x-api-key'] || h['x-service-id'])) {
+        if (h && h['x-api-key'] && h['x-service-id']) {
           console.log('[waitForServiceHeaders] Headers available:', Object.keys(h));
+          console.log('[waitForServiceHeaders] Header values:', {
+            'x-api-key': h['x-api-key'] ? (h['x-api-key'].substring(0, 8) + '...') : 'MISSING',
+            'x-service-id': h['x-service-id'] || 'MISSING'
+          });
           return h;
+        }
+        if (h) {
+          console.log('[waitForServiceHeaders] Headers partial:', {
+            hasApiKey: !!h['x-api-key'],
+            hasServiceId: !!h['x-service-id'],
+            keys: Object.keys(h)
+          });
         }
         await new Promise(r => setTimeout(r, 50));
       }
       const finalHeaders = safeReadParentHeaders() || {};
       console.warn('[waitForServiceHeaders] Timeout reached, returning:', Object.keys(finalHeaders));
+      if (finalHeaders) {
+        console.warn('[waitForServiceHeaders] Final headers check:', {
+          hasApiKey: !!finalHeaders['x-api-key'],
+          hasServiceId: !!finalHeaders['x-service-id'],
+          keys: Object.keys(finalHeaders)
+        });
+      }
       return finalHeaders;
     }
 
@@ -441,12 +459,30 @@
 
         const endpoint = buildUrl('/api/judge0/execute');
         const serviceHeaders = await waitForServiceHeaders();
+        
+        // Ensure headers are properly formatted
         const headers = {
-          'Content-Type': 'application/json',
-          ...serviceHeaders
+          'Content-Type': 'application/json'
         };
+        
+        // Explicitly set headers to ensure they're sent
+        if (serviceHeaders['x-api-key']) {
+          headers['x-api-key'] = serviceHeaders['x-api-key'];
+        }
+        if (serviceHeaders['x-service-id']) {
+          headers['x-service-id'] = serviceHeaders['x-service-id'];
+        }
 
         console.log('[judge0] headers present:', Object.keys(headers));
+        console.log('[judge0] header values check:', {
+          'x-api-key': headers['x-api-key'] ? (headers['x-api-key'].substring(0, 8) + '...') : 'MISSING',
+          'x-service-id': headers['x-service-id'] || 'MISSING',
+          'Content-Type': headers['Content-Type'] || 'MISSING'
+        });
+        
+        if (!headers['x-api-key'] || !headers['x-service-id']) {
+          throw new Error('Missing required authentication headers: x-api-key or x-service-id not found');
+        }
 
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -534,12 +570,30 @@
 
         const endpoint = buildUrl('/api/judge0/test-cases');
         const serviceHeaders = await waitForServiceHeaders();
+        
+        // Ensure headers are properly formatted
         const headers = {
-          'Content-Type': 'application/json',
-          ...serviceHeaders
+          'Content-Type': 'application/json'
         };
+        
+        // Explicitly set headers to ensure they're sent
+        if (serviceHeaders['x-api-key']) {
+          headers['x-api-key'] = serviceHeaders['x-api-key'];
+        }
+        if (serviceHeaders['x-service-id']) {
+          headers['x-service-id'] = serviceHeaders['x-service-id'];
+        }
 
         console.log('[judge0] headers present:', Object.keys(headers));
+        console.log('[judge0] header values check:', {
+          'x-api-key': headers['x-api-key'] ? (headers['x-api-key'].substring(0, 8) + '...') : 'MISSING',
+          'x-service-id': headers['x-service-id'] || 'MISSING',
+          'Content-Type': headers['Content-Type'] || 'MISSING'
+        });
+        
+        if (!headers['x-api-key'] || !headers['x-service-id']) {
+          throw new Error('Missing required authentication headers: x-api-key or x-service-id not found');
+        }
 
         const response = await fetch(endpoint, {
           method: 'POST',

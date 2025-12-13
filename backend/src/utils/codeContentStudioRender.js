@@ -130,8 +130,13 @@ function renderContentStudioServiceHeadersScript() {
           var existing = window.__DEVLAB_SERVICE_HEADERS || {};
           var provided = ${payload};
           window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
+          console.log('[DevLab] Service headers initialized:', {
+            hasApiKey: !!window.__DEVLAB_SERVICE_HEADERS['x-api-key'],
+            hasServiceId: !!window.__DEVLAB_SERVICE_HEADERS['x-service-id'],
+            keys: Object.keys(window.__DEVLAB_SERVICE_HEADERS)
+          });
         } catch (err) {
-          console.error('Failed to initialize content studio service headers', err);
+          console.error('[DevLab] Failed to initialize content studio service headers', err);
           window.__DEVLAB_SERVICE_HEADERS = ${payload};
         }
       })();
