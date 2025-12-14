@@ -83,7 +83,7 @@ function AssessmentPreview() {
     try {
       const payloadString = JSON.stringify(requestBody)
       const response = await apiClient.post(
-        '/data-request',
+        '/fill-content-metrics',
         payloadString,
         {
           headers: {
@@ -230,7 +230,7 @@ function AssessmentPreview() {
           <p className={`${mutedTextClass} max-w-3xl`}>
             Use this page to preview the HTML that Assessment receives. The
             controls below trigger a sample request through the existing
-            `/api/data-request` gateway or let you paste custom HTML from any
+            `/api/fill-content-metrics` gateway or let you paste custom HTML from any
             assessment payload. This page does not affect production flows.
           </p>
           {statusMessage && (
@@ -336,7 +336,7 @@ function AssessmentPreview() {
 
           <div className="space-y-3">
             <label className={`text-sm font-medium ${subtleTextClass}`}>
-              Request Payload (sent to /api/data-request)
+              Request Payload (sent to /api/fill-content-metrics)
             </label>
             <textarea
               value={requestJson}
