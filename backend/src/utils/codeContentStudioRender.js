@@ -1505,7 +1505,7 @@ export async function generateCodeContentStudioComponent({
       </style>
       ${apiBaseScript}
       ${serviceHeadersScript}
-      <div style="max-width:960px;margin:0 auto;display:grid;gap:16px;">
+      <div style="width:100%;display:grid;gap:16px;">
         ${
           totalQuestions > 1
             ? `
