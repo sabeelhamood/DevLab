@@ -309,7 +309,8 @@ router.post(['/fill-content-metrics', '/fill-content-metrics/', '/api/fill-conte
         }
         console.log('[data-request] Changed requester_service from content-studio to devlab-service for Coordinator forwarding')
         const coordinatorResponse = await postToCoordinator(forwardedEnvelope, {
-          endpoint: '/api/fill-content-metrics/'
+          endpoint: '/api/fill-content-metrics/',
+          timeout: 180000
         })
         return res.status(200).json(coordinatorResponse)
       } catch (error) {
