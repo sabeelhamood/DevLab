@@ -18,7 +18,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0 h-12 w-12 rounded-lg flex items-center justify-center">
               <img 
-                src={theme === 'day-mode' ? '/light logo.jpeg' : '/dark logo.jpeg'} 
+                src={theme === 'day-mode' ? '/light-logo.jpeg' : '/dark-logo.jpeg'} 
                 alt="DEVLAB Logo" 
                 className="h-12 w-12 rounded-lg object-cover"
               />
