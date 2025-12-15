@@ -416,56 +416,56 @@ export default function CompetitionIntro() {
         <motion.div
           animate={{ y: [-12, 12], rotate: [0, 6, -6, 0] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-10 left-8 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute top-10 left-8 text-yellow-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Trophy size={64} />
         </motion.div>
         <motion.div
           animate={{ y: [10, -10], rotate: [0, -15, 15, 0] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-1/4 right-12 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute top-1/4 right-12 text-pink-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Sparkles size={50} />
         </motion.div>
         <motion.div
           animate={{ x: [-10, 10], y: [10, -10], rotate: [0, 15, -15, 0] }}
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-16 left-12 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute bottom-16 left-12 text-indigo-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Rocket size={58} />
         </motion.div>
         <motion.div
           animate={{ scale: [1, 1.15, 1], rotate: [0, 10, -10, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-1/3 right-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute bottom-1/3 right-20 text-amber-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Star size={50} />
         </motion.div>
         <motion.div
           animate={{ y: [-8, 8], scale: [1, 1.1, 1] }}
           transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-1/2 left-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute top-1/2 left-20 text-orange-500/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Flame size={52} />
         </motion.div>
         <motion.div
           animate={{ y: [12, -12], rotate: [0, -12, 12, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-20 right-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute top-20 right-1/4 text-indigo-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Rocket size={55} />
         </motion.div>
         <motion.div
           animate={{ y: [-9, 9], rotate: [0, 15, -15, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute bottom-24 right-8 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute bottom-24 right-8 text-pink-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Sparkles size={58} />
         </motion.div>
         <motion.div
           animate={{ scale: [1, 1.12, 1], rotate: [0, -8, 8, 0] }}
           transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute top-2/3 left-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
+          className="absolute top-2/3 left-1/4 text-amber-400/80 drop-shadow-[0_0_12px_rgba(0,0,0,0.15)]"
         >
           <Star size={48} />
         </motion.div>
