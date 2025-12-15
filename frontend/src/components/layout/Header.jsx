@@ -8,6 +8,9 @@ export default function Header() {
   const { user, logout } = useAuthStore()
   const { theme } = useTheme()
 
+  const logoUrl = theme === 'day-mode' ? '/light-logo.jpeg' : '/dark-logo.jpeg'
+  console.log('[Header] logoUrl:', logoUrl)
+
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 w-full border-b shadow-lg h-20 backdrop-blur-md ${theme === 'day-mode' ? 'bg-white/95 border-gray-200' : 'bg-slate-900/95 border-gray-600'}`}
@@ -17,10 +20,19 @@ export default function Header() {
           {/* DEVLAB Logo */}
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0 h-12 w-12 rounded-lg flex items-center justify-center">
-              <img 
-                src={theme === 'day-mode' ? '/light-logo.jpeg' : '/dark-logo.jpeg'} 
-                alt="DEVLAB Logo" 
+              <img
+                src={logoUrl}
+                alt="DEVLAB Logo"
                 className="h-12 w-12 rounded-lg object-cover"
+                onError={(e) => {
+                  // Prevent infinite loop
+                  e.currentTarget.onerror = null
+
+                  // Try a fallback path if the image isn't served from public root
+                  e.currentTarget.src = theme === 'day-mode'
+                    ? '/assets/light-logo.jpeg'
+                    : '/assets/dark-logo.jpeg'
+                }}
               />
             </div>
             <div>
