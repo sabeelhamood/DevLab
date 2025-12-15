@@ -1286,8 +1286,8 @@ ${questionsJson}
                       '<div style="font-size:12px;color:#1e293b;">Review this solution carefully and compare it with your own attempt.</div>' +
                       '</div>' +
                       '</div>' +
-                      '<div style="padding:20px 22px 22px 22px;background:#f8fafc;">' +
-                      '<pre style="margin:0;border-radius:14px;background:#f1f5f9;color:#0f172a;font-family:\'JetBrains Mono\',\'Fira Code\',monospace;font-size:0.95rem;line-height:1.75;white-space:pre-wrap;word-break:break-word;padding:18px 20px;border:1px solid rgba(15,23,42,0.08);box-shadow: inset 0 1px 2px rgba(15,23,42,0.04);">' +
+                      '<div style="padding:14px 18px 18px 18px;background:#020617;">' +
+                      '<pre style="margin:0;border-radius:12px;background:#020617;color:#e5e7eb;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;font-size:0.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;padding:12px 14px;">' +
                       (typeof solution === 'string' ? solution : JSON.stringify(solution, null, 2)) +
                       '</pre>' +
                       '</div>' +
