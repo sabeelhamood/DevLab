@@ -516,7 +516,12 @@ ${questionsJson}
             overlay.style.color = '#f8fafc';
             overlay.style.fontFamily = 'Inter, system-ui, sans-serif';
 
-            overlay.innerHTML = '<div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#ffffff;border-radius:50%;animation: devlab-spin 1s linear infinite;"></div><div style="font-size:0.95rem;font-weight:600;letter-spacing:0.02em;">' + message + '</div>';
+            const isHintMessage = message.toLowerCase().includes('hint');
+            if (isHintMessage) {
+              overlay.innerHTML = '<div style="font-size:48px;animation: hint-pulse 1.2s ease-in-out infinite;">💡</div><div style="font-size:0.95rem;font-weight:600;letter-spacing:0.02em;">' + message + '</div>';
+            } else {
+              overlay.innerHTML = '<div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#ffffff;border-radius:50%;animation: devlab-spin 1s linear infinite;"></div><div style="font-size:0.95rem;font-weight:600;letter-spacing:0.02em;">' + message + '</div>';
+            }
 
             document.body.appendChild(overlay);
           };
@@ -1172,6 +1177,7 @@ ${questionsJson}
             const hintState = getHintStateForQuestion(questionId);
               const userAttempt = getCodeFromEditor();
               try {
+                showLoadingOverlay('Generating a helpful hint for you...');
                 hintBtn.disabled = true;
                 setResult('Generating hint...', '#000000');
                 const endpoint = buildUrl('/api/content-studio/generate-hint');
@@ -1209,6 +1215,7 @@ ${questionsJson}
                 console.error('Hint error:', error);
                 setResult('Failed to generate hint: ' + (error.message || 'Unknown error'), '#ef4444');
               } finally {
+                hideLoadingOverlay();
                 hintBtn.disabled = false;
               }
             });
@@ -1537,6 +1544,12 @@ export async function generateCodeContentStudioComponent({
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes hint-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
 }
       </style>
       ${apiBaseScript}
