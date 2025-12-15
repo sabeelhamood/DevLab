@@ -458,7 +458,7 @@ int calculateFinalOrderPrice(int unitPrice, int quantity, int discountPercentage
             </div>
             <span className="font-semibold text-gray-900 ml-2">Console Output</span>
           </div>
-          <div className="p-4 text-gray-800 font-mono text-xs max-h-60 overflow-y-auto bg-gray-50">
+          <div className="p-4 text-gray-800 font-mono text-xs bg-gray-50">
             {consoleOutput.map((output, index) => (
               <div key={index} className="mb-1">
                 {output}
