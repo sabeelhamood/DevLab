@@ -8,22 +8,26 @@ import { Trophy, Clock, Play, Target, Award } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
 // Chatbot integration - External RAG service
+// Using dummy token for UI/embed validation (authentication not in scope)
 function useChatbotIntegration() {
   const { user } = useAuthStore()
 
   useEffect(() => {
-    if (!user || !user.id) return
-
-    const token = localStorage.getItem('auth-token')
-    if (!token) return
+    // Get real token if available, otherwise use dummy token
+    const realToken = localStorage.getItem('auth-token')
+    const token = realToken || 'dummy-token'
+    
+    // Use real user ID if available, otherwise use dummy user ID
+    const userId = user?.id || 'dummy-user'
+    const tenantId = user?.tenantId || 'devlab'
 
     const initChatbot = () => {
       if (window.initializeEducoreBot) {
         window.initializeEducoreBot({
           microservice: 'DEVLAB',
-          userId: user.id,
+          userId: userId,
           token: token,
-          tenantId: user.tenantId || 'default'
+          tenantId: tenantId
         })
       } else {
         setTimeout(initChatbot, 100)
