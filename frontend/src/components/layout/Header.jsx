@@ -16,8 +16,12 @@ export default function Header() {
         <div className="flex items-center justify-between h-20">
           {/* DEVLAB Logo */}
           <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 h-12 w-12 rounded-lg flex items-center justify-center" style={{ background: 'var(--gradient-primary)' }}>
-              <span className="text-white font-bold text-lg">DL</span>
+            <div className="flex-shrink-0 h-12 w-12 rounded-lg flex items-center justify-center">
+              <img 
+                src={theme === 'day-mode' ? '/light logo.jpeg' : '/dark logo.jpeg'} 
+                alt="DEVLAB Logo" 
+                className="h-12 w-12 rounded-lg object-cover"
+              />
             </div>
             <div>
               <h1 
