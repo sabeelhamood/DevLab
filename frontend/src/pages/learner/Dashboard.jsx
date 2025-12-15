@@ -14,7 +14,7 @@ const CompetitionCard = ({ competition, onStart }) => (
     layout
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-[#008080]/40 rounded-xl shadow-lg shadow-black/30 p-6 mb-6 border border-slate-800 hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
+    className="bg-[#006666] rounded-xl shadow-lg shadow-black/30 p-6 mb-6 border border-[#004c4c] hover:shadow-xl hover:shadow-[#006666]/40 transition-all"
     whileHover={{ scale: 1.01 }}
   >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
