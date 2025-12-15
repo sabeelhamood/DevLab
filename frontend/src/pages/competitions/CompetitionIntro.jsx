@@ -89,9 +89,34 @@ export default function CompetitionIntro() {
     audio.loop = true
     audio.volume = 0.3
 
+    // Add error handling and logging
+    audio.addEventListener('canplaythrough', () => {
+      console.log('✅ [CompetitionIntro] Audio file loaded successfully')
+    })
+
+    audio.addEventListener('error', (e) => {
+      console.error('❌ [CompetitionIntro] Audio error:', e)
+      console.error('   Error code:', audio.error?.code)
+      console.error('   Error message:', audio.error?.message)
+      console.error('   Audio source:', audio.src)
+      console.warn('⚠️ [CompetitionIntro] Audio file may not be available or accessible')
+    })
+
+    audio.addEventListener('loadstart', () => {
+      console.log('🔄 [CompetitionIntro] Audio loading started:', audio.src)
+    })
+
+    audio.addEventListener('loadeddata', () => {
+      console.log('✅ [CompetitionIntro] Audio data loaded')
+    })
+
     audioRef.current = audio
 
     return () => {
+      audio.removeEventListener('canplaythrough', () => {})
+      audio.removeEventListener('error', () => {})
+      audio.removeEventListener('loadstart', () => {})
+      audio.removeEventListener('loadeddata', () => {})
       audio.pause()
       audio.currentTime = 0
       audioRef.current = null
@@ -103,8 +128,9 @@ export default function CompetitionIntro() {
     if (!audioRef.current) return
 
     if (soundEnabled && userInteracted) {
-      audioRef.current.play().catch(() => {
-        // Silently handle - file may not be supported or autoplay blocked
+      audioRef.current.play().catch((error) => {
+        console.error('❌ [CompetitionIntro] Failed to play audio:', error)
+        console.warn('⚠️ [CompetitionIntro] Audio play failed - may be blocked by browser autoplay policy or file not loaded')
       })
     } else {
       audioRef.current.pause()
@@ -362,8 +388,8 @@ export default function CompetitionIntro() {
         setUserInteracted(true)
         // Try to play directly on user click (required by browser policies)
         if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(() => {
-            // Silently handle - file may not be supported
+          audioRef.current.play().catch((error) => {
+            console.error('❌ [CompetitionIntro] Failed to play audio on click:', error)
           })
         }
       }}
@@ -371,8 +397,8 @@ export default function CompetitionIntro() {
         setUserInteracted(true)
         // Try to play directly on key press
         if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(() => {
-            // Silently handle - file may not be supported
+          audioRef.current.play().catch((error) => {
+            console.error('❌ [CompetitionIntro] Failed to play audio on keydown:', error)
           })
         }
       }}
@@ -389,8 +415,9 @@ export default function CompetitionIntro() {
             if (audioRef.current) {
               if (newState) {
                 // Enable sound - play directly on toggle
-                audioRef.current.play().catch(() => {
-                  // Silently handle - file may not be supported
+                audioRef.current.play().catch((error) => {
+                  console.error('❌ [CompetitionIntro] Failed to play audio on toggle:', error)
+                  console.warn('⚠️ [CompetitionIntro] Check if audio file is loaded and accessible')
                 })
               } else {
                 // Disable sound
