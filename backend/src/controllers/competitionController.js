@@ -195,10 +195,27 @@ const startQuestion = async (competition, questionIndex) => {
     return competition
   }
 
-  const aiAnswer = await competitionAIService.generateAIAnswerForQuestion({
-    courseName: competition.course_name,
-    question
+  console.log('🔄 [startQuestion] Generating AI answer for question:', {
+    question_id: question.question_id,
+    course_name: competition.course_name
   })
+
+  let aiAnswer
+  try {
+    aiAnswer = await competitionAIService.generateAIAnswerForQuestion({
+      courseName: competition.course_name,
+      question
+    })
+    console.log('✅ [startQuestion] AI answer generated successfully')
+  } catch (error) {
+    console.error('❌ [startQuestion] Failed to generate AI answer:', error)
+    console.error('   Error name:', error.name)
+    console.error('   Error message:', error.message)
+    if (error.message?.includes('OPENAI_API_KEY')) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.')
+    }
+    throw error
+  }
 
   const startedAt = new Date().toISOString()
   const expiresAt = new Date(Date.now() + QUESTION_DURATION_SECONDS * 1000).toISOString()
@@ -636,6 +653,8 @@ export const competitionController = {
       const { competitionId } = req.params
       const learnerId = req.user?.id
 
+      console.log('🔄 [startAICompetition] Starting competition:', { competitionId, learnerId })
+
       if (!competitionId) {
         return res.status(400).json({
           success: false,
@@ -645,11 +664,18 @@ export const competitionController = {
 
       const competition = await CompetitionAIModel.findById(competitionId)
       if (!competition) {
+        console.error('❌ [startAICompetition] Competition not found:', competitionId)
         return res.status(404).json({
           success: false,
           error: 'Competition not found'
         })
       }
+
+      console.log('✅ [startAICompetition] Competition found:', {
+        competition_id: competition.competition_id,
+        status: competition.status,
+        questions_count: competition.questions?.length
+      })
 
       if (!competitionAuthDisabled && competition.learner_id !== learnerId) {
         return res.status(403).json({
@@ -658,17 +684,30 @@ export const competitionController = {
         })
       }
 
+      console.log('🔄 [startAICompetition] Ensuring active question...')
       const updated = await ensureActiveQuestion(competition)
+      console.log('✅ [startAICompetition] Active question ensured, building session payload...')
+      
+      const session = buildSessionPayload(updated)
+      console.log('✅ [startAICompetition] Competition started successfully')
+      
       return res.json({
         success: true,
-        session: buildSessionPayload(updated)
+        session
       })
     } catch (error) {
       console.error('❌ [competitions] Failed to start AI competition:', error)
+      console.error('   Error name:', error.name)
+      console.error('   Error message:', error.message)
+      console.error('   Error stack:', error.stack)
+      if (error.response) {
+        console.error('   Error response:', error.response)
+      }
       return res.status(500).json({
         success: false,
         error: 'Failed to start AI competition',
-        message: error.message
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       })
     }
   },
