@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Volume2, VolumeX } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
-const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
+const DEFAULT_FORCED_LEARNER_ID = '10000000-0000-0000-0000-000000000001'
 
 export default function CompetitionIntro() {
   const { competitionId } = useParams()

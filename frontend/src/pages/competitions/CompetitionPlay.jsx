@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore.js'
 import { Volume2, VolumeX, Code, Sparkles, Terminal, Cpu, Trophy, Bot, Smile } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
-const DEFAULT_FORCED_LEARNER_ID = '2080d04e-9e6f-46b8-a602-8eb67b009e88'
+const DEFAULT_FORCED_LEARNER_ID = '10000000-0000-0000-0000-000000000001'
 const QUESTIONS_PER_COMPETITION = 3
 const QUESTION_TIMER_SECONDS = 10 * 60 // 10 minutes per question
 const TOTAL_COMPETITION_SECONDS = QUESTION_TIMER_SECONDS * QUESTIONS_PER_COMPETITION // 30 minutes total
