@@ -40,7 +40,12 @@ function useChatbotIntegration() {
       script.async = true
       script.onload = () => {
         window.EDUCORE_BOT_LOADED = true
+        console.log('✅ [DevLab] RAG chatbot script loaded successfully')
         initChatbot()
+      }
+      script.onerror = (error) => {
+        console.error('❌ [DevLab] Failed to load RAG chatbot script:', error)
+        console.warn('⚠️ [DevLab] This is an external service issue. Contact RAG team if bot.js is unavailable.')
       }
       document.head.appendChild(script)
     } else {
