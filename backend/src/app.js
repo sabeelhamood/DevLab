@@ -118,14 +118,23 @@ const corsOptions = {
       return callback(null, true);
     }
     
+    // Exact match: Check if origin is in the whitelist
     if (allowedOrigins.includes(origin)) {
-      console.log('✅ CORS: Origin allowed:', origin);
+      console.log('✅ CORS: Origin allowed (exact match):', origin);
       return callback(null, true);
-    } else {
-      console.log('❌ CORS: Origin not allowed:', origin);
-      console.log('📋 CORS: Allowed origins:', allowedOrigins);
-      return callback(new Error('CORS not allowed'));
     }
+    
+    // Pattern match: Allow Vercel preview deployments
+    // Vercel preview URLs follow pattern: https://*-*.vercel.app
+    if (origin.endsWith('.vercel.app')) {
+      console.log('✅ CORS: Origin allowed (Vercel preview):', origin);
+      return callback(null, true);
+    }
+    
+    // Origin not allowed
+    console.log('❌ CORS: Origin not allowed:', origin);
+    console.log('📋 CORS: Allowed origins:', allowedOrigins);
+    return callback(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
