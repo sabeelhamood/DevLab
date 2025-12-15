@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { apiClient } from '../../services/api/client.js'
 import { useAuthStore } from '../../store/authStore.js'
-import { Code, Sparkles, Terminal, Cpu, Volume2, VolumeX } from 'lucide-react'
+import { Trophy, Rocket, Star, Flame, Sparkles, Volume2, VolumeX } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
 // Chatbot integration - External RAG service
@@ -414,11 +414,11 @@ export default function CompetitionIntro() {
       {/* Animated Background Icons */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div
-          animate={{ y: [-10, 10], rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ y: [-12, 12], rotate: [0, 6, -6, 0] }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute top-10 left-8 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Code size={60} />
+          <Trophy size={64} />
         </motion.div>
         <motion.div
           animate={{ y: [10, -10], rotate: [0, -15, 15, 0] }}
@@ -428,32 +428,32 @@ export default function CompetitionIntro() {
           <Sparkles size={50} />
         </motion.div>
         <motion.div
-          animate={{ y: [-8, 8], rotate: [0, 12, -12, 0] }}
+          animate={{ x: [-10, 10], y: [10, -10], rotate: [0, 15, -15, 0] }}
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute bottom-16 left-12 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Terminal size={55} />
+          <Rocket size={58} />
         </motion.div>
         <motion.div
-          animate={{ y: [8, -8], rotate: [0, -10, 10, 0] }}
-          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ scale: [1, 1.15, 1], rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute bottom-1/3 right-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Cpu size={48} />
+          <Star size={50} />
         </motion.div>
         <motion.div
-          animate={{ y: [-12, 12], rotate: [0, 8, -8, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ y: [-8, 8], scale: [1, 1.1, 1] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute top-1/2 left-20 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Code size={45} />
+          <Flame size={52} />
         </motion.div>
         <motion.div
           animate={{ y: [12, -12], rotate: [0, -12, 12, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute top-20 right-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Terminal size={52} />
+          <Rocket size={55} />
         </motion.div>
         <motion.div
           animate={{ y: [-9, 9], rotate: [0, 15, -15, 0] }}
@@ -463,11 +463,11 @@ export default function CompetitionIntro() {
           <Sparkles size={58} />
         </motion.div>
         <motion.div
-          animate={{ y: [9, -9], rotate: [0, -8, 8, 0] }}
-          transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ scale: [1, 1.12, 1], rotate: [0, -8, 8, 0] }}
+          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
           className={`absolute top-2/3 left-1/4 ${isDark ? 'text-emerald-500/10' : 'text-emerald-400/10'}`}
         >
-          <Cpu size={47} />
+          <Star size={48} />
         </motion.div>
       </div>
 
