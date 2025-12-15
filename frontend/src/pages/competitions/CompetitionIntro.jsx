@@ -85,7 +85,7 @@ export default function CompetitionIntro() {
 
   // Audio setup
   useEffect(() => {
-    const audio = new Audio('/game-development-intro-logo-316783.mp3')
+    const audio = new Audio('/assets/sfx/game-development-intro-logo-316783.mp3')
     audio.loop = true
     audio.volume = 0.3
 
