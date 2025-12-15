@@ -14,7 +14,7 @@ const CompetitionCard = ({ competition, onStart }) => (
     layout
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-slate-900/70 rounded-xl shadow-lg shadow-black/30 p-6 mb-6 border border-slate-800 hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
+    className="bg-[#007070]/70 rounded-xl shadow-lg shadow-black/30 p-6 mb-6 border border-slate-800 hover:shadow-xl hover:shadow-emerald-500/20 transition-all"
     whileHover={{ scale: 1.01 }}
   >
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -33,7 +33,7 @@ const CompetitionCard = ({ competition, onStart }) => (
       </div>
       <button
         onClick={onStart}
-        className="bg-emerald-500/90 hover:bg-emerald-500 text-slate-900 px-6 py-3 rounded-lg flex items-center space-x-2 font-semibold transition-all hover:scale-[1.02] focus:ring-2 focus:ring-emerald-500/60 focus:outline-none"
+        className="bg-[#e6f4f4]/90 hover:bg-[#e6f4f4] text-slate-900 px-6 py-3 rounded-lg flex items-center space-x-2 font-semibold transition-all hover:scale-[1.02] focus:ring-2 focus:ring-emerald-500/60 focus:outline-none"
       >
         <Play className="w-5 h-5" />
         <span>Start Competition</span>
