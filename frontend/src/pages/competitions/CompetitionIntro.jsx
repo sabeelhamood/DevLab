@@ -7,6 +7,53 @@ import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Volume2, VolumeX } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
+// Chatbot integration - External RAG service
+// Using dummy token for UI/embed validation (authentication not in scope)
+function useChatbotIntegration() {
+  const { user } = useAuthStore()
+
+  useEffect(() => {
+    // Get real token if available, otherwise use dummy token
+    const realToken = localStorage.getItem('auth-token')
+    const token = realToken || 'dummy-token'
+    
+    // Use real user ID if available, otherwise use dummy user ID
+    const userId = user?.id || 'dummy-user'
+    const tenantId = user?.tenantId || 'devlab'
+
+    const initChatbot = () => {
+      if (window.initializeEducoreBot) {
+        window.initializeEducoreBot({
+          microservice: 'DEVLAB',
+          userId: userId,
+          token: token,
+          tenantId: tenantId
+        })
+      } else {
+        setTimeout(initChatbot, 100)
+      }
+    }
+
+    if (!window.EDUCORE_BOT_LOADED) {
+      const script = document.createElement('script')
+      script.src = 'https://rag-production-3a4c.up.railway.app/embed/bot.js'
+      script.async = true
+      script.onload = () => {
+        window.EDUCORE_BOT_LOADED = true
+        console.log('✅ [DevLab] RAG chatbot script loaded successfully')
+        initChatbot()
+      }
+      script.onerror = (error) => {
+        console.error('❌ [DevLab] Failed to load RAG chatbot script:', error)
+        console.warn('⚠️ [DevLab] This is an external service issue. Contact RAG team if bot.js is unavailable.')
+      }
+      document.head.appendChild(script)
+    } else {
+      initChatbot()
+    }
+  }, [user])
+}
+
 const DEFAULT_FORCED_LEARNER_ID = '10000000-0000-0000-0000-000000000001'
 
 export default function CompetitionIntro() {
@@ -16,6 +63,9 @@ export default function CompetitionIntro() {
   const { user } = useAuthStore()
   const { theme } = useTheme()
   const isDark = theme === 'night-mode'
+
+  // Initialize external chatbot service
+  useChatbotIntegration()
 
   const forcedLearnerId =
     import.meta.env.VITE_FORCE_LEARNER_ID || DEFAULT_FORCED_LEARNER_ID
@@ -451,6 +501,9 @@ export default function CompetitionIntro() {
 
         {renderContent()}
       </div>
+
+      {/* External RAG Chatbot Container */}
+      <div id="edu-bot-container"></div>
     </div>
   )
 }
