@@ -7,6 +7,44 @@ import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { Trophy, Clock, Play, Target, Award } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
+// Chatbot integration - External RAG service
+function useChatbotIntegration() {
+  const { user } = useAuthStore()
+
+  useEffect(() => {
+    if (!user || !user.id) return
+
+    const token = localStorage.getItem('auth-token')
+    if (!token) return
+
+    const initChatbot = () => {
+      if (window.initializeEducoreBot) {
+        window.initializeEducoreBot({
+          microservice: 'DEVLAB',
+          userId: user.id,
+          token: token,
+          tenantId: user.tenantId || 'default'
+        })
+      } else {
+        setTimeout(initChatbot, 100)
+      }
+    }
+
+    if (!window.EDUCORE_BOT_LOADED) {
+      const script = document.createElement('script')
+      script.src = 'https://rag-production-3a4c.up.railway.app/embed/bot.js'
+      script.async = true
+      script.onload = () => {
+        window.EDUCORE_BOT_LOADED = true
+        initChatbot()
+      }
+      document.head.appendChild(script)
+    } else {
+      initChatbot()
+    }
+  }, [user])
+}
+
 const DEFAULT_FORCED_LEARNER_ID = '10000000-0000-0000-0000-000000000001'
 
 const CompetitionCard = ({ competition, onStart }) => (
@@ -57,6 +95,9 @@ export default function Dashboard() {
   const [pendingCompetitions, setPendingCompetitions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Initialize external chatbot service
+  useChatbotIntegration()
 
   useEffect(() => {
     if (!learnerId) {
@@ -247,6 +288,9 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* External RAG Chatbot Container */}
+      <div id="edu-bot-container"></div>
     </div>
   )
 }
