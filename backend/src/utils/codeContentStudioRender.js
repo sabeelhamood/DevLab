@@ -498,6 +498,34 @@ ${questionsJson}
             }
           };
 
+          const showLoadingOverlay = (message = 'Analyzing your solution, please wait...') => {
+            const existing = document.querySelector('[data-devlab-loading]');
+            if (existing) return;
+
+            const overlay = document.createElement('div');
+            overlay.setAttribute('data-devlab-loading', 'true');
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.zIndex = '100';
+            overlay.style.background = 'rgba(15,23,42,0.75)';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.gap = '16px';
+            overlay.style.color = '#f8fafc';
+            overlay.style.fontFamily = 'Inter, system-ui, sans-serif';
+
+            overlay.innerHTML = '<div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#ffffff;border-radius:50%;animation: devlab-spin 1s linear infinite;"></div><div style="font-size:0.95rem;font-weight:600;letter-spacing:0.02em;">' + message + '</div>';
+
+            document.body.appendChild(overlay);
+          };
+
+          const hideLoadingOverlay = () => {
+            const overlay = document.querySelector('[data-devlab-loading]');
+            if (overlay) overlay.remove();
+          };
+
           const openSolutionConfirmationModal = ({ onConfirm, onCancel, isLoading, errorMessage }) => {
             try {
               const existing = document.querySelector('[data-devlab-solution-modal="true"]');
@@ -1287,6 +1315,7 @@ ${questionsJson}
 
               try {
                 submitBtn.disabled = true;
+                showLoadingOverlay('Analyzing your solution, please wait...');
                 setResult('Checking solution and running AI analysis...', '#38bdf8');
                 const endpoint = buildUrl('/api/content-studio/check-solution');
                 const response = await fetch(endpoint, {
@@ -1340,6 +1369,7 @@ ${questionsJson}
                 console.error('Check solution error:', error);
                 setResult('Failed to check solution: ' + (error.message || 'Unknown error'), '#ef4444');
               } finally {
+                hideLoadingOverlay();
                 submitBtn.disabled = false;
               }
             });
@@ -1501,6 +1531,12 @@ export async function generateCodeContentStudioComponent({
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes devlab-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
       </style>
       ${apiBaseScript}
