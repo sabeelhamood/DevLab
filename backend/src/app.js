@@ -111,7 +111,7 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function(origin, callback) {
     console.log('🌐 CORS: Request from origin:', origin);
-    
+    console.log('🌐 CORS: Allowed origins:', allowedOrigins);
     // Allow requests with no origin (like Postman, mobile apps, curl)
     if (!origin) {
       console.log('✅ CORS: No origin, allowing');
