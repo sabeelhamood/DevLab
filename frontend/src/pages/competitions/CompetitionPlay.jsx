@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
@@ -93,6 +93,16 @@ export default function CompetitionPlay() {
 
   const startAttemptedRef = useRef(Boolean(location.state?.session))
   const autoSubmitRef = useRef(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setPrefersReducedMotion(mediaQuery.matches)
+    
+    const handleChange = (e) => setPrefersReducedMotion(e.matches)
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
 
 
   useEffect(() => {
@@ -182,6 +192,24 @@ export default function CompetitionPlay() {
     setCurrentAnswer('')
     autoSubmitRef.current = false
   }, [session?.question?.question_id])
+
+  // Compute time-based AI presence level (purely cosmetic, no real AI data)
+  const aiPresenceLevel = useMemo(() => {
+    if (!session || session.completed || !session.question || remainingSeconds === null) {
+      return 'idle'
+    }
+    
+    const timerSeconds = session.timer_seconds || QUESTION_TIMER_SECONDS
+    const progress = 1 - (remainingSeconds / timerSeconds)
+    
+    if (progress < 0.33) {
+      return 'idle'
+    } else if (progress < 0.75) {
+      return 'thinking'
+    } else {
+      return 'intense'
+    }
+  }, [session, remainingSeconds])
 
   const handleSubmitAnswer = useCallback(
     async (isTimeout = false) => {
@@ -281,6 +309,88 @@ export default function CompetitionPlay() {
     }
   }
 
+  // AI Avatar animation variants (purely cosmetic, time-based only)
+  const aiAvatarVariants = useMemo(() => {
+    if (prefersReducedMotion) {
+      return {
+        idle: { scale: 1, opacity: 0.65 },
+        thinking: { scale: 1, opacity: 0.75 },
+        intense: { scale: 1, opacity: 0.85 }
+      }
+    }
+    return {
+      idle: {
+        scale: [1, 1.05, 1],
+        opacity: [0.6, 0.7, 0.6],
+        transition: {
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      },
+      thinking: {
+        scale: [1, 1.08, 1],
+        opacity: [0.7, 0.85, 0.7],
+        rotate: [0, 5, -5, 0],
+        transition: {
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      },
+      intense: {
+        scale: [1, 1.1, 1],
+        opacity: [0.8, 0.95, 0.8],
+        rotate: [0, 8, -8, 0],
+        transition: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      }
+    }
+  }, [prefersReducedMotion])
+
+  // AI Avatar glow variants
+  const aiGlowVariants = useMemo(() => {
+    if (prefersReducedMotion) {
+      return {
+        idle: { opacity: 0.25, scale: 1 },
+        thinking: { opacity: 0.4, scale: 1 },
+        intense: { opacity: 0.5, scale: 1 }
+      }
+    }
+    return {
+      idle: {
+        opacity: [0.2, 0.3, 0.2],
+        scale: [1, 1.1, 1],
+        transition: {
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      },
+      thinking: {
+        opacity: [0.3, 0.5, 0.3],
+        scale: [1, 1.15, 1],
+        transition: {
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      },
+      intense: {
+        opacity: [0.4, 0.6, 0.4],
+        scale: [1, 1.2, 1],
+        transition: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      }
+    }
+  }, [prefersReducedMotion])
+
   const renderActiveQuestion = () => {
     if (!session || session.completed) {
       return null
@@ -320,90 +430,174 @@ export default function CompetitionPlay() {
 
     return (
       <>
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={`${
-                isDark
-                  ? 'bg-slate-900/70 border-slate-800'
-                  : 'bg-white/80 backdrop-blur border-slate-300'
-              } border-2 rounded-xl shadow-lg p-5 min-h-[200px] transition-all relative overflow-hidden`}
-              style={{
-                boxShadow: isDark
-                  ? '0 0 20px rgba(16, 185, 129, 0.15), 0 8px 40px rgba(16, 185, 129, 0.08)'
-                  : '0 0 20px rgba(16, 185, 129, 0.1), 0 8px 40px rgba(16, 185, 129, 0.05)',
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 animate-pulse-slow pointer-events-none"></div>
-              <p className={`text-xs uppercase tracking-[0.3em] font-medium relative z-10 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                Current Challenge
-              </p>
-              <p className={`mt-3 text-lg leading-relaxed whitespace-pre-line relative z-10 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                {session.question.question}
-              </p>
-            </motion.div>
-            <textarea
-              className={`w-full border-2 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/60 transition-all ${
-                isDark
-                  ? 'bg-slate-900/70 border-slate-800 text-slate-100 placeholder:text-slate-400'
-                  : 'bg-white/80 backdrop-blur border-slate-300 text-slate-900 placeholder:text-slate-500'
-              }`}
-              style={{
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)'
-              }}
-              rows={6}
-              placeholder="Write your code solution here"
-              value={currentAnswer}
-              onChange={(event) => {
-                setCurrentAnswer(event.target.value)
-              }}
-            />
-          </div>
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <motion.div
-              animate={{
-                scale: [1, 1.02, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="relative w-32 h-32"
-            >
-              <div
-                className="absolute inset-0 rounded-full opacity-80"
+        <div className="relative">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`${
+                  isDark
+                    ? 'bg-slate-900/70 border-slate-800'
+                    : 'bg-white/80 backdrop-blur border-slate-300'
+                } border-2 rounded-xl shadow-lg p-5 min-h-[200px] transition-all relative overflow-hidden`}
                 style={{
-                  background: `conic-gradient(#10b981 ${timerPercent}%, rgba(255,255,255,0.15) ${timerPercent}% 100%)`,
-                  filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))'
+                  boxShadow: isDark
+                    ? '0 0 20px rgba(16, 185, 129, 0.15), 0 8px 40px rgba(16, 185, 129, 0.08)'
+                    : '0 0 20px rgba(16, 185, 129, 0.1), 0 8px 40px rgba(16, 185, 129, 0.05)',
+                  borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 animate-pulse-slow pointer-events-none"></div>
+                <p className={`text-xs uppercase tracking-[0.3em] font-medium relative z-10 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Current Challenge
+                </p>
+                <p className={`mt-3 text-lg leading-relaxed whitespace-pre-line relative z-10 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                  {session.question.question}
+                </p>
+              </motion.div>
+              <textarea
+                className={`w-full border-2 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/60 transition-all ${
+                  isDark
+                    ? 'bg-slate-900/70 border-slate-800 text-slate-100 placeholder:text-slate-400'
+                    : 'bg-white/80 backdrop-blur border-slate-300 text-slate-900 placeholder:text-slate-500'
+                }`}
+                style={{
+                  borderColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)'
+                }}
+                rows={6}
+                placeholder="Write your code solution here"
+                value={currentAnswer}
+                onChange={(event) => {
+                  setCurrentAnswer(event.target.value)
                 }}
               />
-              <div className={`absolute inset-2 rounded-full flex flex-col items-center justify-center shadow-lg ${
-                isDark ? 'bg-gray-900 shadow-black/40' : 'bg-white shadow-black/20'
-              }`}>
-                <span className={`text-[10px] uppercase tracking-[0.3em] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Timer
-                </span>
-                <span className={`text-3xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                  {remainingSeconds === null ? '--:--' : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`}
-                </span>
-                <span className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {Math.floor(perQuestionTimer / 60)} min limit
-                </span>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-6">
+              <motion.div
+                animate={{
+                  scale: [1, 1.02, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="relative w-32 h-32"
+              >
+                <div
+                  className="absolute inset-0 rounded-full opacity-80"
+                  style={{
+                    background: `conic-gradient(#10b981 ${timerPercent}%, rgba(255,255,255,0.15) ${timerPercent}% 100%)`,
+                    filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))'
+                  }}
+                />
+                <div className={`absolute inset-2 rounded-full flex flex-col items-center justify-center shadow-lg ${
+                  isDark ? 'bg-gray-900 shadow-black/40' : 'bg-white shadow-black/20'
+                }`}>
+                  <span className={`text-[10px] uppercase tracking-[0.3em] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Timer
+                  </span>
+                  <span className={`text-3xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {remainingSeconds === null ? '--:--' : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`}
+                  </span>
+                  <span className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {Math.floor(perQuestionTimer / 60)} min limit
+                  </span>
+                </div>
+              </motion.div>
+              <div className="text-center">
+                <p className={`text-xs uppercase tracking-[0.3em] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Progress
+                </p>
+                <p className={`text-3xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                  {questionPosition} / {totalQuestions}
+                </p>
               </div>
-            </motion.div>
-            <div className="text-center">
-              <p className={`text-xs uppercase tracking-[0.3em] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                Progress
-              </p>
-              <p className={`text-3xl font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                {questionPosition} / {totalQuestions}
-              </p>
             </div>
           </div>
+
+          {/* AI Thinking Avatar - Purely cosmetic, time-based animation */}
+          <motion.div
+            className="hidden md:flex absolute top-1/2 -right-24 -translate-y-1/2 flex-col items-center gap-2 pointer-events-none"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              className="relative"
+              variants={aiAvatarVariants}
+              animate={aiPresenceLevel}
+              style={{
+                filter: 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.3))'
+              }}
+            >
+              {/* Glow effect */}
+              <motion.div
+                className={`absolute inset-0 rounded-full ${
+                  isDark ? 'bg-emerald-500/20' : 'bg-emerald-400/30'
+                } blur-xl`}
+                variants={aiGlowVariants}
+                animate={aiPresenceLevel}
+              />
+              {/* Avatar container */}
+              <div className={`relative w-20 h-20 rounded-full flex items-center justify-center ${
+                isDark
+                  ? 'bg-slate-800/80 border-2 border-emerald-500/40'
+                  : 'bg-white/90 border-2 border-emerald-400/50'
+              } shadow-lg backdrop-blur-sm`}>
+                <Bot className={`w-10 h-10 ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`} />
+              </div>
+            </motion.div>
+            <p className={`text-xs font-medium whitespace-nowrap ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              AI is thinking…
+            </p>
+          </motion.div>
+
+          {/* Mobile AI Avatar - shown below content */}
+          <motion.div
+            className="md:hidden flex flex-col items-center gap-2 mt-6 pt-6 border-t border-slate-300/20"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              className="relative"
+              variants={aiAvatarVariants}
+              animate={aiPresenceLevel}
+              style={{
+                filter: 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.3))'
+              }}
+            >
+              {/* Glow effect */}
+              <motion.div
+                className={`absolute inset-0 rounded-full ${
+                  isDark ? 'bg-emerald-500/20' : 'bg-emerald-400/30'
+                } blur-xl`}
+                variants={aiGlowVariants}
+                animate={aiPresenceLevel}
+              />
+              {/* Avatar container */}
+              <div className={`relative w-16 h-16 rounded-full flex items-center justify-center ${
+                isDark
+                  ? 'bg-slate-800/80 border-2 border-emerald-500/40'
+                  : 'bg-white/90 border-2 border-emerald-400/50'
+              } shadow-lg backdrop-blur-sm`}>
+                <Bot className={`w-8 h-8 ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`} />
+              </div>
+            </motion.div>
+            <p className={`text-xs font-medium ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              AI is thinking…
+            </p>
+          </motion.div>
         </div>
 
         <div className="space-y-3">
