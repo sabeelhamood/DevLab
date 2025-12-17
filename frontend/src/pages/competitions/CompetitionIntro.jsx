@@ -56,6 +56,7 @@ function useChatbotIntegration() {
 
 const DEFAULT_FORCED_LEARNER_ID = '210dc7a7-9808-445c-8eb7-51c217e3919c'
 console.log("hi");
+console.log("hi");
 export default function CompetitionIntro() {
   const { competitionId } = useParams()
   const navigate = useNavigate()
