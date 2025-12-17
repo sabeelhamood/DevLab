@@ -8,15 +8,25 @@ import { getFetch } from '../utils/http.js'
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo'
 
+const stripControlCharacters = (value = '') =>
+  value.replace(/[\u0000-\u001F\u007F]/g, '')
+
 const parseJsonResponse = (raw) => {
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim()
-    const withoutFence = trimmed.startsWith('```')
-      ? trimmed.replace(/```json?|\```/gi, '').trim()
-      : trimmed
+  const rawString = typeof raw === 'string' ? raw : String(raw ?? '')
+  const trimmed = stripControlCharacters(rawString.trim())
+  const withoutFence = trimmed.startsWith('```')
+    ? trimmed.replace(/```json?|\```/gi, '').trim()
+    : trimmed
+
+  try {
     return JSON.parse(withoutFence)
+  } catch (parseError) {
+    const error = new Error('Invalid AI JSON response')
+    error.status = 422
+    error.details = parseError.message
+    error.raw = withoutFence.slice(0, 500)
+    throw error
   }
-  return raw
 }
 
 const normalizeQuestionsArray = (questions = []) =>

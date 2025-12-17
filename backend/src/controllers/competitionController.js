@@ -665,7 +665,8 @@ export const competitionController = {
       })
     } catch (error) {
       console.error('❌ [competitions] Failed to start AI competition:', error)
-      return res.status(500).json({
+      const status = Number.isInteger(error.status) ? error.status : 500
+      return res.status(status).json({
         success: false,
         error: 'Failed to start AI competition',
         message: error.message
@@ -746,7 +747,8 @@ export const competitionController = {
       })
     } catch (error) {
       console.error('❌ [competitions] Failed to record learner answer:', error)
-      return res.status(500).json({
+      const status = Number.isInteger(error.status) ? error.status : 500
+      return res.status(status).json({
         success: false,
         error: 'Failed to record learner answer',
         message: error.message
@@ -814,7 +816,8 @@ export const competitionController = {
       })
     } catch (error) {
       console.error('❌ [competitions] Failed to finalize competition:', error)
-      return res.status(500).json({
+      const status = Number.isInteger(error.status) ? error.status : 500
+      return res.status(status).json({
         success: false,
         error: 'Failed to finalize competition',
         message: error.message
