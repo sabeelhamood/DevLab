@@ -54,7 +54,7 @@ function useChatbotIntegration() {
   }, [user])
 }
 
-const DEFAULT_FORCED_LEARNER_ID = '10000000-0000-0000-0000-000000000001'
+const DEFAULT_FORCED_LEARNER_ID = '210dc7a7-9808-445c-8eb7-51c217e3919c'
 
 const CompetitionCard = ({ competition, onStart }) => (
   <motion.div
