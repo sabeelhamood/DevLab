@@ -236,6 +236,8 @@ export function renderAssessmentCodeQuestions(questions = []) {
   const apiBaseUrlScript = renderApiBaseUrlScript()
 
   return `
+    ${apiBaseUrlScript}
+    ${serviceHeadersScript}
     <div class="assessment-questions-container" style="padding: 32px; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b;">
       <div style="margin-bottom: 32px;">
         <h2 style="font-size: 30px; line-height: 40px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
@@ -268,8 +270,6 @@ export function renderAssessmentCodeQuestions(questions = []) {
       </div>
     </div>
     ${renderQuestionMetaScript(questions)}
-    ${apiBaseUrlScript}
-    ${serviceHeadersScript}
     ${renderStepperBootstrap()}
   `
 }
@@ -500,8 +500,13 @@ function renderServiceHeadersScript() {
           var existing = window.__DEVLAB_SERVICE_HEADERS || {};
           var provided = ${payload};
           window.__DEVLAB_SERVICE_HEADERS = Object.assign({}, provided, existing);
+          console.log('[DevLab Assessment] Service headers initialized:', {
+            hasApiKey: !!window.__DEVLAB_SERVICE_HEADERS['x-api-key'],
+            hasServiceId: !!window.__DEVLAB_SERVICE_HEADERS['x-service-id'],
+            keys: Object.keys(window.__DEVLAB_SERVICE_HEADERS)
+          });
         } catch (err) {
-          console.error('Failed to initialize service headers', err);
+          console.error('[DevLab Assessment] Failed to initialize service headers', err);
           window.__DEVLAB_SERVICE_HEADERS = ${payload};
         }
       })();
@@ -520,8 +525,9 @@ function renderApiBaseUrlScript() {
       (function () {
         try {
           window.__DEVLAB_API_BASE__ = ${serializeJsonForScript(baseUrl)};
+          console.log('[DevLab Assessment] API base URL set:', window.__DEVLAB_API_BASE__);
         } catch (err) {
-          console.error('Failed to initialize API base URL', err);
+          console.error('[DevLab Assessment] Failed to initialize API base URL', err);
         }
       })();
     </script>
