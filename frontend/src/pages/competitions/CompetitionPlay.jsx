@@ -54,7 +54,7 @@ function useChatbotIntegration() {
 }
 
 const DEFAULT_FORCED_LEARNER_ID = '210dc7a7-9808-445c-8eb7-51c217e3919c'
-console.log('DEFAULT_FORCED_LEARNER_ID', DEFAULT_FORCED_LEARNER_ID);
+console.log("hi");
 const QUESTIONS_PER_COMPETITION = 3
 const QUESTION_TIMER_SECONDS = 10 * 60 // 10 minutes per question
 const TOTAL_COMPETITION_SECONDS = QUESTION_TIMER_SECONDS * QUESTIONS_PER_COMPETITION // 30 minutes total
