@@ -247,10 +247,30 @@ IMPORTANT:
 Return only this JSON object, with no additional text or markdown formatting.`
 
     try {
+      console.log('[DevLab][GRADE][OPENAI][START] Calling OpenAI API for grading')
+      console.log('[DevLab][GRADE][OPENAI][PROMPT] Prompt length:', prompt.length, 'characters')
+      console.log('[DevLab][GRADE][OPENAI][PROMPT] Prompt preview (first 500 chars):', prompt.substring(0, 500) + '...')
+      
       const rawResponse = await this.#callOpenAI(prompt, { temperature: 0 })
+      
+      console.log('[DevLab][GRADE][OPENAI][RESPONSE] Raw response received from OpenAI')
+      console.log('[DevLab][GRADE][OPENAI][RESPONSE] Response type:', typeof rawResponse)
+      console.log('[DevLab][GRADE][OPENAI][RESPONSE] Response length:', rawResponse?.length || 0, 'characters')
+      console.log('[DevLab][GRADE][OPENAI][RESPONSE] Response preview (first 1000 chars):', rawResponse?.substring(0, 1000) || 'empty')
+      
       const parsed = parseJsonResponse(rawResponse)
+      
+      console.log('[DevLab][GRADE][OPENAI][PARSE] Parsed response type:', typeof parsed)
+      console.log('[DevLab][GRADE][OPENAI][PARSE] Parsed response structure:', {
+        isNumber: typeof parsed === 'number',
+        hasScore: typeof parsed?.score === 'number',
+        hasOverallScore: typeof parsed?.overallScore === 'number',
+        hasSkills: !!parsed?.skills,
+        skillsKeys: parsed?.skills ? Object.keys(parsed.skills) : null
+      })
 
       if (parsed === null || parsed === undefined) {
+        console.error('[DevLab][GRADE][OPENAI][ERROR] Invalid response format from OpenAI - parsed is null/undefined')
         throw new Error('Invalid response format from OpenAI')
       }
 
@@ -258,18 +278,39 @@ Return only this JSON object, with no additional text or markdown formatting.`
       let rawScore
       if (typeof parsed === 'number') {
         rawScore = parsed
+        console.log('[DevLab][GRADE][OPENAI][SCORE] Extracted score from number:', rawScore)
       } else if (typeof parsed.score === 'number') {
         rawScore = parsed.score
+        console.log('[DevLab][GRADE][OPENAI][SCORE] Extracted score from parsed.score:', rawScore)
       } else if (typeof parsed.overallScore === 'number') {
         rawScore = parsed.overallScore
+        console.log('[DevLab][GRADE][OPENAI][SCORE] Extracted score from parsed.overallScore:', rawScore)
       } else {
+        console.error('[DevLab][GRADE][OPENAI][ERROR] OpenAI response does not contain a valid score field')
+        console.error('[DevLab][GRADE][OPENAI][ERROR] Parsed object keys:', Object.keys(parsed || {}))
+        console.error('[DevLab][GRADE][OPENAI][ERROR] Full parsed object:', JSON.stringify(parsed, null, 2))
         throw new Error('OpenAI response does not contain a valid score field')
       }
 
       const normalizedScore = Math.max(0, Math.min(100, Number(rawScore) || 0))
+      console.log('[DevLab][GRADE][OPENAI][SCORE] Normalized score:', normalizedScore, '(raw:', rawScore, ')')
 
       // Extract skill-level scores and feedback if present
       const skills = parsed?.skills && typeof parsed.skills === 'object' ? parsed.skills : null
+      
+      if (skills) {
+        console.log('[DevLab][GRADE][OPENAI][SKILLS] Skills breakdown received:', {
+          skillsCount: Object.keys(skills).length,
+          skillsList: Object.keys(skills),
+          sampleSkill: Object.keys(skills)[0] ? {
+            skillName: Object.keys(skills)[0],
+            score: skills[Object.keys(skills)[0]]?.score,
+            feedbackLength: skills[Object.keys(skills)[0]]?.feedback?.length || 0
+          } : null
+        })
+      } else {
+        console.log('[DevLab][GRADE][OPENAI][SKILLS] No skills breakdown in response')
+      }
 
       const result = {
         score: normalizedScore
@@ -280,9 +321,16 @@ Return only this JSON object, with no additional text or markdown formatting.`
         result.skills = skills
       }
 
+      console.log('[DevLab][GRADE][OPENAI][SUCCESS] Grading completed successfully:', {
+        score: result.score,
+        hasSkills: !!result.skills
+      })
+
       return result
     } catch (error) {
-      console.error('OpenAI gradeAssessmentSolutions error:', error)
+      console.error('[DevLab][GRADE][OPENAI][ERROR] OpenAI gradeAssessmentSolutions error:', error)
+      console.error('[DevLab][GRADE][OPENAI][ERROR] Error message:', error.message)
+      console.error('[DevLab][GRADE][OPENAI][ERROR] Stack trace:', error.stack)
       throw new Error(`Failed to grade assessment solutions: ${error.message}`)
     }
   }

@@ -374,9 +374,44 @@ export const assessmentController = {
 
   async gradeAssessmentSolutions(req, res) {
     try {
+      console.log('[DevLab][GRADE][RECEIVE][START] Received grading request from Assessment')
+      
       const { questions, solutions, skills } = req.body || {}
 
+      // Log what we received from Assessment
+      console.log('[DevLab][GRADE][RECEIVE][DATA] Request body structure:', {
+        hasQuestions: Array.isArray(questions),
+        questionsCount: Array.isArray(questions) ? questions.length : 0,
+        hasSolutions: Array.isArray(solutions),
+        solutionsCount: Array.isArray(solutions) ? solutions.length : 0,
+        hasSkills: Array.isArray(skills),
+        skillsCount: Array.isArray(skills) ? skills.length : 0,
+        skillsProvided: Array.isArray(skills) ? skills : 'not provided'
+      })
+
+      // Log sample of questions and solutions (first item only to avoid huge logs)
+      if (Array.isArray(questions) && questions.length > 0) {
+        console.log('[DevLab][GRADE][RECEIVE][QUESTIONS] Sample question (first):', {
+          id: questions[0]?.id,
+          title: questions[0]?.title,
+          description: questions[0]?.description?.substring(0, 100) + '...',
+          programming_language: questions[0]?.programming_language || questions[0]?.language,
+          skills: questions[0]?.skills,
+          testCasesCount: (questions[0]?.testCases || questions[0]?.test_cases || []).length
+        })
+      }
+
+      if (Array.isArray(solutions) && solutions.length > 0) {
+        console.log('[DevLab][GRADE][RECEIVE][SOLUTIONS] Sample solution (first):', {
+          id: solutions[0]?.id,
+          language: solutions[0]?.language,
+          solutionLength: solutions[0]?.solution?.length || 0,
+          solutionPreview: solutions[0]?.solution?.substring(0, 100) + '...'
+        })
+      }
+
       if (!Array.isArray(questions) || questions.length === 0) {
+        console.error('[DevLab][GRADE][ERROR] Missing or invalid questions array')
         return res.status(400).json({
           success: false,
           error: 'Missing or invalid questions array'
@@ -384,6 +419,7 @@ export const assessmentController = {
       }
 
       if (!Array.isArray(solutions) || solutions.length === 0) {
+        console.error('[DevLab][GRADE][ERROR] Missing or invalid solutions array')
         return res.status(400).json({
           success: false,
           error: 'Missing or invalid solutions array'
@@ -391,6 +427,10 @@ export const assessmentController = {
       }
 
       if (questions.length !== solutions.length) {
+        console.error('[DevLab][GRADE][ERROR] Mismatch:', {
+          questionsCount: questions.length,
+          solutionsCount: solutions.length
+        })
         return res.status(400).json({
           success: false,
           error: 'Questions and solutions arrays must have the same length'
@@ -402,6 +442,12 @@ export const assessmentController = {
         ? skills
         : Array.from(new Set(questions.flatMap(q => q.skills || [])))
 
+      console.log('[DevLab][GRADE][PROCESS] Starting OpenAI grading with:', {
+        questionsCount: questions.length,
+        solutionsCount: solutions.length,
+        skillsToAssess: allSkills
+      })
+
       // Grade solutions using OpenAI (centralized evaluation logic)
       const evaluation = await openAIService.gradeAssessmentSolutions(
         questions,
@@ -409,15 +455,29 @@ export const assessmentController = {
         allSkills
       )
 
+      console.log('[DevLab][GRADE][RESULT] OpenAI grading completed:', {
+        score: evaluation?.score,
+        hasSkills: !!evaluation?.skills,
+        skillsKeys: evaluation?.skills ? Object.keys(evaluation.skills) : []
+      })
+
+      const finalScore = typeof evaluation?.score === 'number' ? evaluation.score : 0
+      
+      console.log('[DevLab][GRADE][RESPONSE] Sending response to Assessment:', {
+        success: true,
+        score: finalScore
+      })
+
       res.json({
         success: true,
         data: {
           // Ensure we always expose a single numeric score
-          score: typeof evaluation?.score === 'number' ? evaluation.score : 0
+          score: finalScore
         }
       })
     } catch (error) {
-      console.error('Assessment gradeAssessmentSolutions error:', error)
+      console.error('[DevLab][GRADE][ERROR] Assessment gradeAssessmentSolutions error:', error)
+      console.error('[DevLab][GRADE][ERROR] Stack trace:', error.stack)
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to grade assessment solutions'
