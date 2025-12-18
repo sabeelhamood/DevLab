@@ -64,6 +64,7 @@ import competitionQueryRoutes from './routes/external/competitionQueryRoutes.js'
 import { initializeDatabases } from './config/initDatabase.js'
 import { postgres } from './config/database.js'
 import { registerService } from './registration/register.js'
+import grpcServer from './grpc/server.js'
 
 const app = express()
 
@@ -710,6 +711,14 @@ const startServer = async () => {
     console.log('⏭️  Auto-registration skipped (already registered). Set ENABLE_AUTO_REGISTRATION=true to enable.');
   }
 
+  // Start GRPC server
+  try {
+    await grpcServer.start()
+  } catch (error) {
+    console.error('❌ GRPC server startup failed:', error)
+    // Don't exit - HTTP server can still work
+  }
+
   server = app.listen(PORT, HOST, () => {
     console.log(`🚀 DEVLAB Backend running on ${HOST}:${PORT}`)
     console.log(`📊 Environment: ${config.nodeEnv}`)
@@ -727,13 +736,25 @@ const startServer = async () => {
     }
   })
 
-  process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully')
+  const shutdown = async () => {
+    console.log('🛑 Shutdown signal received, shutting down gracefully')
+    
+    // Shutdown GRPC server
+    try {
+      await grpcServer.shutdown()
+    } catch (error) {
+      console.error('❌ Error shutting down GRPC server:', error)
+    }
+
+    // Shutdown HTTP server
     server.close(() => {
-      console.log('✅ Server closed')
+      console.log('✅ HTTP Server closed')
       process.exit(0)
     })
-  })
+  }
+
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
 }
 
 startServer()
