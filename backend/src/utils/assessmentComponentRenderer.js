@@ -765,9 +765,13 @@ function renderStepperBootstrap() {
               // Also log to console (score still available in result)
               console.log('Assessment grading results (score only):', result);
               
-              // Dispatch event with score-focused payload (full evaluation still included)
-              const event = new CustomEvent('assessmentSolutionsSubmitted', { detail: { questions, solutions, evaluation: scorePayload } });
-              document.dispatchEvent(event);
+              // Send message to parent window (iframe-safe communication)
+              window.parent.postMessage({
+                type: 'assessmentSolutionsSubmitted',
+                questions,
+                solutions,
+                evaluation: scorePayload
+              }, '*'); // Or specify Assessment's origin for security
 
               // Scroll to results
               gradingResults?.scrollIntoView({ behavior: 'smooth', block: 'start' });
