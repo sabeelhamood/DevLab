@@ -42,6 +42,7 @@ RUN addgroup --system --gid 1001 nodejs \
 
 # Copy source files and dependencies
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/proto ./proto
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
