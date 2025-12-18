@@ -1079,25 +1079,65 @@ int main() {
         submissionData
       });
 
-      // Add timeout to fetch request (60 seconds)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      // Retry logic for fetch request with increased timeout (90 seconds)
+      let response;
+      let lastError;
+      const maxRetries = 2;
+      const timeoutMs = 90000;
 
-      const response = await fetch(`${this.baseUrl}/submissions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': this.apiKey,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
-        },
-        body: JSON.stringify(submissionData),
-        signal: controller.signal
-      });
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            const backoffDelay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+            console.log(`🔄 Judge0: Retry attempt ${attempt + 1}/${maxRetries + 1} after ${backoffDelay}ms delay`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          }
 
-      clearTimeout(timeoutId);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!response.ok) {
-        throw new Error(`Judge0 API error: ${response.status} ${response.statusText}`);
+          response = await fetch(`${this.baseUrl}/submissions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-RapidAPI-Key': this.apiKey,
+              'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+            },
+            body: JSON.stringify(submissionData),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            break; // Success, exit retry loop
+          }
+
+          // Only retry on 504 Gateway Timeout or 503 Service Unavailable
+          if (response.status === 504 || response.status === 503) {
+            lastError = new Error(`Judge0 API error: ${response.status} ${response.statusText}`);
+            if (attempt < maxRetries) {
+              console.log(`⚠️ Judge0: Received ${response.status}, will retry...`);
+              continue;
+            }
+          }
+
+          // For other errors, throw immediately
+          throw new Error(`Judge0 API error: ${response.status} ${response.statusText}`);
+        } catch (error) {
+          lastError = error;
+          // Retry on timeout/abort errors
+          if ((error.name === 'AbortError' || error.message.includes('timeout')) && attempt < maxRetries) {
+            console.log(`⚠️ Judge0: Request timeout, will retry...`);
+            continue;
+          }
+          // For other errors or last attempt, throw
+          throw error;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error('Judge0 API error: Request failed after retries');
       }
 
       const result = await response.json();
@@ -1503,25 +1543,65 @@ int main() {
 
       console.log('📤 Judge0: Submitting batch:', submissions);
 
-      // Submit batch with timeout (60 seconds)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      // Retry logic for batch fetch request with increased timeout (90 seconds)
+      let response;
+      let lastError;
+      const maxRetries = 2;
+      const timeoutMs = 90000;
 
-      const response = await fetch(`${this.baseUrl}/submissions/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': this.apiKey,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
-        },
-        body: JSON.stringify({ submissions }),
-        signal: controller.signal
-      });
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            const backoffDelay = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+            console.log(`🔄 Judge0: Batch retry attempt ${attempt + 1}/${maxRetries + 1} after ${backoffDelay}ms delay`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          }
 
-      clearTimeout(timeoutId);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!response.ok) {
-        throw new Error(`Judge0 batch API error: ${response.status}`);
+          response = await fetch(`${this.baseUrl}/submissions/batch`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-RapidAPI-Key': this.apiKey,
+              'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+            },
+            body: JSON.stringify({ submissions }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            break; // Success, exit retry loop
+          }
+
+          // Only retry on 504 Gateway Timeout or 503 Service Unavailable
+          if (response.status === 504 || response.status === 503) {
+            lastError = new Error(`Judge0 batch API error: ${response.status}`);
+            if (attempt < maxRetries) {
+              console.log(`⚠️ Judge0: Batch received ${response.status}, will retry...`);
+              continue;
+            }
+          }
+
+          // For other errors, throw immediately
+          throw new Error(`Judge0 batch API error: ${response.status}`);
+        } catch (error) {
+          lastError = error;
+          // Retry on timeout/abort errors
+          if ((error.name === 'AbortError' || error.message.includes('timeout')) && attempt < maxRetries) {
+            console.log(`⚠️ Judge0: Batch request timeout, will retry...`);
+            continue;
+          }
+          // For other errors or last attempt, throw
+          throw error;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error('Judge0 batch API error: Request failed after retries');
       }
 
       const result = await response.json();
