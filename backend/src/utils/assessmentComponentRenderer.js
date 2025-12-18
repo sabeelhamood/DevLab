@@ -757,15 +757,15 @@ function renderStepperBootstrap() {
                 ? (result.data || result)
                 : result;
 
-              // Display only the final score
+              // Display success message instead of score (score still generated and available in scorePayload)
               if (gradingResults) {
-                gradingResults.innerHTML = renderGradingResults(scorePayload);
+                gradingResults.innerHTML = '<div style="background: white; border-radius: 1rem; padding: 2rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 1.5rem; text-align: center;"><div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); margin-bottom: 1rem;"><span style="font-size: 2rem;">✅</span></div><h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 0.5rem 0;">Your solution has been submitted successfully.</h3><p style="font-size: 0.95rem; color: #6b7280; margin: 0;">Your assessment has been graded and the results are being processed.</p></div>';
               }
 
-              // Also log to console
+              // Also log to console (score still available in result)
               console.log('Assessment grading results (score only):', result);
               
-              // Dispatch event with score-focused payload
+              // Dispatch event with score-focused payload (full evaluation still included)
               const event = new CustomEvent('assessmentSolutionsSubmitted', { detail: { questions, solutions, evaluation: scorePayload } });
               document.dispatchEvent(event);
 
