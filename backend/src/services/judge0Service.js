@@ -1099,7 +1099,7 @@ int main() {
       this.isAvailable = true;
 
       // Poll for result - use shouldUseHarness flag (only true if harness was actually applied)
-      return await this.pollSubmission(token, expectedOutput, 30, 1000, shouldUseHarness);
+      return await this.pollSubmission(token, expectedOutput, 60, 1000, shouldUseHarness);
     } catch (error) {
       console.error('Judge0 execution error:', error);
       throw error;
@@ -1109,7 +1109,7 @@ int main() {
   /**
    * Poll submission result
    */
-  async pollSubmission(token, expectedOutput = null, maxAttempts = 30, delay = 1000, isHarnessMode = false) {
+  async pollSubmission(token, expectedOutput = null, maxAttempts = 60, delay = 1000, isHarnessMode = false) {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const response = await fetch(`${this.baseUrl}/submissions/${token}`, {
@@ -1523,7 +1523,7 @@ int main() {
         console.log(`🔄 Judge0: Polling harness submission (token: ${token})`);
         
         try {
-          const executionResult = await this.pollSubmission(token, null, 30, 1000, true);
+          const executionResult = await this.pollSubmission(token, null, 60, 1000, true);
           console.log(`✅ Judge0: Harness submission result:`, executionResult);
           
           // Parse all RESULT lines from the processed stdout (after Base64 decoding, before harness extraction)
@@ -1613,7 +1613,7 @@ int main() {
           console.log(`🔄 Judge0: Polling submission ${i + 1}/${tokens.length} (token: ${token})`);
           
           try {
-            const executionResult = await this.pollSubmission(token, expectedOutput);
+            const executionResult = await this.pollSubmission(token, expectedOutput, 60, 1000);
             console.log(`✅ Judge0: Submission ${i + 1} result:`, executionResult);
             
             results.push({
