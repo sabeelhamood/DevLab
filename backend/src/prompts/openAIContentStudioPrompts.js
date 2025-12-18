@@ -52,6 +52,8 @@ FORBIDDEN FIELDS (DO NOT INCLUDE):
 - Any free-form "explanation" block outside testCase explanations ❌
 - Any mention of "multiple choice", "select", or "choose" ❌
 LANGUAGE RULE:
+-IMPORTANT: The Output Language for human-readable text is ${humanLanguage}. This is mandatory.
+
 - All human-readable text ("title", "description", "hints") MUST be written in the requested Output Language (${humanLanguage}). All technical elements (function names, code, inputs/outputs, programming keywords, JSON keys, language names, test cases) MUST ALWAYS remain in English and MUST NOT be translated.
 
 EXAMPLE CORRECT CODING QUESTION:
