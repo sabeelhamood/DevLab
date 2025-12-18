@@ -1079,6 +1079,10 @@ int main() {
         submissionData
       });
 
+      // Add timeout to fetch request (60 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(`${this.baseUrl}/submissions`, {
         method: 'POST',
         headers: {
@@ -1086,8 +1090,11 @@ int main() {
           'X-RapidAPI-Key': this.apiKey,
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
         },
-        body: JSON.stringify(submissionData)
+        body: JSON.stringify(submissionData),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Judge0 API error: ${response.status} ${response.statusText}`);
@@ -1100,10 +1107,13 @@ int main() {
 
       // Poll for result - use shouldUseHarness flag (only true if harness was actually applied)
       return await this.pollSubmission(token, expectedOutput, 60, 1000, shouldUseHarness);
-    } catch (error) {
-      console.error('Judge0 execution error:', error);
-      throw error;
-    }
+      } catch (error) {
+        console.error('Judge0 execution error:', error);
+        if (error.name === 'AbortError') {
+          throw new Error('Judge0 API request timeout: The request took too long to complete');
+        }
+        throw error;
+      }
   }
 
   /**
@@ -1493,7 +1503,10 @@ int main() {
 
       console.log('📤 Judge0: Submitting batch:', submissions);
 
-      // Submit batch
+      // Submit batch with timeout (60 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(`${this.baseUrl}/submissions/batch`, {
         method: 'POST',
         headers: {
@@ -1501,8 +1514,11 @@ int main() {
           'X-RapidAPI-Key': this.apiKey,
           'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
         },
-        body: JSON.stringify({ submissions })
+        body: JSON.stringify({ submissions }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Judge0 batch API error: ${response.status}`);
@@ -1648,6 +1664,9 @@ int main() {
       return results;
     } catch (error) {
       console.error('Judge0 batch execution error:', error);
+      if (error.name === 'AbortError') {
+        throw new Error('Judge0 batch API request timeout: The request took too long to complete');
+      }
       throw error;
     }
   }
