@@ -2,6 +2,7 @@ import { Howl } from 'howler'
 
 export const correctSound = new Howl({ src: ['/sounds/correct.mp3'], volume: 0.6 })
 export const wrongSound = new Howl({ src: ['/sounds/wrong.mp3'], volume: 0.6 })
+export const gameOverSound = new Howl({ src: ['/assets/sfx/game-over-417465.mp3'], volume: 0.6 })
 
 export const playFeedback = (isCorrect) => {
   try {
