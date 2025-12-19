@@ -2,12 +2,6 @@ import { Howl } from 'howler'
 
 export const correctSound = new Howl({ src: ['/sounds/correct.mp3'], volume: 0.6, preload: true })
 export const wrongSound = new Howl({ src: ['/sounds/wrong.mp3'], volume: 0.6, preload: true })
-export const gameOverSound = new Howl({ 
-  src: ['/assets/sfx/game-over-417465.mp3'], 
-  volume: 0.6, 
-  preload: true,
-  html5: true // Use HTML5 Audio for better compatibility
-})
 
 export const playFeedback = (isCorrect) => {
   try {
@@ -24,7 +18,6 @@ export const playFeedback = (isCorrect) => {
 export const preloadFeedbackSounds = () => {
   correctSound.load()
   wrongSound.load()
-  gameOverSound.load()
 }
 // Sound Manager for Competition Pages
 class SoundManager {

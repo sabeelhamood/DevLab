@@ -5,7 +5,6 @@ import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Trophy, Bot, Smile } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
-import { gameOverSound, preloadFeedbackSounds } from '../../utils/soundManager.js'
 
 // Chatbot integration - External RAG service
 // Using dummy token for UI/embed validation (authentication not in scope)
@@ -96,7 +95,6 @@ export default function CompetitionPlay() {
 
   const startAttemptedRef = useRef(Boolean(location.state?.session))
   const autoSubmitRef = useRef(false)
-  const gameOverSoundPlayedRef = useRef(false)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   useEffect(() => {
@@ -197,22 +195,6 @@ export default function CompetitionPlay() {
     autoSubmitRef.current = false
   }, [session?.question?.question_id])
 
-  // Reset game-over sound ref when competition changes
-  useEffect(() => {
-    gameOverSoundPlayedRef.current = false
-  }, [competitionId])
-
-  // Preload sounds on component mount (after user interaction)
-  useEffect(() => {
-    // Preload all feedback sounds including game-over sound
-    preloadFeedbackSounds()
-    
-    // Also explicitly load gameOverSound to ensure it's ready
-    if (gameOverSound && !gameOverSound.playing()) {
-      gameOverSound.load()
-    }
-  }, [])
-
   // Compute time-based AI presence level (purely cosmetic, no real AI data)
   const aiPresenceLevel = useMemo(() => {
     if (!session || session.completed || !session.question || remainingSeconds === null) {
@@ -305,46 +287,6 @@ export default function CompetitionPlay() {
       handleSubmitAnswer(true)
     }
   }, [remainingSeconds, session, handleSubmitAnswer])
-
-  // Play game-over sound when AI wins
-  useEffect(() => {
-    if (!session || !session.completed) {
-      return
-    }
-
-    const winner = session.summary?.winner
-    const isAIWinner = winner === 'ai'
-
-    if (isAIWinner && !gameOverSoundPlayedRef.current) {
-      gameOverSoundPlayedRef.current = true
-      
-      // Ensure sound is loaded before playing
-      if (gameOverSound.state() === 'unloaded') {
-        gameOverSound.load()
-      }
-      
-      // Wait for sound to be ready, then play
-      const playSound = () => {
-        try {
-          const soundId = gameOverSound.play()
-          if (soundId) {
-            console.log('✅ Game-over sound playing')
-          } else {
-            console.warn('⚠️ Game-over sound play() returned no sound ID')
-          }
-        } catch (error) {
-          console.error('❌ Failed to play game-over sound:', error)
-        }
-      }
-      
-      if (gameOverSound.state() === 'loaded') {
-        playSound()
-      } else {
-        gameOverSound.once('load', playSound)
-        gameOverSound.load()
-      }
-    }
-  }, [session])
 
   const handleCompleteCompetition = async () => {
     if (!session || session.completed) {
