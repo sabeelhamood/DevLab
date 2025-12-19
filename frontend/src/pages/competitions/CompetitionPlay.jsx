@@ -5,7 +5,7 @@ import { competitionsAIAPI } from '../../services/api/competitionsAI.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Trophy, Bot, Smile } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
-import { gameOverSound } from '../../utils/soundManager.js'
+import { gameOverSound, preloadFeedbackSounds } from '../../utils/soundManager.js'
 
 // Chatbot integration - External RAG service
 // Using dummy token for UI/embed validation (authentication not in scope)
@@ -202,6 +202,17 @@ export default function CompetitionPlay() {
     gameOverSoundPlayedRef.current = false
   }, [competitionId])
 
+  // Preload sounds on component mount (after user interaction)
+  useEffect(() => {
+    // Preload all feedback sounds including game-over sound
+    preloadFeedbackSounds()
+    
+    // Also explicitly load gameOverSound to ensure it's ready
+    if (gameOverSound && !gameOverSound.playing()) {
+      gameOverSound.load()
+    }
+  }, [])
+
   // Compute time-based AI presence level (purely cosmetic, no real AI data)
   const aiPresenceLevel = useMemo(() => {
     if (!session || session.completed || !session.question || remainingSeconds === null) {
@@ -306,10 +317,31 @@ export default function CompetitionPlay() {
 
     if (isAIWinner && !gameOverSoundPlayedRef.current) {
       gameOverSoundPlayedRef.current = true
-      try {
-        gameOverSound.play()
-      } catch (error) {
-        console.error('Failed to play game-over sound:', error)
+      
+      // Ensure sound is loaded before playing
+      if (gameOverSound.state() === 'unloaded') {
+        gameOverSound.load()
+      }
+      
+      // Wait for sound to be ready, then play
+      const playSound = () => {
+        try {
+          const soundId = gameOverSound.play()
+          if (soundId) {
+            console.log('✅ Game-over sound playing')
+          } else {
+            console.warn('⚠️ Game-over sound play() returned no sound ID')
+          }
+        } catch (error) {
+          console.error('❌ Failed to play game-over sound:', error)
+        }
+      }
+      
+      if (gameOverSound.state() === 'loaded') {
+        playSound()
+      } else {
+        gameOverSound.once('load', playSound)
+        gameOverSound.load()
       }
     }
   }, [session])
