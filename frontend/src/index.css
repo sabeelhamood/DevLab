@@ -724,3 +724,123 @@
     animation: none;
   }
 }
+
+/* RAG Chatbot UI Overrides - Prevent expansion on send */
+/* Keep chatbot at fixed size, don't expand to full page */
+#edu-bot-container {
+  position: fixed !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+}
+
+/* Chatbot button - keep fixed size */
+#edu-bot-container > div:first-child,
+#edu-bot-container button,
+#edu-bot-container [role="button"] {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  width: 64px !important;
+  height: 64px !important;
+  z-index: 50 !important;
+  pointer-events: auto !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+  min-width: 64px !important;
+  min-height: 64px !important;
+}
+
+/* Chatbot panel - keep fixed size, prevent expansion */
+#edu-bot-container > div:last-child,
+#edu-bot-container > div[style*="position"],
+#edu-bot-container iframe,
+#edu-bot-container > div > div,
+#edu-bot-container > div[class*="chat"],
+#edu-bot-container > div[class*="panel"],
+#edu-bot-container > div[class*="widget"] {
+  position: fixed !important;
+  bottom: 96px !important;
+  right: 24px !important;
+  width: 384px !important;
+  max-width: 384px !important;
+  min-width: 384px !important;
+  height: 600px !important;
+  max-height: 600px !important;
+  min-height: 600px !important;
+  z-index: 40 !important;
+  pointer-events: auto !important;
+  overflow: hidden !important;
+  resize: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Prevent full-screen expansion - override any width/height styles */
+#edu-bot-container > div[style*="width: 100%"],
+#edu-bot-container > div[style*="width:100%"],
+#edu-bot-container > div[style*="height: 100%"],
+#edu-bot-container > div[style*="height:100%"],
+#edu-bot-container > div[style*="width: 100vw"],
+#edu-bot-container > div[style*="width:100vw"],
+#edu-bot-container > div[style*="height: 100vh"],
+#edu-bot-container > div[style*="height:100vh"] {
+  width: 384px !important;
+  max-width: 384px !important;
+  min-width: 384px !important;
+  height: 600px !important;
+  max-height: 600px !important;
+  min-height: 600px !important;
+}
+
+/* Mobile responsive - smaller fixed size */
+@media (max-width: 768px) {
+  #edu-bot-container > div:first-child,
+  #edu-bot-container button,
+  #edu-bot-container [role="button"] {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 56px !important;
+    height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+  }
+
+  #edu-bot-container > div:last-child,
+  #edu-bot-container > div[style*="position"],
+  #edu-bot-container iframe,
+  #edu-bot-container > div > div,
+  #edu-bot-container > div[class*="chat"],
+  #edu-bot-container > div[class*="panel"],
+  #edu-bot-container > div[class*="widget"] {
+    bottom: 80px !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: calc(100% - 16px) !important;
+    max-width: calc(100% - 16px) !important;
+    min-width: calc(100% - 16px) !important;
+    height: 80vh !important;
+    max-height: 80vh !important;
+    min-height: 80vh !important;
+  }
+}
+
+/* Prevent any animation or transition that might cause expansion */
+#edu-bot-container * {
+  transition: opacity 0.2s ease !important;
+  animation: none !important;
+}
+
+/* Ensure panel content doesn't overflow but stays within bounds */
+#edu-bot-container > div > div > div,
+#edu-bot-container iframe,
+#edu-bot-container > div[class*="chat"] > *,
+#edu-bot-container > div[class*="panel"] > * {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
