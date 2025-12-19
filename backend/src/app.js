@@ -101,6 +101,7 @@ const allowedOrigins = [
   'https://dev-gisy8vuij-sabeels-projects-5df24825.vercel.app',
   'https://dev-2mxmqs8jc-sabeels-projects-5df24825.vercel.app',
   'https://assessment-seven-liard.vercel.app', // assessment service
+  'https://course-builder-alpha-nine.vercel.app', // course builder
   'http://localhost:3000', // local dev
   'http://localhost:3001',
   'http://localhost:3002',
