@@ -40,8 +40,6 @@ class SoundManager {
     this.sounds = {
       background: new Audio('/sounds/background.mp3'),
       start: new Audio('/sounds/start.mp3'),
-      countdown: new Audio('/sounds/countdown.mp3'),
-      complete: new Audio('/sounds/complete.mp3'),
       correct: new Audio('/sounds/correct.mp3'),
       wrong: new Audio('/sounds/wrong.mp3'),
       timer: new Audio('/sounds/timer.mp3'),
