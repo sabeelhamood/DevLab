@@ -150,7 +150,13 @@ function generatePythonHarness(sourceCode, testCases) {
     if (typeof input === 'string' && input.includes('(')) {
       functionCall = input;
     } else if (Array.isArray(input)) {
-      functionCall = `${functionName}(${JSON.stringify(input)})`;
+      const args = input.map(arg => {
+        if (typeof arg === 'string') {
+          return `json.loads('${JSON.stringify(arg)}')`;
+        }
+        return JSON.stringify(arg);
+      }).join(', ');
+      functionCall = `${functionName}(${args})`;
     } else if (input !== null && input !== undefined) {
       if (typeof input === 'string') {
         functionCall = `${functionName}(${JSON.stringify(input)})`;
