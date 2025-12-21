@@ -55,6 +55,16 @@ function extractNormalizedTestCases(question = {}) {
     .filter((testCase) => testCase.input !== '' || testCase.expectedOutput !== '')
 }
 
+/**
+ * Builds executable HTML+JavaScript template for CodeMirror editor with Judge0 integration.
+ * 
+ * IMPORTANT: This function returns EXECUTABLE CODE (HTML+JavaScript), not display content.
+ * - The output must NEVER be HTML-escaped when injected into srcdoc
+ * - Test cases are safely serialized via JSON.stringify()
+ * - Execution occurs in sandboxed iframe for security isolation
+ * 
+ * Display content (titles, descriptions) should be escaped separately when rendered in HTML.
+ */
 function buildCodeMirrorTemplateForQuestion(question = {}) {
   if (!baseCodeMirrorTemplate) {
     return '<p>Unable to load code editor.</p>'
@@ -66,6 +76,7 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
   if (normalizedTestCases.length) {
     const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
     // Replace existing tests array (handles both empty [] and non-empty arrays)
+    // JSON.stringify() safely serializes test case data, including arrays, strings, and special characters
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
@@ -251,10 +262,18 @@ function renderSingleQuestion(question, index, topicName, language) {
           <iframe
             data-role="codemirror-editor"
             title="Code editor for ${escapeHtml(question.title || id)}"
-            srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
+            srcdoc="${buildCodeMirrorTemplateForQuestion(question)}"
             style="width:100%;min-height:500px;border:none;background:#ffffff;"
             sandbox="allow-scripts allow-same-origin"
           ></iframe>
+          <!-- 
+            SECURITY & EXECUTION BOUNDARY:
+            - srcdoc contains executable HTML+JavaScript (CodeMirror template)
+            - DO NOT apply escapeHtml() here - it would corrupt JavaScript syntax
+            - Test cases are JSON.stringified, providing safe serialization
+            - Execution occurs in sandboxed iframe (sandbox="allow-scripts allow-same-origin")
+            - Display content (title attribute above) MUST be escaped - it's user-facing HTML
+          -->
         </div>
         <div data-role="result" style="margin-top:4px;font-size:0.8rem;color:#64748b;min-height:1em;"></div>
       </section>

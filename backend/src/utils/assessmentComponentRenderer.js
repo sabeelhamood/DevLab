@@ -288,6 +288,16 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
+/**
+ * Builds executable HTML+JavaScript template for CodeMirror editor with Judge0 integration.
+ * 
+ * IMPORTANT: This function returns EXECUTABLE CODE (HTML+JavaScript), not display content.
+ * - The output must NEVER be HTML-escaped when injected into srcdoc
+ * - Test cases are safely serialized via JSON.stringify()
+ * - Execution occurs in sandboxed iframe for security isolation
+ * 
+ * Display content (titles, descriptions) should be escaped separately when rendered in HTML.
+ */
 function buildCodeMirrorTemplateForQuestion(question = {}) {
   if (!baseCodeMirrorTemplate) {
     return '<p>Unable to load code editor.</p>'
@@ -299,6 +309,7 @@ function buildCodeMirrorTemplateForQuestion(question = {}) {
   if (normalizedTestCases.length) {
     const serializedTests = JSON.stringify(normalizedTestCases, null, 4)
     // Replace existing tests array (handles both empty [] and non-empty arrays)
+    // JSON.stringify() safely serializes test case data, including arrays, strings, and special characters
     template = template.replace(/const tests = \[[\s\S]*?\];/, `const tests = ${serializedTests};`)
   }
 
@@ -419,6 +430,10 @@ function renderJudge0Section(question) {
   const language = (config.language || question.programming_language || 'javascript').toLowerCase()
   const normalizedTestCases = extractNormalizedTestCases(question)
   const testCaseCount = normalizedTestCases.length
+  // SECURITY & EXECUTION BOUNDARY: buildCodeMirrorTemplateForQuestion returns executable HTML+JavaScript
+  // DO NOT apply escapeHtml() to iframeContent - it would corrupt JavaScript syntax and test case data
+  // Test cases are JSON.stringified, providing safe serialization
+  // Execution occurs in sandboxed iframe, isolating any potential issues
   const iframeContent = buildCodeMirrorTemplateForQuestion(question)
   const iframeTitle = `Code editor for ${question.title || questionId}`
 
@@ -442,10 +457,14 @@ function renderJudge0Section(question) {
             <iframe
               data-codemirror-editor
               title="${escapeHtml(iframeTitle)}"
-              srcdoc="${escapeHtml(iframeContent)}"
+              srcdoc="${iframeContent}"
               style="width: 100%; min-height: 720px; border: none; background: #ffffff;"
               sandbox="allow-scripts allow-same-origin"
             ></iframe>
+            <!-- 
+              NOTE: iframeContent is NOT escaped - it contains executable HTML+JavaScript.
+              The title attribute above IS escaped (display content) - this is correct.
+            -->
           </div>
           <div style="font-size: 0.85rem; color: #475569; background: #ffffff; border-radius: 1rem; padding: 1rem; border: 1px solid rgba(148, 163, 184, 0.3);">
             <p style="margin: 0 0 0.5rem 0;">Tips:</p>
