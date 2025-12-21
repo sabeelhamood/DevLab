@@ -240,8 +240,7 @@ export class Judge0Service {
     // Create function call
     let functionCall;
     if (Array.isArray(parsedInput)) {
-      const args = parsedInput.map(arg => JSON.stringify(arg)).join(', ');
-      functionCall = `${functionName}(${args})`;
+      functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
     } else if (parsedInput !== null && parsedInput !== undefined) {
       functionCall = `${functionName}(${JSON.stringify(parsedInput)})`;
     } else {
