@@ -17,6 +17,51 @@
     <script src="https://rag-production-3a4c.up.railway.app/embed/bot.js"></script>
     <!-- ✅ END BOT SCRIPT -->
     
+    <!-- ✅ INITIALIZATION - DO NOT MODIFY -->
+    <script>
+      // Function to check and initialize bot when user data is available
+      window.checkAndInitializeBot = function() {
+        // Get user data from React app (exposed via window.APP_USER)
+        const userData = window.APP_USER || {};
+        
+        // Only initialize if user is authenticated and bot script is loaded
+        if (window.initializeEducoreBot && userData.id && userData.id !== 'anonymous') {
+          window.initializeEducoreBot({
+            microservice: 'DEVLAB',
+            mode: 'support',  // Support mode for DevLab (purple header, forwards to DevLab API)
+            userId: userData.id || 'anonymous',
+            token: userData.token || '',
+            tenantId: userData.tenantId || 'devlab'
+          });
+        }
+      };
+      
+      // Wait for bot script to load, then check for user data
+      window.addEventListener('load', function() {
+        // If bot script is already loaded, try to initialize
+        if (window.initializeEducoreBot) {
+          // Check if user data is already available
+          if (window.APP_USER && window.APP_USER.id && window.APP_USER.id !== 'anonymous') {
+            window.checkAndInitializeBot();
+          }
+        }
+        
+        // Also set up a check for when user data becomes available (from React)
+        const checkInterval = setInterval(function() {
+          if (window.APP_USER && window.APP_USER.id && window.APP_USER.id !== 'anonymous' && window.initializeEducoreBot) {
+            window.checkAndInitializeBot();
+            clearInterval(checkInterval);
+          }
+        }, 100);
+        
+        // Stop checking after 10 seconds
+        setTimeout(function() {
+          clearInterval(checkInterval);
+        }, 10000);
+      });
+    </script>
+    <!-- ✅ END INITIALIZATION -->
+    
     <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

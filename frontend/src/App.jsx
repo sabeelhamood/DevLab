@@ -15,24 +15,13 @@ import './styles/theme-transitions.css'
 function App() {
   const { user } = useAuthStore()
   
-  // Initialize EDUCORE bot with support mode (DevLab uses support mode with purple header)
+  // Expose user data to window for bot initialization (HTML script handles initialization)
   useEffect(() => {
     const token = localStorage.getItem('auth-token') || ''
-    const userData = {
+    window.APP_USER = {
       id: user?.id || 'anonymous',
       token: token,
       tenantId: user?.tenantId || 'devlab'
-    }
-    
-    // Initialize bot if script is loaded and user is authenticated
-    if (window.initializeEducoreBot && userData.id && userData.id !== 'anonymous') {
-      window.initializeEducoreBot({
-        microservice: 'DEVLAB',
-        mode: 'support',  // Support mode for DevLab (purple header, forwards to DevLab API)
-        userId: userData.id,
-        token: userData.token,
-        tenantId: userData.tenantId
-      })
     }
   }, [user])
 
