@@ -251,7 +251,7 @@ function renderSingleQuestion(question, index, topicName, language) {
           <iframe
             data-role="codemirror-editor"
             title="Code editor for ${escapeHtml(question.title || id)}"
-            srcdoc="${escapeHtml(buildCodeMirrorTemplateForQuestion(question))}"
+            srcdoc="${buildCodeMirrorTemplateForQuestion(question)}"
             style="width:100%;min-height:500px;border:none;background:#ffffff;"
             sandbox="allow-scripts allow-same-origin"
           ></iframe>
