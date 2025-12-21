@@ -515,24 +515,13 @@
         }
 
         const result = data.result || data;
-        let stdout = result.stdout || '';
+        const stdout = result.stdout || '';
         const stderr = result.stderr || result.compile_output || '';
-
-        // Filter out None/null/undefined return values from stdout
-        if (stdout) {
-          const lines = stdout.split('\n');
-          const filteredLines = lines.filter(line => {
-            const trimmed = line.trim();
-            const lower = trimmed.toLowerCase();
-            return trimmed !== '' && lower !== 'none' && lower !== 'null' && lower !== 'undefined';
-          });
-          stdout = filteredLines.join('\n').trim();
-        }
 
         if (result.statusId === 3 || result.status === 'Accepted') {
           // Success
           if (stdout) {
-            showResult('Output: ' + stdout, 'success');
+            showResult('Output: ' + stdout.trim(), 'success');
           } else if (stderr) {
             showResult('Compiled successfully. Warnings: ' + stderr.trim(), 'info');
           } else {
