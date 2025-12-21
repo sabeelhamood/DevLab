@@ -442,7 +442,7 @@ function renderJudge0Section(question) {
             <iframe
               data-codemirror-editor
               title="${escapeHtml(iframeTitle)}"
-              srcdoc="${serializeJsonForScript(iframeContent)}"
+              srcdoc="${iframeContent}"
               style="width: 100%; min-height: 720px; border: none; background: #ffffff;"
               sandbox="allow-scripts allow-same-origin"
             ></iframe>
