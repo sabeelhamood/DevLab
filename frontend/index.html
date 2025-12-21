@@ -17,38 +17,6 @@
     <script src="https://rag-production-3a4c.up.railway.app/embed/bot.js"></script>
     <!-- ✅ END BOT SCRIPT -->
     
-    <!-- ✅ INITIALIZATION -->
-    <script>
-      // Wait for bot script to load
-      window.addEventListener('load', function() {
-        // Function to initialize bot with user data
-        function initBot() {
-          // Get user data from window (exposed by React App.jsx)
-          const userData = window.APP_USER || {};
-          
-          // Initialize bot if function is available and user is not anonymous
-          if (window.initializeEducoreBot && userData.id && userData.id !== 'anonymous') {
-            window.initializeEducoreBot({
-              microservice: 'DEVLAB',
-              userId: userData.id || 'anonymous',
-              token: userData.token || '',
-              tenantId: userData.tenantId || 'devlab'
-            });
-          } else if (window.initializeEducoreBot) {
-            // If bot is loaded but user not ready, wait a bit and retry
-            setTimeout(initBot, 500);
-          } else {
-            // If bot script not loaded yet, wait and retry
-            setTimeout(initBot, 100);
-          }
-        }
-        
-        // Start initialization attempt
-        initBot();
-      });
-    </script>
-    <!-- ✅ END INITIALIZATION -->
-    
     <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
