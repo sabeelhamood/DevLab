@@ -13,19 +13,20 @@
     <div id="edu-bot-container"></div>
     <!-- ✅ END BOT CONTAINER -->
     
-    <!-- ✅ BOT SCRIPT -->
+    <!-- ✅ BOT SCRIPT - DO NOT MODIFY -->
     <script src="https://rag-production-3a4c.up.railway.app/embed/bot.js"></script>
     <!-- ✅ END BOT SCRIPT -->
     
     <!-- ✅ INITIALIZATION - DO NOT MODIFY -->
     <script>
-      // Function to check and initialize bot when user data is available
-      window.checkAndInitializeBot = function() {
-        // Get user data from React app (exposed via window.APP_USER)
+      // Wait for bot script to load
+      window.addEventListener('load', function() {
+        // Get user data from your auth system
+        // User data is exposed via window.APP_USER from React App.jsx
         const userData = window.APP_USER || {};
         
-        // Only initialize if user is authenticated and bot script is loaded
-        if (window.initializeEducoreBot && userData.id && userData.id !== 'anonymous') {
+        // Initialize bot
+        if (window.initializeEducoreBot) {
           window.initializeEducoreBot({
             microservice: 'DEVLAB',
             mode: 'support',  // Support mode for DevLab (purple header, forwards to DevLab API)
@@ -34,30 +35,6 @@
             tenantId: userData.tenantId || 'devlab'
           });
         }
-      };
-      
-      // Wait for bot script to load, then check for user data
-      window.addEventListener('load', function() {
-        // If bot script is already loaded, try to initialize
-        if (window.initializeEducoreBot) {
-          // Check if user data is already available
-          if (window.APP_USER && window.APP_USER.id && window.APP_USER.id !== 'anonymous') {
-            window.checkAndInitializeBot();
-          }
-        }
-        
-        // Also set up a check for when user data becomes available (from React)
-        const checkInterval = setInterval(function() {
-          if (window.APP_USER && window.APP_USER.id && window.APP_USER.id !== 'anonymous' && window.initializeEducoreBot) {
-            window.checkAndInitializeBot();
-            clearInterval(checkInterval);
-          }
-        }, 100);
-        
-        // Stop checking after 10 seconds
-        setTimeout(function() {
-          clearInterval(checkInterval);
-        }, 10000);
       });
     </script>
     <!-- ✅ END INITIALIZATION -->
