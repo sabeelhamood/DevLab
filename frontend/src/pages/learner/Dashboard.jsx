@@ -58,6 +58,31 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Initialize chatbot when user is available
+  useEffect(() => {
+    function initChatbot() {
+      const token = localStorage.getItem('auth-token') || ''
+      
+      if (effectiveUser && effectiveUser.id && effectiveUser.id !== 'anonymous' && token) {
+        if (window.initializeEducoreBot) {
+          window.initializeEducoreBot({
+            microservice: 'DEVLAB',
+            userId: effectiveUser.id,
+            token: token,
+            tenantId: effectiveUser.tenantId || 'default'
+          })
+        } else {
+          setTimeout(initChatbot, 100) // Retry if script hasn't loaded yet
+        }
+      }
+    }
+    
+    // Initialize when component mounts and user is available
+    if (effectiveUser?.id) {
+      initChatbot()
+    }
+  }, [effectiveUser])
+
   useEffect(() => {
     if (!learnerId) {
       setError('Learner context missing. Please sign in again.')
