@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore.js'
 import { Code, Sparkles, Terminal, Cpu, Trophy, Bot, Smile } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 
-const DEFAULT_FORCED_LEARNER_ID = '210dc7a7-9808-445c-8eb7-51c217e3919c'
+const DEFAULT_FORCED_LEARNER_ID = '50a630f4-826e-45aa-8f70-653e5e592fc3'
 
 
 const QUESTIONS_PER_COMPETITION = 3
