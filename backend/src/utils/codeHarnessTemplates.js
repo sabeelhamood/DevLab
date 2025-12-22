@@ -150,13 +150,8 @@ function generatePythonHarness(sourceCode, testCases) {
     if (typeof input === 'string' && input.includes('(')) {
       functionCall = input;
     } else if (Array.isArray(input)) {
-      const args = input.map(arg => {
-        if (typeof arg === 'string') {
-          return `json.loads('${JSON.stringify(arg)}')`;
-        }
-        return JSON.stringify(arg);
-      }).join(', ');
-      functionCall = `${functionName}(${args})`;
+      // In Python, arrays should be passed as a single list argument
+      functionCall = `${functionName}(${JSON.stringify(input)})`;
     } else if (input !== null && input !== undefined) {
       if (typeof input === 'string') {
         functionCall = `${functionName}(${JSON.stringify(input)})`;
