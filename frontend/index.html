@@ -19,23 +19,50 @@
     
     <!-- ✅ INITIALIZATION - DO NOT MODIFY -->
     <script>
-      // Wait for bot script to load
-      window.addEventListener('load', function() {
-        // Get user data from your auth system
-        // User data is exposed via window.APP_USER from React App.jsx
+      // Guard to prevent multiple initializations
+      let botInitialized = false;
+      let retryCount = 0;
+      const MAX_RETRIES = 100; // Stop retrying after 10 seconds (100 * 100ms)
+      
+      // Function to initialize chatbot when user data is available
+      function initChatbot() {
+        // Stop retrying after max attempts
+        if (retryCount >= MAX_RETRIES) {
+          return;
+        }
+        
+        // Get user data from React app (exposed via window.APP_USER)
         const userData = window.APP_USER || {};
         
-        // Initialize bot
-        if (window.initializeEducoreBot) {
-          window.initializeEducoreBot({
-            microservice: 'DEVLAB',
-            mode: 'support',  // Support mode for DevLab (purple header, forwards to DevLab API)
-            userId: userData.id || 'anonymous',
-            token: userData.token || '',
-            tenantId: userData.tenantId || 'devlab'
-          });
+        // Only initialize if user is authenticated and bot script is loaded
+        if (userData.id && userData.id !== 'anonymous' && userData.token) {
+          if (window.initializeEducoreBot && !botInitialized) {
+            window.initializeEducoreBot({
+              microservice: 'DEVLAB',
+              mode: 'support',  // Support mode for DevLab (purple header, forwards to DevLab API)
+              userId: userData.id || 'anonymous',
+              token: userData.token || '',
+              tenantId: userData.tenantId || 'devlab'
+            });
+            botInitialized = true;
+          } else if (!window.initializeEducoreBot) {
+            // Retry if script hasn't loaded yet
+            retryCount++;
+            setTimeout(initChatbot, 100);
+          }
+        } else {
+          // Retry if user data not available yet (React might not have loaded)
+          retryCount++;
+          setTimeout(initChatbot, 100);
         }
-      });
+      }
+      
+      // Initialize when page is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChatbot);
+      } else {
+        initChatbot();
+      }
     </script>
     <!-- ✅ END INITIALIZATION -->
     
