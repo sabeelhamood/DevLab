@@ -23,7 +23,7 @@ You are an expert programming instructor. Generate CODING questions ONLY.
 Topic: ${topic}
 Skills: ${skillsText}
 Programming Language: ${language}
-Output Language: ${humanLanguage}
+Output Language: English
 Number of Questions: ${amount}
 
 REQUIRED FORMAT - Each question MUST have:
