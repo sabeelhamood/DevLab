@@ -60,26 +60,61 @@ export default function Dashboard() {
 
   // Initialize chatbot when user is available
   useEffect(() => {
+    let retryCount = 0
+    const MAX_RETRIES = 50 // 5 seconds maximum (50 * 100ms)
+    let timeoutId = null
+    
     function initChatbot() {
       const token = localStorage.getItem('auth-token') || ''
       
       if (effectiveUser && effectiveUser.id && effectiveUser.id !== 'anonymous' && token) {
         if (window.initializeEducoreBot) {
+          console.log('🤖 [DEVLAB] Initializing EDUCORE Bot...', {
+            microservice: 'DEVLAB',
+            userId: effectiveUser.id,
+            hasToken: !!token,
+            tenantId: effectiveUser.tenantId || 'default'
+          })
           window.initializeEducoreBot({
             microservice: 'DEVLAB',
             userId: effectiveUser.id,
             token: token,
             tenantId: effectiveUser.tenantId || 'default'
           })
+          console.log('✅ [DEVLAB] EDUCORE Bot initialized successfully')
         } else {
-          setTimeout(initChatbot, 100) // Retry if script hasn't loaded yet
+          retryCount++
+          if (retryCount < MAX_RETRIES) {
+            if (retryCount % 10 === 0) {
+              console.log(`⏳ [DEVLAB] Bot script not loaded yet, retrying... (${retryCount}/${MAX_RETRIES})`)
+            }
+            timeoutId = setTimeout(initChatbot, 100)
+          } else {
+            console.error('❌ [DEVLAB] Failed to load bot script after maximum retries')
+          }
+        }
+      } else {
+        if (retryCount === 0) {
+          console.warn('⚠️ [DEVLAB] Cannot initialize bot: missing user or token', {
+            hasUser: !!effectiveUser,
+            userId: effectiveUser?.id,
+            hasToken: !!localStorage.getItem('auth-token')
+          })
         }
       }
     }
     
     // Initialize when component mounts and user is available
     if (effectiveUser?.id) {
-      initChatbot()
+      // Wait a bit for script to load if it's in the HTML
+      timeoutId = setTimeout(initChatbot, 200)
+    }
+    
+    // Cleanup function to clear timeout if component unmounts
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
     }
   }, [effectiveUser])
 
